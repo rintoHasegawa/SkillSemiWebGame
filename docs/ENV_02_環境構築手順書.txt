@@ -14,15 +14,22 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
     開発を開始する前に，以下のツールをインストールしバージョンを確認する．
 
     1. Node.js (v20.x LTS)
-        ・公式サイトよりLTS版をインストールする．
+        ・Nodesource リポジトリを使用してインストールする．
+        # リポジトリのセットアップとインストール
+        $ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        $ sudo apt-get install -y nodejs
+
         ・確認コマンド:
-            $ node -v
+        $ node -v  # v20.x.x と表示されること
 
     2. pnpm (Package Manager)
         ・Node.js 標準の npm ではなく pnpm を使用する．
-        ・Corepack (Node.js同梱) を有効化するか，スタンドアロンでインストールする．
+        ・Corepack (Node.js同梱) を有効化してインストールする．
+        $ sudo corepack enable
+        $ corepack prepare pnpm@latest --activate
+
         ・確認コマンド:
-            $ pnpm -v
+        $ pnpm -v
 
 
 2. プロジェクト初期化 (Project Initialization)
@@ -78,7 +85,7 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
     1. 初期化とビルドツール導入
         $ cd packages/shared
         $ pnpm init
-        $ pnpm add -D typescript tsup protobufjs
+        $ pnpm add -D typescript tsup
 
     2. 設定ファイルの調整 (package.json)
         ・name: "@repo/shared" と命名する（推奨）．
@@ -91,11 +98,14 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
     1. プロジェクト作成
         $ cd ../../apps/client
         $ pnpm create vite . --template preact-ts
+        ※ 実行中に表示される選択肢には以下のように回答すること：
+        ? Use rolldown-vite (Experimental)? » No
+        ? Install with pnpm and start now? » No
 
     2. 依存ライブラリのインストール
-        ・Pixi.js (描画エンジン) と protobufjs (通信) を追加する．
+        ・Pixi.js (描画エンジン) を追加する．
         ・共通ライブラリへの依存を追加する．
-        $ pnpm add pixi.js protobufjs
+        $ pnpm add pixi.js
         $ pnpm add @repo/shared --workspace
 
 3-3. バックエンド (apps/server)
@@ -106,10 +116,10 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
         $ pnpm init
 
     2. 依存ライブラリのインストール
-        ・ws (WebSocket), protobufjs (通信) を追加する．
+        ・ws (WebSocket) を追加する．
         ・開発用ツール (tsx, typescript, @types/node, @types/ws) を追加する．
         ・共通ライブラリへの依存を追加する．
-        $ pnpm add ws protobufjs
+        $ pnpm add ws
         $ pnpm add -D tsx typescript @types/node @types/ws
         $ pnpm add @repo/shared --workspace
 
