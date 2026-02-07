@@ -62,9 +62,27 @@ Git運用ルール (Git Operation Rules)
     ・コマンド:
         $ git push origin feature/01_new_function
 
-5. プルリクエスト (PR) 作成
-    ・GitHub/GitLab 等のブラウザ上で PR を作成する．
-    ・レビュワーを指定し，承認（Approve）されたら `main` へマージする．
+5. プルリクエスト (PR) の作成
+    ・GitHubのリポジトリ画面上部に表示される「Compare & pull request」ボタンをクリックする．
+    ・Baseを `main`、Compareを自分の「作業ブランチ」に設定する．
+    ・「Reviewers」メニューからチームメンバーを選択し、レビューを依頼する．
+    ・「Create pull request」ボタンを押してPRをオープンする．
+
+6. レビューと修正の対応
+    ・レビュワーのコメントを確認し、修正が必要な場合はローカルで修正・コミット・プッシュを繰り返す．
+    ・GitHub上で全ての指摘に対し「Resolve conversation」を行い、やり取りを完了させる．
+    ・レビュワーから「Approve（承認）」のスタンプまたはメッセージをもらう．
+
+7. マージの実行（マージボタンの操作）
+    ・PR画面下部の「Merge pull request」ボタンをクリックする．
+    ・確認用の「Confirm merge」ボタンを押し、`main` への統合を完了させる．
+    ・マージ直後に表示される「Delete branch」ボタンを押し、リモート上の作業ブランチを削除する．
+
+8. ローカル環境のクリーンアップ
+    ・マージ完了後はローカル環境も最新状態に戻し、古いブランチを削除する．
+        $ git checkout main
+        $ git pull origin main
+        $ git branch -d [作業ブランチ名]
 
 
 4. コミットメッセージ (Commit Messages)
