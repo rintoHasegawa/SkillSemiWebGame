@@ -1,28 +1,28 @@
 ========================================================================
-SkillSemiWebGame - 環境構築ガイド (Environment Setup Guide)
+Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
 ========================================================================
 
 1. 事前準備 (Prerequisites)
 ------------------------------------------------------------------------
 
 1-0. 目的
-    本ドキュメントは，「SkillSemiWebGame」のMonorepo構成による開発環境を構築
-    [cite_start]するための手順書である． [cite: 1]
-    [cite_start]※ 本プロジェクトは Node.js v20 LTS 以上を必須とする． [cite: 8, 14]
+    本ドキュメントは，「Pixel Paint War」のMonorepo構成による開発環境を構築
+    するための手順書である．
+    ※ 本プロジェクトは Node.js v20 LTS 以上を必須とする．
 
 1-1. 必須ツールのインストール
-    [cite_start]開発を開始する前に，以下のツールをインストールしバージョンを確認する． [cite: 14]
+    開発を開始する前に，以下のツールをインストールしバージョンを確認する．
 
-    1. [cite_start]Node.js (v20.x LTS) [cite: 8, 14]
+    1. Node.js (v20.x LTS)
         ・公式サイトよりLTS版をインストールする．
         ・確認コマンド:
-            [cite_start]$ node -v [cite: 14]
+            $ node -v
 
-    2. [cite_start]pnpm (Package Manager) [cite: 1, 8, 14]
-        [cite_start]・Node.js 標準の npm ではなく pnpm を使用する． [cite: 1, 8]
-        [cite_start]・Corepack (Node.js同梱) を有効化するか，スタンドアロンでインストールする． [cite: 14]
+    2. pnpm (Package Manager)
+        ・Node.js 標準の npm ではなく pnpm を使用する．
+        ・Corepack (Node.js同梱) を有効化するか，スタンドアロンでインストールする．
         ・確認コマンド:
-            [cite_start]$ pnpm -v [cite: 14]
+            $ pnpm -v
 
 
 2. プロジェクト初期化 (Project Initialization)
@@ -41,74 +41,74 @@ SkillSemiWebGame - 環境構築ガイド (Environment Setup Guide)
         $ pnpm init
 
 2-2. ワークスペース設定 (Monorepo Setup)
-    [cite_start]ルートディレクトリに以下の設定ファイルを作成し，モノレポ構成を定義する． [cite: 1, 5]
+    ルートディレクトリに以下の設定ファイルを作成し，モノレポ構成を定義する．
 
-    1. [cite_start]pnpm-workspace.yaml [cite: 5]
-        [cite_start]・packages/shared を共通ライブラリとし，apps 配下にアプリを配置する． [cite: 5, 7]
+    1. pnpm-workspace.yaml
+        ・packages/shared を共通ライブラリとし，apps 配下にアプリを配置する．
         ・内容:
             packages:
               - 'apps/*'
-              - [cite_start]'packages/*' [cite: 5]
+              - 'packages/*'
 
-    2. [cite_start].npmrc [cite: 5]
-        [cite_start]・依存関係解決の設定を行う (shamefully-hoist=true 推奨)． [cite: 5]
+    2. .npmrc
+        ・依存関係解決の設定を行う (shamefully-hoist=true 推奨)．
         ・内容:
-            [cite_start]shamefully-hoist=true [cite: 5]
+            shamefully-hoist=true
 
 2-3. ディレクトリ構造の構築
-    [cite_start]以下の構成になるようにディレクトリを作成する． [cite: 5]
+    以下の構成になるようにディレクトリを作成する．
 
     root/
     ├── apps/
-    [cite_start]│   ├── client/           # フロントエンド (Browser) [cite: 5, 9]
-    [cite_start]│   └── server/           # バックエンド (Node.js) [cite: 5, 11]
+    │   ├── client/           # フロントエンド (Browser)
+    │   └── server/           # バックエンド (Node.js)
     └── packages/
-        [cite_start]└── shared/           # 共通ロジック (Shared Library) [cite: 6, 7]
+        └── shared/           # 共通ロジック (Shared Library)
 
     ・作成コマンド例:
-        [cite_start]$ mkdir -p apps/client apps/server packages/shared [cite: 5, 6]
+        $ mkdir -p apps/client apps/server packages/shared
 
 
 3. パッケージ・ライブラリ導入 (Dependency Installation)
 ------------------------------------------------------------------------
 
 3-1. 共通ライブラリ (packages/shared)
-    [cite_start]共通ロジック用のパッケージ設定を行う． [cite: 6]
+    共通ロジック用のパッケージ設定を行う．
 
     1. 初期化とビルドツール導入
         $ cd packages/shared
         $ pnpm init
-        [cite_start]$ pnpm add -D typescript tsup protobufjs [cite: 8]
+        $ pnpm add -D typescript tsup protobufjs
 
     2. 設定ファイルの調整 (package.json)
         ・name: "@repo/shared" と命名する（推奨）．
         ・main: "./dist/index.js", types: "./dist/index.d.ts" を指定する．
-        [cite_start]・scripts: "build": "tsup src/index.ts --format cjs,esm --dts" を追加する． [cite: 8]
+        ・scripts: "build": "tsup src/index.ts --format cjs,esm --dts" を追加する．
 
 3-2. フロントエンド (apps/client)
-    [cite_start]Vite プロジェクトとして初期化を行う． [cite: 9]
+    Vite プロジェクトとして初期化を行う．
 
     1. プロジェクト作成
         $ cd ../../apps/client
-        $ pnpm create vite . [cite_start]--template preact-ts [cite: 9, 10]
+        $ pnpm create vite . --template preact-ts
 
     2. 依存ライブラリのインストール
-        [cite_start]・Pixi.js (描画エンジン) と protobufjs (通信) を追加する． [cite: 8, 9]
-        [cite_start]・共通ライブラリへの依存を追加する． [cite: 7]
+        ・Pixi.js (描画エンジン) と protobufjs (通信) を追加する．
+        ・共通ライブラリへの依存を追加する．
         $ pnpm add pixi.js protobufjs
         $ pnpm add @repo/shared --workspace
 
 3-3. バックエンド (apps/server)
-    [cite_start]Node.js アプリケーションとして初期化を行う． [cite: 11]
+    Node.js アプリケーションとして初期化を行う．
 
     1. 初期化
         $ cd ../../apps/server
         $ pnpm init
 
     2. 依存ライブラリのインストール
-        [cite_start]・ws (WebSocket), protobufjs (通信) を追加する． [cite: 8, 11]
-        [cite_start]・開発用ツール (tsx, typescript, @types/node, @types/ws) を追加する． [cite: 11]
-        [cite_start]・共通ライブラリへの依存を追加する． [cite: 7]
+        ・ws (WebSocket), protobufjs (通信) を追加する．
+        ・開発用ツール (tsx, typescript, @types/node, @types/ws) を追加する．
+        ・共通ライブラリへの依存を追加する．
         $ pnpm add ws protobufjs
         $ pnpm add -D tsx typescript @types/node @types/ws
         $ pnpm add @repo/shared --workspace
@@ -117,27 +117,27 @@ SkillSemiWebGame - 環境構築ガイド (Environment Setup Guide)
 4. 開発ツール設定 (Dev Tools Setup)
 ------------------------------------------------------------------------
 
-4-1. [cite_start]VS Code 拡張機能 [cite: 14]
-    [cite_start]推奨エディタである VS Code に以下の拡張機能をインストールする． [cite: 14]
+4-1. VS Code 拡張機能
+    推奨エディタである VS Code に以下の拡張機能をインストールする．
 
-    [cite_start]■ 必須拡張機能 [cite: 14]
-        [cite_start]・ESLint [cite: 13, 14]
-        [cite_start]・Prettier - Code formatter [cite: 13, 14]
-        [cite_start]・EditorConfig for VS Code [cite: 14]
+    ■ 必須拡張機能
+        ・ESLint
+        ・Prettier - Code formatter
+        ・EditorConfig for VS Code
 
-    [cite_start]■ 推奨拡張機能 [cite: 14]
-        [cite_start]・Hex Editor (バイナリパケットのデバッグ用・Microsoft公式) [cite: 14]
-        [cite_start]・GitHub Copilot [cite: 14]
+    ■ 推奨拡張機能
+        ・Hex Editor (バイナリパケットのデバッグ用・Microsoft公式)
+        ・GitHub Copilot
 
-4-2. [cite_start]AI アシスタント設定 [cite: 15]
-    [cite_start]開発効率化のため，以下のAIツールのアカウント設定を確認する． [cite: 3, 13, 15]
+4-2. AI アシスタント設定
+    開発効率化のため，以下のAIツールのアカウント設定を確認する．
 
-    1. [cite_start]Gemini Pro [cite: 3, 13, 15]
-        [cite_start]・学校提供ライセンスでのアクセス権限を確認する． [cite: 3, 15]
+    1. Gemini Pro
+        ・学校提供ライセンスでのアクセス権限を確認する．
 
-    2. [cite_start]GitHub Copilot Pro [cite: 3, 13, 15]
-        [cite_start]・Student Developer Pack が有効化されているか確認する． [cite: 3, 15]
-        [cite_start]・VS Code 右下のアイコンからログイン状態を確認する． [cite: 14]
+    2. GitHub Copilot Pro
+        ・Student Developer Pack が有効化されているか確認する．
+        ・VS Code 右下のアイコンからログイン状態を確認する．
 
 
 5. 動作確認 (Verification)
@@ -150,7 +150,7 @@ SkillSemiWebGame - 環境構築ガイド (Environment Setup Guide)
     $ pnpm install
     $ pnpm --filter @repo/shared build
 
-    [cite_start]※ shared のビルドが成功することを確認する． [cite: 7, 8]
+    ※ shared のビルドが成功することを確認する．
 
 5-2. 開発サーバー起動
     それぞれのディレクトリで開発サーバーが起動することを確認する．
