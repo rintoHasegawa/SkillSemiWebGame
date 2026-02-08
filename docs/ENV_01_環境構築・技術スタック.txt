@@ -49,10 +49,11 @@ root/
 └── packages/
     └── shared/           # 共通ロジック (Shared Library)
         ├── src/
+        │   ├── index.ts      # エントリーポイント (必須: tsupのビルド対象)
         │   ├── constants.ts  # 定数 (マップサイズ，速度，FPS)
         │   ├── types.ts      # 型定義 (パケット構造，ステート)
         │   ├── physics.ts    # 物理・移動判定ロジック
-        │   └── schema.proto  # Protocol Buffers 定義
+        │   └── binary.ts     # バイナリシリアライズ処理 (DataView Wrappers)
         └── tsup.config.ts    # ビルド設定
 
         ※ shared は client/server 両方から import して使用する．
@@ -65,9 +66,9 @@ root/
     ・Runtime: Node.js (v20 LTS 以上)
     ・Package Manager: pnpm
     ・Build Tool: tsup (高速で軽量なTypeScriptバンドラ)
-    ・Serialization: protobufjs (Google Protocol Buffers)
-        - 採用理由: 通信量削減（仕様書要件: 下り30KB/s以下）のため，JSONではなくバイナリを使用．
-        - 用途: 座標データの圧縮，イベント通信．
+    ・Serialization: Custom Binary (Standard DataView API)
+        - 採用理由: ライブラリ依存をなくし、仕様書要件（30KB/s以下）を満たす最適化を行うため。
+        - 用途: 座標データ、入力情報の圧縮通信。
 
 3-2. フロントエンド (Client)
     ・Build Tool: Vite
