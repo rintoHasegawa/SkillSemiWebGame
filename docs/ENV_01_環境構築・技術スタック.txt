@@ -31,30 +31,46 @@ Pixel Paint War - 開発環境・技術スタック定義書
 ------------------------------------------------------------------------
 
 2-1. 構成一覧
-root/
-├── package.json          # pnpm workspace 定義
-├── pnpm-workspace.yaml   # ワークスペース設定
-├── .npmrc                # 依存関係解決の設定 (shamefully-hoist=true 推奨)
-│
-├── apps/
-│   ├── client/           # フロントエンド (Browser)
-│   │   ├── src/
-│   │   ├── index.html
-│   │   └── vite.config.ts
-│   │
-│   └── server/           # バックエンド (Node.js)
-│       ├── src/
-│       └── tsconfig.json
-│
-└── packages/
-    └── shared/           # 共通ロジック (Shared Library)
-        ├── src/
-        │   ├── index.ts      # エントリーポイント (必須: tsupのビルド対象)
-        │   ├── constants.ts  # 定数 (マップサイズ，速度，FPS)
-        │   ├── types.ts      # 型定義 (パケット構造，ステート)
-        │   ├── physics.ts    # 物理・移動判定ロジック
-        │   └── binary.ts     # バイナリシリアライズ処理 (DataView Wrappers)
-        └── tsup.config.ts    # ビルド設定
+    root/
+    ├── package.json          # pnpm workspace 定義
+    ├── pnpm-workspace.yaml   # ワークスペース設定
+    ├── .npmrc                # 依存関係解決の設定
+    │
+    ├── apps/
+    │   ├── client/           # 【演出】フロントエンド (Browser)
+    │   │   ├── src/
+    │   │   │   ├── assets/     # 画像・音声リソース
+    │   │   │   ├── core/       # クライアントの心臓部 (GameApp, MainLoop)
+    │   │   │   ├── entities/   # 描画用エンティティ (PlayerSprite - 補間・描画ロジック含む)
+    │   │   │   ├── input/      # 入力処理 (Joystick, Keyboard)
+    │   │   │   ├── network/    # 通信処理 (SocketClient, Reconciler/補正処理)
+    │   │   │   ├── scenes/     # 画面管理 (Title, Lobby, Game, Result)
+    │   │   │   ├── ui/         # HTML UI管理 (HUD, Modal)
+    │   │   │   └── main.ts     # エントリーポイント
+    │   │   ├── index.html
+    │   │   ├── vite.config.ts
+    │   │   └── package.json
+    │   │
+    │   └── server/           # 【権限】バックエンド (Node.js)
+    │       ├── src/
+    │       │   ├── core/       # サーバーの心臓部 (GameLoop, ServerEngine)
+    │       │   ├── entities/   # サーバー側エンティティ (Player, Item - 状態管理のみ)
+    │       │   ├── managers/   # 管理クラス (RoomManager, ScoreManager)
+    │       │   ├── network/    # WebSocket処理 (Connection, PacketHandler)
+    │       │   └── index.ts    # エントリーポイント
+    │       ├── tsconfig.json
+    │       └── package.json
+    │
+    └── packages/
+        └── shared/           # 【最重要】「真実」の定義場所（型、定数、純粋ロジック）
+            ├── src/
+            │   ├── config/     # ゲーム定数 (マップサイズ, TickRate, 物理定数)
+            │   ├── protocol/   # 通信規約 (パケット構造, OpCode, バイナリ定義)
+            │   ├── types/      # 型定義 (PlayerState, InputData, RoomInfo)
+            │   ├── utils/      # 純粋関数 (Vector計算, 衝突判定, グリッド計算)
+            │   └── index.ts    # エントリーポイント (tsupビルド対象)
+            ├── tsup.config.ts  # ビルド設定
+            └── package.json
 
         ※ shared は client/server 両方から import して使用する．
 
