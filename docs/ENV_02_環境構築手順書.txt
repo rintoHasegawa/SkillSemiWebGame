@@ -120,6 +120,9 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
         # Testing
         coverage/
 
+        # Unignore packages (Fix for parent gitignore)
+        !packages/
+
     3. 設定の反映確認
         Gitのステータスを確認し，`node_modules/` 等が含まれていないことを確認する．
         $ git status
