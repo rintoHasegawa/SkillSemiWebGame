@@ -1,5 +1,5 @@
 import { Graphics } from 'pixi.js';
-import { GAME_CONFIG } from 'skill-semi-web-game-shared';
+import { GAME_CONFIG } from '@repo/shared';
 
 export class Player extends Graphics {
   constructor(color: number = 0xFF0000) {
