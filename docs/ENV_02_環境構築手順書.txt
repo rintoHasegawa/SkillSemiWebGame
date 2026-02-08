@@ -92,6 +92,15 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
         ・main: "./dist/index.js", types: "./dist/index.d.ts" を指定する．
         ・scripts: "build": "tsup src/index.ts --format cjs,esm --dts" を追加する．
 
+    3. エントリーポイントの作成 (追加手順)
+        tsupがビルド対象とするファイルを作成する．
+
+        $ mkdir src
+        $ touch src/index.ts
+        
+        ※ 現時点では空ファイルでよいが，将来的に constants.ts 等を export する記述を行う．
+        (例: export * from './constants';)
+
 3-2. フロントエンド (apps/client)
     Vite プロジェクトとして初期化を行う．
 
@@ -122,6 +131,19 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
         $ pnpm add ws
         $ pnpm add -D tsx typescript @types/node @types/ws
         $ pnpm add @repo/shared --workspace
+    
+    3. サーバー用ディレクトリとファイルの作成
+        tsxが実行対象とするエントリーポイントを作成する．
+        $ mkdir src
+        $ touch src/index.ts
+    
+    4. 実行スクリプトの定義
+        package.json にサーバー起動用のコマンドを追加する．
+        ・編集ファイル: apps/server/package.json
+        ・内容:
+            "scripts": {
+              "dev": "tsx watch src/index.ts"
+            }
 
 
 4. 開発ツール設定 (Dev Tools Setup)
@@ -163,10 +185,38 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
     ※ shared のビルドが成功することを確認する．
 
 5-2. 開発サーバー起動
-    それぞれのディレクトリで開発サーバーが起動することを確認する．
+    モノレポ構成のため，個別のディレクトリに移動せず，プロジェクトルートから
+    --filter オプションを使用して各アプリを起動する．
+    ※ ターミナルを2つ開き，両方を同時に起動した状態で開発を進めることを推奨．
     
-    ・Client:
-        $ pnpm --filter client dev
+    1．Client (フロントエンド) の動作確認
+        ・ルートディレクトリにて以下のコマンドを実行する．
+            $ pnpm --filter client dev
+
+        ・ブラウザでの確認:
+            ターミナルに「➜  Local:   http://localhost:5173/」と表示されたら，
+            Google Chrome等のブラウザを開き，アドレスバーに上記URLを貼り付けて実行する．
+
+        ・正常動作の判断基準:
+            画面に「Vite + Preact」のロゴと「Vite + Preact + TypeScript」といった
+            テキストが表示されていれば，フロントエンドの環境構築は成功である．
     
-    ・Server:
-        $ pnpm --filter server dev (package.json にスクリプト設定後)
+    2. Server (バックエンド) の動作確認
+        ・テスト用コードの作成:
+            動作確認用のエントリーポイントを作成する．
+            $ touch apps/server/src/index.ts
+            
+            ファイルに以下の内容を記述する．
+            console.log("Server is running!");
+
+        ・コマンド:
+        $ pnpm --filter server dev
+
+        ・正常動作の判断基準:
+            ターミナルに「Server is running!」と出力されれば構築成功である．
+
+    3．終了方法 (重要)
+        ・動作確認を終了し，開発サーバーを停止させる場合は，ターミナル上で
+        「Ctrl + C」を押下する．
+        ・停止後はブラウザでURLにアクセスしても接続不可となるが，再度起動
+        コマンドを実行すればいつでも再開可能である．

@@ -49,6 +49,7 @@ root/
 └── packages/
     └── shared/           # 共通ロジック (Shared Library)
         ├── src/
+        │   ├── index.ts      # エントリーポイント (必須: tsupのビルド対象)
         │   ├── constants.ts  # 定数 (マップサイズ，速度，FPS)
         │   ├── types.ts      # 型定義 (パケット構造，ステート)
         │   ├── physics.ts    # 物理・移動判定ロジック
