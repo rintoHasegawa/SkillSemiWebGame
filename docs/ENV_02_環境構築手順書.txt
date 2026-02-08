@@ -75,6 +75,70 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
     ・作成コマンド例:
         $ mkdir -p apps/client apps/server packages/shared
 
+2-4. Git除外設定 (Git Ignore Setup)
+    不要なファイル（依存ライブラリやビルド成果物）がGit管理下に置かれないよう，
+    除外設定を行う．
+
+    1. 設定ファイルの作成
+        プロジェクトルートディレクトリに `.gitignore` ファイルを作成する．
+        $ touch .gitignore
+
+    2. 除外ルールの記述
+        以下の内容をファイルに記述し保存する．
+        ・node_modules: 依存ライブラリフォルダ．
+        ・dist, build: ビルド生成物．
+        ・.env: 環境変数ファイル（セキュリティ保持のため）．
+
+        # Dependencies
+        node_modules/
+        .pnpm-store/
+
+        # Build Outputs
+        dist/
+        build/
+        out/
+
+        # Logs
+        *.log
+        npm-debug.log*
+        pnpm-debug.log*
+
+        # Environment Variables
+        .env
+        .env.local
+        .env.*.local
+
+        # Editor / OS
+        .vscode/*
+        !.vscode/extensions.json
+        !.vscode/settings.json
+        !.vscode/launch.json
+        .idea/
+        .DS_Store
+        Thumbs.db
+
+        # Testing
+        coverage/
+
+    3. 設定の反映確認
+        Gitのステータスを確認し，`node_modules/` 等が含まれていないことを確認する．
+        $ git status
+
+2-5. 初回コミット (Initial Commit)
+    環境構築の区切りとして，現在の状態をリポジトリに保存する．
+
+    1. ステータス確認
+        `.gitignore` が正しく適用されているか確認する．
+        $ git status
+        ※ `node_modules/` が表示されていないことを確認する．
+
+    2. ステージング
+        変更された全てのファイルをコミット対象に追加する．
+        $ git add .
+
+    3. コミット実行
+        構築内容を示すメッセージを付与してコミットする．
+        $ git commit -m "chore: Project initialization (Monorepo, pnpm, Vite)"
 
 3. パッケージ・ライブラリ導入 (Dependency Installation)
 ------------------------------------------------------------------------
@@ -226,30 +290,41 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
 5-1. 最終ディレクトリ構成
     構築完了時点で，以下のディレクトリおよびファイルが存在することを確認する．
 
-    SkillSemiWebGame/
-    ├── package.json
-    ├── pnpm-workspace.yaml
-    ├── .npmrc
-    ├── apps/
-    │   ├── client/
+    SkillSemiWebGame/                  <-- プロジェクトルート
+    ├── .git/                          <-- git init で作成
+    ├── .gitignore                     <-- Git除外設定
+    ├── .npmrc                         <-- 依存解決設定
+    ├── package.json                   <-- ルート定義
+    ├── pnpm-lock.yaml                 <-- pnpm install で自動生成
+    ├── pnpm-workspace.yaml            <-- ワークスペース定義
+    ├── node_modules/                  <-- 依存ライブラリ
+    │
+    ├── apps/                          <-- アプリケーション格納用
+    │   ├── client/                    <-- フロントエンド (Vite + Preact)
+    │   │   ├── node_modules/
     │   │   ├── src/
+    │   │   │   ├── main.tsx (または index.tsx)
+    │   │   │   └── ... (Viteテンプレートファイル群)
     │   │   ├── index.html
-    │   │   ├── package.json
+    │   │   ├── package.json           <-- pixi.js, @repo/shared 依存あり
     │   │   ├── tsconfig.json
     │   │   └── vite.config.ts
     │   │
-    │   └── server/
+    │   └── server/                    <-- バックエンド (Node.js)
+    │       ├── node_modules/
     │       ├── src/
-    │       │   └── index.ts
-    │       ├── package.json
-    │       └── tsconfig.json
+    │       │   └── index.ts           <-- エントリーポイント
+    │       ├── package.json           <-- ws, @repo/shared 依存あり
+    │       └── tsconfig.json          <-- pnpm init 等で生成（または要作成）
     │
-    └── packages/
-        └── shared/
+    └── packages/                      <-- 共通パッケージ格納用
+        └── shared/                    <-- 共通ロジック
+            ├── node_modules/
+            ├── dist/                  <-- ビルド後に生成される (index.js, index.d.ts)
             ├── src/
-            │   └── index.ts
-            ├── package.json
-            └── tsconfig.json
+            │   └── index.ts           <-- 空または定数export用
+            ├── package.json           <-- buildスクリプト定義あり
+            └── tsconfig.json          <-- tsup/typescript設定用
 
 5-2. 重要ファイル設定確認
     各パッケージの連携設定が正しいか確認する．
