@@ -75,6 +75,70 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
     ・作成コマンド例:
         $ mkdir -p apps/client apps/server packages/shared
 
+2-4. Git除外設定 (Git Ignore Setup)
+    不要なファイル（依存ライブラリやビルド成果物）がGit管理下に置かれないよう，
+    除外設定を行う．
+
+    1. 設定ファイルの作成
+        プロジェクトルートディレクトリに `.gitignore` ファイルを作成する．
+        $ touch .gitignore
+
+    2. 除外ルールの記述
+        以下の内容をファイルに記述し保存する．
+        ・node_modules: 依存ライブラリフォルダ．
+        ・dist, build: ビルド生成物．
+        ・.env: 環境変数ファイル（セキュリティ保持のため）．
+
+        # Dependencies
+        node_modules/
+        .pnpm-store/
+
+        # Build Outputs
+        dist/
+        build/
+        out/
+
+        # Logs
+        *.log
+        npm-debug.log*
+        pnpm-debug.log*
+
+        # Environment Variables
+        .env
+        .env.local
+        .env.*.local
+
+        # Editor / OS
+        .vscode/*
+        !.vscode/extensions.json
+        !.vscode/settings.json
+        !.vscode/launch.json
+        .idea/
+        .DS_Store
+        Thumbs.db
+
+        # Testing
+        coverage/
+
+    3. 設定の反映確認
+        Gitのステータスを確認し，`node_modules/` 等が含まれていないことを確認する．
+        $ git status
+
+2-5. 初回コミット (Initial Commit)
+    環境構築の区切りとして，現在の状態をリポジトリに保存する．
+
+    1. ステータス確認
+        `.gitignore` が正しく適用されているか確認する．
+        $ git status
+        ※ `node_modules/` が表示されていないことを確認する．
+
+    2. ステージング
+        変更された全てのファイルをコミット対象に追加する．
+        $ git add .
+
+    3. コミット実行
+        構築内容を示すメッセージを付与してコミットする．
+        $ git commit -m "chore: Project initialization (Monorepo, pnpm, Vite)"
 
 3. パッケージ・ライブラリ導入 (Dependency Installation)
 ------------------------------------------------------------------------
@@ -92,7 +156,7 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
         ・main: "./dist/index.js", types: "./dist/index.d.ts" を指定する．
         ・scripts: "build": "tsup src/index.ts --format cjs,esm --dts" を追加する．
 
-    3. エントリーポイントの作成 (追加手順)
+    3. エントリーポイントの作成
         tsupがビルド対象とするファイルを作成する．
 
         $ mkdir src
@@ -100,6 +164,30 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
         
         ※ 現時点では空ファイルでよいが，将来的に constants.ts 等を export する記述を行う．
         (例: export * from './constants';)
+
+    4. TypeScript設定ファイルの作成 (tsconfig.json)
+        ビルドと型定義生成のための設定ファイルを作成する．
+        ・ファイル: packages/shared/tsconfig.json
+        ・内容:
+            {
+              "compilerOptions": {
+                "target": "ES2020",
+                "module": "ESNext",
+                "moduleResolution": "Bundler",
+                "lib": ["ES2020", "DOM", "DOM.Iterable"],
+                "declaration": true,
+                "declarationMap": true,
+                "sourceMap": true,
+                "outDir": "./dist",
+                "rootDir": "./src",
+                "strict": true,
+                "esModuleInterop": true,
+                "skipLibCheck": true,
+                "forceConsistentCasingInFileNames": true
+              },
+              "include": ["src/**/*"],
+              "exclude": ["node_modules", "dist"]
+            }
 
 3-2. フロントエンド (apps/client)
     Vite プロジェクトとして初期化を行う．
@@ -144,6 +232,30 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
             "scripts": {
               "dev": "tsx watch src/index.ts"
             }
+    
+    5. TypeScript設定ファイルの作成 (tsconfig.json)
+        開発時の実行環境とパス解決のための設定ファイルを作成する．
+        ・ファイル: apps/server/tsconfig.json
+        ・内容:
+            {
+              "compilerOptions": {
+                "target": "ES2022",
+                "module": "NodeNext",
+                "moduleResolution": "NodeNext",
+                "lib": ["ES2022"],
+                "strict": true,
+                "noEmit": true,
+                "esModuleInterop": true,
+                "skipLibCheck": true,
+                "forceConsistentCasingInFileNames": true,
+                "baseUrl": ".",
+                "paths": {
+                  "@repo/shared": ["../../packages/shared/src/index.ts"]
+                }
+              },
+              "include": ["src/**/*"],
+              "exclude": ["node_modules"]
+            }
 
 
 4. 開発ツール設定 (Dev Tools Setup)
@@ -172,10 +284,74 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
         ・VS Code 右下のアイコンからログイン状態を確認する．
 
 
-5. 動作確認 (Verification)
+5. 構成確認 (Configuration Check)
 ------------------------------------------------------------------------
 
-5-1. ビルド確認
+5-1. 最終ディレクトリ構成
+    構築完了時点で，以下のディレクトリおよびファイルが存在することを確認する．
+
+    SkillSemiWebGame/                  <-- プロジェクトルート
+    ├── .git/                          <-- git init で作成
+    ├── .gitignore                     <-- Git除外設定
+    ├── .npmrc                         <-- 依存解決設定
+    ├── package.json                   <-- ルート定義
+    ├── pnpm-lock.yaml                 <-- pnpm install で自動生成
+    ├── pnpm-workspace.yaml            <-- ワークスペース定義
+    ├── node_modules/                  <-- 依存ライブラリ
+    │
+    ├── apps/                          <-- アプリケーション格納用
+    │   ├── client/                    <-- フロントエンド (Vite + Preact)
+    │   │   ├── node_modules/
+    │   │   ├── src/
+    │   │   │   ├── main.tsx (または index.tsx)
+    │   │   │   └── ... (Viteテンプレートファイル群)
+    │   │   ├── index.html
+    │   │   ├── package.json           <-- pixi.js, @repo/shared 依存あり
+    │   │   ├── tsconfig.json
+    │   │   └── vite.config.ts
+    │   │
+    │   └── server/                    <-- バックエンド (Node.js)
+    │       ├── node_modules/
+    │       ├── src/
+    │       │   └── index.ts           <-- エントリーポイント
+    │       ├── package.json           <-- ws, @repo/shared 依存あり
+    │       └── tsconfig.json          <-- pnpm init 等で生成（または要作成）
+    │
+    └── packages/                      <-- 共通パッケージ格納用
+        └── shared/                    <-- 共通ロジック
+            ├── node_modules/
+            ├── dist/                  <-- ビルド後に生成される (index.js, index.d.ts)
+            ├── src/
+            │   └── index.ts           <-- 空または定数export用
+            ├── package.json           <-- buildスクリプト定義あり
+            └── tsconfig.json          <-- tsup/typescript設定用
+
+5-2. 重要ファイル設定確認
+    各パッケージの連携設定が正しいか確認する．
+
+    ■ root/pnpm-workspace.yaml
+        packages:
+          - 'apps/*'
+          - 'packages/*'
+
+    ■ packages/shared/package.json
+        ・name: "@repo/shared"
+        ・main: "./dist/index.js"
+        ・types: "./dist/index.d.ts"
+
+    ■ apps/client/package.json
+        ・dependencies:
+            "@repo/shared": "workspace:*"
+
+    ■ apps/server/package.json
+        ・dependencies:
+            "@repo/shared": "workspace:*"
+
+
+6. 動作確認 (Verification)
+------------------------------------------------------------------------
+
+6-1. ビルド確認
     ルートディレクトリから全体の依存関係をインストールし，ビルドを試行する．
     
     $ cd ../../
@@ -184,7 +360,7 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
 
     ※ shared のビルドが成功することを確認する．
 
-5-2. 開発サーバー起動
+6-2. 開発サーバー起動
     モノレポ構成のため，個別のディレクトリに移動せず，プロジェクトルートから
     --filter オプションを使用して各アプリを起動する．
     ※ ターミナルを2つ開き，両方を同時に起動した状態で開発を進めることを推奨．
