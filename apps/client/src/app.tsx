@@ -1,43 +1,58 @@
-import { useState } from 'preact/hooks'
-import preactLogo from './assets/preact.svg'
-import viteLogo from '/vite.svg'
-import './app.css'
+import { useEffect, useRef } from 'preact/hooks';
+import { Application } from 'pixi.js';
+
+// 👇 ここを変更しました！
+// 元: import { Joystick } from './Joystick';
+import { Joystick } from './input/Joystick'; 
+
+
+import { Player } from './entities/Player';
+
+import './app.css';
 
 export function App() {
-  const [count, setCount] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} class="logo" alt="Vite logo" />
-        </a>
-        <a href="https://preactjs.com" target="_blank">
-          <img src={preactLogo} class="logo preact" alt="Preact logo" />
-        </a>
-      </div>
-      <h1>Vite + Preact</h1>
-      <div class="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/app.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p>
-        Check out{' '}
-        <a
-          href="https://preactjs.com/guide/v10/getting-started#create-a-vite-powered-preact-app"
-          target="_blank"
-        >
-          create-preact
-        </a>
-        , the official Preact + Vite starter
-      </p>
-      <p class="read-the-docs">
-        Click on the Vite and Preact logos to learn more
-      </p>
-    </>
-  )
+  useEffect(() => {
+    // 1. PixiJSアプリケーションの作成
+    const app = new Application();
+
+    const initGame = async () => {
+      await app.init({
+        resizeTo: window,
+        backgroundColor: 0x1099bb,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
+      });
+
+      if (containerRef.current) {
+        containerRef.current.appendChild(app.canvas);
+      }
+
+      // 2. プレイヤーの作成
+      const player = new Player(0xff0000);
+      player.x = app.screen.width / 2;
+      player.y = app.screen.height / 2;
+      app.stage.addChild(player);
+
+      // 3. ジョイスティックの作成
+      const joystick = new Joystick();
+      app.stage.addChild(joystick);
+
+      // 4. ゲームループ
+      app.ticker.add((ticker) => {
+        if (joystick.input.x !== 0 || joystick.input.y !== 0) {
+          player.move(joystick.input.x, joystick.input.y, ticker.deltaTime);
+        }
+      });
+    };
+
+    initGame();
+
+    return () => {
+      app.destroy(true, { children: true });
+    };
+  }, []);
+
+  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
 }
