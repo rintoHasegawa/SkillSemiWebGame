@@ -1,5 +1,10 @@
-import { render } from 'preact'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './app.tsx' // 小文字のままでOK
 import './index.css'
-import { App } from './app.tsx'
 
-render(<App />, document.getElementById('app')!)
+ReactDOM.createRoot(document.getElementById('app')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
