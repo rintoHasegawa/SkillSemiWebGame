@@ -7,10 +7,6 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
     "skipLibCheck": true,
-    "paths": {
-      "react": ["./node_modules/preact/compat/"],
-      "react-dom": ["./node_modules/preact/compat/"]
-    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -18,8 +14,13 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+    
+    // ↓ ここが重要：React用に設定
     "jsx": "react-jsx",
-    "jsxImportSource": "preact",
+    
+    // ⚠️ 削除したもの:
+    // - "paths": { ... } (Preactへの誘導を削除)
+    // - "jsxImportSource": "preact" (Preactのルールを削除)
 
     /* Linting */
     "strict": true,

@@ -10,11 +10,16 @@
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.3",
     "pixi.js": "^8.16.0",
-    "preact": "^10.27.2"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-joystick-component": "^6.2.1",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
-    "@preact/preset-vite": "^2.10.2",
     "@types/node": "^24.10.1",
     "typescript": "~5.9.3",
     "vite": "^7.2.4"
