@@ -33,7 +33,14 @@ export class SocketManager {
         
         // 全員に位置情報を配信
         // (人数が増えたらここを最適化しますが、まずはこれでOK)
-        this.io.emit("update_player", { id: socket.id, x: data.x, y: data.y });
+        const updatedPlayer = this.gameManager.getPlayer(socket.id);
+        if (updatedPlayer) {
+            this.io.emit("update_player", { 
+                id: socket.id, 
+                x: updatedPlayer.x, 
+                y: updatedPlayer.y 
+            });
+        }
       });
 
       // 切断した時
