@@ -77,7 +77,7 @@ function App() {
 
   // ジョイスティックを動かしたとき
   const handleMove = (event: any) => {
-    if (socketRef.current) {
+    if (socketRef.current && typeof event.x === "number" && typeof event.y === "number") {
       socketRef.current.emit("move", { x: event.x, y: event.y });
     }
   };
@@ -108,8 +108,9 @@ function App() {
             key={player.id}
             style={{
               position: "absolute",
-              left: `${player.x}px`,
-              top: `${player.y}px`,
+              left: 0,
+              top: 0,
+              transform: `translate(${player.x}px, ${player.y}px)`,
               width: "20px",
               height: "20px",
               background: player.color || "red", // サーバーが決めた色
@@ -117,10 +118,11 @@ function App() {
               // 自分だけ枠線を黄色にする
               border: player.id === myId ? "2px solid yellow" : "none",
               zIndex: player.id === myId ? 10 : 1, // 自分を一番手前に
-              marginLeft: "-25px", // 中心に配置
-              marginTop: "-25px",
+              marginLeft: "-10px", // 中心に配置
+              marginTop: "-10px",
               
-              transition: "transform 0.05s linear" // 動きを滑らかにする
+              transition: "transform 0.1s linear",
+              willChange: "transform" // 動きを滑らかにする
             }}
           />
         ))}

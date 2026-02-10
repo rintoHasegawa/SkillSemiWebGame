@@ -12,6 +12,8 @@ export class GameManager {
   // プレイヤー追加
   addPlayer(id: string): Player {
     const player = new Player(id);
+    player.x = 150; // 初期位置
+    player.y = 150;
     this.players.set(id, player);
     return player;
   }
@@ -20,16 +22,36 @@ export class GameManager {
   removePlayer(id: string) {
     this.players.delete(id);
   }
-
+  // プレイヤー情報を取得
+  getPlayer(id: string) {
+    return this.players.get(id);
+  }
   // プレイヤー移動
   movePlayer(id: string, x: number, y: number) {
     const player = this.players.get(id);
     if (player) {
-      const spped = 3 // 移動速度
-      player.x += x * spped;
-      player.y += y * spped;
       
-      console.log(`ID:${id.slice(0, 4)} 📍 (${Math.floor(player.x)}, ${Math.floor(player.y)})`); 
+      // ▼▼▼ デバッグ用ログ（何が送られてきてるか犯人探し） ▼▼▼
+      // これでターミナルに "Move: x=null" とか出たら通信の問題です
+      console.log(`Move Request -> ID:${id.slice(0,4)} x:${x} y:${y}`);
+
+      
+      if (typeof x !== "number" || typeof y !== "number" || isNaN(x) || isNaN(y)) {
+        console.log("⚠️ 無効なデータなので無視しました");
+        return;
+      }
+      
+
+      const speed = 10.0; // スピード
+
+      player.x += x * speed;
+      player.y -= y * speed;
+
+      // 画面端の制限
+      if (player.x < 0) player.x = 0;
+      if (player.x > 300) player.x = 300;
+      if (player.y < 0) player.y = 0;
+      if (player.y > 300) player.y = 300;
     }
   }
 
