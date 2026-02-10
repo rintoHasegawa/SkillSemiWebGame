@@ -1,0 +1,42 @@
+{
+  "name": "Pixel Paint War Dev",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  // コンテナ作成時に実行する機能 (Features)
+  // pnpmがイメージに含まれていない場合の保険として追加推奨ですが、
+  // typescript-node:20 イメージには通常含まれています。念のため明示。
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20",
+      "pnpm": "latest"
+    }
+  },
+
+  // VS Code 拡張機能の自動インストール
+  // 環境定義書の推奨リストを反映
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "EditorConfig.EditorConfig",
+        "ms-vscode.hexeditor",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      }
+    }
+  },
+
+  // コンテナ起動後の初期化コマンド
+  // 1. 依存関係のインストール (frozen-lockfileなしで柔軟に)
+  // 2. 共通パッケージ(shared)のビルド
+  "postCreateCommand": "pnpm install && pnpm --filter @repo/shared build",
+
+  // コンテナ内のユーザー
+  "remoteUser": "node"
+}

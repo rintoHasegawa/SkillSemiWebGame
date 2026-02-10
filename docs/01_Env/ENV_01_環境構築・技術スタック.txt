@@ -32,6 +32,9 @@ Pixel Paint War - 開発環境・技術スタック定義書
 
 2-1. 構成一覧
     root/
+    ├── .devcontainer/        # Dev Containers設定
+    ├── docker-compose.yml    # 開発用コンテナ構成定義
+    ├── Dockerfile            # 本番サーバー・デプロイ用定義 (Multi-stage)
     ├── package.json          # pnpm workspace 定義
     ├── pnpm-workspace.yaml   # ワークスペース設定
     ├── .npmrc                # 依存関係解決の設定
@@ -83,8 +86,8 @@ Pixel Paint War - 開発環境・技術スタック定義書
     ・Package Manager: pnpm
     ・Build Tool: tsup (高速で軽量なTypeScriptバンドラ)
     ・Serialization: Custom Binary (Standard DataView API)
-        - 採用理由: ライブラリ依存をなくし、仕様書要件（30KB/s以下）を満たす最適化を行うため。
-        - 用途: 座標データ、入力情報の圧縮通信。
+        - 採用理由: ライブラリ依存をなくし，仕様書要件（30KB/s以下）を満たす最適化を行うため．
+        - 用途: 座標データ，入力情報の圧縮通信．
 
 3-2. フロントエンド (Client)
     ・Build Tool: Vite
@@ -109,28 +112,59 @@ Pixel Paint War - 開発環境・技術スタック定義書
     ・Test: Vitest (共通ロジックの単体テスト用)
     ・AI Assistant: GitHub Copilot Pro, Gemini Pro
 
+3-5. インフラ・コンテナ技術 (Infrastructure)
+    ・Containerization: Docker
+        - 採用理由: 開発環境(Dev Containers)と本番環境の差異を排除するため．
+    ・Orchestration: 
+        - Dev: Docker Compose (ボリュームマウントによるホットリロード)
+        - Prod: Docker Compose (再起動ポリシーとポート開放のみの最小構成)
+    ・Deployment Image: Multi-stage Build (Node.js Slim)
+        - ビルド戦略: 
+            1. Builderステージ: 全依存をインストールし，TypeScript (Shared -> Server) をコンパイル．
+            2. Prune: `pnpm prune --prod` により開発依存を削除．
+            3. Copy: pnpmの仕様(シンボリックリンク)に対応するため，`node_modules` を明示的にコピーする．
+            4. Runnerステージ: 必要な `dist` と `node_modules` のみをコピーし，イメージサイズを最小化する．
+
 
 4. 開発マシンの前提条件 (Prerequisites)
 ------------------------------------------------------------------------
-以下のツールがインストールされていること．
+本プロジェクトは Docker (Dev Containers) による開発環境統一を推奨する．
+これにより、ホストOS（Windows/Mac）の環境を汚さずに構築が可能となる。
 
-    1. Node.js (v20.x LTS)
-       $ node -v
+4-1. 【必須】ホストマシンにインストールするもの
+    以下のツールのみ，開発者のPC（ホストOS）にインストールが必要である．
 
-    2. pnpm (Corepack enabled or standalone install)
-       $ pnpm -v
+    1. Docker実行環境
+       - Docker Desktop (最新版)
+       - WSL2 (Windowsの場合必須)
 
-    3. VS Code (推奨エディタ)
-       以下の拡張機能を導入推奨:
+    2. エディタ
+       - VS Code (Visual Studio Code)
+
+    3. VS Code 拡張機能
+       - Dev Containers (ID: ms-vscode-remote.remote-containers)
+       ※ これが「必須」である．これさえあれば，以下の開発ツール群は自動セットアップされる．
+
+    4. アカウント・AI
+       - GitHub Copilot Pro (Student)
+       - Gemini Pro (学校提供ライセンス)
+
+4-2. 【自動】コンテナ内に構築されるもの (インストール不要)
+    以下のツールは `devcontainer.json` に定義済みであり，コンテナ起動時に
+    自動的にインストール・設定されるため，手動導入は不要である．
+
+    1. Runtime & Package Manager
+       - Node.js (v20.x LTS)
+       - pnpm (Latest)
+
+    2. VS Code 拡張機能 (コンテナ内)
        - ESLint
-       - Prettier - Code formatter
-       - EditorConfig for VS Code
-       - Hex Editor (バイナリパケットのデバッグ用・Microsoft公式)
-       - GitHub Copilot (要ログイン確認)
-
-    4. AI・アカウント環境
-       - 学校提供の Gemini Pro へのアクセス権限確認
-       - GitHub Copilot Pro (Student) の有効化確認
+       - Prettier
+       - EditorConfig
+       - Hex Editor
+       
+    ※ ホスト側で `node -v` や `pnpm -v` を実行する必要はなく，
+       全て VS Code の「ターミナル (コンテナ接続済)」で行う．
 
 
 5. 実装上の重要ルール (Implementation Rules)

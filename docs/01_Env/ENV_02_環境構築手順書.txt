@@ -198,7 +198,7 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
     1. プロジェクト作成
         $ cd ../../apps/client
         $ pnpm create vite . --template preact-ts
-        ※ 実行中に表示される選択肢には以下のように回答すること：
+        ※ 実行中に表示される選択肢には以下のように回答すること: 
         ? Use rolldown-vite (Experimental)? » No
         ? Install with pnpm and start now? » No
 
@@ -261,44 +261,76 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
             }
 
 
-4. 開発ツール設定 (Dev Tools Setup)
+4. Docker環境での開発開始 (推奨手順)
+------------------------------------------------------------------------
+本プロジェクトは VS Code の Dev Containers 機能を使用する．
+これにより Node.js, pnpm, ESLint 等の環境が自動構築される．
+
+4-1. プロジェクトを開く
+    1. VS Codeを起動し，「ファイル > フォルダを開く」からプロジェクトルートを選択する．
+
+4-2. コンテナでの再起動 (Reopen in Container)
+    以下のいずれかの方法で，開発環境をコンテナ内に移行する．
+    
+    【方法A: ステータスバーから】
+    1. ウィンドウ左下の緑色(または青色)の「><」アイコンをクリックする．
+    2. 表示されるメニューから「Reopen in Container」を選択する．
+
+    【方法B: コマンドパレットから】
+    1. [F1] または [Ctrl+Shift+P] を押下する．
+    2. "Reopen" と入力し，「Dev Containers: Reopen in Container」を選択する．
+
+4-3. 初回ビルドの待機
+    1. 初回起動時は Dockerイメージのビルドと npmパッケージのインストールが行われる．
+       (数分〜十数分かかる場合がある)
+    2. 右下に "Starting Dev Container" 等の通知が表示されている間は待機する．
+
+4-4. 起動確認
+    1. 左下のアイコンが「Dev Container: Pixel Paint War Dev」と表示されていることを確認する．
+    2. VS Codeのターミナルを開き (`Ctrl + @`)，パスを確認する．
+       
+       成功例: node@...:/workspace$ 
+       (Windowsのパス C:\Users... ではなく Linux形式になっていれば成功)
+
+    3. 動作確認コマンドを実行する．
+       $ pnpm --filter client dev
+       
+       ブラウザで http://localhost:5173 にアクセスし，画面が表示されれば環境構築完了である．
+
+
+5. 開発ツールの確認 (Tools Verification)
+------------------------------------------------------------------------
+Dockerコンテナ起動完了後、定義済みのツールが正しく自動導入されているか確認する．
+※ 手動でのインストールは不要である．
+
+5-1. VS Code 拡張機能
+    拡張機能サイドバーを開き、"Dev Container: Pixel Paint War Dev" セクションに
+    以下がインストール済みであることを確認する．
+    
+    ・ESLint
+    ・Prettier - Code formatter
+    ・EditorConfig for VS Code
+    ・Hex Editor
+    ・GitHub Copilot
+
+5-2. AI アシスタント設定
+    GitHub Copilot Pro
+       - VS Code 右下のアイコンから、GitHubアカウントへのログイン状態を確認する．
+
+
+6. 構成確認 (Configuration Check)
 ------------------------------------------------------------------------
 
-4-1. VS Code 拡張機能
-    推奨エディタである VS Code に以下の拡張機能をインストールする．
-
-    ■ 必須拡張機能
-        ・ESLint
-        ・Prettier - Code formatter
-        ・EditorConfig for VS Code
-
-    ■ 推奨拡張機能
-        ・Hex Editor (バイナリパケットのデバッグ用・Microsoft公式)
-        ・GitHub Copilot
-
-4-2. AI アシスタント設定
-    開発効率化のため，以下のAIツールのアカウント設定を確認する．
-
-    1. Gemini Pro
-        ・学校提供ライセンスでのアクセス権限を確認する．
-
-    2. GitHub Copilot Pro
-        ・Student Developer Pack が有効化されているか確認する．
-        ・VS Code 右下のアイコンからログイン状態を確認する．
-
-
-5. 構成確認 (Configuration Check)
-------------------------------------------------------------------------
-
-5-1. 最終ディレクトリ構成
+6-1. 最終ディレクトリ構成
     構築完了時点で，以下のディレクトリおよびファイルが存在することを確認する．
 
     SkillSemiWebGame/                  <-- プロジェクトルート
+    ├── .devcontainer/                 <-- 【重要】Docker設定
+    │   └── devcontainer.json
     ├── .git/                          <-- git init で作成
     ├── .gitignore                     <-- Git除外設定
-    ├── .npmrc                         <-- 依存解決設定
+    ├── docker-compose.yml             <-- Docker構成
     ├── package.json                   <-- ルート定義
-    ├── pnpm-lock.yaml                 <-- pnpm install で自動生成
     ├── pnpm-workspace.yaml            <-- ワークスペース定義
     ├── node_modules/                  <-- 依存ライブラリ
     │
@@ -329,7 +361,7 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
             ├── package.json           <-- buildスクリプト定義あり
             └── tsconfig.json          <-- tsup/typescript設定用
 
-5-2. 重要ファイル設定確認
+6-2. 重要ファイル設定確認
     各パッケージの連携設定が正しいか確認する．
 
     ■ root/pnpm-workspace.yaml
@@ -351,19 +383,16 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
             "@repo/shared": "workspace:*"
 
 
-6. 動作確認 (Verification)
+7. 動作確認 (Verification)
 ------------------------------------------------------------------------
 
-6-1. ビルド確認
-    ルートディレクトリから全体の依存関係をインストールし，ビルドを試行する．
-    
-    $ cd ../../
-    $ pnpm install
-    $ pnpm --filter @repo/shared build
+7-1. ビルド確認
+    ※ 注意: 以下のコマンドは全て「Dev Container内のターミナル」で実行すること．
 
+    $ pnpm --filter @repo/shared build
     ※ shared のビルドが成功することを確認する．
 
-6-2. 開発サーバー起動
+7-2. 開発サーバー起動
     モノレポ構成のため，個別のディレクトリに移動せず，プロジェクトルートから
     --filter オプションを使用して各アプリを起動する．
     ※ ターミナルを2つ開き，両方を同時に起動した状態で開発を進めることを推奨．
@@ -399,3 +428,41 @@ Pixel Paint War - 環境構築ガイド (Environment Setup Guide)
         「Ctrl + C」を押下する．
         ・停止後はブラウザでURLにアクセスしても接続不可となるが，再度起動
         コマンドを実行すればいつでも再開可能である．
+
+
+8. 本番デプロイ手順 (Production Deployment)
+------------------------------------------------------------------------
+本番環境（サーバー）へのデプロイは，Dockerを使用して最適化されたイメージを作成して行う．
+
+8-1.
+構成ファイルの準備
+    プロジェクトルートに以下のファイルが存在することを確認する．
+    1. Dockerfile (Multi-stage build構成)
+       - `pnpm prune` 後の `node_modules` コピー処理が含まれていること．
+    2. docker-compose.prod.yml (本番起動用)
+       - ポート設定: "3001:3000" (ホスト側3001番 -> コンテナ側3000番)
+
+8-2.
+ローカルでの本番稼働テスト
+    開発環境(Dev Container)と同時に起動する場合，ポート衝突を避けるために
+    ホスト側のポートをずらして起動する．
+
+    1. ビルドと起動 (WSL/ホスト側のターミナルで実行)
+        $ docker compose -f docker-compose.prod.yml up -d --build
+
+    2. 稼働確認
+        $ docker compose -f docker-compose.prod.yml ps
+        ・Stateが "Up" であり，"Restarting" を繰り返していないことを確認する．
+
+    3. ログ確認
+        $ docker compose -f docker-compose.prod.yml logs -f
+        ・"Pixel Paint War Server started on port 3000" と表示されれば成功．
+
+    4. ブラウザ接続確認
+        ・URL: http://localhost:3001
+        ・表示: "Upgrade Required" と表示されれば，WebSocketサーバーとして正常に稼働している．
+
+8-3.
+停止と削除
+    テストが終了したらリソースを解放する．
+    $ docker compose -f docker-compose.prod.yml down

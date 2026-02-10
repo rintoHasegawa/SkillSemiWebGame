@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: pixel-paint-war-dev
+    # 開発用イメージ: Node.js v20 (定義書準拠)
+    image: mcr.microsoft.com/devcontainers/typescript-node:20
+    
+    # 永続化とボリュームマウント
+    volumes:
+      # カレントディレクトリをコンテナ内の /workspace にマウント
+      - .:/workspace:cached
+    
+    # コマンドの上書き (コンテナを常時起動させる)
+    command: sleep infinity
+
+    # ネットワーク設定
+    # Client(5173) と Server(3000) のポートを開放
+    ports:
+      - "5173:5173"
+      - "3000:3000"
+
+    # 環境変数
+    environment:
+      - NODE_ENV=development
+      # pnpmのストアをローカルと分離して高速化したい場合は設定推奨（今回はシンプルにします）
+
+    # ユーザー権限 (Nodeイメージ推奨のユーザー)
+    user: node
