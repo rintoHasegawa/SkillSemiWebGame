@@ -25,8 +25,11 @@ export class GameManager {
   movePlayer(id: string, x: number, y: number) {
     const player = this.players.get(id);
     if (player) {
-      player.x = x;
-      player.y = y;
+      const spped = 3 // 移動速度
+      player.x += x * spped;
+      player.y += y * spped;
+      
+      console.log(`ID:${id.slice(0, 4)} 📍 (${Math.floor(player.x)}, ${Math.floor(player.y)})`); 
     }
   }
 

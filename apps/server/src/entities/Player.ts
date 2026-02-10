@@ -7,8 +7,8 @@ export class Player {
 
   constructor(id: string) {
     this.id = id;
-    this.x = 0;
-    this.y = 0;
+    this.x = Math.floor(Math.random() * 100); // 初期位置をランダムに
+    this.y = Math.floor(Math.random() * 100);
     // ランダムな色をつけるとおしゃれです
     this.color = '#' + Math.floor(Math.random()*16777215).toString(16);
   }
