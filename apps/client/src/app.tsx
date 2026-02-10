@@ -108,8 +108,8 @@ function App() {
             key={player.id}
             style={{
               position: "absolute",
-              top: "50%",
-              left: "50%",
+              left: `${player.x}px`,
+              top: `${player.y}px`,
               width: "20px",
               height: "20px",
               background: player.color || "red", // サーバーが決めた色
@@ -117,7 +117,9 @@ function App() {
               // 自分だけ枠線を黄色にする
               border: player.id === myId ? "2px solid yellow" : "none",
               zIndex: player.id === myId ? 10 : 1, // 自分を一番手前に
-              transform: `translate(${player.x * 3}px, ${-player.y * 3}px)`,
+              marginLeft: "-25px", // 中心に配置
+              marginTop: "-25px",
+              
               transition: "transform 0.05s linear" // 動きを滑らかにする
             }}
           />
