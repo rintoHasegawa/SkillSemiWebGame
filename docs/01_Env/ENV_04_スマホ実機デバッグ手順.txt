@@ -1,0 +1,122 @@
+========================================================================
+スマホ実機デバッグ手順 (Smartphone Debugging Guide)
+========================================================================
+
+
+1. 概要 (Overview)
+------------------------------------------------------------------------
+
+1-0. 目的
+    本ドキュメントは，開発中のWebゲーム「Pixel Paint War」をスマホ実機で動作
+    確認するための手順書である．
+    学校や組織のネットワーク（Fortinet等）による制限や，WSL2特有のネットワー
+    クの壁を回避するため，トンネリングツール「ngrok」を使用した外部公開手順
+    を採用する．
+
+1-1. 前提条件
+    ・WSL2 (Ubuntu等) 上で開発環境が構築済みであること．
+    ・ngrok の公式サイトでアカウント作成済みであること．
+    ・Authtoken (認証トークン) が取得済みであること．
+
+
+2. ngrokのインストール (Installation)
+------------------------------------------------------------------------
+Linux (WSL2) 環境へのインストール手順を記述する．
+※ apt パッケージマネージャ経由ではエラーが発生しやすいため，バイナリ直接
+インストール方式を採用する．
+
+2-1. ダウンロードと配置
+    1. 圧縮ファイルのダウンロード
+        ターミナルで以下のコマンドを実行し，Linux版バイナリを取得する．
+        $ wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+
+    2. 解凍とインストール
+        ダウンロードしたファイルを解凍し，実行パスの通ったディレクトリに移動する．
+        $ sudo tar xvzf ngrok-v3-stable-linux-amd64.tgz -C /usr/local/bin
+
+    3. 動作確認
+        バージョン情報が表示されるか確認する．
+        $ ngrok --version
+        ※ "ngrok version 3.x.x" 等と表示されれば成功である．
+
+2-2. アカウント認証 (Authentication)
+    ngrok のダッシュボード (https://dashboard.ngrok.com/get-started/your-authtoken)
+    からトークンを確認し，以下のコマンドで設定する．
+
+    ■ トークンの登録
+        $ ngrok config add-authtoken [あなたのAuthtoken]
+        ※ "[あなたのAuthtoken]" の部分は実際の文字列に置き換える．
+
+
+3. デバッグ実行手順 (Execution Steps)
+------------------------------------------------------------------------
+
+3-1. Client設定の修正 (Update Configuration)
+    開発サーバーが外部 (ngrok) からの接続を受け付けるよう，設定を変更する．
+
+    ■ package.json の編集
+        `apps/client/package.json` を開き，`scripts` ブロックの `dev` コマンドに `--host` オプションを追加する．
+
+        [修正前]
+        "dev": "vite"
+
+        [修正後]
+        "dev": "vite --host"
+
+3-2. 開発サーバーの起動 (Launch Dev Server)
+    まず，ローカル環境でアプリケーションを起動する．
+
+    ■ Clientアプリの起動
+        プロジェクトルートで以下のコマンドを実行する．
+        $ pnpm --filter client dev
+        ※ ターミナルに `Network: http://x.x.x.x:5173/` と表示されれば設定成功である．
+
+3-3. ngrokによる公開 (Expose via ngrok)
+    新しいターミナルウィンドウを開き，以下の手順でトンネルを作成する．
+
+    1. ngrokの起動
+        Vite の Host ヘッダーチェックを回避するため，オプションを付与して実行する．
+        $ ngrok http 5173 --host-header="localhost"
+
+    2. 公開URLの確認
+        起動後に表示されるステータス画面から，"Forwarding" の行を確認する．
+        
+        Session Status                online
+        Account                       User Name (Plan: Free)
+        Forwarding                    https://xxxx-xxxx.ngrok-free.app -> http://localhost:5173
+        
+        上記の "https://xxxx-xxxx.ngrok-free.app" が公開URLとなる．
+
+3-4. スマホからのアクセス (Access from Smartphone)
+    1. URLの共有
+        発行された URL をスマホに送信する（QRコード作成ツールやチャット等を使用）．
+
+    2. ブラウザでの確認
+        スマホのブラウザ（Chrome，Safari等）で URL にアクセスする．
+        タイトル画面が表示されれば接続成功である．
+
+
+4. 注意事項とトラブルシューティング (Notes & Troubleshooting)
+------------------------------------------------------------------------
+
+4-1. Freeプランの制限
+    ・同時接続数: Freeプランでは同時に1つのポートしか公開できない．
+    ・Client/Server構成の注意: 
+        本手順ではフロントエンド (Port 5173) のみ公開している．
+        バックエンド (Port 3000) への WebSocket 通信が必要な場合，ゲーム開始時
+        に接続エラーとなる可能性がある．
+        - 対策: UIレイアウトや描画負荷の確認を主目的として使用する．
+
+4-2. エラー対応
+    ■ "ERR_NGROK_3200" (Tunnel already open)
+        ・既に別のターミナルで ngrok が起動している場合に発生する．
+        - 対策: 起動中の ngrok を終了 (Ctrl + C) してから再実行する．
+
+    ■ "Invalid Host Header" (画面が真っ白になる)
+        ・Vite が不正なドメインからのアクセスを拒否している．
+        - 対策: 起動コマンドに `--host-header="localhost"` が含まれているか再確認する．
+
+    ■ "ERR_CERT_AUTHORITY_INVALID" (Fortinet等の警告)
+        ・ngrok を使用せずローカルIPで接続しようとした場合に，組織内ネットワーク
+          のセキュリティ機器にブロックされる現象である．
+        - 対策: 必ず本手順の ngrok 経由 (https) で接続する．
