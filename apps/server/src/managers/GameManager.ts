@@ -1,8 +1,6 @@
-// src/managers/GameManager.ts
 import { Player } from "../entities/Player.js";
 
 export class GameManager {
-  // IDをキーにしてプレイヤーを保存する
   private players: Map<string, Player>;
 
   constructor() {
@@ -12,8 +10,11 @@ export class GameManager {
   // プレイヤー追加
   addPlayer(id: string): Player {
     const player = new Player(id);
-    player.x = 150; // 初期位置
-    player.y = 150;
+    
+    // ★初期位置をマップの中央（1000, 1000）に設定
+    player.x = 1000;
+    player.y = 1000;
+    
     this.players.set(id, player);
     return player;
   }
@@ -22,42 +23,53 @@ export class GameManager {
   removePlayer(id: string) {
     this.players.delete(id);
   }
-  // プレイヤー情報を取得
+
+  // プレイヤー取得
   getPlayer(id: string) {
     return this.players.get(id);
   }
+
   // プレイヤー移動
   movePlayer(id: string, x: number, y: number) {
     const player = this.players.get(id);
     if (player) {
       
-      // ▼▼▼ デバッグ用ログ（何が送られてきてるか犯人探し） ▼▼▼
-      // これでターミナルに "Move: x=null" とか出たら通信の問題です
-      console.log(`Move Request -> ID:${id.slice(0,4)} x:${x} y:${y}`);
+      // ▼▼▼ リクエスト通り、ログを残しました ▼▼▼
+      // これでサーバーのターミナルを見れば、座標が届いているかわかります
+      console.log(`Move Request -> ID:${id.slice(0,4)} x:${Math.round(x)} y:${Math.round(y)}`);
 
-      
+      // データチェック
       if (typeof x !== "number" || typeof y !== "number" || isNaN(x) || isNaN(y)) {
         console.log("⚠️ 無効なデータなので無視しました");
         return;
       }
+
+      // ★重要修正★
+      // クライアント側で計算済みの座標(x, y)が送られてくるので、
+      // ここで speed を掛けたり、+= で足したりしてはいけません。
+      // そのまま「代入」するのが正解です。
       
+      let nextX = x;
+      let nextY = y;
 
-      const speed = 10.0; // スピード
+      const MAP_SIZE = 2000;
+      const PLAYER_SIZE = 20;
 
-      player.x += x * speed;
-      player.y -= y * speed;
+      // 画面端の制限（クランプ処理）
+      // 0 〜 2000 の範囲からはみ出さないようにする
+      if (nextX < 0) nextX = 0;
+      if (nextX > MAP_SIZE - PLAYER_SIZE) nextX = MAP_SIZE - PLAYER_SIZE;
+      if (nextY < 0) nextY = 0;
+      if (nextY > MAP_SIZE - PLAYER_SIZE) nextY = MAP_SIZE - PLAYER_SIZE;
 
-      // 画面端の制限
-      if (player.x < 0) player.x = 0;
-      if (player.x > 300) player.x = 300;
-      if (player.y < 0) player.y = 0;
-      if (player.y > 300) player.y = 300;
+      // 位置を更新
+      player.x = nextX;
+      player.y = nextY;
     }
   }
 
-  // 全プレイヤーのリストを返す（通信で送るため）
+  // 全プレイヤー情報を返す
   getAllPlayers() {
-    // Mapを配列({id, x, y, color}[])に変換
     return Array.from(this.players.values());
   }
 }
