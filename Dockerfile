@@ -27,8 +27,8 @@ RUN pnpm --filter @repo/shared build
 RUN pnpm --filter server build
 
 # 5. 開発用ライブラリを削除（本番に必要なものだけ残す）
-# ENV CI=true
-# RUN pnpm prune --prod
+ENV CI=true
+RUN pnpm prune --prod
 
 # ================================================================
 # Stage 2: Runner (実行専用の軽量環境)
