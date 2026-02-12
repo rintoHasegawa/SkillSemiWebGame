@@ -72,14 +72,18 @@ function App() {
       setPlayers(prev => ({ ...prev, [p.id]: p }));
     });
 
-    // 3. 誰かが動いた（★ここをサーバーに合わせて修正しました！）
+    // 3. 誰かが動いた
     socket.on("update_player", (d: { id: string; x: number; y: number }) => {
-      // ログを出して確認できるようにする
+      // ログを残して、通信が届いているか確認できるようにします
       console.log("Receive:", d);
+
+      // 自分自身のデータであれば、ログだけ出してここで終了（早期リターン）
+      // これにより、手元のスムーズな動きがサーバーの古いデータで上書きされなくなります
+      if (d.id === socket.id) return; 
 
       setPlayers(prev => {
         const target = prev[d.id];
-        // 知らないIDなら無視（または追加処理を入れてもOK）
+        // プレイヤーが存在しない場合は何もしない
         if (!target) return prev; 
         
         return { 
@@ -190,7 +194,7 @@ function App() {
               boxShadow: p.id === myId ? "0 0 15px rgba(255,255,0,0.5)" : "none",
               zIndex: p.id === myId ? 100 : 1,
               marginTop: "-10px", marginLeft: "-10px",
-              transition: "transform 0.1s linear",
+              transition: p.id === myId ? "none" : "transform 0.1s linear",
             }}
           >
              <div style={{ 
