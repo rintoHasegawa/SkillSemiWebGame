@@ -1,16 +1,20 @@
-version: '3.8'
+version: "3.8"
 
 services:
   app:
     container_name: pixel-paint-war-dev
     # 開発用イメージ: Node.js v20 (定義書準拠)
     image: mcr.microsoft.com/devcontainers/typescript-node:20
-    
+
     # 永続化とボリュームマウント
     volumes:
       # カレントディレクトリをコンテナ内の /workspace にマウント
       - .:/workspace:cached
-    
+
+      # 【重要】ここを追加してください
+      # コンテナ内の node_modules をホスト側と切り離して高速化・安定化させる設定
+      - node_modules:/workspace/node_modules
+
     # コマンドの上書き (コンテナを常時起動させる)
     command: sleep infinity
 
@@ -27,3 +31,6 @@ services:
 
     # ユーザー権限 (Nodeイメージ推奨のユーザー)
     user: node
+
+volumes:
+  node_modules:

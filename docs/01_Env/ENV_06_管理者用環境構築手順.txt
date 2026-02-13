@@ -220,33 +220,60 @@ Pixel Paint War - 管理者用環境構築手順 (Admin Setup Guide)
     プロジェクトルートに `docker-compose.yml` を作成する．
     ※ ローカルのソースコードをコンテナにマウントする設定．
 
+    version: "3.8"
+
     services:
       app:
-        build: .
+        container_name: pixel-paint-war-dev
+        # 開発用イメージ: Node.js v20 (定義書準拠)
+        image: mcr.microsoft.com/devcontainers/typescript-node:20
+
+        # 永続化とボリュームマウント
         volumes:
-          - .:/workspace
+          # カレントディレクトリをコンテナ内の /workspace にマウント
+          - .:/workspace:cached
+          # 【重要】node_modules をホスト側と切り離して高速化・安定化させる設定
           - node_modules:/workspace/node_modules
+
+        # コマンドの上書き (コンテナを常時起動させる)
+        command: sleep infinity
+
+        # ネットワーク設定
+        # Client(5173) と Server(3000) のポートを開放
         ports:
           - "5173:5173"
           - "3000:3000"
-        command: sleep infinity
-        tty: true
+
+        # 環境変数
+        environment:
+          - NODE_ENV=development
+
+        # ユーザー権限 (Nodeイメージ推奨のユーザー)
+        user: node
 
     volumes:
       node_modules:
 
 5-3. .devcontainer 設定の作成
     1. ディレクトリ作成
-       $ mkdir .devcontainer
+        $ mkdir .devcontainer
     
     2. .devcontainer/devcontainer.json 作成
-       VS Codeがコンテナを認識するための設定．
+        VS Codeがコンテナを認識するための設定．
 
     {
       "name": "Pixel Paint War Dev",
       "dockerComposeFile": "../docker-compose.yml",
       "service": "app",
       "workspaceFolder": "/workspace",
+
+      "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+          "version": "20",
+          "pnpm": "latest"
+        }
+      },
+
       "customizations": {
         "vscode": {
           "extensions": [
@@ -256,9 +283,22 @@ Pixel Paint War - 管理者用環境構築手順 (Admin Setup Guide)
             "ms-vscode.hexeditor",
             "github.copilot",
             "github.copilot-chat"
-          ]
+          ],
+          "settings": {
+            "editor.formatOnSave": true,
+            "editor.defaultFormatter": "esbenp.prettier-vscode"
+          }
         }
-      }
+      },
+
+      // コンテナ起動後の初期化コマンド
+      // 1. sudo chown ... : node_modules の所有権を node ユーザーに強制変更
+      // 2. pnpm install   : その後，安全にインストールを実行
+      // 3. build          : 最後に共通パッケージをビルド
+      "postCreateCommand": "sudo chown -R node:node /workspace/node_modules && pnpm install && pnpm --filter @repo/shared build",
+
+      // コンテナ内のユーザー
+      "remoteUser": "node"
     }
 
 5-4. docker-compose.prod.yml の作成 (本番確認用)

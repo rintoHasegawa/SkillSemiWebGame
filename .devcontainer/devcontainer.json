@@ -4,9 +4,6 @@
   "service": "app",
   "workspaceFolder": "/workspace",
 
-  // コンテナ作成時に実行する機能 (Features)
-  // pnpmがイメージに含まれていない場合の保険として追加推奨ですが、
-  // typescript-node:20 イメージには通常含まれています。念のため明示。
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20",
@@ -14,8 +11,6 @@
     }
   },
 
-  // VS Code 拡張機能の自動インストール
-  // 環境定義書の推奨リストを反映
   "customizations": {
     "vscode": {
       "extensions": [
@@ -32,11 +27,11 @@
     }
   },
 
-  // コンテナ起動後の初期化コマンド
-  // 1. 依存関係のインストール (frozen-lockfileなしで柔軟に)
-  // 2. 共通パッケージ(shared)のビルド
-  "postCreateCommand": "pnpm install && pnpm --filter @repo/shared build",
+  // 【修正箇所】
+  // 1. sudo chown ... : node_modules の所有権を node ユーザーに強制変更
+  // 2. pnpm install   : その後、安全にインストールを実行
+  // 3. build          : 最後にビルド
+  "postCreateCommand": "sudo chown -R node:node /workspace/node_modules && pnpm install && pnpm --filter @repo/shared build",
 
-  // コンテナ内のユーザー
   "remoteUser": "node"
 }
