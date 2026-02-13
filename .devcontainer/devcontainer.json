@@ -1,0 +1,37 @@
+{
+  "name": "Pixel Paint War Dev",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20",
+      "pnpm": "latest"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "EditorConfig.EditorConfig",
+        "ms-vscode.hexeditor",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      }
+    }
+  },
+
+  // 【修正箇所】
+  // 1. sudo chown ... : node_modules の所有権を node ユーザーに強制変更
+  // 2. pnpm install   : その後、安全にインストールを実行
+  // 3. build          : 最後にビルド
+  "postCreateCommand": "sudo chown -R node:node /workspace/node_modules && pnpm install && pnpm --filter @repo/shared build",
+
+  "remoteUser": "node"
+}
