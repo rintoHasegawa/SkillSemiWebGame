@@ -1,14 +1,30 @@
-import { defineConfig } from 'vite'
-import preact from '@preact/preset-vite'
+// src/index.ts
+import { Server } from "socket.io";
+import { createServer } from "http"; // Node.js標準 of HTTPサーバー
+import { GameManager } from "./managers/GameManager.js";
+import { SocketManager } from "./network/SocketManager.js";
 
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [preact()],
-  server: {
-    host: true,        // 0.0.0.0 でリッスンして外部アクセスを許可
-    port: 5173,        // ポート固定
-    watch: {
-      usePolling: true // WSL2/Docker間のファイル変更検知を確実にする
-    }
-  }
-})
+const PORT = 3000;
+
+// HTTPサーバーとSocket.ioサーバーの作成
+const httpServer = createServer();
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // 開発用：どこからでも許可
+    methods: ["GET", "POST"]
+  },
+});
+
+// ゲームマネージャーと通信マネージャーの起動
+const gameManager = new GameManager();
+const socketManager = new SocketManager(io, gameManager);
+
+socketManager.initialize();
+
+// サーバー起動
+httpServer.listen(PORT, () => {
+  console.log(`
+  🚀 Server is running on port ${PORT}
+  waiting for connections...
+  `);
+});

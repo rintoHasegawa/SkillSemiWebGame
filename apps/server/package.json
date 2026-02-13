@@ -15,11 +15,11 @@
   "packageManager": "pnpm@10.28.2",
   "dependencies": {
     "@repo/shared": "workspace:*",
-    "ws": "^8.19.0"
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.11",
-    "@types/ws": "^8.18.1",
+    "@types/socket.io": "^3.0.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
