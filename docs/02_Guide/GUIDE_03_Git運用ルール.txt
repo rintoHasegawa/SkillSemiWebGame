@@ -27,12 +27,12 @@ Git運用ルール (Git Operation Rules)
     ・chore/: ビルド設定やツール導入など，雑多な作業
 
 2-2. 書式 (Format)
-    ・書式: `[プレフィックス][日付(YYMMDD)]_[概要]`
+    ・書式: `[プレフィックス][日付(YYMMDD)]_[名前]_[概要]`
     ・区切り: スラッシュ `/` および アンダースコア `_` を使用する．
     ・例:
-        - feature/260207_player_jump
-        - fix/260208_collision_bug
-        - docs/260210_guide_update
+        - feature/260207_yamada_player_jump
+        - fix/260208_tanaka_collision_bug
+        - docs/260210_suzuki_guide_update
 
 
 3. 開発フロー (Development Workflow)
@@ -48,11 +48,13 @@ Git運用ルール (Git Operation Rules)
 2. 作業ブランチの作成
     ・最新の `main` から新しいブランチを作成して移動する．
     ・コマンド:
-        $ git checkout -b feature/01_new_function
+        $ git checkout -b feature/260214_yamada_new_function
 
 3. 実装とコミット
     ・作業単位（意味のあるまとまり）ごとにコミットする．
     ・巨大なコミットは避け，レビューしやすい粒度を心がける．
+    ・VS CodeでCopilotを使用している場合，AIによるコミットメッセージの生成機能（キラキラアイコン等）を利用してもよい．
+      ただし，生成されたメッセージは必ず「4. コミットメッセージ」の書式ルール（タグや日本語化）に合わせて修正すること．
     ・コマンド:
         $ git add .
         $ git commit -m "[add] 新機能を実装"
@@ -60,7 +62,7 @@ Git運用ルール (Git Operation Rules)
 4. リモートへのプッシュ
     ・作業ブランチをリモートリポジトリへ送信する．
     ・コマンド:
-        $ git push origin feature/01_new_function
+        $ git push origin feature/260214_yamada_new_function
 
 5. プルリクエスト (PR) の作成
     ・GitHubのリポジトリ画面上部に表示される「Compare & pull request」ボタンをクリックする．
@@ -110,7 +112,7 @@ Git運用ルール (Git Operation Rules)
     ・コマンド:
         $ git checkout main
         $ git pull origin main
-        $ git checkout feature/XX_working
+        $ git checkout feature/260214_yamada_new_function
         $ git merge main
 
 2. 競合の解消
@@ -121,5 +123,5 @@ Git運用ルール (Git Operation Rules)
     ・まだプッシュしていない場合，コミットを取り消して新しいブランチへ移動させる．
     ・コマンド:
         $ git reset --soft HEAD^
-        $ git checkout -b feature/XX_recover_branch
+        $ git checkout -b feature/260214_yamada_new_function
         $ git commit -m "..."
