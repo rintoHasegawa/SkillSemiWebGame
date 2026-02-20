@@ -1,91 +1,83 @@
 import { useEffect, useState, useRef } from "react";
 import { Stage, Container } from "@pixi/react";
 
+// 👇 インポートパスを src ディレクトリ基準（./）に修正
 import { socketClient } from "./network/SocketClient";
 import { GameMap, MAP_SIZE } from "./entities/GameMap";
 import { PlayerSprite } from "./entities/PlayerSprite";
 import { VirtualJoystick, MAX_DIST } from "./input/VirtualJoystick";
 
-type Player = {
-  id: string;
-  x: number;
-  y: number;
-  color: string;
-};
+import { TitleScene } from "./scenes/TitleScene";
+import { LobbyScene } from "./scenes/LobbyScene";
 
+// 👇 共有パッケージへのパスを src/app.tsx からの相対パスに修正
+import type { Room } from "../../../packages/shared/src/types/room"; 
+
+type Player = { id: string; x: number; y: number; color: string; };
+
+// 👇 変更: export default function App() に戻しました
 export default function App() {
+  const [gameState, setGameState] = useState<"title" | "lobby" | "playing">("title");
+  const [room, setRoom] = useState<Room | null>(null);
+
   const [myId, setMyId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Record<string, Player>>({});
-  const [viewport, setViewport] = useState({
-    w: window.innerWidth,
-    h: window.innerHeight,
-  });
+  const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   const myPosRef = useRef({ x: MAP_SIZE / 2, y: MAP_SIZE / 2 });
-  
-  // 🌟 追加1: ジョイスティックの「現在の傾き」を常に記憶しておく変数
   const joystickInputRef = useRef({ x: 0, y: 0 });
 
-  // 🌟 変更2: ジョイスティックが動いた時は「傾きを記憶するだけ」にする
   const handleJoystickMove = (moveX: number, moveY: number) => {
     joystickInputRef.current = { x: moveX, y: moveY };
   };
 
-  // 🌟 追加3: 毎秒60回実行される「ゲームループ（エンジン）」
   useEffect(() => {
-    let animationFrameId: number;
+    if (gameState !== "playing") return;
 
+    let animationFrameId: number;
     const tick = () => {
       const { x: dx, y: dy } = joystickInputRef.current;
-      
-      // 入力（傾き）がある場合のみ移動処理を行う
       if (myId && (dx !== 0 || dy !== 0)) {
         const speed = 5.0;
         let nextX = myPosRef.current.x + (dx / MAX_DIST) * speed;
         let nextY = myPosRef.current.y + (dy / MAX_DIST) * speed;
-
         nextX = Math.max(20, Math.min(MAP_SIZE - 20, nextX));
         nextY = Math.max(20, Math.min(MAP_SIZE - 20, nextY));
 
         myPosRef.current = { x: nextX, y: nextY };
-        
-        // サーバーへ送信
         socketClient.sendMove(nextX, nextY);
 
-        // ローカルの画面も更新
         setPlayers((prev) => {
           if (!prev[myId]) return prev;
           return { ...prev, [myId]: { ...prev[myId], x: nextX, y: nextY } };
         });
       }
-
-      // 次のフレームでもう一度 tick を呼ぶ（これがループの正体）
       animationFrameId = requestAnimationFrame(tick);
     };
 
-    // ループ開始
     animationFrameId = requestAnimationFrame(tick);
-
-    // コンポーネントが消える時にループを止める
     return () => cancelAnimationFrame(animationFrameId);
-  }, [myId]); // 自分のIDが決まったらループ開始
+  }, [myId, gameState]);
 
-  // 👇 以下は通信処理と描画処理（変更なし）
   useEffect(() => {
     socketClient.onConnect((id) => setMyId(id));
 
+    socketClient.onRoomUpdate((updatedRoom) => {
+      setRoom(updatedRoom);
+      setGameState("lobby");
+    });
+
+    socketClient.onGameStart(() => {
+      setGameState("playing");
+    });
+
     socketClient.onCurrentPlayers((serverPlayers: any) => {
       const pMap: Record<string, Player> = {};
-      if (Array.isArray(serverPlayers))
-        serverPlayers.forEach((p) => (pMap[p.id] = p));
+      if (Array.isArray(serverPlayers)) serverPlayers.forEach((p) => (pMap[p.id] = p));
       else Object.assign(pMap, serverPlayers);
       setPlayers(pMap);
     });
-
-    socketClient.onNewPlayer((p: Player) => {
-      setPlayers((prev) => ({ ...prev, [p.id]: p }));
-    });
-
+    socketClient.onNewPlayer((p: Player) => setPlayers((prev) => ({ ...prev, [p.id]: p })));
     socketClient.onUpdatePlayer((data: any) => {
       if (data.id === socketClient.socket.id) return;
       setPlayers((prev) => {
@@ -93,7 +85,6 @@ export default function App() {
         return { ...prev, [data.id]: { ...prev[data.id], ...data } };
       });
     });
-
     socketClient.onRemovePlayer((id: string) => {
       setPlayers((prev) => {
         const next = { ...prev };
@@ -104,60 +95,34 @@ export default function App() {
 
     const handleResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener("resize", handleResize);
-
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  if (gameState === "title") {
+    return <TitleScene onJoin={(roomId, playerName) => socketClient.joinRoom(roomId, playerName)} />;
+  }
+
+  if (gameState === "lobby") {
+    return <LobbyScene room={room} myId={myId} onStart={() => socketClient.startGame()} />;
+  }
 
   const me = myId ? players[myId] : null;
   const camX = (me?.x || MAP_SIZE / 2) - viewport.w / 2;
   const camY = (me?.y || MAP_SIZE / 2) - viewport.h / 2;
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
-        backgroundColor: "#000",
-        position: "relative",
-      }}
-    >
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", backgroundColor: "#000", position: "relative" }}>
       <div style={{ position: "absolute", top: 0, left: 0, zIndex: 1 }}>
-        <Stage
-          width={viewport.w}
-          height={viewport.h}
-          options={{ backgroundColor: 0x000000, antialias: true }}
-        >
+        <Stage width={viewport.w} height={viewport.h} options={{ backgroundColor: 0x000000, antialias: true }}>
           <Container position={[-camX, -camY]}>
             <GameMap />
             {Object.values(players).map((p) => (
-              <PlayerSprite
-                key={p.id}
-                x={p.x}
-                y={p.y}
-                color={p.color}
-                isMe={p.id === myId}
-              />
+              <PlayerSprite key={p.id} x={p.x} y={p.y} color={p.color} isMe={p.id === myId} />
             ))}
           </Container>
         </Stage>
       </div>
-
       <VirtualJoystick onMove={handleJoystickMove} />
-
-      <div
-        style={{
-          position: "absolute",
-          top: 10,
-          left: 10,
-          color: "#4ade80",
-          zIndex: 100,
-          pointerEvents: "none",
-          fontWeight: "bold",
-        }}
-      >
-        ● Online: {Object.keys(players).length}
-      </div>
     </div>
   );
 }
