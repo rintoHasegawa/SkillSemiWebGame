@@ -48,11 +48,27 @@ export class SocketClient {
     this.socket.emit("move", { x, y });
   }
 
-  // 切断処理
-  disconnect() {
-    this.socket.disconnect();
+  // 👇==== ここからロビー・ルーム用の機能を追加 ====👇
+
+  // 7. ルーム入室
+  joinRoom(roomId: string, playerName: string) {
+    this.socket.emit("join-room", { roomId, playerName });
+  }
+
+  // 8. ルーム情報が更新されたとき
+  onRoomUpdate(callback: (room: any) => void) {
+    this.socket.on("room-update", callback);
+  }
+
+  // 9. ゲーム開始の合図を受け取ったとき
+  onGameStart(callback: () => void) {
+    this.socket.on("game-start", callback);
+  }
+
+  // 10. ゲーム開始をサーバーにリクエストする
+  startGame() {
+    this.socket.emit("start-game");
   }
 }
 
-// どこからでも同じ接続を使えるようにインスタンス化してエクスポート
 export const socketClient = new SocketClient();
