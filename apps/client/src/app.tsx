@@ -4,7 +4,6 @@ import { Stage, Container } from "@pixi/react";
 import { socketClient } from "./network/SocketClient";
 import { GameMap, MAP_SIZE } from "./entities/GameMap";
 import { PlayerSprite } from "./entities/PlayerSprite";
-// ✅ 追加: 切り出したジョイスティックを読み込む
 import { VirtualJoystick, MAX_DIST } from "./input/VirtualJoystick";
 
 type Player = {
@@ -23,28 +22,55 @@ export default function App() {
   });
 
   const myPosRef = useRef({ x: MAP_SIZE / 2, y: MAP_SIZE / 2 });
+  
+  // 🌟 追加1: ジョイスティックの「現在の傾き」を常に記憶しておく変数
+  const joystickInputRef = useRef({ x: 0, y: 0 });
 
-  // 🕹️ ジョイスティックから受け取った移動量で計算するだけ
+  // 🌟 変更2: ジョイスティックが動いた時は「傾きを記憶するだけ」にする
   const handleJoystickMove = (moveX: number, moveY: number) => {
-    if (!myId) return;
-    const speed = 5.0;
-    let nextX = myPosRef.current.x + (moveX / MAX_DIST) * speed;
-    let nextY = myPosRef.current.y + (moveY / MAX_DIST) * speed;
-
-    nextX = Math.max(20, Math.min(MAP_SIZE - 20, nextX));
-    nextY = Math.max(20, Math.min(MAP_SIZE - 20, nextY));
-
-    myPosRef.current = { x: nextX, y: nextY };
-    
-    // サーバーへ送信
-    socketClient.sendMove(nextX, nextY);
-
-    setPlayers((prev) => {
-      if (!prev[myId]) return prev;
-      return { ...prev, [myId]: { ...prev[myId], x: nextX, y: nextY } };
-    });
+    joystickInputRef.current = { x: moveX, y: moveY };
   };
 
+  // 🌟 追加3: 毎秒60回実行される「ゲームループ（エンジン）」
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const tick = () => {
+      const { x: dx, y: dy } = joystickInputRef.current;
+      
+      // 入力（傾き）がある場合のみ移動処理を行う
+      if (myId && (dx !== 0 || dy !== 0)) {
+        const speed = 5.0;
+        let nextX = myPosRef.current.x + (dx / MAX_DIST) * speed;
+        let nextY = myPosRef.current.y + (dy / MAX_DIST) * speed;
+
+        nextX = Math.max(20, Math.min(MAP_SIZE - 20, nextX));
+        nextY = Math.max(20, Math.min(MAP_SIZE - 20, nextY));
+
+        myPosRef.current = { x: nextX, y: nextY };
+        
+        // サーバーへ送信
+        socketClient.sendMove(nextX, nextY);
+
+        // ローカルの画面も更新
+        setPlayers((prev) => {
+          if (!prev[myId]) return prev;
+          return { ...prev, [myId]: { ...prev[myId], x: nextX, y: nextY } };
+        });
+      }
+
+      // 次のフレームでもう一度 tick を呼ぶ（これがループの正体）
+      animationFrameId = requestAnimationFrame(tick);
+    };
+
+    // ループ開始
+    animationFrameId = requestAnimationFrame(tick);
+
+    // コンポーネントが消える時にループを止める
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [myId]); // 自分のIDが決まったらループ開始
+
+  // 👇 以下は通信処理と描画処理（変更なし）
   useEffect(() => {
     socketClient.onConnect((id) => setMyId(id));
 
@@ -117,7 +143,6 @@ export default function App() {
         </Stage>
       </div>
 
-      {/* ✅ 複雑だった div タグの塊がたったの1行に！ */}
       <VirtualJoystick onMove={handleJoystickMove} />
 
       <div

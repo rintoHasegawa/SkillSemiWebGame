@@ -42,6 +42,7 @@ export const VirtualJoystick = ({ onMove }: Props) => {
   const handleEnd = () => {
     setIsMoving(false);
     setStickPos({ x: 0, y: 0 });
+    onMove(0, 0); // 👈 追加: 指を離したら移動量 0,0 を伝える
   };
 
   return (
