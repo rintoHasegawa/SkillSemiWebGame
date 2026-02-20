@@ -1,46 +1,30 @@
-# ================================================================
-# Stage 1: Builder (ビルド用の環境)
-# ================================================================
-FROM node:20-slim AS builder
+FROM node:20-slim
 
+# pnpmの準備
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 WORKDIR /app
 
-# 1. 依存関係の定義ファイルをコピー
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/server/package.json ./apps/server/
-COPY packages/shared/package.json ./packages/shared/
+# 1. すべてのファイルを一気にコピー（これが一番確実です）
+COPY . .
 
-# 2. 依存関係をインストール
+# 2. 依存関係のインストール
 RUN pnpm install --frozen-lockfile
 
-# 3. ソースコードをコピー
-COPY packages/shared ./packages/shared
-COPY apps/server ./apps/server
-
-# 4. ビルド
+# 3. ビルド（共通ライブラリ -> サーバーの順）
 RUN pnpm --filter @repo/shared build
 RUN pnpm --filter server build
 
-# 5. pnpm deploy を使用して、serverアプリを /app/out に独立させる（--prodで本番環境用のみ抽出）
-RUN pnpm --filter server --prod deploy /app/out
+# 4. 実行ディレクトリに移動
+WORKDIR /app/apps/server
 
-# ================================================================
-# Stage 2: Runner (実行専用の軽量環境)
-# ================================================================
-FROM node:20-slim AS runner
-
-WORKDIR /app
-
-# Builderステージで抽出した独立環境（/app/out）をそのままコピーするだけ
-COPY --from=builder /app/out ./
-
-# 実行環境の設定
+# 環境変数の設定
 ENV NODE_ENV=production
-USER node
 
-# サーバーを起動
+# ポートの開放
+EXPOSE 3000
+
+# サーバー起動
 CMD ["node", "dist/index.js"]
