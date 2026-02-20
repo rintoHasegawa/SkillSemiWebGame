@@ -2,7 +2,7 @@
 import { Server, Socket } from "socket.io";
 import { GameManager } from "../managers/GameManager.js";
 // shared側の型をインポート（※パスは実際の環境に合わせて修正してください）
-import type { Room } from "/home/ryuryu/lab/SkillSemiWebGame/packages/shared/src/types/room";
+import type { Room } from "../../../../packages/shared/src/types/room";
 type RoomPlayer = Room["players"][0];
 
 export class SocketManager {
