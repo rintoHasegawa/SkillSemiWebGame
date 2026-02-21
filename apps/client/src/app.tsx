@@ -11,7 +11,7 @@ import { TitleScene } from "./scenes/TitleScene";
 import { LobbyScene } from "./scenes/LobbyScene";
 
 // 👇 共有パッケージへのパスを src/app.tsx からの相対パスに修正
-import type { Room } from "../../../packages/shared/src/types/room"; 
+import type { Room } from "@repo/shared/src/types/room";
 
 type Player = { id: string; x: number; y: number; color: string; };
 
