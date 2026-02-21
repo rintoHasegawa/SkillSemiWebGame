@@ -4,12 +4,12 @@ import { socketClient } from "./network/SocketClient";
 // シーン（画面）コンポーネント
 import { TitleScene } from "./scenes/TitleScene";
 import { LobbyScene } from "./scenes/LobbyScene";
-import { GameScene } from "./scenes/GameScene"; // 👈 追加
+import { GameScene } from "./scenes/GameScene";
 
-import type { Room } from "@repo/shared/src/types/room";
+import { GameState, type Room } from "@repo/shared/src/types/room";
 
 export default function App() {
-  const [gameState, setGameState] = useState<"title" | "lobby" | "playing">("title");
+  const [gameState, setGameState] = useState<GameState>(GameState.TITLE);
   const [room, setRoom] = useState<Room | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
 
@@ -17,17 +17,17 @@ export default function App() {
     socketClient.onConnect((id) => setMyId(id));
     socketClient.onRoomUpdate((updatedRoom) => {
       setRoom(updatedRoom);
-      setGameState("lobby");
+      setGameState(GameState.LOBBY);
     });
-    socketClient.onGameStart(() => setGameState("playing"));
+    socketClient.onGameStart(() => setGameState(GameState.PLAYING));
   }, []);
 
   // レンダリング分岐
-  if (gameState === "title") {
-    return <TitleScene onJoin={(roomId, playerName) => socketClient.joinRoom(roomId, playerName)} />;
+  if (gameState === GameState.TITLE) {
+    return <TitleScene onJoin={(payload) => socketClient.joinRoom(payload.roomId, payload.playerName)} />;
   }
   
-  if (gameState === "lobby") {
+  if (gameState === GameState.LOBBY) {
     return <LobbyScene room={room} myId={myId} onStart={() => socketClient.startGame()} />;
   }
 

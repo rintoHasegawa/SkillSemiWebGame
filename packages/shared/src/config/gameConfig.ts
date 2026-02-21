@@ -6,6 +6,9 @@ export const GAME_CONFIG = {
   // マップ設定
   MAP_WIDTH: 2000,
   MAP_HEIGHT: 2000,
+  
+  // ルーム設定
+  MAX_PLAYERS_PER_ROOM: 4,
 
   // プレイヤー設定
   PLAYER_RADIUS: 10,      // キャラの大きさ
