@@ -8,9 +8,6 @@ export const GAME_CONFIG = {
   MAP_HEIGHT: 2000,
 
   // プレイヤー設定
-  PLAYER_RADIUS: 20,      // キャラの大きさ
-  PLAYER_SPEED: 300,      // 移動速度 (ピクセル/秒)
-
-  // システム設定
-  TARGET_FPS: 60, // 基準となるFPS
+  PLAYER_RADIUS: 10,      // キャラの大きさ
+  PLAYER_SPEED: 5,        // 移動速度 (ピクセル/秒)
 } as const;

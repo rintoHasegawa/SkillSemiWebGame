@@ -69,6 +69,11 @@ export class SocketClient {
   startGame() {
     this.socket.emit("start-game");
   }
+
+  // 👇 11. 【新規追加】ゲーム画面の準備完了をサーバーに伝える
+  readyForGame() {
+    this.socket.emit("ready-for-game");
+  }
 }
 
 export const socketClient = new SocketClient();

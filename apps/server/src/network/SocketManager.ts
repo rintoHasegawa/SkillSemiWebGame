@@ -59,26 +59,31 @@ export class SocketManager {
 
       // 🚀 ゲーム開始イベント
       socket.on("start-game", () => {
-        // 自分がオーナーのルームを探す
         for (const [roomId, room] of this.rooms.entries()) {
           if (room.ownerId === socket.id) {
             room.status = 'playing';
             
-            // 📢 全員に「ゲーム画面に切り替えて！」と指示
-            this.io.to(roomId).emit("game-start");
-
-            // 🎮 ここで初めて全員を GameManager (PixiJSの世界) に追加する
+            // 🎮 全員を GameManager に追加する
             room.players.forEach(p => {
               this.gameManager.addPlayer(p.id);
             });
 
-            // ゲーム用の初期データを送信 (参加した全員分の座標など)
-            // getAllPlayers() は Map を配列に変換して返すメソッドと仮定
-            const allPlayers = Array.from(this.gameManager['players'].values());
-            this.io.to(roomId).emit("current_players", allPlayers);
+            // 📢 全員に「ゲーム画面に切り替えて！」と指示
+            this.io.to(roomId).emit("game-start");
+            
+            // 🚨 【削除】ここでは current_players を送らない！（すれ違い防止）
             break;
           }
         }
+      });
+
+      // 🌟 【新規追加】 クライアントから「画面の準備完了」が通知されたらデータを送る
+      socket.on("ready-for-game", () => {
+        // 全プレイヤー情報を取得
+        const allPlayers = this.gameManager.getAllPlayers();
+        
+        // 準備が完了した「この通信主（socket）」に対してのみ初期データを送る
+        socket.emit("current_players", allPlayers);
       });
 
       // ==========================================
