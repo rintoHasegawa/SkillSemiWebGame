@@ -1,6 +1,6 @@
 import { useState } from "react";
 // ルーム参加時送信ペイロード型
-import type { JoinRoomPayload } from "@repo/shared/src/types/payloads";
+import type { JoinRoomPayload } from "@repo/shared/src/types/room";
 
 type Props = {
   // 入室実行時呼び出しコールバック
