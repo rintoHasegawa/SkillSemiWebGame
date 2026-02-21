@@ -24,7 +24,7 @@ export default function App() {
 
   // レンダリング分岐
   if (gameState === "title") {
-    return <TitleScene onJoin={(roomId, playerName) => socketClient.joinRoom(roomId, playerName)} />;
+    return <TitleScene onJoin={(payload) => socketClient.joinRoom(payload.roomId, payload.playerName)} />;
   }
   
   if (gameState === "lobby") {

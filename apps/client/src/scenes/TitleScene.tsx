@@ -1,12 +1,24 @@
 import { useState } from "react";
+// sharedからのインポート（パスは環境に合わせて調整してください）
+import type { JoinRoomPayload } from "@repo/shared/src/types/room";
 
 type Props = {
-  onJoin: (roomId: string, playerName: string) => void;
+  // バラバラの引数から、共通のペイロード型に変更
+  onJoin: (payload: JoinRoomPayload) => void;
 };
 
 export const TitleScene = ({ onJoin }: Props) => {
   const [playerName, setPlayerName] = useState("");
   const [roomIdInput, setRoomIdInput] = useState("");
+
+  // 元の条件を維持（両方入力されていればOK）
+  const canJoin = playerName !== "" && roomIdInput !== "";
+
+  const handleJoin = () => {
+    if (canJoin) {
+      onJoin({ roomId: roomIdInput, playerName });
+    }
+  };
 
   return (
     <div style={{ padding: 40, color: "white", background: "#111", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -28,13 +40,13 @@ export const TitleScene = ({ onJoin }: Props) => {
       </div>
       
       <button
-        onClick={() => onJoin(roomIdInput, playerName)}
-        disabled={!playerName || !roomIdInput}
+        onClick={handleJoin}
+        disabled={!canJoin}
         style={{
           padding: "15px 30px",
           fontSize: "1.2rem",
-          cursor: (!playerName || !roomIdInput) ? "not-allowed" : "pointer",
-          backgroundColor: (!playerName || !roomIdInput) ? "#555" : "#3b82f6",
+          cursor: !canJoin ? "not-allowed" : "pointer",
+          backgroundColor: !canJoin ? "#555" : "#3b82f6",
           color: "white",
           border: "none",
           borderRadius: "5px",

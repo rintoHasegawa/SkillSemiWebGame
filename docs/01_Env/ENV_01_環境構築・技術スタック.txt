@@ -43,12 +43,10 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │   ├── client/           # 【演出】フロントエンド (Browser)
     │   │   ├── src/
     │   │   │   ├── assets/     # 画像・音声リソース
-    │   │   │   ├── core/       # クライアントの心臓部 (GameApp, MainLoop)
-    │   │   │   ├── entities/   # 描画用エンティティ (PlayerSprite - 補間・描画ロジック含む)
+    │   │   │   ├── entities/   # クライアント側エンティティ (Player, GameMap など)
     │   │   │   ├── input/      # 入力処理 (Joystick, Keyboard)
     │   │   │   ├── network/    # 通信処理 (SocketClient, Reconciler/補正処理)
     │   │   │   ├── scenes/     # 画面管理 (Title, Lobby, Game, Result)
-    │   │   │   ├── ui/         # HTML UI管理 (HUD, Modal)
     │   │   │   └── main.ts     # エントリーポイント
     │   │   ├── index.html
     │   │   ├── vite.config.ts
@@ -56,7 +54,6 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │   │
     │   └── server/           # 【権限】バックエンド (Node.js)
     │       ├── src/
-    │       │   ├── core/       # サーバーの心臓部 (GameLoop, ServerEngine)
     │       │   ├── entities/   # サーバー側エンティティ (Player, Item - 状態管理のみ)
     │       │   ├── managers/   # 管理クラス (RoomManager, ScoreManager)
     │       │   ├── network/    # WebSocket処理 (Connection, PacketHandler)
@@ -70,7 +67,6 @@ Pixel Paint War - 開発環境・技術スタック定義書
             │   ├── config/     # ゲーム定数 (マップサイズ, TickRate, 物理定数)
             │   ├── protocol/   # 通信規約 (パケット構造, OpCode, バイナリ定義)
             │   ├── types/      # 型定義 (PlayerState, InputData, RoomInfo)
-            │   ├── utils/      # 純粋関数 (Vector計算, 衝突判定, グリッド計算)
             │   └── index.ts    # エントリーポイント (tsupビルド対象)
             ├── tsup.config.ts  # ビルド設定
             └── package.json

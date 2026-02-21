@@ -15,16 +15,7 @@ export interface Room {
   maxPlayers: number;  // 最大参加人数（デフォルト4など）
 }
 
-// サーバーからクライアントへ送るイベントの型（任意ですがあると便利です）
-export interface ServerToClientEvents {
-  'room-update': (room: Room) => void;
-  'game-start': () => void;
-  'error-message': (message: string) => void;
-}
-
-// クライアントからサーバーへ送るイベントの型
-export interface ClientToServerEvents {
-  'join-room': (payload: { roomId: string; playerName: string }) => void;
-  'leave-room': () => void;
-  'start-game': () => void;
+export interface JoinRoomPayload {
+  roomId: string;
+  playerName: string;
 }
