@@ -1,4 +1,5 @@
 import type { PlayerData } from "@repo/shared/src/types/player";
+import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
 
 // サーバー側保持プレイヤー状態モデル
 export class Player implements PlayerData {
@@ -10,7 +11,8 @@ export class Player implements PlayerData {
   constructor(id: string) {
     this.id = id;
     
-    // 0〜3 範囲ランダムチームID割り当て
-    this.teamId = Math.floor(Math.random() * 4);
+    // GAME_CONFIGからチーム数を動的に取得して割り当て
+    const teamCount = GAME_CONFIG.TEAM_COLORS.length;
+    this.teamId = Math.floor(Math.random() * teamCount);
   }
 }

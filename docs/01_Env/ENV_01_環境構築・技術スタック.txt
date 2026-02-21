@@ -43,10 +43,11 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │   ├── client/           # 【演出】フロントエンド (Browser)
     │   │   ├── src/
     │   │   │   ├── assets/     # 画像・音声リソース
-    │   │   │   ├── entities/   # クライアント側エンティティ (Player, GameMap など)
-    │   │   │   ├── input/      # 入力処理 (Joystick, Keyboard)
-    │   │   │   ├── network/    # 通信処理 (SocketClient, Reconciler/補正処理)
-    │   │   │   ├── scenes/     # 画面管理 (Title, Lobby, Game, Result)
+    │   │   │   ├── entities/   # ゲーム内オブジェクト（Player, GameMap）
+    │   │   │   ├── input/      # 入力処理 （VirtualJoystick）
+    │   │   │   ├── managers    # 状態管理・エンジン制御（GameManager）
+    │   │   │   ├── network/    # 通信処理 (SocketClient)
+    │   │   │   ├── scenes/     # 画面管理 (Title, Lobby, GameScene)
     │   │   │   └── main.ts     # エントリーポイント
     │   │   ├── index.html
     │   │   ├── vite.config.ts
@@ -54,9 +55,9 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │   │
     │   └── server/           # 【権限】バックエンド (Node.js)
     │       ├── src/
-    │       │   ├── entities/   # サーバー側エンティティ (Player, Item - 状態管理のみ)
-    │       │   ├── managers/   # 管理クラス (RoomManager, ScoreManager)
-    │       │   ├── network/    # WebSocket処理 (Connection, PacketHandler)
+    │       │   ├── entities/   # サーバー側エンティティ (Player)
+    │       │   ├── managers/   # 管理クラス (GameManager)
+    │       │   ├── network/    # WebSocket処理 (SocketManager)
     │       │   └── index.ts    # エントリーポイント
     │       ├── tsconfig.json
     │       └── package.json
@@ -64,9 +65,9 @@ Pixel Paint War - 開発環境・技術スタック定義書
     └── packages/
         └── shared/           # 【最重要】「真実」の定義場所（型、定数、純粋ロジック）
             ├── src/
-            │   ├── config/     # ゲーム定数 (マップサイズ, TickRate, 物理定数)
-            │   ├── protocol/   # 通信規約 (パケット構造, OpCode, バイナリ定義)
-            │   ├── types/      # 型定義 (PlayerState, InputData, RoomInfo)
+            │   ├── config/     # 共通定数（gameConfig.ts）
+            │   ├── protocol/   # 通信イベント定義（events.ts）
+            │   ├── types/      # 型定義（player.ts, room.ts）
             │   └── index.ts    # エントリーポイント (tsupビルド対象)
             ├── tsup.config.ts  # ビルド設定
             └── package.json
