@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io";
 import { GameManager } from "../managers/GameManager.js";
 import { RoomManager } from "../managers/RoomManager.js";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
-import { registerRoomHandlers } from "../handlers/RoomHandler.js";
-import { registerGameHandlers } from "../handlers/GameHandler.js";
+import { registerRoomHandlers, handleRoomDisconnect } from "../handlers/RoomHandler.js";
+import { registerGameHandlers, handleGameDisconnect } from "../handlers/GameHandler.js";
 
 export class SocketManager {
   private io: Server;
@@ -13,34 +13,26 @@ export class SocketManager {
   constructor(io: Server, gameManager: GameManager) {
     this.io = io;
     this.gameManager = gameManager;
-    this.roomManager = new RoomManager(); // 新設したRoomManagerをインスタンス化
+    this.roomManager = new RoomManager();
   }
 
   public initialize() {
     this.io.on(SocketEvents.CONNECT, (socket: Socket) => {
       console.log(`✅ User connected: ${socket.id}`);
 
-      // 各ハンドラに処理を委譲（ルーティング）
       registerRoomHandlers(this.io, socket, this.roomManager);
       registerGameHandlers(this.io, socket, this.gameManager, this.roomManager);
 
-      // 切断時イベント群
       socket.on(SocketEvents.DISCONNECT, () => {
         console.log(`❌ User disconnected: ${socket.id}`);
         
-        // 1. ゲームからの除外処理
-        this.gameManager.removePlayer(socket.id);
-        this.io.emit(SocketEvents.REMOVE_PLAYER, socket.id);
+        // 順番を厳守して実行
+        // 1. まずゲーム世界から消す（データ参照ができなくなる前に実行）
+        handleGameDisconnect(this.io, this.gameManager, socket.id);
 
-        // 2. ルームからの除外処理
-        const updatedRooms = this.roomManager.removePlayer(socket.id);
-        
-        // 更新があったルーム（オーナー変更など）にのみ通知を飛ばす
-        updatedRooms.forEach(room => {
-          this.io.to(room.roomId).emit(SocketEvents.ROOM_UPDATE, room);
-        });
+        // 2. 次にルームの枠組みから消す（オーナー移譲などのロジックを最後に実行）
+        handleRoomDisconnect(this.io, socket, this.roomManager);
       });
-
     });
   }
 }

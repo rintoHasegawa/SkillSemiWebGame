@@ -67,6 +67,7 @@ Pixel Paint War - 開発環境・技術スタック定義書
         └── shared/           # 【最重要】「真実」の定義場所（型、定数、純粋ロジック）
             ├── src/
             │   ├── config/     # 共通定数（gameConfig.ts）
+            │   ├── logic/      # 共通ロジック（gridMap.ts）
             │   ├── protocol/   # 通信イベント定義（events.ts）
             │   ├── types/      # 型定義（map.ts, payloads.ts, player.ts, room.ts）
             │   └── index.ts    # エントリーポイント (tsupビルド対象)

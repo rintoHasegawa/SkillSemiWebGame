@@ -50,3 +50,13 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
   });
 
 };
+
+/**
+ * 切断時のゲームクリーンアップ処理
+ */
+export const handleGameDisconnect = (io: Server, gameManager: GameManager, playerId: string) => {
+  // ゲームからの除外処理
+  gameManager.removePlayer(playerId);
+  // 全体にプレイヤー削除を通知
+  io.emit(SocketEvents.REMOVE_PLAYER, playerId);
+};

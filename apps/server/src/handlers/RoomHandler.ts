@@ -18,3 +18,16 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
   });
 
 };
+
+/**
+ * 切断時のルームクリーンアップ処理
+ */
+export const handleRoomDisconnect = (io: Server, socket: Socket, roomManager: RoomManager) => {
+  // ルームからの除外処理
+  const updatedRooms = roomManager.removePlayer(socket.id);
+  
+  // 更新があったルーム（オーナー変更など）にのみ通知を飛ばす
+  updatedRooms.forEach(room => {
+    io.to(room.roomId).emit(SocketEvents.ROOM_UPDATE, room);
+  });
+};
