@@ -1,4 +1,4 @@
-import type { Room } from "../../../../packages/shared/src/types/room"; // パスは適宜調整してください
+import type { Room } from "@repo/shared/src/types/room"; // パスは適宜調整してください
 
 type Props = {
   room: Room | null;
