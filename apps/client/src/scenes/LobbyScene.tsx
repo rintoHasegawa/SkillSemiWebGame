@@ -1,4 +1,4 @@
-import type { Room } from "@repo/shared/src/types/room"; // パスは適宜調整してください
+import type { Room } from "@repo/shared/src/types/room";
 
 type Props = {
   room: Room | null;
@@ -7,10 +7,13 @@ type Props = {
 };
 
 export const LobbyScene = ({ room, myId, onStart }: Props) => {
+  // ルーム情報到着前ローディング表示
   if (!room) return <div style={{ color: "white", padding: 40 }}>読み込み中...</div>;
 
+  // 自身オーナー権限判定
   const isMeOwner = room.ownerId === myId;
 
+  // ロビー画面本体
   return (
     <div style={{ padding: 40, color: "white", background: "#222", height: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
       <h2 style={{ fontSize: "2rem", marginBottom: "20px" }}>ルーム: {room.roomId} (待機中)</h2>
@@ -20,6 +23,7 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
           参加プレイヤー ({room.players.length}/{room.maxPlayers})
         </h3>
         <ul style={{ listStyle: "none", padding: 0, fontSize: "1.2rem" }}>
+          {/* 参加プレイヤー一覧描画 */}
           {room.players.map((p) => (
             <li key={p.id} style={{ margin: "15px 0", display: "flex", alignItems: "center", gap: "10px" }}>
               <span>{p.id === myId ? "🟢" : "⚪"}</span>
@@ -32,6 +36,7 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
       </div>
 
       <div style={{ marginTop: "20px" }}>
+        {/* オーナー開始操作と待機表示の分岐 */}
         {isMeOwner ? (
           <button
             onClick={onStart}
