@@ -1,10 +1,9 @@
 import { Server, Socket } from "socket.io";
 import { GameManager } from "../managers/GameManager.js";
-import { Room, RoomStatus } from "@repo/shared/src/types/room";
+import { Room, RoomStatus, RoomMember, JoinRoomPayload } from "@repo/shared/src/types/room";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
-
-type RoomPlayer = Room["players"][0];
+import type { MovePayload } from "@repo/shared/src/types/payloads";
 
 export class SocketManager {
   private io: Server;
@@ -24,18 +23,15 @@ export class SocketManager {
 
       // ロビー・ルーム関連イベント群
 
-      socket.on(SocketEvents.JOIN_ROOM, (data: { roomId: string; playerName: string }) => {
+      socket.on(SocketEvents.JOIN_ROOM, (data: JoinRoomPayload) => {
         const { roomId, playerName } = data;
         
-        // Socket.io ルーム参加処理
         socket.join(roomId);
 
-        // ルーム未作成時の新規作成分岐
         let room = this.rooms.get(roomId);
         if (!room) {
           room = {
             roomId: roomId,
-            // 先着参加者のオーナー割り当て
             ownerId: socket.id,
             players: [],
             status: RoomStatus.WAITING,
@@ -45,7 +41,7 @@ export class SocketManager {
         }
 
         // 参加プレイヤー情報ルーム追加
-        const newPlayer: RoomPlayer = {
+        const newPlayer: RoomMember = {
           id: socket.id,
           name: playerName,
           isOwner: room.ownerId === socket.id,
@@ -88,7 +84,7 @@ export class SocketManager {
 
       // ゲームプレイ中イベント群
 
-      socket.on(SocketEvents.MOVE, (data: { x: number; y: number }) => {
+      socket.on(SocketEvents.MOVE, (data: MovePayload) => {
         // サーバー側プレイヤー座標更新
         this.gameManager.movePlayer(socket.id, data.x, data.y);
         

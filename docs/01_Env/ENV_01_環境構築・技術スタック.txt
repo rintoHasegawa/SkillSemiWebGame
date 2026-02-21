@@ -67,7 +67,7 @@ Pixel Paint War - 開発環境・技術スタック定義書
             ├── src/
             │   ├── config/     # 共通定数（gameConfig.ts）
             │   ├── protocol/   # 通信イベント定義（events.ts）
-            │   ├── types/      # 型定義（player.ts, room.ts）
+            │   ├── types/      # 型定義（payloads.ts, player.ts, room.ts）
             │   └── index.ts    # エントリーポイント (tsupビルド対象)
             ├── tsup.config.ts  # ビルド設定
             └── package.json
