@@ -1,6 +1,7 @@
 import { Application } from 'pixi.js';
 import { Joystick } from './input/Joystick';
 import { Player } from './entities/Player';
+import { GAME_CONFIG } from '@repo/shared/src/config/gameConfig';
 
 // アプリケーション初期化
 const app = new Application();
@@ -27,7 +28,7 @@ async function init() {
   // 4. ゲームループ (毎フレーム実行)
   app.ticker.add((ticker) => {
     // 秒単位の経過時間 (Delta Time)
-    const dt = ticker.deltaTime / 60;
+    const dt = ticker.deltaTime / GAME_CONFIG.TARGET_FPS;
 
     // ジョイスティックの入力があれば移動
     if (joystick.input.x !== 0 || joystick.input.y !== 0) {

@@ -10,4 +10,7 @@ export const GAME_CONFIG = {
   // プレイヤー設定
   PLAYER_RADIUS: 20,      // キャラの大きさ
   PLAYER_SPEED: 300,      // 移動速度 (ピクセル/秒)
+
+  // システム設定
+  TARGET_FPS: 60, // 基準となるFPS
 } as const;
