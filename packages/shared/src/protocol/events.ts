@@ -15,5 +15,6 @@ export const SocketEvents = {
   NEW_PLAYER: "new_player",
   UPDATE_PLAYER: "update_player",
   REMOVE_PLAYER: "remove_player",
-  MOVE: "move"
+  MOVE: "move",
+  UPDATE_MAP_CELLS: "update_map_cells",
 } as const;

@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
 import type { PlayerData } from "@repo/shared/src/types/player";
+import type { CellUpdate } from "@repo/shared/src/types/map";
 
 /**
  * サーバー WebSocket 通信管理クラス
@@ -67,6 +68,13 @@ export class SocketClient {
   }
 
   /**
+   * マス目の差分更新イベント購読
+   */
+  onUpdateMapCells(callback: (updates: CellUpdate[]) => void) {
+    this.socket.on(SocketEvents.UPDATE_MAP_CELLS, callback);
+  }
+
+  /**
     * ルーム入室リクエスト送信
    * @param roomId 入室先のID
    * @param playerName 表示名
@@ -101,6 +109,17 @@ export class SocketClient {
    */
   readyForGame() {
     this.socket.emit(SocketEvents.READY_FOR_GAME);
+  }
+
+  /**
+   * 全てのゲームプレイ関連イベントを解除（一括解除用）
+   */
+  removeAllListeners() {
+    this.socket.off(SocketEvents.CURRENT_PLAYERS);
+    this.socket.off(SocketEvents.NEW_PLAYER);
+    this.socket.off(SocketEvents.UPDATE_PLAYER);
+    this.socket.off(SocketEvents.REMOVE_PLAYER);
+    this.socket.off(SocketEvents.UPDATE_MAP_CELLS);
   }
 }
 

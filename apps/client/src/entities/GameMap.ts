@@ -1,7 +1,7 @@
 // apps/client/src/game/map/GameMap.ts (パスは適宜読み替えてください)
 import { Container, Graphics } from "pixi.js";
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
-import type { MapState } from "@repo/shared/src/types/map";
+import type { MapState, CellUpdate } from "@repo/shared/src/types/map";
 
 // 親クラスを Graphics から Container に変更し、レイヤー管理を可能にする
 export class GameMap extends Container {
@@ -93,5 +93,25 @@ export class GameMap extends Container {
         cell.rect(0, 0, GRID_CELL_SIZE, GRID_CELL_SIZE).fill(hexColor);
       }
     }
+  }
+
+  /**
+   * 差分データを受け取って指定のマスだけ色を更新する
+   */
+  public updateCells(updates: CellUpdate[]) {
+    const { GRID_CELL_SIZE, TEAM_COLORS } = GAME_CONFIG;
+
+    updates.forEach(({ index, teamId }) => {
+      const cell = this.cells[index];
+      if (!cell) return;
+
+      cell.clear();
+
+      if (teamId !== -1) {
+        const colorString = TEAM_COLORS[teamId] || '#FFFFFF';
+        const hexColor = parseInt(colorString.replace("#", "0x"), 16);
+        cell.rect(0, 0, GRID_CELL_SIZE, GRID_CELL_SIZE).fill(hexColor);
+      }
+    });
   }
 }
