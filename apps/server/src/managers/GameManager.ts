@@ -1,4 +1,5 @@
 import { Player } from "../entities/Player.js";
+import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
 
 // プレイヤー集合の生成・更新・参照管理クラス
 export class GameManager {
@@ -13,8 +14,8 @@ export class GameManager {
     const player = new Player(id);
     
     // 初期スポーン位置
-    player.x = 1000;
-    player.y = 1000;
+    player.x = GAME_CONFIG.MAP_WIDTH / 2;
+    player.y = GAME_CONFIG.MAP_HEIGHT / 2;
     
     this.players.set(id, player);
     return player;

@@ -1,0 +1,52 @@
+import { Server, Socket } from "socket.io";
+import { GameManager } from "../managers/GameManager.js";
+import { RoomManager } from "../managers/RoomManager.js";
+import { SocketEvents } from "@repo/shared/src/protocol/events";
+import { RoomStatus } from "@repo/shared/src/types/room";
+import type { MovePayload } from "@repo/shared/src/types/payloads";
+
+export const registerGameHandlers = (io: Server, socket: Socket, gameManager: GameManager, roomManager: RoomManager) => {
+  
+  // ゲーム開始要求処理
+  socket.on(SocketEvents.START_GAME, () => {
+    const room = roomManager.getRoomByOwnerId(socket.id);
+    
+    if (room) {
+      room.status = RoomStatus.PLAYING;
+      
+      // 同ルーム全プレイヤーのゲーム管理登録
+      room.players.forEach(p => {
+        gameManager.addPlayer(p.id);
+      });
+
+      // ルーム全員向けゲーム開始通知
+      io.to(room.roomId).emit(SocketEvents.GAME_START);
+    }
+  });
+
+  // 画面準備完了通知受信時初期データ返却
+  socket.on(SocketEvents.READY_FOR_GAME, () => {
+    const allPlayers = gameManager.getAllPlayers();
+    socket.emit(SocketEvents.CURRENT_PLAYERS, allPlayers);
+  });
+
+  // ゲームプレイ中イベント群
+  socket.on(SocketEvents.MOVE, (data: MovePayload) => {
+    gameManager.movePlayer(socket.id, data.x, data.y);
+    
+    const updatedPlayer = gameManager.getPlayer(socket.id);
+    if (updatedPlayer) {
+      const myRooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+      const targetRoom = myRooms.length > 0 ? myRooms[0] : null;
+
+      if (targetRoom) {
+        io.to(targetRoom).emit(SocketEvents.UPDATE_PLAYER, { 
+          id: socket.id, 
+          x: updatedPlayer.x, 
+          y: updatedPlayer.y 
+        });
+      }
+    }
+  });
+
+};
