@@ -24,6 +24,7 @@ export function GameScene({ myId }: GameSceneProps) {
   const playersRef = useRef<Record<string, Player>>({}); // 全プレイヤーのスプライト参照
   const lastPositionSentTimeRef = useRef<number>(0); // サーバーへの位置送信タイミングを制御
   const targetPositionsRef = useRef<Record<string, { x: number, y: number }>>({}); // 他プレイヤーの目標位置（補完用）
+  const wasMovingRef = useRef<boolean>(false); // 移動状態の変化を検知するためのフラグ
 
   useEffect(() => {
     if (!pixiContainerRef.current) return;
@@ -110,32 +111,54 @@ export function GameScene({ myId }: GameSceneProps) {
 
         // 自分の移動処理
         const { x: dx, y: dy } = joystickInputRef.current;
-        if (dx !== 0 || dy !== 0) {
+        const isMoving = dx !== 0 || dy !== 0;
+        
+        if (isMoving) {
           me.move(dx / MAX_DIST, dy / MAX_DIST, ticker.deltaTime);
           
-          // 通信負荷軽減のため、一定間隔（20Hz等）でのみサーバーへ位置を送信
+          // 通信負荷軽減のため、一定間隔でのみサーバーへ位置を送信
           const now = performance.now();
           if (now - lastPositionSentTimeRef.current >= GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
             socketClient.sendMove(me.x, me.y);
             lastPositionSentTimeRef.current = now;
           }
+        } else if (wasMovingRef.current) {
+          // 💡 止まった瞬間の確定座標を1回だけ送信して他プレイヤーとのズレを防ぐ
+          socketClient.sendMove(me.x, me.y);
         }
 
-        // 他プレイヤーの線形補間（Lerp）処理：カクつきを抑えて滑らかに移動させる
+        // 今回の移動状態を次回ループのために保存
+        wasMovingRef.current = isMoving;
+
+        // 他プレイヤーの線形補間（Lerp）処理と吸着（Snap）
         Object.entries(playersRef.current).forEach(([id, player]) => {
           if (id === myId) return;
 
           const targetPos = targetPositionsRef.current[id];
           if (targetPos) {
-            player.x += (targetPos.x - player.x) * GAME_CONFIG.PLAYER_LERP_SMOOTHNESS * ticker.deltaTime;
-            player.y += (targetPos.y - player.y) * GAME_CONFIG.PLAYER_LERP_SMOOTHNESS * ticker.deltaTime;
+            const diffX = targetPos.x - player.x;
+            const diffY = targetPos.y - player.y;
+
+            // X軸の補完と吸着
+            if (Math.abs(diffX) < GAME_CONFIG.PLAYER_LERP_SNAP_THRESHOLD) {
+              player.x = targetPos.x;
+            } else {
+              player.x += diffX * GAME_CONFIG.PLAYER_LERP_SMOOTHNESS * ticker.deltaTime;
+            }
+
+            // Y軸の補完と吸着
+            if (Math.abs(diffY) < GAME_CONFIG.PLAYER_LERP_SNAP_THRESHOLD) {
+              player.y = targetPos.y;
+            } else {
+              player.y += diffY * GAME_CONFIG.PLAYER_LERP_SMOOTHNESS * ticker.deltaTime;
+            }
           }
         });
 
         // カメラ追従：自分を中心に世界を逆方向にずらす
         worldContainer.position.set(
-          -(me.x - window.innerWidth / 2),
-          -(me.y - window.innerHeight / 2)
+          -(me.x - app.screen.width / 2),
+          -(me.y - app.screen.height / 2)
         );
       });
     };
