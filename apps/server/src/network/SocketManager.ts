@@ -2,7 +2,7 @@
 import { Server, Socket } from "socket.io";
 import { GameManager } from "../managers/GameManager.js";
 // shared側の型をインポート（※パスは実際の環境に合わせて修正してください）
-import type { Room } from "@repo/shared/src/types/room";
+import { Room, RoomStatus } from "@repo/shared/src/types/room";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
 
 type RoomPlayer = Room["players"][0];
@@ -40,7 +40,7 @@ export class SocketManager {
             roomId: roomId,
             ownerId: socket.id, // 最初に作った人がオーナー
             players: [],
-            status: 'waiting',
+            status: RoomStatus.WAITING,
             maxPlayers: 4
           };
           this.rooms.set(roomId, room);
@@ -63,7 +63,7 @@ export class SocketManager {
       socket.on(SocketEvents.START_GAME, () => {
         for (const [roomId, room] of this.rooms.entries()) {
           if (room.ownerId === socket.id) {
-            room.status = 'playing';
+            room.status = RoomStatus.PLAYING;
             
             // 🎮 全員を GameManager に追加する
             room.players.forEach(p => {
