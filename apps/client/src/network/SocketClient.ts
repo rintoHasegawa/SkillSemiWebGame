@@ -18,6 +18,12 @@ export class SocketClient {
    * @param callback 接続成功時に自身のソケットIDを受け取る関数
    */
   onConnect(callback: (id: string) => void) {
+    // 🌟 追加: 呼び出された時点ですでに接続済みの場合は、即座にコールバックを実行する
+    if (this.socket.connected) {
+      callback(this.socket.id || "");
+    }
+
+    // まだ接続されていない場合、または再接続された時のためにイベントリスナーも登録しておく
     this.socket.on(SocketEvents.CONNECT, () => {
       callback(this.socket.id || "");
     });
