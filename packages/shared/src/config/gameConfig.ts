@@ -3,9 +3,14 @@ export const GAME_CONFIG = {
   SCREEN_WIDTH: 1280,
   SCREEN_HEIGHT: 720,
 
-  // マップサイズ設定
-  MAP_WIDTH: 2000,
-  MAP_HEIGHT: 2000,
+  // グリッド（マス）設定を新設
+  GRID_CELL_SIZE: 100, // 1マスのサイズ（px）
+  GRID_COLS: 20,       // 横のマス数
+  GRID_ROWS: 20,       // 縦のマス数
+  
+  // マップサイズはグリッド設定から自動計算させる（ハードコーディングを避ける）
+  get MAP_WIDTH() { return this.GRID_COLS * this.GRID_CELL_SIZE; },
+  get MAP_HEIGHT() { return this.GRID_ROWS * this.GRID_CELL_SIZE; },
   
   // ルーム収容人数設定
   MAX_PLAYERS_PER_ROOM: 4,
@@ -21,5 +26,10 @@ export const GAME_CONFIG = {
 
   // チームカラー設定
   // teamId インデックス順カラー配列
-  TEAM_COLORS: ['#FF4B4B', '#4B4BFF', '#4BFF4B', '#FFD700'],  
+  TEAM_COLORS: ['#FF4B4B', '#4B4BFF', '#4BFF4B', '#FFD700'],
+
+  // マップ描画用のカラー設定
+  MAP_BG_COLOR: 0x111111,     // 何も塗っていないマス（背景）の色
+  MAP_GRID_COLOR: 0x333333,   // グリッド線の色
+  MAP_BORDER_COLOR: 0xff4444, // プレイ領域外枠の色
 } as const;

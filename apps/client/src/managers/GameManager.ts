@@ -12,6 +12,7 @@ export class GameManager {
   private players: Record<string, BasePlayer> = {};
   private myId: string;
   private container: HTMLDivElement;
+  private gameMap!: GameMap;
   
   // 入力と状態管理
   private joystickInput = { x: 0, y: 0 };
@@ -44,6 +45,7 @@ export class GameManager {
 
     // 背景マップの配置
     const gameMap = new GameMap();
+    this.gameMap = gameMap;
     this.worldContainer.addChild(gameMap);
     this.app.stage.addChild(this.worldContainer);
 
@@ -100,6 +102,10 @@ export class GameManager {
         delete this.players[id];
       }
     });
+
+    socketClient.onUpdateMapCells((updates) => {
+      this.gameMap.updateCells(updates);
+    });
   }
 
   /**
@@ -149,9 +155,6 @@ export class GameManager {
     this.players = {};
     
     // イベント購読の解除
-    socketClient.socket.off("current_players");
-    socketClient.socket.off("new_player");
-    socketClient.socket.off("update_player");
-    socketClient.socket.off("remove_player");
+    socketClient.removeAllListeners();
   }
 }
