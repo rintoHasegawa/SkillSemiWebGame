@@ -14,7 +14,7 @@ export const RoomStatus = {
 } as const;
 export type RoomStatus = typeof RoomStatus[keyof typeof RoomStatus];
 
-export interface Player {
+export interface RoomMember {
   id: string;
   name: string;
   isOwner: boolean;
@@ -24,7 +24,7 @@ export interface Player {
 export interface Room {
   roomId: string;
   ownerId: string;
-  players: Player[];
+  players: RoomMember[];
   status: RoomStatus;  // 👈 ここで上記の型を使用する
   maxPlayers: number;
 }

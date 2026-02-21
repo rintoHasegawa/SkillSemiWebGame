@@ -4,6 +4,7 @@ import { GameManager } from "../managers/GameManager.js";
 // shared側の型をインポート（※パスは実際の環境に合わせて修正してください）
 import { Room, RoomStatus } from "@repo/shared/src/types/room";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
+import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
 
 type RoomPlayer = Room["players"][0];
 
@@ -41,7 +42,7 @@ export class SocketManager {
             ownerId: socket.id, // 最初に作った人がオーナー
             players: [],
             status: RoomStatus.WAITING,
-            maxPlayers: 4
+            maxPlayers: GAME_CONFIG.MAX_PLAYERS_PER_ROOM
           };
           this.rooms.set(roomId, room);
         }

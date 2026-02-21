@@ -1,13 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
-
-// プレイヤーの基本情報を定義する型
-export type PlayerData = {
-  id: string;
-  x: number;
-  y: number;
-  color: string;
-};
+import type { PlayerData } from "@repo/shared/src/types/player";
 
 /**
  * サーバーとのWebSocket通信を管理するクライアントクラス
