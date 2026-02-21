@@ -30,9 +30,3 @@ export interface Room {
   status: RoomStatus;
   maxPlayers: number;
 }
-
-// ルーム参加時送信ペイロード型
-export interface JoinRoomPayload {
-  roomId: string;
-  playerName: string;
-}
