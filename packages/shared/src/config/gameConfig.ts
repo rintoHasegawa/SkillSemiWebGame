@@ -18,4 +18,8 @@ export const GAME_CONFIG = {
   PLAYER_POSITION_UPDATE_MS: 50,  // 座標送信の間隔 (20Hz = 50ms)
   PLAYER_LERP_SMOOTHNESS: 0.3,    // 他プレイヤーの動きの滑らかさ (0.1〜0.5程度で調整)
   PLAYER_LERP_SNAP_THRESHOLD: 0.5,  // これ以下の距離になったら座標を強制的に合わせる
+
+  // チーム設定
+  // チームカラー 0:赤, 1:青, 2:緑, 3:黄
+  TEAM_COLORS: ['#FF4B4B', '#4B4BFF', '#4BFF4B', '#FFD700'],  
 } as const;

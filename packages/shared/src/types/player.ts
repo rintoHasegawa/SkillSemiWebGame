@@ -3,5 +3,5 @@ export interface PlayerData {
   id: string;
   x: number;
   y: number;
-  color: string;
+  teamId: number;   // 0〜3の数値を想定
 }
