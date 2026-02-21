@@ -1,4 +1,5 @@
 import { Graphics } from 'pixi.js';
+import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
 
 export class Player extends Graphics {
   constructor(color: number = 0xFF0000) {
@@ -9,8 +10,8 @@ export class Player extends Graphics {
 
   // 移動メソッド
   move(vx: number, vy: number, deltaTime: number) {
-    // 速度 200 で移動
-    const speed = 200 * deltaTime;
+    // 速度を定数から取得
+    const speed = GAME_CONFIG.PLAYER_SPEED * deltaTime;
     this.x += vx * speed;
     this.y += vy * speed;
 
