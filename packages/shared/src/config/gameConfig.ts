@@ -3,9 +3,14 @@ export const GAME_CONFIG = {
   SCREEN_WIDTH: 1280,
   SCREEN_HEIGHT: 720,
 
-  // マップサイズ設定
-  MAP_WIDTH: 2000,
-  MAP_HEIGHT: 2000,
+  // グリッド（マス）設定を新設
+  GRID_CELL_SIZE: 100, // 1マスのサイズ（px）
+  GRID_COLS: 20,       // 横のマス数
+  GRID_ROWS: 20,       // 縦のマス数
+  
+  // マップサイズはグリッド設定から自動計算させる（ハードコーディングを避ける）
+  get MAP_WIDTH() { return this.GRID_COLS * this.GRID_CELL_SIZE; },
+  get MAP_HEIGHT() { return this.GRID_ROWS * this.GRID_CELL_SIZE; },
   
   // ルーム収容人数設定
   MAX_PLAYERS_PER_ROOM: 4,
