@@ -26,5 +26,10 @@ export const GAME_CONFIG = {
 
   // チームカラー設定
   // teamId インデックス順カラー配列
-  TEAM_COLORS: ['#FF4B4B', '#4B4BFF', '#4BFF4B', '#FFD700'],  
+  TEAM_COLORS: ['#FF4B4B', '#4B4BFF', '#4BFF4B', '#FFD700'],
+
+  // マップ描画用のカラー設定
+  MAP_BG_COLOR: 0x111111,     // 何も塗っていないマス（背景）の色
+  MAP_GRID_COLOR: 0x333333,   // グリッド線の色
+  MAP_BORDER_COLOR: 0xff4444, // プレイ領域外枠の色
 } as const;
