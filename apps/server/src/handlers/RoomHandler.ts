@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { RoomManager } from "../managers/RoomManager.js";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
-import type { JoinRoomPayload } from "@repo/shared/src/types/payloads";
+import type { JoinRoomPayload } from "@repo/shared/src/types/room";
 
 export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: RoomManager) => {
   

@@ -1,7 +1,8 @@
 import { io, Socket } from "socket.io-client";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
-import type { PlayerData } from "@repo/shared/src/types/player";
+import type { MovePayload, PlayerData } from "@repo/shared/src/types/player";
 import type { CellUpdate } from "@repo/shared/src/types/map";
+import type { Room, JoinRoomPayload } from "@repo/shared/src/types/room";
 
 /**
  * サーバー WebSocket 通信管理クラス
@@ -33,7 +34,7 @@ export class SocketClient {
   /**
    * 初期プレイヤー一覧受信イベント購読
    */
-  onCurrentPlayers(callback: (players: any) => void) {
+  onCurrentPlayers(callback: (players: PlayerData[] | Record<string, PlayerData>) => void) {
     this.socket.on(SocketEvents.CURRENT_PLAYERS, callback);
   }
 
@@ -47,7 +48,7 @@ export class SocketClient {
   /**
    * 他プレイヤー状態更新イベント購読
    */
-  onUpdatePlayer(callback: (data: any) => void) {
+  onUpdatePlayer(callback: (data: Partial<PlayerData> & { id: string }) => void) {
     this.socket.on(SocketEvents.UPDATE_PLAYER, callback);
   }
 
@@ -64,7 +65,8 @@ export class SocketClient {
    * @param y 現在のY座標
    */
   sendMove(x: number, y: number) {
-    this.socket.emit(SocketEvents.MOVE, { x, y });
+    const payload: MovePayload = { x, y };
+    this.socket.emit(SocketEvents.MOVE, payload);
   }
 
   /**
@@ -80,13 +82,14 @@ export class SocketClient {
    * @param playerName 表示名
    */
   joinRoom(roomId: string, playerName: string) {
-    this.socket.emit(SocketEvents.JOIN_ROOM, { roomId, playerName });
+    const payload: JoinRoomPayload = { roomId, playerName };
+    this.socket.emit(SocketEvents.JOIN_ROOM, payload);
   }
 
   /**
    * ルーム情報更新イベント購読
    */
-  onRoomUpdate(callback: (room: any) => void) {
+  onRoomUpdate(callback: (room: Room) => void) {
     this.socket.on(SocketEvents.ROOM_UPDATE, callback);
   }
 

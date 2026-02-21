@@ -3,7 +3,7 @@ import { GameManager } from "../managers/GameManager.js";
 import { RoomManager } from "../managers/RoomManager.js";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
 import { RoomStatus } from "@repo/shared/src/types/room";
-import type { MovePayload } from "@repo/shared/src/types/payloads";
+import type { MovePayload } from "@repo/shared/src/types/player";
 
 export const registerGameHandlers = (io: Server, socket: Socket, gameManager: GameManager, roomManager: RoomManager) => {
   
