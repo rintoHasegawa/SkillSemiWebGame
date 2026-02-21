@@ -1,15 +1,20 @@
 import { useState } from "react";
 
-export const MAX_DIST = 60; // ジョイスティックの可動範囲
+// ジョイスティック最大入力距離
+export const MAX_DIST = 60;
 
 type Props = {
-  // スティックが動いたときのコールバック関数
+  // 正規化前入力ベクトル通知コールバック
   onMove: (moveX: number, moveY: number) => void;
 };
 
+// タッチ・マウス両対応仮想ジョイスティック
 export const VirtualJoystick = ({ onMove }: Props) => {
+  // 入力中フラグ
   const [isMoving, setIsMoving] = useState(false);
+  // ジョイスティック基準座標
   const [basePos, setBasePos] = useState({ x: 0, y: 0 });
+  // ノブ描画オフセット座標
   const [stickPos, setStickPos] = useState({ x: 0, y: 0 });
 
   const handleStart = (e: React.TouchEvent | React.MouseEvent) => {
@@ -35,14 +40,15 @@ export const VirtualJoystick = ({ onMove }: Props) => {
     const moveY = Math.sin(angle) * limitedDist;
 
     setStickPos({ x: moveX, y: moveY });
-    // app.tsx に計算結果だけを渡す
+    // 距離制限後入力ベクトル通知
     onMove(moveX, moveY);
   };
 
   const handleEnd = () => {
     setIsMoving(false);
     setStickPos({ x: 0, y: 0 });
-    onMove(0, 0); // 👈 追加: 指を離したら移動量 0,0 を伝える
+    // 入力終了時停止ベクトル通知
+    onMove(0, 0);
   };
 
   return (
@@ -60,7 +66,8 @@ export const VirtualJoystick = ({ onMove }: Props) => {
         left: 0,
         width: "100%",
         height: "100%",
-        zIndex: 10, // キャンバスの上に透明なタッチエリアをかぶせる
+        // キャンバス前面入力キャプチャレイヤー
+        zIndex: 10,
         touchAction: "none",
       }}
     >

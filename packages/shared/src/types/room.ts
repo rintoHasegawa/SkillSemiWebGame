@@ -1,4 +1,4 @@
-// 🌟 追加: アプリの画面遷移状態を定義
+// クライアント画面遷移利用ゲーム状態型
 export const GameState = {
   TITLE: 'title',
   LOBBY: 'lobby',
@@ -6,7 +6,7 @@ export const GameState = {
 } as const;
 export type GameState = typeof GameState[keyof typeof GameState];
 
-// 🌟 追加・修正: ルームの進行状態を文字列から定数オブジェクトに変更
+// ルーム進行フェーズ状態型
 export const RoomStatus = {
   WAITING: 'waiting',
   PLAYING: 'playing',
@@ -14,6 +14,7 @@ export const RoomStatus = {
 } as const;
 export type RoomStatus = typeof RoomStatus[keyof typeof RoomStatus];
 
+// ルーム所属プレイヤー情報型
 export interface RoomMember {
   id: string;
   name: string;
@@ -21,14 +22,16 @@ export interface RoomMember {
   isReady: boolean;
 }
 
+// ルーム全体状態データ構造型
 export interface Room {
   roomId: string;
   ownerId: string;
   players: RoomMember[];
-  status: RoomStatus;  // 👈 ここで上記の型を使用する
+  status: RoomStatus;
   maxPlayers: number;
 }
 
+// ルーム参加時送信ペイロード型
 export interface JoinRoomPayload {
   roomId: string;
   playerName: string;

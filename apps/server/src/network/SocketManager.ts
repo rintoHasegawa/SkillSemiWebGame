@@ -1,7 +1,5 @@
-// src/network/SocketManager.ts
 import { Server, Socket } from "socket.io";
 import { GameManager } from "../managers/GameManager.js";
-// shared側の型をインポート（※パスは実際の環境に合わせて修正してください）
 import { Room, RoomStatus } from "@repo/shared/src/types/room";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
@@ -12,7 +10,7 @@ export class SocketManager {
   private io: Server;
   private gameManager: GameManager;
   
-  // 🌟 追加: サーバーのメモリ上でルーム情報を管理
+  // サーバーメモリ上ルーム情報テーブル
   private rooms: Map<string, Room> = new Map();
 
   constructor(io: Server, gameManager: GameManager) {
@@ -24,22 +22,21 @@ export class SocketManager {
     this.io.on(SocketEvents.CONNECT, (socket: Socket) => {
       console.log(`✅ User connected: ${socket.id}`);
 
-      // ==========================================
-      // 🚪 ロビー・ルーム関連のイベント
-      // ==========================================
+      // ロビー・ルーム関連イベント群
 
       socket.on(SocketEvents.JOIN_ROOM, (data: { roomId: string; playerName: string }) => {
         const { roomId, playerName } = data;
         
-        // socket.io の機能でグループ(ルーム)に参加
+        // Socket.io ルーム参加処理
         socket.join(roomId);
 
-        // ルームが存在しない場合は作成
+        // ルーム未作成時の新規作成分岐
         let room = this.rooms.get(roomId);
         if (!room) {
           room = {
             roomId: roomId,
-            ownerId: socket.id, // 最初に作った人がオーナー
+            // 先着参加者のオーナー割り当て
+            ownerId: socket.id,
             players: [],
             status: RoomStatus.WAITING,
             maxPlayers: GAME_CONFIG.MAX_PLAYERS_PER_ROOM
@@ -47,7 +44,7 @@ export class SocketManager {
           this.rooms.set(roomId, room);
         }
 
-        // プレイヤー情報を追加
+        // 参加プレイヤー情報ルーム追加
         const newPlayer: RoomPlayer = {
           id: socket.id,
           name: playerName,
@@ -56,50 +53,48 @@ export class SocketManager {
         };
         room.players.push(newPlayer);
 
-        // ルームの全員に最新情報を送信
+        // ルーム内全員向け最新状態配信
         this.io.to(roomId).emit(SocketEvents.ROOM_UPDATE, room);
       });
 
-      // 🚀 ゲーム開始イベント
+      // ゲーム開始要求処理
       socket.on(SocketEvents.START_GAME, () => {
         for (const [roomId, room] of this.rooms.entries()) {
           if (room.ownerId === socket.id) {
             room.status = RoomStatus.PLAYING;
             
-            // 🎮 全員を GameManager に追加する
+            // 同ルーム全プレイヤーのゲーム管理登録
             room.players.forEach(p => {
               this.gameManager.addPlayer(p.id);
             });
 
-            // 📢 全員に「ゲーム画面に切り替えて！」と指示
+            // ルーム全員向けゲーム開始通知
             this.io.to(roomId).emit(SocketEvents.GAME_START);
             
-            // 🚨 【削除】ここでは current_players を送らない！（すれ違い防止）
+            // 初期プレイヤー一覧送信タイミング分離方針
             break;
           }
         }
       });
 
-      // 🌟 【新規追加】 クライアントから「画面の準備完了」が通知されたらデータを送る
+      // 画面準備完了通知受信時初期データ返却
       socket.on(SocketEvents.READY_FOR_GAME, () => {
-        // 全プレイヤー情報を取得
+        // ゲーム管理中全プレイヤー情報取得
         const allPlayers = this.gameManager.getAllPlayers();
         
-        // 準備が完了した「この通信主（socket）」に対してのみ初期データを送る
+        // 通知元ソケット限定初期データ送信
         socket.emit(SocketEvents.CURRENT_PLAYERS, allPlayers);
       });
 
-      // ==========================================
-      // 🎮 ゲームプレイ中のイベント
-      // ==========================================
+      // ゲームプレイ中イベント群
 
       socket.on(SocketEvents.MOVE, (data: { x: number; y: number }) => {
-        // マネージャーの状態を更新
+        // サーバー側プレイヤー座標更新
         this.gameManager.movePlayer(socket.id, data.x, data.y);
         
         const updatedPlayer = this.gameManager.getPlayer(socket.id);
         if (updatedPlayer) {
-            // 自分のいるルームを取得して、同じルームの人にだけ座標を送る
+            // 同一ルーム参加者限定座標更新配信
             const myRooms = Array.from(socket.rooms).filter(r => r !== socket.id);
             const targetRoom = myRooms.length > 0 ? myRooms[0] : null;
 
@@ -113,26 +108,24 @@ export class SocketManager {
         }
       });
 
-      // ==========================================
-      // ❌ 切断時のイベント
-      // ==========================================
+      // 切断時イベント群
 
       socket.on(SocketEvents.DISCONNECT, () => {
         console.log(`❌ User disconnected: ${socket.id}`);
         this.gameManager.removePlayer(socket.id);
         this.io.emit(SocketEvents.REMOVE_PLAYER, socket.id);
 
-        // ルームからも削除する
+        // 参加中ルームからの切断プレイヤー除外処理
         for (const [roomId, room] of this.rooms.entries()) {
           const playerIndex = room.players.findIndex(p => p.id === socket.id);
           if (playerIndex !== -1) {
             room.players.splice(playerIndex, 1);
             
             if (room.players.length === 0) {
-              // 誰もいなくなったらルームごと削除
+              // 空ルーム削除分岐
               this.rooms.delete(roomId);
             } else {
-              // オーナーが抜けた場合は次の人をオーナーにする
+              // オーナー切断時所有権移譲処理
               if (room.ownerId === socket.id) {
                 room.ownerId = room.players[0].id;
                 room.players[0].isOwner = true;

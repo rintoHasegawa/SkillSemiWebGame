@@ -3,66 +3,62 @@ import { SocketEvents } from "@repo/shared/src/protocol/events";
 import type { PlayerData } from "@repo/shared/src/types/player";
 
 /**
- * サーバーとのWebSocket通信を管理するクライアントクラス
+ * サーバー WebSocket 通信管理クラス
  */
 export class SocketClient {
   public socket: Socket;
 
   constructor() {
-    // サーバーへの接続を開始
+    // Socket.io クライアント接続初期化
     this.socket = io();
   }
 
   /**
-   * 1. 接続完了イベントの購読
-   * @param callback 接続成功時に自身のソケットIDを受け取る関数
+   * 接続完了イベント購読
+   * @param callback 接続済みソケットID受け取りコールバック
    */
   onConnect(callback: (id: string) => void) {
-    // 🌟 追加: 呼び出された時点ですでに接続済みの場合は、即座にコールバックを実行する
+    // 接続済み状態での即時通知
     if (this.socket.connected) {
       callback(this.socket.id || "");
     }
 
-    // まだ接続されていない場合、または再接続された時のためにイベントリスナーも登録しておく
+    // 初回接続・再接続イベント購読
     this.socket.on(SocketEvents.CONNECT, () => {
       callback(this.socket.id || "");
     });
   }
 
   /**
-   * 2. 初期プレイヤー一覧の受信
-   * ゲーム参加時、既に存在する全プレイヤーのデータを受け取る
+   * 初期プレイヤー一覧受信イベント購読
    */
   onCurrentPlayers(callback: (players: any) => void) {
     this.socket.on(SocketEvents.CURRENT_PLAYERS, callback);
   }
 
   /**
-   * 3. 新規プレイヤー参加イベントの購読
-   * 他の誰かが新しく入室したときに通知される
+   * 新規プレイヤー参加イベント購読
    */
   onNewPlayer(callback: (player: PlayerData) => void) {
     this.socket.on(SocketEvents.NEW_PLAYER, callback);
   }
 
   /**
-   * 4. 他プレイヤーの状態更新の受信
-   * 他のプレイヤーの移動などの座標データを受け取る
+   * 他プレイヤー状態更新イベント購読
    */
   onUpdatePlayer(callback: (data: any) => void) {
     this.socket.on(SocketEvents.UPDATE_PLAYER, callback);
   }
 
   /**
-   * 5. プレイヤー退出イベントの購読
-   * 他のプレイヤーが切断したときに通知される
+   * プレイヤー退出イベント購読
    */
   onRemovePlayer(callback: (id: string) => void) {
     this.socket.on(SocketEvents.REMOVE_PLAYER, callback);
   }
 
   /**
-   * 6. 自身の移動データを送信
+   * 自身移動データ送信
    * @param x 現在のX座標
    * @param y 現在のY座標
    */
@@ -71,7 +67,7 @@ export class SocketClient {
   }
 
   /**
-   * 7. 特定のルームへの入室リクエスト
+    * ルーム入室リクエスト送信
    * @param roomId 入室先のID
    * @param playerName 表示名
    */
@@ -80,37 +76,33 @@ export class SocketClient {
   }
 
   /**
-   * 8. ルーム情報の更新を受信
-   * ルーム内の人数や準備状況が変わるたびにサーバーから送られてくる
+   * ルーム情報更新イベント購読
    */
   onRoomUpdate(callback: (room: any) => void) {
     this.socket.on(SocketEvents.ROOM_UPDATE, callback);
   }
 
   /**
-   * 9. ゲーム開始通知の受信
-   * サーバー側でゲーム開始が確定したときに呼ばれる
+   * ゲーム開始通知イベント購読
    */
   onGameStart(callback: () => void) {
     this.socket.on(SocketEvents.GAME_START, callback);
   }
 
   /**
-   * 10. ゲーム開始リクエスト
-   * ルームオーナーがゲームを開始させる際に送信する
+   * ゲーム開始リクエスト送信
    */
   startGame() {
     this.socket.emit(SocketEvents.START_GAME);
   }
 
   /**
-   * 11. ゲーム画面準備完了の通知
-   * シーン遷移が完了し、データを受け取る準備ができたことをサーバーに伝える
+   * ゲーム画面準備完了通知
    */
   readyForGame() {
     this.socket.emit(SocketEvents.READY_FOR_GAME);
   }
 }
 
-// シングルトンインスタンスとしてエクスポート
+// シングルトン利用向け共有インスタンス
 export const socketClient = new SocketClient();

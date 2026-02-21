@@ -1,19 +1,22 @@
 import { useState } from "react";
-// sharedからのインポート（パスは環境に合わせて調整してください）
+// ルーム参加時送信ペイロード型
 import type { JoinRoomPayload } from "@repo/shared/src/types/room";
 
 type Props = {
-  // バラバラの引数から、共通のペイロード型に変更
+  // 入室実行時呼び出しコールバック
   onJoin: (payload: JoinRoomPayload) => void;
 };
 
 export const TitleScene = ({ onJoin }: Props) => {
+  // プレイヤー名入力値
   const [playerName, setPlayerName] = useState("");
+  // ルームID入力値
   const [roomIdInput, setRoomIdInput] = useState("");
 
-  // 元の条件を維持（両方入力されていればOK）
+  // 入室ボタン活性条件
   const canJoin = playerName !== "" && roomIdInput !== "";
 
+  // 入室実行ハンドラ
   const handleJoin = () => {
     if (canJoin) {
       onJoin({ roomId: roomIdInput, playerName });

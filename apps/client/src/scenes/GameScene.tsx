@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 import { Application, Container } from "pixi.js";
 
-// ネットワーク・入力
+// ネットワーク・入力関連
 import { socketClient} from "../network/SocketClient";
 import { VirtualJoystick, MAX_DIST } from "../input/VirtualJoystick";
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
 import { type PlayerData } from "@repo/shared/src/types/player";
 
-// ゲームオブジェクト
+// ゲーム描画オブジェクト
 import { GameMap } from "../entities/GameMap";
 import { Player } from "../entities/Player";
 
@@ -16,33 +16,41 @@ interface GameSceneProps {
 }
 
 /**
- * メインのゲーム画面コンポーネント
- * PixiJSの初期化、エンティティの管理、ソケット通信の同期を行う
+ * メインゲーム画面コンポーネント
+ * PixiJS 初期化・エンティティ管理・ソケット同期処理
  */
 export function GameScene({ myId }: GameSceneProps) {
   const pixiContainerRef = useRef<HTMLDivElement>(null);
-  const joystickInputRef = useRef({ x: 0, y: 0 }); // ジョイスティックの入力値を保持
-  const playersRef = useRef<Record<string, Player>>({}); // 全プレイヤーのスプライト参照
-  const lastPositionSentTimeRef = useRef<number>(0); // サーバーへの位置送信タイミングを制御
-  const targetPositionsRef = useRef<Record<string, { x: number, y: number }>>({}); // 他プレイヤーの目標位置（補完用）
-  const wasMovingRef = useRef<boolean>(false); // 移動状態の変化を検知するためのフラグ
+  // ジョイスティック入力値
+  const joystickInputRef = useRef({ x: 0, y: 0 });
+  // プレイヤースプライト参照テーブル
+  const playersRef = useRef<Record<string, Player>>({});
+  // 位置送信間隔制御用タイムスタンプ
+  const lastPositionSentTimeRef = useRef<number>(0);
+  // 他プレイヤー補間用目標座標テーブル
+  const targetPositionsRef = useRef<Record<string, { x: number, y: number }>>({});
+  // 前フレーム移動状態
+  const wasMovingRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!pixiContainerRef.current) return;
 
-    let isCancelled = false; // 非同期処理中のクリーンアップ判定用
+    // 非同期初期化中アンマウント判定フラグ
+    let isCancelled = false;
+    // Pixi 初期化完了フラグ
     let isInitialized = false;
     const app = new Application();
-    const worldContainer = new Container(); // カメラ移動を実現するための親コンテナ
+    // カメラ追従向けワールド親コンテナ
+    const worldContainer = new Container();
 
     const initPixi = async () => {
-      // マップを一番下のレイヤー（背景）として追加
+      // 背景マップ最背面配置
       const gameMap = new GameMap();
       worldContainer.addChild(gameMap);
 
-      // --- ソケットイベントリスナーの設定 ---
+      // ソケットイベント購読登録
 
-      // 接続時：既存の全プレイヤーを生成
+      // 参加済みプレイヤー初期スプライト生成
       socketClient.onCurrentPlayers((serverPlayers: PlayerData[] | Record<string, PlayerData>) => {
         console.log("🔥 プレイヤー一覧を受信:", serverPlayers);
         const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as PlayerData[];
@@ -56,7 +64,7 @@ export function GameScene({ myId }: GameSceneProps) {
         });
       });
 
-      // 新規参加：新しいプレイヤーを画面に追加
+      // 新規参加プレイヤー追加処理
       socketClient.onNewPlayer((p: PlayerData) => {
         console.log("🔥 新規プレイヤー参加:", p);
         const playerSprite = new Player(GAME_CONFIG.TEAM_COLORS[p.teamId], false);
@@ -66,7 +74,7 @@ export function GameScene({ myId }: GameSceneProps) {
         targetPositionsRef.current[p.id] = { x: p.x, y: p.y };
       });
 
-      // 更新：他プレイヤーの移動目標地点を更新
+      // 他プレイヤー目標座標更新
       socketClient.onUpdatePlayer((data: Partial<PlayerData> & { id: string }) => {
         if (data.id === myId) return;
         
@@ -77,7 +85,7 @@ export function GameScene({ myId }: GameSceneProps) {
         }
       });
 
-      // 退出：プレイヤーを削除してメモリを解放
+      // 退出プレイヤー参照削除とオブジェクト破棄
       socketClient.onRemovePlayer((id: string) => {
         const target = playersRef.current[id];
         if (target) {
@@ -88,50 +96,51 @@ export function GameScene({ myId }: GameSceneProps) {
         }
       });
 
-      // PixiJS本体の初期化
+      // PixiJS 本体初期化
       await app.init({ resizeTo: window, backgroundColor: 0x111111, antialias: true });
       isInitialized = true;
       
-      // 🚨 もし初期化を待っている間にReactがアンマウントされていたら、ここで破棄して終了する
+      // 初期化待機中アンマウント時の即時破棄分岐
       if (isCancelled) {
         app.destroy(true, { children: true });
         return;
       }
       
+      // ルートステージへのワールド追加
       pixiContainerRef.current?.appendChild(app.canvas);
       app.stage.addChild(worldContainer);
 
-      // 全ての準備が整ったことをサーバーに通知
+      // 画面準備完了通知送信
       socketClient.readyForGame();
 
-      // --- メインゲームループ（Ticker） ---
+      // メインゲームループ登録
       app.ticker.add((ticker) => {
         if (!myId) return;
         const me = playersRef.current[myId];
         if (!me) return; 
 
-        // 自分の移動処理
+        // 自プレイヤー移動処理
         const { x: dx, y: dy } = joystickInputRef.current;
         const isMoving = dx !== 0 || dy !== 0;
         
         if (isMoving) {
           me.move(dx / MAX_DIST, dy / MAX_DIST, ticker.deltaTime);
           
-          // 通信負荷軽減のため、一定間隔でのみサーバーへ位置を送信
+          // 通信負荷抑制向け間引き送信
           const now = performance.now();
           if (now - lastPositionSentTimeRef.current >= GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
             socketClient.sendMove(me.x, me.y);
             lastPositionSentTimeRef.current = now;
           }
         } else if (wasMovingRef.current) {
-          // 💡 止まった瞬間の確定座標を1回だけ送信して他プレイヤーとのズレを防ぐ
+          // 停止瞬間の確定座標単発送信
           socketClient.sendMove(me.x, me.y);
         }
 
-        // 今回の移動状態を次回ループのために保存
+        // 次フレーム比較用移動状態保存
         wasMovingRef.current = isMoving;
 
-        // 他プレイヤーの線形補間（Lerp）処理と吸着（Snap）
+        // 他プレイヤー座標の線形補間と閾値吸着
         Object.entries(playersRef.current).forEach(([id, player]) => {
           if (id === myId) return;
 
@@ -140,14 +149,14 @@ export function GameScene({ myId }: GameSceneProps) {
             const diffX = targetPos.x - player.x;
             const diffY = targetPos.y - player.y;
 
-            // X軸の補完と吸着
+            // X軸方向補間と吸着
             if (Math.abs(diffX) < GAME_CONFIG.PLAYER_LERP_SNAP_THRESHOLD) {
               player.x = targetPos.x;
             } else {
               player.x += diffX * GAME_CONFIG.PLAYER_LERP_SMOOTHNESS * ticker.deltaTime;
             }
 
-            // Y軸の補完と吸着
+            // Y軸方向補間と吸着
             if (Math.abs(diffY) < GAME_CONFIG.PLAYER_LERP_SNAP_THRESHOLD) {
               player.y = targetPos.y;
             } else {
@@ -156,7 +165,7 @@ export function GameScene({ myId }: GameSceneProps) {
           }
         });
 
-        // カメラ追従：自分を中心に世界を逆方向にずらす
+        // 自プレイヤー中心表示向けワールド逆方向オフセット
         worldContainer.position.set(
           -(me.x - app.screen.width / 2),
           -(me.y - app.screen.height / 2)
@@ -166,7 +175,7 @@ export function GameScene({ myId }: GameSceneProps) {
 
     initPixi();
 
-    // クリーンアップ処理 (コンポーネントのアンマウント時に実行)
+    // コンポーネント破棄時クリーンアップ
     return () => {
       isCancelled = true;
 
@@ -176,20 +185,20 @@ export function GameScene({ myId }: GameSceneProps) {
 
       playersRef.current = {};
       
-      // メモリリーク防止のためソケットのイベント登録を解除
+      // メモリリーク防止向けイベント購読解除
       socketClient.socket.off("current_players");
       socketClient.socket.off("new_player");
       socketClient.socket.off("update_player");
       socketClient.socket.off("remove_player");
     };
-  }, [myId]); // 自分のIDが確定したタイミングで再実行
+  }, [myId]);
 
   return (
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden", position: "relative", backgroundColor: "#000" }}>
-      {/* PixiJSのCanvasが挿入される要素 */}
+      {/* PixiJS Canvas 配置領域 */}
       <div ref={pixiContainerRef} style={{ position: "absolute", top: 0, left: 0, zIndex: 1 }} />
       
-      {/* UIレイヤー：ジョイスティック等 */}
+      {/* 入力UI重畳用前面レイヤー */}
       <div style={{ position: "absolute", zIndex: 2, width: "100%", height: "100%" }}>
         <VirtualJoystick onMove={(x, y) => { joystickInputRef.current = { x, y }; }} />
       </div>
