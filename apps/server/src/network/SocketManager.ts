@@ -3,6 +3,8 @@ import { Server, Socket } from "socket.io";
 import { GameManager } from "../managers/GameManager.js";
 // shared側の型をインポート（※パスは実際の環境に合わせて修正してください）
 import type { Room } from "@repo/shared/src/types/room";
+import { SocketEvents } from "@repo/shared/src/protocol/events";
+
 type RoomPlayer = Room["players"][0];
 
 export class SocketManager {
@@ -18,14 +20,14 @@ export class SocketManager {
   }
 
   public initialize() {
-    this.io.on("connection", (socket: Socket) => {
+    this.io.on(SocketEvents.CONNECT, (socket: Socket) => {
       console.log(`✅ User connected: ${socket.id}`);
 
       // ==========================================
       // 🚪 ロビー・ルーム関連のイベント
       // ==========================================
 
-      socket.on("join-room", (data: { roomId: string; playerName: string }) => {
+      socket.on(SocketEvents.JOIN_ROOM, (data: { roomId: string; playerName: string }) => {
         const { roomId, playerName } = data;
         
         // socket.io の機能でグループ(ルーム)に参加
@@ -54,11 +56,11 @@ export class SocketManager {
         room.players.push(newPlayer);
 
         // ルームの全員に最新情報を送信
-        this.io.to(roomId).emit("room-update", room);
+        this.io.to(roomId).emit(SocketEvents.ROOM_UPDATE, room);
       });
 
       // 🚀 ゲーム開始イベント
-      socket.on("start-game", () => {
+      socket.on(SocketEvents.START_GAME, () => {
         for (const [roomId, room] of this.rooms.entries()) {
           if (room.ownerId === socket.id) {
             room.status = 'playing';
@@ -69,7 +71,7 @@ export class SocketManager {
             });
 
             // 📢 全員に「ゲーム画面に切り替えて！」と指示
-            this.io.to(roomId).emit("game-start");
+            this.io.to(roomId).emit(SocketEvents.GAME_START);
             
             // 🚨 【削除】ここでは current_players を送らない！（すれ違い防止）
             break;
@@ -78,19 +80,19 @@ export class SocketManager {
       });
 
       // 🌟 【新規追加】 クライアントから「画面の準備完了」が通知されたらデータを送る
-      socket.on("ready-for-game", () => {
+      socket.on(SocketEvents.READY_FOR_GAME, () => {
         // 全プレイヤー情報を取得
         const allPlayers = this.gameManager.getAllPlayers();
         
         // 準備が完了した「この通信主（socket）」に対してのみ初期データを送る
-        socket.emit("current_players", allPlayers);
+        socket.emit(SocketEvents.CURRENT_PLAYERS, allPlayers);
       });
 
       // ==========================================
       // 🎮 ゲームプレイ中のイベント
       // ==========================================
 
-      socket.on("move", (data: { x: number; y: number }) => {
+      socket.on(SocketEvents.MOVE, (data: { x: number; y: number }) => {
         // マネージャーの状態を更新
         this.gameManager.movePlayer(socket.id, data.x, data.y);
         
@@ -101,7 +103,7 @@ export class SocketManager {
             const targetRoom = myRooms.length > 0 ? myRooms[0] : null;
 
             if (targetRoom) {
-              this.io.to(targetRoom).emit("update_player", { 
+              this.io.to(targetRoom).emit(SocketEvents.UPDATE_PLAYER, { 
                   id: socket.id, 
                   x: updatedPlayer.x, 
                   y: updatedPlayer.y 
@@ -114,10 +116,10 @@ export class SocketManager {
       // ❌ 切断時のイベント
       // ==========================================
 
-      socket.on("disconnect", () => {
+      socket.on(SocketEvents.DISCONNECT, () => {
         console.log(`❌ User disconnected: ${socket.id}`);
         this.gameManager.removePlayer(socket.id);
-        this.io.emit("remove_player", socket.id);
+        this.io.emit(SocketEvents.REMOVE_PLAYER, socket.id);
 
         // ルームからも削除する
         for (const [roomId, room] of this.rooms.entries()) {
@@ -134,7 +136,7 @@ export class SocketManager {
                 room.ownerId = room.players[0].id;
                 room.players[0].isOwner = true;
               }
-              this.io.to(roomId).emit("room-update", room);
+              this.io.to(roomId).emit(SocketEvents.ROOM_UPDATE, room);
             }
           }
         }
