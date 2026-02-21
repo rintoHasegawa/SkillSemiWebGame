@@ -2,9 +2,10 @@ import { useEffect, useRef } from "react";
 import { Application, Container } from "pixi.js";
 
 // ネットワーク・入力
-import { socketClient, type PlayerData } from "../network/SocketClient";
+import { socketClient} from "../network/SocketClient";
 import { VirtualJoystick, MAX_DIST } from "../input/VirtualJoystick";
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
+import { type PlayerData } from "@repo/shared/src/types/player";
 
 // ゲームオブジェクト
 import { GameMap } from "../entities/GameMap";
@@ -47,7 +48,7 @@ export function GameScene({ myId }: GameSceneProps) {
         const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as PlayerData[];
         playersArray.forEach((p) => {
           const isMe = p.id === myId;
-          const playerSprite = new Player(p.color, isMe);
+          const playerSprite = new Player(GAME_CONFIG.TEAM_COLORS[p.teamId], isMe);
           playerSprite.position.set(p.x, p.y);
           worldContainer.addChild(playerSprite);
           playersRef.current[p.id] = playerSprite;
@@ -58,7 +59,7 @@ export function GameScene({ myId }: GameSceneProps) {
       // 新規参加：新しいプレイヤーを画面に追加
       socketClient.onNewPlayer((p: PlayerData) => {
         console.log("🔥 新規プレイヤー参加:", p);
-        const playerSprite = new Player(p.color, false);
+        const playerSprite = new Player(GAME_CONFIG.TEAM_COLORS[p.teamId], false);
         playerSprite.position.set(p.x, p.y);
         worldContainer.addChild(playerSprite);
         playersRef.current[p.id] = playerSprite;
