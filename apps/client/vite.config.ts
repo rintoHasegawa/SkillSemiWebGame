@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/socket.io': {
-        target: 'https://skillsemiwebgame.onrender.com',
+        target: 'localhost:3000',
         ws: true,
       },
     },

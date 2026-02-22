@@ -11,8 +11,14 @@ export class SocketClient {
   public socket: Socket;
 
   constructor() {
-    // Socket.io クライアント接続初期化
-    this.socket = io();
+    // サーバー（バックエンド）のURLを直接指定する
+    // 本番環境（Render）のURLを指定することで、プロキシなしで直接通信させます
+    const SERVER_URL = "https://skillsemiwebgame.onrender.com";
+
+    this.socket = io(SERVER_URL, {
+      transports: ["websocket", "polling"], // 接続の安定性を高める
+      withCredentials: true
+    });
   }
 
   /**
