@@ -1,9 +1,9 @@
 import { Server, Socket } from "socket.io";
 import { GameManager } from "./GameManager";
 import { RoomManager } from "../room/RoomManager";
-import { SocketEvents } from "@repo/shared/src/protocol/events";
-import { RoomStatus } from "@repo/shared/src/domains/room/room.type";
-import type { MovePayload } from "@repo/shared/src/domains/player/player.type";
+import { SocketEvents } from "@repo/shared";
+import { RoomStatus } from "@repo/shared";
+import type { MovePayload } from "@repo/shared";
 
 export const registerGameHandlers = (io: Server, socket: Socket, gameManager: GameManager, roomManager: RoomManager) => {
   

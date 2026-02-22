@@ -1,6 +1,6 @@
 // apps/server/src/states/MapStore.ts
-import type { CellUpdate } from "@repo/shared/src/domains/gridMap/gridMap.type";
-import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
+import type { CellUpdate } from "@repo/shared";
+import { GAME_CONFIG } from "@repo/shared";
 
 export class MapStore {
   // 全マスの現在の色（teamId）を保持

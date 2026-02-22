@@ -1,5 +1,5 @@
-import { Room, RoomStatus, RoomMember } from "@repo/shared/src/domains/room/room.type";
-import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
+import { Room, RoomStatus, RoomMember } from "@repo/shared";
+import { GAME_CONFIG } from "@repo/shared";
 
 export class RoomManager {
   private rooms: Map<string, Room> = new Map();

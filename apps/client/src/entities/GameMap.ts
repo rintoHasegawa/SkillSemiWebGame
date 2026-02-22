@@ -1,7 +1,7 @@
 // apps/client/src/game/map/GameMap.ts (パスは適宜読み替えてください)
 import { Container, Graphics } from "pixi.js";
-import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
-import type { MapState, CellUpdate } from "@repo/shared/src/domains/gridMap/gridMap.type";
+import { GAME_CONFIG } from "@repo/shared";
+import type { MapState, CellUpdate } from "@repo/shared";
 
 // 親クラスを Graphics から Container に変更し、レイヤー管理を可能にする
 export class GameMap extends Container {
