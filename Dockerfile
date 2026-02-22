@@ -4,6 +4,9 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
+# pnpmの確認をスキップさせるための設定
+ENV CI=true
+
 WORKDIR /app
 
 # モノレポ全体のファイルをコピー
