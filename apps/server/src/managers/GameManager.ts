@@ -3,15 +3,19 @@ import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
 import { MapStore } from "../states/MapStore";
 import { getGridIndexFromPosition } from "@repo/shared/src/domains/gridMap/gridMap.logic";
 import type { CellUpdate } from "@repo/shared/src/domains/gridMap/gridMap.type";
+import { SocketEvents } from "@repo/shared/src/protocol/events"
+import { Server } from "socket.io";
 
 // プレイヤー集合の生成・更新・参照管理クラス
 export class GameManager {
   private players: Map<string, Player>;
   private mapStore: MapStore;
+  private gameLoops: Map<string, NodeJS.Timeout>;
 
   constructor() {
     this.players = new Map();
     this.mapStore = new MapStore();
+    this.gameLoops = new Map();
   }
 
   // 新規プレイヤー登録と初期位置設定処理
@@ -53,6 +57,69 @@ export class GameManager {
       // クライアント送信絶対座標の直接反映
       player.x = x;
       player.y = y;
+    }
+  }
+
+  /**
+   * 20Hz固定のゲームループを開始する
+   * @param roomId ルームID
+   * @param io WebSocketサーバーインスタンス
+   * @param playerIds このルームに参加しているプレイヤーのIDリスト
+   */
+  startGameLoop(roomId: string, io: Server, playerIds: string[]) {
+    // 既にループが回っている場合は何もしない
+    if (this.gameLoops.has(roomId)) return;
+
+    // gameConfigから20Hz（50ms）の定数を取得
+    const tickRate = GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
+
+    const loopId = setInterval(() => {
+      // 1. 各プレイヤーの処理
+      playerIds.forEach(id => {
+        const player = this.players.get(id);
+        if (!player) return;
+
+        // マス塗りの判定
+        const gridIndex = getGridIndexFromPosition(player.x, player.y);
+        if (gridIndex !== null) {
+          this.mapStore.paintCell(gridIndex, player.teamId);
+        }
+
+        // 【追加】ここで各プレイヤーの最新座標をクライアントに送信する！
+        io.to(roomId).emit(SocketEvents.UPDATE_PLAYER, {
+          id: player.id,
+          x: player.x,
+          y: player.y,
+          teamId: player.teamId
+        });
+      });
+
+      // 2. マスの差分（Diff）を取得
+      const cellUpdates = this.mapStore.getAndClearUpdates();
+
+      // 3. 差分があれば、ルーム内の全員に一斉送信
+      if (cellUpdates.length > 0) {
+        io.to(roomId).emit(SocketEvents.UPDATE_MAP_CELLS, cellUpdates);
+      }
+
+      // 4. 今後、プレイヤーの座標データ(UPDATE_PLAYER)もここで一括送信するように変更できます
+      
+    }, tickRate);
+
+    // ループIDを保存
+    this.gameLoops.set(roomId, loopId);
+    console.log(`[GameLoop] Started for room: ${roomId} at ${tickRate}ms`);
+  }
+
+  /**
+   * ゲームループを停止する
+   */
+  stopGameLoop(roomId: string) {
+    const loopId = this.gameLoops.get(roomId);
+    if (loopId) {
+      clearInterval(loopId);
+      this.gameLoops.delete(roomId);
+      console.log(`[GameLoop] Stopped for room: ${roomId}`);
     }
   }
 
