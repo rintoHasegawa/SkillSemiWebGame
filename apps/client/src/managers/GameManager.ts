@@ -1,7 +1,7 @@
 import { Application, Container, Ticker } from "pixi.js";
 import { socketClient } from "../network/SocketClient";
-import { GAME_CONFIG } from "@repo/shared";
-import type { PlayerData } from "@repo/shared";
+import { config } from "@repo/shared";
+import type { playerTypes } from "@repo/shared";
 import { BasePlayer, LocalPlayer, RemotePlayer } from "../entities/Player";
 import { GameMap } from "../entities/GameMap";
 import { MAX_DIST } from "../input/VirtualJoystick";
@@ -22,11 +22,11 @@ export class GameManager {
 
   // 現在の残り秒数を取得する
   public getRemainingTime(): number {
-    if (!this.gameStartTime) return GAME_CONFIG.GAME_DURATION_SEC;
+    if (!this.gameStartTime) return config.GAME_CONFIG.GAME_DURATION_SEC;
     
     // 現在のサーバー時刻を推定 (Date.now() + サーバーとの誤差補正が理想ですが、まずは簡易版で)
     const elapsedMs = Date.now() - this.gameStartTime;
-    const remainingSec = GAME_CONFIG.GAME_DURATION_SEC - (elapsedMs / 1000);
+    const remainingSec = config.GAME_CONFIG.GAME_DURATION_SEC - (elapsedMs / 1000);
     
     return Math.max(0, remainingSec);
   }
@@ -88,8 +88,8 @@ export class GameManager {
    * ソケットイベントの登録
    */
   private setupSocketListeners() {
-    socketClient.onCurrentPlayers((serverPlayers: PlayerData[] | Record<string, PlayerData>) => {
-      const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as PlayerData[];
+    socketClient.onCurrentPlayers((serverPlayers: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => {
+      const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as playerTypes.PlayerData[];
       playersArray.forEach((p) => {
         const playerSprite = p.id === this.myId ? new LocalPlayer(p) : new RemotePlayer(p);
         this.worldContainer.addChild(playerSprite);
@@ -97,7 +97,7 @@ export class GameManager {
       });
     });
 
-    socketClient.onNewPlayer((p: PlayerData) => {
+    socketClient.onNewPlayer((p: playerTypes.PlayerData) => {
       const playerSprite = new RemotePlayer(p);
       this.worldContainer.addChild(playerSprite);
       this.players[p.id] = playerSprite;
@@ -111,7 +111,7 @@ export class GameManager {
       }
     });
 
-    socketClient.onUpdatePlayer((data: Partial<PlayerData> & { id: string }) => {
+    socketClient.onUpdatePlayer((data: Partial<playerTypes.PlayerData> & { id: string }) => {
       if (data.id === this.myId) return;
       const target = this.players[data.id];
       if (target && target instanceof RemotePlayer) {
@@ -148,7 +148,7 @@ export class GameManager {
       me.move(dx / MAX_DIST, dy / MAX_DIST, ticker.deltaTime);
       
       const now = performance.now();
-      if (now - this.lastPositionSentTime >= GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
+      if (now - this.lastPositionSentTime >= config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
         socketClient.sendMove(me.x, me.y);
         this.lastPositionSentTime = now;
       }

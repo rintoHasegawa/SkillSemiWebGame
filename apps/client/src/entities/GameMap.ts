@@ -1,7 +1,7 @@
 // apps/client/src/game/map/GameMap.ts (パスは適宜読み替えてください)
 import { Container, Graphics } from "pixi.js";
-import { GAME_CONFIG } from "@repo/shared";
-import type { MapState, CellUpdate } from "@repo/shared";
+import { config } from "@repo/shared";
+import type { gridMapTypes } from "@repo/shared";
 
 // 親クラスを Graphics から Container に変更し、レイヤー管理を可能にする
 export class GameMap extends Container {
@@ -30,7 +30,7 @@ export class GameMap extends Container {
 
   // 設定値に基づき、空のマス目（Graphics）を400個生成して配列に格納する
   private initCells() {
-    const { GRID_COLS, GRID_ROWS, GRID_CELL_SIZE } = GAME_CONFIG;
+    const { GRID_COLS, GRID_ROWS, GRID_CELL_SIZE } = config.GAME_CONFIG;
     const totalCells = GRID_COLS * GRID_ROWS;
 
     for (let i = 0; i < totalCells; i++) {
@@ -52,7 +52,7 @@ export class GameMap extends Container {
     const { 
       MAP_WIDTH, MAP_HEIGHT, GRID_CELL_SIZE, 
       MAP_BG_COLOR, MAP_GRID_COLOR, MAP_BORDER_COLOR 
-    } = GAME_CONFIG;
+    } = config.GAME_CONFIG;
 
     // マップ全域背景レイヤー
     this.bgGraphics.rect(0, 0, MAP_WIDTH, MAP_HEIGHT).fill(MAP_BG_COLOR);
@@ -73,8 +73,8 @@ export class GameMap extends Container {
   /**
    * サーバー（またはテストロジック）から受け取った最新のマップ状態で色を更新する
    */
-  public updateMapState(state: MapState) {
-    const { GRID_CELL_SIZE, TEAM_COLORS } = GAME_CONFIG;
+  public updateMapState(state: gridMapTypes.MapState) {
+    const { GRID_CELL_SIZE, TEAM_COLORS } = config.GAME_CONFIG;
 
     for (let i = 0; i < state.gridColors.length; i++) {
       const teamId = state.gridColors[i];
@@ -98,8 +98,8 @@ export class GameMap extends Container {
   /**
    * 差分データを受け取って指定のマスだけ色を更新する
    */
-  public updateCells(updates: CellUpdate[]) {
-    const { GRID_CELL_SIZE, TEAM_COLORS } = GAME_CONFIG;
+  public updateCells(updates: gridMapTypes.CellUpdate[]) {
+    const { GRID_CELL_SIZE, TEAM_COLORS } = config.GAME_CONFIG;
 
     updates.forEach(({ index, teamId }) => {
       const cell = this.cells[index];

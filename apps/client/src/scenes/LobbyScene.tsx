@@ -1,7 +1,7 @@
-import type { Room, RoomMember } from "@repo/shared";
+import type { roomTypes } from "@repo/shared";
 
 type Props = {
-  room: Room | null;
+  room: roomTypes.Room | null;
   myId: string | null;
   onStart: () => void;
 };
@@ -24,7 +24,7 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
         </h3>
         <ul style={{ listStyle: "none", padding: 0, fontSize: "1.2rem" }}>
           {/* 参加プレイヤー一覧描画 */}
-          {room.players.map((p: RoomMember) => (
+          {room.players.map((p: roomTypes.RoomMember) => (
             <li key={p.id} style={{ margin: "15px 0", display: "flex", alignItems: "center", gap: "10px" }}>
               <span>{p.id === myId ? "🟢" : "⚪"}</span>
               <span style={{ fontWeight: p.id === myId ? "bold" : "normal" }}>{p.name}</span>
