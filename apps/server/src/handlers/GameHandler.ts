@@ -45,6 +45,14 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
           x: updatedPlayer.x, 
           y: updatedPlayer.y 
         });
+
+        // ② 【新規】マス目の更新と差分送信のテスト
+        const cellUpdates = gameManager.paintAndGetUpdates(socket.id);
+        if (cellUpdates.length > 0) {
+          io.to(targetRoom).emit(SocketEvents.UPDATE_MAP_CELLS, cellUpdates);
+          // ログを出してサーバー側で送信されているか確認すると便利です
+          console.log(`[MAP_UPDATE] Sent ${cellUpdates.length} updates to room ${targetRoom}`);
+        }
       }
     }
   });

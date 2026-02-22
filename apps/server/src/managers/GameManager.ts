@@ -1,12 +1,17 @@
 import { Player } from "../entities/Player.js";
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
+import { MapStore } from "../states/MapStore";
+import { getGridIndexFromPosition } from "@repo/shared/src/domains/gridMap/gridMap.logic";
+import type { CellUpdate } from "@repo/shared/src/domains/gridMap/gridMap.type";
 
 // プレイヤー集合の生成・更新・参照管理クラス
 export class GameManager {
   private players: Map<string, Player>;
+  private mapStore: MapStore;
 
   constructor() {
     this.players = new Map();
+    this.mapStore = new MapStore();
   }
 
   // 新規プレイヤー登録と初期位置設定処理
@@ -54,5 +59,18 @@ export class GameManager {
   // 登録中全プレイヤー配列取得
   getAllPlayers() {
     return Array.from(this.players.values());
+  }
+
+  // 【一時的】移動したプレイヤーの足元を塗り、差分を返すメソッド
+  public paintAndGetUpdates(playerId: string): CellUpdate[] {
+    const player = this.players.get(playerId);
+    if (!player) return [];
+
+    const gridIndex = getGridIndexFromPosition(player.x, player.y);
+    if (gridIndex !== null) {
+      this.mapStore.paintCell(gridIndex, player.teamId);
+    }
+
+    return this.mapStore.getAndClearUpdates();
   }
 }
