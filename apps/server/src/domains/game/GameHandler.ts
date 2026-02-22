@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
-import { GameManager } from "../managers/GameManager.js";
-import { RoomManager } from "../managers/RoomManager.js";
+import { GameManager } from "./GameManager";
+import { RoomManager } from "../room/RoomManager";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
 import { RoomStatus } from "@repo/shared/src/domains/room/room.type";
 import type { MovePayload } from "@repo/shared/src/domains/player/player.type";
@@ -13,6 +13,8 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
     
     if (room) {
       room.status = RoomStatus.PLAYING;
+
+      const playerIds = room.players.map((p: { id: string }) => p.id);
       
       // 同ルーム全プレイヤーのゲーム管理登録
       room.players.forEach((p: { id: string }) => {
@@ -21,6 +23,21 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
 
       // ルーム全員向けゲーム開始通知
       io.to(room.roomId).emit(SocketEvents.GAME_START);
+
+      // 20Hzのゲームループを開始し、毎フレームの送信処理を定義
+      gameManager.startGameLoop(room.roomId, playerIds, (tickData) => {
+        
+        // 1. 各プレイヤーの最新座標をクライアントに送信
+        tickData.players.forEach((playerData) => {
+          io.to(room.roomId).emit(SocketEvents.UPDATE_PLAYER, playerData);
+        });
+
+        // 2. 差分があれば、ルーム内の全員に一斉送信
+        if (tickData.cellUpdates.length > 0) {
+          io.to(room.roomId).emit(SocketEvents.UPDATE_MAP_CELLS, tickData.cellUpdates);
+        }
+        
+      });
     }
   });
 
@@ -33,28 +50,6 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
   // ゲームプレイ中イベント群
   socket.on(SocketEvents.MOVE, (data: MovePayload) => {
     gameManager.movePlayer(socket.id, data.x, data.y);
-    
-    const updatedPlayer = gameManager.getPlayer(socket.id);
-    if (updatedPlayer) {
-      const myRooms = Array.from(socket.rooms).filter(r => r !== socket.id);
-      const targetRoom = myRooms.length > 0 ? myRooms[0] : null;
-
-      if (targetRoom) {
-        io.to(targetRoom).emit(SocketEvents.UPDATE_PLAYER, { 
-          id: socket.id, 
-          x: updatedPlayer.x, 
-          y: updatedPlayer.y 
-        });
-
-        // ② 【新規】マス目の更新と差分送信のテスト
-        const cellUpdates = gameManager.paintAndGetUpdates(socket.id);
-        if (cellUpdates.length > 0) {
-          io.to(targetRoom).emit(SocketEvents.UPDATE_MAP_CELLS, cellUpdates);
-          // ログを出してサーバー側で送信されているか確認すると便利です
-          console.log(`[MAP_UPDATE] Sent ${cellUpdates.length} updates to room ${targetRoom}`);
-        }
-      }
-    }
   });
 
 };

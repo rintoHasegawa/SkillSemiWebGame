@@ -1,7 +1,8 @@
 import { Server } from "socket.io";
 import { createServer } from "http";
-import { GameManager } from "./managers/GameManager.js";
-import { SocketManager } from "./network/SocketManager.js";
+import { GameManager } from "./domains/game/GameManager";
+import { RoomManager } from "./domains/room/RoomManager";
+import { SocketManager } from "./network/SocketManager";
 
 // サーバー待受ポート
 const PORT = 3000;
@@ -18,7 +19,8 @@ const io = new Server(httpServer, {
 
 // ゲーム管理・通信管理クラス初期化
 const gameManager = new GameManager();
-const socketManager = new SocketManager(io, gameManager);
+const roomManager = new RoomManager();
+const socketManager = new SocketManager(io, gameManager, roomManager);
 
 socketManager.initialize();
 

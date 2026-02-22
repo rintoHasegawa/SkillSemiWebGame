@@ -55,11 +55,13 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │   │
     │   └── server/           # 【権限】バックエンド (Node.js)
     │       ├── src/
-    │       │   ├── entities/   # サーバー側エンティティ (Player)
-    │       │   ├── handlers/   # 処理ハンドラ (GameHandler, RoomHandler)
-    │       │   ├── managers/   # 管理クラス (GameManager, RoomManager)
-    │       │   ├── network/    # WebSocket処理 (SocketManager)
-    │       │   └── index.ts    # エントリーポイント
+    │       │   ├── domains/      # ドメイン別実装
+    │       │   │   ├── game/     # ゲーム進行 (GameHandler, GameLoop, GameManager)
+    │       │   │   │   ├── entities/       # ゲーム内エンティティ (Player)
+    │       │   │   │   └── states/         # ゲーム状態ストア (MapStore)
+    │       │   │   └── room/     # ルーム管理 (RoomHandler, RoomManager)
+    │       │   ├── network/      # WebSocket処理 (SocketManager)
+    │       │   └── index.ts      # エントリーポイント
     │       ├── tsconfig.json
     │       └── package.json
     │
