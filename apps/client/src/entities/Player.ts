@@ -9,7 +9,7 @@ export abstract class BasePlayer extends Graphics {
   public id: string;
   public teamId: number;
 
-  constructor(data: PlayerData) {
+  constructor(data: PlayerData, isLocal: boolean = false) {
     super();
     this.id = data.id;
     this.teamId = data.teamId;
@@ -18,14 +18,27 @@ export abstract class BasePlayer extends Graphics {
     this.position.set(data.x, data.y);
 
     // gameConfigから定数を取得
-    const { PLAYER_RADIUS, TEAM_COLORS } = GAME_CONFIG;
+    const { 
+      PLAYER_RADIUS, 
+      TEAM_COLORS,
+      PLAYER_LOCAL_STROKE_COLOR,
+      PLAYER_LOCAL_STROKE_WIDTH,
+      PLAYER_REMOTE_STROKE_COLOR,
+      PLAYER_REMOTE_STROKE_WIDTH
+    } = GAME_CONFIG;
 
     // チームIDに対応する色をHEX文字列('#RRGGBB')で取得し、PixiJS用の数値(0xRRGGBB)に変換
     const colorString = TEAM_COLORS[this.teamId] || '#FFFFFF';
     const hexColor = parseInt(colorString.replace("#", "0x"), 16);
 
-    // 共通の描画（円）
-    this.circle(0, 0, PLAYER_RADIUS).fill(hexColor);
+    // 自プレイヤーか他プレイヤーかで枠線の設定を切り替え
+    const strokeColor = isLocal ? PLAYER_LOCAL_STROKE_COLOR : PLAYER_REMOTE_STROKE_COLOR;
+    const strokeWidth = isLocal ? PLAYER_LOCAL_STROKE_WIDTH : PLAYER_REMOTE_STROKE_WIDTH;
+
+    // 塗りつぶしと枠線を同時に描画
+    this.circle(0, 0, PLAYER_RADIUS)
+        .fill(hexColor)
+        .stroke({ width: strokeWidth, color: strokeColor });
   }
 
   // 毎フレーム呼ばれる更新メソッド（サブクラスで具体的な処理を実装させる）
@@ -37,11 +50,7 @@ export abstract class BasePlayer extends Graphics {
  */
 export class LocalPlayer extends BasePlayer {
   constructor(data: PlayerData) {
-    super(data);
-    
-    // 自プレイヤーであることを示す黄色のハイライト（外枠）
-    const { PLAYER_RADIUS } = GAME_CONFIG;
-    this.circle(0, 0, PLAYER_RADIUS).stroke({ width: 3, color: 0xffff00 });
+    super(data, true);
   }
 
   /**
@@ -72,7 +81,7 @@ export class RemotePlayer extends BasePlayer {
   private targetY: number;
 
   constructor(data: PlayerData) {
-    super(data);
+    super(data, false);
     this.targetX = data.x;
     this.targetY = data.y;
   }

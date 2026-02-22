@@ -28,6 +28,12 @@ export const GAME_CONFIG = {
   // teamId インデックス順カラー配列
   TEAM_COLORS: ['#FF4B4B', '#4B4BFF', '#4BFF4B', '#FFD700'],
 
+  // プレイヤー描画・枠線設定 (新設)
+  PLAYER_LOCAL_STROKE_COLOR: 0xffff00,   // 自プレイヤーの枠線色（黄色）
+  PLAYER_LOCAL_STROKE_WIDTH: 3,          // 自プレイヤーの枠線の太さ
+  PLAYER_REMOTE_STROKE_COLOR: 0xffffff,  // 他プレイヤーの枠線色（白など目立たない色）
+  PLAYER_REMOTE_STROKE_WIDTH: 1,         // 他プレイヤーの枠線の太さ（細め）
+
   // マップ描画用のカラー設定
   MAP_BG_COLOR: 0x111111,     // 何も塗っていないマス（背景）の色
   MAP_GRID_COLOR: 0x333333,   // グリッド線の色
