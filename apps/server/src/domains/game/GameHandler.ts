@@ -24,8 +24,20 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
       // ルーム全員向けゲーム開始通知
       io.to(room.roomId).emit(SocketEvents.GAME_START);
 
-      // 20Hzのゲームループを開始
-      gameManager.startGameLoop(room.roomId, io, playerIds);
+      // 20Hzのゲームループを開始し、毎フレームの送信処理を定義
+      gameManager.startGameLoop(room.roomId, playerIds, (tickData) => {
+        
+        // 1. 各プレイヤーの最新座標をクライアントに送信
+        tickData.players.forEach((playerData) => {
+          io.to(room.roomId).emit(SocketEvents.UPDATE_PLAYER, playerData);
+        });
+
+        // 2. 差分があれば、ルーム内の全員に一斉送信
+        if (tickData.cellUpdates.length > 0) {
+          io.to(room.roomId).emit(SocketEvents.UPDATE_MAP_CELLS, tickData.cellUpdates);
+        }
+        
+      });
     }
   });
 
@@ -37,7 +49,6 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
 
   // ゲームプレイ中イベント群
   socket.on(SocketEvents.MOVE, (data: MovePayload) => {
-    // 【変更】座標の更新のみ行い、即時の送信（io.to...emit）は全て削除
     gameManager.movePlayer(socket.id, data.x, data.y);
   });
 
