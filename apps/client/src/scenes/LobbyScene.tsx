@@ -1,4 +1,4 @@
-import type { Room } from "@repo/shared/src/types/room";
+import type { Room } from "@repo/shared/src/domains/room/room.type";
 
 type Props = {
   room: Room | null;

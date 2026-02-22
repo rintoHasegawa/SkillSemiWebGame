@@ -1,6 +1,6 @@
 import { Graphics } from 'pixi.js';
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
-import type { PlayerData } from "@repo/shared/src/types/player";
+import type { PlayerData } from "@repo/shared/src/domains/player/player.type";
 
 /**
  * プレイヤーの共通基底クラス（描画と基本データの保持）

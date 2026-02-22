@@ -66,13 +66,15 @@ Pixel Paint War - 開発環境・技術スタック定義書
     └── packages/
         └── shared/           # 【最重要】「真実」の定義場所（型、定数、純粋ロジック）
             ├── src/
-            │   ├── config/     # 共通定数（gameConfig.ts）
-            │   ├── logic/      # 共通ロジック（gridMap.ts）
-            │   ├── protocol/   # 通信イベント定義（events.ts）
-            │   ├── types/      # 型定義（map.ts, payloads.ts, player.ts, room.ts）
+            │   ├── config/     # 共通定数 (gameConfig.ts)
+            │   ├── domains/    # ドメイン別ロジック・型定義
+            │   │   ├── gridMap/# マップ・グリッド関連 (gridMap.logic.ts, gridMap.type.ts)
+            │   │   ├── player/ # プレイヤー関連 (player.type.ts)
+            │   │   └── room/   # ルーム・進行管理 (room.type.ts)
+            │   ├── protocol/   # 通信イベント・バイナリ定義 (events.ts)
             │   └── index.ts    # エントリーポイント (tsupビルド対象)
             ├── tsup.config.ts  # ビルド設定
-            └── package.json
+            └── package.json    # パッケージ定義
 
         ※ shared は client/server 両方から import して使用する．
 
