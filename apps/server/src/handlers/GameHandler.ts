@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io";
 import { GameManager } from "../managers/GameManager.js";
 import { RoomManager } from "../managers/RoomManager.js";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
-import { RoomStatus } from "@repo/shared/src/types/room";
-import type { MovePayload } from "@repo/shared/src/types/player";
+import { RoomStatus } from "@repo/shared/src/domains/room/room.type";
+import type { MovePayload } from "@repo/shared/src/domains/player/player.type";
 
 export const registerGameHandlers = (io: Server, socket: Socket, gameManager: GameManager, roomManager: RoomManager) => {
   
@@ -15,7 +15,7 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
       room.status = RoomStatus.PLAYING;
       
       // 同ルーム全プレイヤーのゲーム管理登録
-      room.players.forEach(p => {
+      room.players.forEach((p: { id: string }) => {
         gameManager.addPlayer(p.id);
       });
 

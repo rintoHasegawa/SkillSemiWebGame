@@ -1,7 +1,7 @@
 import { Application, Container, Ticker } from "pixi.js";
 import { socketClient } from "../network/SocketClient";
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
-import type { PlayerData } from "@repo/shared/src/types/player";
+import type { PlayerData } from "@repo/shared/src/domains/player/player.type";
 import { BasePlayer, LocalPlayer, RemotePlayer } from "../entities/Player";
 import { GameMap } from "../entities/GameMap";
 import { MAX_DIST } from "../input/VirtualJoystick";

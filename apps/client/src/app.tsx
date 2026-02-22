@@ -6,7 +6,7 @@ import { TitleScene } from "./scenes/TitleScene";
 import { LobbyScene } from "./scenes/LobbyScene";
 import { GameScene } from "./scenes/GameScene";
 
-import { GameState, type Room } from "@repo/shared/src/types/room";
+import { GameState, type Room } from "@repo/shared/src/domains/room/room.type";
 
 export default function App() {
   // 現在シーン状態
