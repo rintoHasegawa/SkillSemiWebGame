@@ -1,4 +1,13 @@
 export const GAME_CONFIG = {
+  // ゲーム設定
+  MAX_PLAYERS_PER_ROOM: 4,  // ルーム収容人数設定
+  GAME_DURATION_SEC: 180, // 1ゲームの制限時間（3分 = 180秒）
+
+  // ネットワーク・描画補間設定
+  PLAYER_POSITION_UPDATE_MS: 50,  // 座標送信間隔（20Hz）
+  PLAYER_LERP_SMOOTHNESS: 0.3,    // 補間の滑らかさ
+  PLAYER_LERP_SNAP_THRESHOLD: 0.5,  // 吸着距離閾値
+
   // 画面サイズ設定
   SCREEN_WIDTH: 1280,
   SCREEN_HEIGHT: 720,
@@ -11,18 +20,10 @@ export const GAME_CONFIG = {
   // マップサイズはグリッド設定から自動計算させる（ハードコーディングを避ける）
   get MAP_WIDTH() { return this.GRID_COLS * this.GRID_CELL_SIZE; },
   get MAP_HEIGHT() { return this.GRID_ROWS * this.GRID_CELL_SIZE; },
-  
-  // ルーム収容人数設定
-  MAX_PLAYERS_PER_ROOM: 4,
 
   // プレイヤー挙動設定
   PLAYER_RADIUS: 10,      // プレイヤー半径
   PLAYER_SPEED: 5,        // 移動速度（ピクセル/秒）
-
-  // ネットワーク・描画補間設定
-  PLAYER_POSITION_UPDATE_MS: 50,  // 座標送信間隔（20Hz）
-  PLAYER_LERP_SMOOTHNESS: 0.3,    // 補間の滑らかさ
-  PLAYER_LERP_SNAP_THRESHOLD: 0.5,  // 吸着距離閾値
 
   // チームカラー設定
   // teamId インデックス順カラー配列
