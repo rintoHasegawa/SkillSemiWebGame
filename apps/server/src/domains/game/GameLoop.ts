@@ -1,8 +1,7 @@
 import { Player } from "./entities/Player.js";
 import { MapStore } from "./states/MapStore";
-import { getGridIndexFromPosition } from "@repo/shared";
-import type { CellUpdate } from "@repo/shared";
-import { GAME_CONFIG } from "@repo/shared";
+import { gridMapLogic, config } from "@repo/shared";
+import type { gridMapTypes } from "@repo/shared";
 
 // コールバックで渡すデータの型定義
 export interface TickData {
@@ -12,7 +11,7 @@ export interface TickData {
     y: number;
     teamId: number;
   }[];
-  cellUpdates: CellUpdate[];
+  cellUpdates: gridMapTypes.CellUpdate[];
 }
 
 export class GameLoop {
@@ -38,7 +37,7 @@ export class GameLoop {
     this.loopId = setInterval(() => {
       // 時間経過のチェック
       const elapsedTimeMs = Date.now() - this.startTime;
-      if (elapsedTimeMs >= GAME_CONFIG.GAME_DURATION_SEC * 1000) {
+      if (elapsedTimeMs >= config.GAME_CONFIG.GAME_DURATION_SEC * 1000) {
         // ゲーム終了時にループを止めて終了処理へ
         this.stop();
         this.onGameEnd();
@@ -52,7 +51,7 @@ export class GameLoop {
         const player = this.players.get(id);
         if (!player) return;
 
-        const gridIndex = getGridIndexFromPosition(player.x, player.y);
+        const gridIndex = gridMapLogic.getGridIndexFromPosition(player.x, player.y);
         if (gridIndex !== null) {
           this.mapStore.paintCell(gridIndex, player.teamId);
         }

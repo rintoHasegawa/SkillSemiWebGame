@@ -1,16 +1,16 @@
 // apps/server/src/states/MapStore.ts
-import type { CellUpdate } from "@repo/shared";
-import { GAME_CONFIG } from "@repo/shared";
+import type { gridMapTypes } from "@repo/shared";
+import { config } from "@repo/shared";
 
 export class MapStore {
   // 全マスの現在の色（teamId）を保持
   private gridColors: number[];
   // 次回の送信ループで送る差分リスト
-  private pendingUpdates: CellUpdate[];
+  private pendingUpdates: gridMapTypes.CellUpdate[];
 
   constructor() {
     // 初期状態は -1 (無色) などで初期化
-    const totalCells = GAME_CONFIG.GRID_COLS * GAME_CONFIG.GRID_ROWS;
+    const totalCells = config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS;
     this.gridColors = new Array(totalCells).fill(-1);
     this.pendingUpdates = [];
   }
@@ -28,7 +28,7 @@ export class MapStore {
   /**
    * 溜まっている差分を取得し、キューをクリアする（ループ送信時に使用）
    */
-  public getAndClearUpdates(): CellUpdate[] {
+  public getAndClearUpdates(): gridMapTypes.CellUpdate[] {
     const updates = [...this.pendingUpdates];
     this.pendingUpdates = [];
     return updates;

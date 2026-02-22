@@ -1,8 +1,8 @@
 import { Player } from "./entities/Player.js";
-import { GAME_CONFIG } from "@repo/shared";
+import { config } from "@repo/shared";
 import { MapStore } from "./states/MapStore";
-import { getGridIndexFromPosition } from "@repo/shared";
-import type { CellUpdate } from "@repo/shared";
+import { gridMapLogic } from "@repo/shared";
+import type { gridMapTypes } from "@repo/shared";
 import { GameLoop, type TickData } from "./GameLoop";
 
 // プレイヤー集合の生成・更新・参照管理クラス
@@ -27,8 +27,8 @@ export class GameManager {
   // 新規プレイヤー登録と初期位置設定処理
   addPlayer(id: string): Player {
     const player = new Player(id);
-    player.x = GAME_CONFIG.MAP_WIDTH / 2;
-    player.y = GAME_CONFIG.MAP_HEIGHT / 2;
+    player.x = config.GAME_CONFIG.MAP_WIDTH / 2;
+    player.y = config.GAME_CONFIG.MAP_HEIGHT / 2;
     this.players.set(id, player);
     return player;
   }
@@ -71,7 +71,7 @@ export class GameManager {
   ) {
     if (this.gameLoops.has(roomId)) return;
 
-    const tickRate = GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
+    const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
 
     // ループ開始時に、このルームの開始時刻を記憶する
     this.roomStartTimes.set(roomId, Date.now());
@@ -114,11 +114,11 @@ export class GameManager {
   }
 
   // 【一時的】移動したプレイヤーの足元を塗り、差分を返すメソッド
-  public paintAndGetUpdates(playerId: string): CellUpdate[] {
+  public paintAndGetUpdates(playerId: string): gridMapTypes.CellUpdate[] {
     const player = this.players.get(playerId);
     if (!player) return [];
 
-    const gridIndex = getGridIndexFromPosition(player.x, player.y);
+    const gridIndex = gridMapLogic.getGridIndexFromPosition(player.x, player.y);
     if (gridIndex !== null) {
       this.mapStore.paintCell(gridIndex, player.teamId);
     }

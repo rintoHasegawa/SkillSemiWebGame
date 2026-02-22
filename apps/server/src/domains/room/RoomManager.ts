@@ -1,24 +1,23 @@
-import { Room, RoomStatus, RoomMember } from "@repo/shared";
-import { GAME_CONFIG } from "@repo/shared";
+import { roomTypes, config } from "@repo/shared";
 
 export class RoomManager {
-  private rooms: Map<string, Room> = new Map();
+  private rooms: Map<string, roomTypes.Room> = new Map();
 
   // ルームにプレイヤーを追加（なければ作成）
-  public addPlayerToRoom(roomId: string, socketId: string, playerName: string): Room {
+  public addPlayerToRoom(roomId: string, socketId: string, playerName: string): roomTypes.Room {
     let room = this.rooms.get(roomId);
     if (!room) {
       room = {
         roomId: roomId,
         ownerId: socketId,
         players: [],
-        status: RoomStatus.WAITING,
-        maxPlayers: GAME_CONFIG.MAX_PLAYERS_PER_ROOM
+        status: roomTypes.RoomStatus.WAITING,
+        maxPlayers: config.GAME_CONFIG.MAX_PLAYERS_PER_ROOM
       };
       this.rooms.set(roomId, room);
     }
 
-    const newPlayer: RoomMember = {
+    const newPlayer: roomTypes.RoomMember = {
       id: socketId,
       name: playerName,
       isOwner: room.ownerId === socketId,
@@ -30,8 +29,8 @@ export class RoomManager {
   }
 
   // プレイヤーをルームから削除し、更新があったルームの配列を返す
-  public removePlayer(socketId: string): Room[] {
-    const updatedRooms: Room[] = [];
+  public removePlayer(socketId: string): roomTypes.Room[] {
+    const updatedRooms: roomTypes.Room[] = [];
     
     for (const [roomId, room] of this.rooms.entries()) {
       const playerIndex = room.players.findIndex(p => p.id === socketId);
@@ -55,7 +54,7 @@ export class RoomManager {
   }
 
   // オーナーIDからルームを取得
-  public getRoomByOwnerId(ownerId: string): Room | undefined {
+  public getRoomByOwnerId(ownerId: string): roomTypes.Room | undefined {
     for (const room of this.rooms.values()) {
       if (room.ownerId === ownerId) {
         return room;

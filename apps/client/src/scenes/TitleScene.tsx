@@ -1,10 +1,10 @@
 import { useState } from "react";
 // ルーム参加時送信ペイロード型
-import type { JoinRoomPayload } from "@repo/shared";
+import type { roomTypes } from "@repo/shared";
 
 type Props = {
   // 入室実行時呼び出しコールバック
-  onJoin: (payload: JoinRoomPayload) => void;
+  onJoin: (payload: roomTypes.JoinRoomPayload) => void;
 };
 
 export const TitleScene = ({ onJoin }: Props) => {

@@ -1,11 +1,11 @@
 import { Server, Socket } from "socket.io";
 import { RoomManager } from "./RoomManager";
-import { SocketEvents } from "@repo/shared";
-import type { JoinRoomPayload } from "@repo/shared";
+import { protocol } from "@repo/shared";
+import type { roomTypes } from "@repo/shared";
 
 export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: RoomManager) => {
   
-  socket.on(SocketEvents.JOIN_ROOM, (data: JoinRoomPayload) => {
+  socket.on(protocol.SocketEvents.JOIN_ROOM, (data: roomTypes.JoinRoomPayload) => {
     const { roomId, playerName } = data;
     
     socket.join(roomId);
@@ -14,7 +14,7 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
     const room = roomManager.addPlayerToRoom(roomId, socket.id, playerName);
 
     // ルーム内全員向け最新状態配信
-    io.to(roomId).emit(SocketEvents.ROOM_UPDATE, room);
+    io.to(roomId).emit(protocol.SocketEvents.ROOM_UPDATE, room);
   });
 
 };
@@ -28,6 +28,6 @@ export const handleRoomDisconnect = (io: Server, socket: Socket, roomManager: Ro
   
   // 更新があったルーム（オーナー変更など）にのみ通知を飛ばす
   updatedRooms.forEach(room => {
-    io.to(room.roomId).emit(SocketEvents.ROOM_UPDATE, room);
+    io.to(room.roomId).emit(protocol.SocketEvents.ROOM_UPDATE, room);
   });
 };

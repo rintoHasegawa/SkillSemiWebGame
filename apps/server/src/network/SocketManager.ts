@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { GameManager } from "../domains/game/GameManager";
 import { RoomManager } from "../domains/room/RoomManager";
-import { SocketEvents } from "@repo/shared";
+import { protocol } from "@repo/shared";
 import { registerRoomHandlers, handleRoomDisconnect } from "../domains/room/RoomHandler";
 import { registerGameHandlers, handleGameDisconnect } from "../domains/game/GameHandler";
 
@@ -17,13 +17,13 @@ export class SocketManager {
   }
 
   public initialize() {
-    this.io.on(SocketEvents.CONNECT, (socket: Socket) => {
+    this.io.on(protocol.SocketEvents.CONNECT, (socket: Socket) => {
       console.log(`✅ User connected: ${socket.id}`);
 
       registerRoomHandlers(this.io, socket, this.roomManager);
       registerGameHandlers(this.io, socket, this.gameManager, this.roomManager);
 
-      socket.on(SocketEvents.DISCONNECT, () => {
+      socket.on(protocol.SocketEvents.DISCONNECT, () => {
         console.log(`❌ User disconnected: ${socket.id}`);
         
         // 順番を厳守して実行

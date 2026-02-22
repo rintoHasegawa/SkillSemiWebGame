@@ -1,23 +1,22 @@
 import { Server, Socket } from "socket.io";
 import { GameManager } from "./GameManager";
 import { RoomManager } from "../room/RoomManager";
-import { SocketEvents } from "@repo/shared";
-import { RoomStatus } from "@repo/shared";
-import type { MovePayload } from "@repo/shared";
+import { protocol, roomTypes } from "@repo/shared";
+import type { playerTypes } from "@repo/shared";
 
 export const registerGameHandlers = (io: Server, socket: Socket, gameManager: GameManager, roomManager: RoomManager) => {
   
   // クライアントから送られてきた時刻をそのまま返しつつ、サーバーの現在時刻も添える
-  socket.on(SocketEvents.PING, (clientTime: number) => {
-    socket.emit(SocketEvents.PONG, { clientTime, serverTime: Date.now() });
+  socket.on(protocol.SocketEvents.PING, (clientTime: number) => {
+    socket.emit(protocol.SocketEvents.PONG, { clientTime, serverTime: Date.now() });
   });
 
   // ゲーム開始要求処理
-  socket.on(SocketEvents.START_GAME, () => {
+  socket.on(protocol.SocketEvents.START_GAME, () => {
     const room = roomManager.getRoomByOwnerId(socket.id);
     
     if (room) {
-      room.status = RoomStatus.PLAYING;
+      room.status = roomTypes.RoomStatus.PLAYING;
 
       const playerIds = room.players.map((p: { id: string }) => p.id);
       
@@ -33,33 +32,33 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
         (tickData) => {
         // 1. 各プレイヤーの最新座標をクライアントに送信
         tickData.players.forEach((playerData) => {
-          io.to(room.roomId).emit(SocketEvents.UPDATE_PLAYER, playerData);
+          io.to(room.roomId).emit(protocol.SocketEvents.UPDATE_PLAYER, playerData);
         });
 
         // 2. 差分があれば、ルーム内の全員に一斉送信
         if (tickData.cellUpdates.length > 0) {
-          io.to(room.roomId).emit(SocketEvents.UPDATE_MAP_CELLS, tickData.cellUpdates);
+          io.to(room.roomId).emit(protocol.SocketEvents.UPDATE_MAP_CELLS, tickData.cellUpdates);
         }
       },
 
       () => {
           // 3分経過時に GameLoop から呼ばれる処理
           console.log(`[GameHandler] ルーム ${room.roomId} のゲームが終了しました (3分経過)`);
-          io.to(room.roomId).emit(SocketEvents.GAME_END); // クライアントへ終了通知
-          room.status = RoomStatus.WAITING; // ルーム状態を待機に戻す
+          io.to(room.roomId).emit(protocol.SocketEvents.GAME_END); // クライアントへ終了通知
+          room.status = roomTypes.RoomStatus.WAITING; // ルーム状態を待機に戻す
         }
       );
         
       // GameManagerから開始時刻を取得し、GAME_STARTイベントにデータを乗せて送る
       const startTime = gameManager.getRoomStartTime(room.roomId) || Date.now();
-      io.to(room.roomId).emit(SocketEvents.GAME_START, { startTime });
+      io.to(room.roomId).emit(protocol.SocketEvents.GAME_START, { startTime });
     }
   });
 
   // 画面準備完了通知受信時初期データ返却
-  socket.on(SocketEvents.READY_FOR_GAME, () => {
+  socket.on(protocol.SocketEvents.READY_FOR_GAME, () => {
     const allPlayers = gameManager.getAllPlayers();
-    socket.emit(SocketEvents.CURRENT_PLAYERS, allPlayers);
+    socket.emit(protocol.SocketEvents.CURRENT_PLAYERS, allPlayers);
 
     // 準備が完了したクライアントに対して、改めて開始時刻を個別に教える
     // Socket.ioの仕様上、socket.roomsには自身のIDと参加中のルームIDが含まれるため、そこからルームIDを特定する
@@ -68,13 +67,13 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
       const startTime = gameManager.getRoomStartTime(roomId);
       if (startTime) {
         // io.to() による全員への一斉送信ではなく、socket.emit() でこの本人にだけ送る
-        socket.emit(SocketEvents.GAME_START, { startTime });
+        socket.emit(protocol.SocketEvents.GAME_START, { startTime });
       }
     }
   });
 
   // ゲームプレイ中イベント群
-  socket.on(SocketEvents.MOVE, (data: MovePayload) => {
+  socket.on(protocol.SocketEvents.MOVE, (data: playerTypes.MovePayload) => {
     gameManager.movePlayer(socket.id, data.x, data.y);
   });
 
@@ -87,5 +86,5 @@ export const handleGameDisconnect = (io: Server, gameManager: GameManager, playe
   // ゲームからの除外処理
   gameManager.removePlayer(playerId);
   // 全体にプレイヤー削除を通知
-  io.emit(SocketEvents.REMOVE_PLAYER, playerId);
+  io.emit(protocol.SocketEvents.REMOVE_PLAYER, playerId);
 };

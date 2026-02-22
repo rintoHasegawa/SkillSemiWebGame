@@ -1,6 +1,6 @@
 import { Graphics } from 'pixi.js';
-import { GAME_CONFIG } from "@repo/shared";
-import type { PlayerData } from "@repo/shared";
+import { config } from "@repo/shared";
+import type { playerTypes } from "@repo/shared";
 
 /**
  * プレイヤーの共通基底クラス（描画と基本データの保持）
@@ -9,7 +9,7 @@ export abstract class BasePlayer extends Graphics {
   public id: string;
   public teamId: number;
 
-  constructor(data: PlayerData, isLocal: boolean = false) {
+  constructor(data: playerTypes.PlayerData, isLocal: boolean = false) {
     super();
     this.id = data.id;
     this.teamId = data.teamId;
@@ -25,7 +25,7 @@ export abstract class BasePlayer extends Graphics {
       PLAYER_LOCAL_STROKE_WIDTH,
       PLAYER_REMOTE_STROKE_COLOR,
       PLAYER_REMOTE_STROKE_WIDTH
-    } = GAME_CONFIG;
+    } = config.GAME_CONFIG;
 
     // チームIDに対応する色をHEX文字列('#RRGGBB')で取得し、PixiJS用の数値(0xRRGGBB)に変換
     const colorString = TEAM_COLORS[this.teamId] || '#FFFFFF';
@@ -49,7 +49,7 @@ export abstract class BasePlayer extends Graphics {
  * 自プレイヤー（キー・ジョイスティック入力で移動・送信する）
  */
 export class LocalPlayer extends BasePlayer {
-  constructor(data: PlayerData) {
+  constructor(data: playerTypes.PlayerData) {
     super(data, true);
   }
 
@@ -57,7 +57,7 @@ export class LocalPlayer extends BasePlayer {
    * 入力ベクトルと経過時間基準の座標更新処理
    */
   public move(vx: number, vy: number, deltaTime: number) {
-    const { PLAYER_SPEED, MAP_WIDTH, MAP_HEIGHT, PLAYER_RADIUS } = GAME_CONFIG;
+    const { PLAYER_SPEED, MAP_WIDTH, MAP_HEIGHT, PLAYER_RADIUS } = config.GAME_CONFIG;
 
     const speed = PLAYER_SPEED * deltaTime;
     this.x += vx * speed;
@@ -80,7 +80,7 @@ export class RemotePlayer extends BasePlayer {
   private targetX: number;
   private targetY: number;
 
-  constructor(data: PlayerData) {
+  constructor(data: playerTypes.PlayerData) {
     super(data, false);
     this.targetX = data.x;
     this.targetY = data.y;
@@ -98,7 +98,7 @@ export class RemotePlayer extends BasePlayer {
    * 毎フレームの更新処理（目標座標へのLerp補間）
    */
   public update(deltaTime: number): void {
-    const { PLAYER_LERP_SNAP_THRESHOLD, PLAYER_LERP_SMOOTHNESS } = GAME_CONFIG;
+    const { PLAYER_LERP_SNAP_THRESHOLD, PLAYER_LERP_SMOOTHNESS } = config.GAME_CONFIG;
 
     const diffX = this.targetX - this.x;
     const diffY = this.targetY - this.y;

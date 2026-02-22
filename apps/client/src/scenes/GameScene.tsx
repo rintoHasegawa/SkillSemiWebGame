@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { VirtualJoystick } from "../input/VirtualJoystick";
 import { GameManager } from "../managers/GameManager";
-import { GAME_CONFIG } from "@repo/shared";
+import { config } from "@repo/shared";
 
 interface GameSceneProps {
   myId: string | null;
@@ -17,7 +17,7 @@ export function GameScene({ myId }: GameSceneProps) {
 
   // gameConfig から初期表示時間文字列を生成する関数
   const getInitialTimeDisplay = () => {
-    const totalSec = GAME_CONFIG.GAME_DURATION_SEC;
+    const totalSec = config.GAME_CONFIG.GAME_DURATION_SEC;
     const mins = Math.floor(totalSec / 60);
     const secs = Math.floor(totalSec % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
