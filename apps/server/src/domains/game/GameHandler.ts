@@ -7,6 +7,11 @@ import type { MovePayload } from "@repo/shared/src/domains/player/player.type";
 
 export const registerGameHandlers = (io: Server, socket: Socket, gameManager: GameManager, roomManager: RoomManager) => {
   
+  // クライアントから送られてきた時刻をそのまま返しつつ、サーバーの現在時刻も添える
+  socket.on(SocketEvents.PING, (clientTime: number) => {
+    socket.emit(SocketEvents.PONG, { clientTime, serverTime: Date.now() });
+  });
+
   // ゲーム開始要求処理
   socket.on(SocketEvents.START_GAME, () => {
     const room = roomManager.getRoomByOwnerId(socket.id);
@@ -21,12 +26,11 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
         gameManager.addPlayer(p.id);
       });
 
-      // ルーム全員向けゲーム開始通知
-      io.to(room.roomId).emit(SocketEvents.GAME_START);
-
       // 20Hzのゲームループを開始し、毎フレームの送信処理を定義
-      gameManager.startGameLoop(room.roomId, playerIds, (tickData) => {
-        
+      gameManager.startGameLoop(
+        room.roomId, 
+        playerIds, 
+        (tickData) => {
         // 1. 各プレイヤーの最新座標をクライアントに送信
         tickData.players.forEach((playerData) => {
           io.to(room.roomId).emit(SocketEvents.UPDATE_PLAYER, playerData);
@@ -36,8 +40,19 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
         if (tickData.cellUpdates.length > 0) {
           io.to(room.roomId).emit(SocketEvents.UPDATE_MAP_CELLS, tickData.cellUpdates);
         }
+      },
+
+      () => {
+          // 3分経過時に GameLoop から呼ばれる処理
+          console.log(`[GameHandler] ルーム ${room.roomId} のゲームが終了しました (3分経過)`);
+          io.to(room.roomId).emit(SocketEvents.GAME_END); // クライアントへ終了通知
+          room.status = RoomStatus.WAITING; // ルーム状態を待機に戻す
+        }
+      );
         
-      });
+      // GameManagerから開始時刻を取得し、GAME_STARTイベントにデータを乗せて送る
+      const startTime = gameManager.getRoomStartTime(room.roomId) || Date.now();
+      io.to(room.roomId).emit(SocketEvents.GAME_START, { startTime });
     }
   });
 
@@ -45,6 +60,17 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
   socket.on(SocketEvents.READY_FOR_GAME, () => {
     const allPlayers = gameManager.getAllPlayers();
     socket.emit(SocketEvents.CURRENT_PLAYERS, allPlayers);
+
+    // 準備が完了したクライアントに対して、改めて開始時刻を個別に教える
+    // Socket.ioの仕様上、socket.roomsには自身のIDと参加中のルームIDが含まれるため、そこからルームIDを特定する
+    const roomId = Array.from(socket.rooms).find(room => room !== socket.id);
+    if (roomId) {
+      const startTime = gameManager.getRoomStartTime(roomId);
+      if (startTime) {
+        // io.to() による全員への一斉送信ではなく、socket.emit() でこの本人にだけ送る
+        socket.emit(SocketEvents.GAME_START, { startTime });
+      }
+    }
   });
 
   // ゲームプレイ中イベント群

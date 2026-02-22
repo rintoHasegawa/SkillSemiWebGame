@@ -17,4 +17,9 @@ export const SocketEvents = {
   REMOVE_PLAYER: "remove_player",
   MOVE: "move",
   UPDATE_MAP_CELLS: "update_map_cells",
+
+  // 時間同期・ゲーム進行関連
+  PING: "ping",           // クライアントからの時刻同期リクエスト（ラグ計算用）
+  PONG: "pong",           // サーバーからの現在時刻レスポンス
+  GAME_END: "game-end",   // 3分経過時のゲーム終了通知
 } as const;

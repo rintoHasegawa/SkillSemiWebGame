@@ -10,11 +10,18 @@ export class GameManager {
   private players: Map<string, Player>;
   private mapStore: MapStore;
   private gameLoops: Map<string, GameLoop>; // NodeJS.Timeout から変更
+  private roomStartTimes: Map<string, number>;  // ルームごとのゲーム開始時間を保持する
 
   constructor() {
     this.players = new Map();
     this.mapStore = new MapStore();
     this.gameLoops = new Map();
+    this.roomStartTimes = new Map();
+  }
+
+  // 外部（GameHandlerなど）から開始時刻を取得できるようにする
+  getRoomStartTime(roomId: string): number | undefined {
+    return this.roomStartTimes.get(roomId);
   }
 
   // 新規プレイヤー登録と初期位置設定処理
@@ -56,10 +63,18 @@ export class GameManager {
    * @param playerIds このルームに参加しているプレイヤーのIDリスト
    * @param onTick 毎フレーム実行される送信用のコールバック関数
    */
-  startGameLoop(roomId: string, playerIds: string[], onTick: (data: TickData) => void) {
+  startGameLoop(
+    roomId: string, 
+    playerIds: string[], 
+    onTick: (data: TickData) => void,
+    onGameEnd: () => void
+  ) {
     if (this.gameLoops.has(roomId)) return;
 
     const tickRate = GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
+
+    // ループ開始時に、このルームの開始時刻を記憶する
+    this.roomStartTimes.set(roomId, Date.now());
     
     // GameLoopインスタンスを生成し、参照を渡す
     const loop = new GameLoop(
@@ -68,7 +83,13 @@ export class GameManager {
       playerIds,
       this.players,
       this.mapStore,
-      onTick
+      onTick,
+      () => {
+        // GameLoopが終了した時の処理
+        this.roomStartTimes.delete(roomId);
+        this.gameLoops.delete(roomId);
+        onGameEnd(); // GameHandlerへ終了を伝える
+      }
     );
 
     loop.start();
@@ -83,6 +104,7 @@ export class GameManager {
     if (loop) {
       loop.stop();
       this.gameLoops.delete(roomId);
+      this.roomStartTimes.delete(roomId); // 停止時も忘れずクリア
     }
   }
 

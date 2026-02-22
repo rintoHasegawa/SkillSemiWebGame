@@ -96,7 +96,7 @@ export class SocketClient {
   /**
    * ゲーム開始通知イベント購読
    */
-  onGameStart(callback: () => void) {
+  onGameStart(callback: (data: { startTime: number }) => void) {
     this.socket.on(SocketEvents.GAME_START, callback);
   }
 

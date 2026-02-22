@@ -2,6 +2,7 @@ import { Player } from "./entities/Player.js";
 import { MapStore } from "./states/MapStore";
 import { getGridIndexFromPosition } from "@repo/shared/src/domains/gridMap/gridMap.logic";
 import type { CellUpdate } from "@repo/shared/src/domains/gridMap/gridMap.type";
+import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
 
 // コールバックで渡すデータの型定義
 export interface TickData {
@@ -16,6 +17,7 @@ export interface TickData {
 
 export class GameLoop {
   private loopId: NodeJS.Timeout | null = null;
+  private startTime: number = 0;
 
   constructor(
     private roomId: string,
@@ -23,14 +25,26 @@ export class GameLoop {
     private playerIds: string[],
     private players: Map<string, Player>,
     private mapStore: MapStore,
-    private onTick: (data: TickData) => void
+    private onTick: (data: TickData) => void,
+    private onGameEnd: () => void   // ゲーム終了時のコールバック
   ) {}
 
   start() {
     // 既にループが回っている場合は何もしない
     if (this.loopId) return;
 
+    this.startTime = Date.now();
+
     this.loopId = setInterval(() => {
+      // 時間経過のチェック
+      const elapsedTimeMs = Date.now() - this.startTime;
+      if (elapsedTimeMs >= GAME_CONFIG.GAME_DURATION_SEC * 1000) {
+        // ゲーム終了時にループを止めて終了処理へ
+        this.stop();
+        this.onGameEnd();
+        return; // 今回のフレームの座標更新はスキップ
+      }
+
       const playersData: TickData["players"] = [];
 
       // 1. 各プレイヤーの座標処理とマス塗りの判定

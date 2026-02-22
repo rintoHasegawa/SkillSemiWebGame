@@ -13,6 +13,23 @@ export class GameManager {
   private myId: string;
   private container: HTMLDivElement;
   private gameMap!: GameMap;
+  private gameStartTime: number | null = null;
+
+  // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
+  public setGameStart(startTime: number) {
+    this.gameStartTime = startTime;
+  }
+
+  // 現在の残り秒数を取得する
+  public getRemainingTime(): number {
+    if (!this.gameStartTime) return GAME_CONFIG.GAME_DURATION_SEC;
+    
+    // 現在のサーバー時刻を推定 (Date.now() + サーバーとの誤差補正が理想ですが、まずは簡易版で)
+    const elapsedMs = Date.now() - this.gameStartTime;
+    const remainingSec = GAME_CONFIG.GAME_DURATION_SEC - (elapsedMs / 1000);
+    
+    return Math.max(0, remainingSec);
+  }
   
   // 入力と状態管理
   private joystickInput = { x: 0, y: 0 };
@@ -84,6 +101,14 @@ export class GameManager {
       const playerSprite = new RemotePlayer(p);
       this.worldContainer.addChild(playerSprite);
       this.players[p.id] = playerSprite;
+    });
+
+    // サーバーからの GAME_START を検知して開始時刻をセットする
+    socketClient.onGameStart((data) => {
+      if (data && data.startTime) {
+        this.setGameStart(data.startTime);
+        console.log(`[GameManager] ゲーム開始時刻同期完了: ${data.startTime}`);
+      }
     });
 
     socketClient.onUpdatePlayer((data: Partial<PlayerData> & { id: string }) => {
