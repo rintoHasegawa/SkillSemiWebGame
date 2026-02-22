@@ -1,8 +1,8 @@
 import { io, Socket } from "socket.io-client";
-import { SocketEvents } from "@repo/shared/src/protocol/events";
-import type { MovePayload, PlayerData } from "@repo/shared/src/domains/player/player.type";
-import type { CellUpdate } from "@repo/shared/src/domains/gridMap/gridMap.type";
-import type { Room, JoinRoomPayload } from "@repo/shared/src/domains/room/room.type";
+import { SocketEvents } from "@repo/shared";
+import type { MovePayload, PlayerData } from "@repo/shared";
+import type { CellUpdate } from "@repo/shared";
+import type { Room, JoinRoomPayload } from "@repo/shared";
 
 /**
  * サーバー WebSocket 通信管理クラス

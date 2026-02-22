@@ -1,8 +1,8 @@
 import { Player } from "./entities/Player.js";
-import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
+import { GAME_CONFIG } from "@repo/shared";
 import { MapStore } from "./states/MapStore";
-import { getGridIndexFromPosition } from "@repo/shared/src/domains/gridMap/gridMap.logic";
-import type { CellUpdate } from "@repo/shared/src/domains/gridMap/gridMap.type";
+import { getGridIndexFromPosition } from "@repo/shared";
+import type { CellUpdate } from "@repo/shared";
 import { GameLoop, type TickData } from "./GameLoop";
 
 // プレイヤー集合の生成・更新・参照管理クラス

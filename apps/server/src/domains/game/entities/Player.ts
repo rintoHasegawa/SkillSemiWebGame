@@ -1,5 +1,5 @@
-import type { PlayerData } from "@repo/shared/src/domains/player/player.type";
-import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
+import type { PlayerData } from "@repo/shared";
+import { GAME_CONFIG } from "@repo/shared";
 
 // サーバー側保持プレイヤー状態モデル
 export class Player implements PlayerData {

@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { GameManager } from "../domains/game/GameManager";
 import { RoomManager } from "../domains/room/RoomManager";
-import { SocketEvents } from "@repo/shared/src/protocol/events";
+import { SocketEvents } from "@repo/shared";
 import { registerRoomHandlers, handleRoomDisconnect } from "../domains/room/RoomHandler";
 import { registerGameHandlers, handleGameDisconnect } from "../domains/game/GameHandler";
 
