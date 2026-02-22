@@ -5,7 +5,7 @@ import { RoomManager } from "./domains/room/RoomManager";
 import { SocketManager } from "./network/SocketManager";
 
 // サーバー待受ポート
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // HTTP サーバー・Socket.io サーバー生成
 const httpServer = createServer();

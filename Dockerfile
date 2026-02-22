@@ -1,30 +1,39 @@
-FROM node:20-slim
-
-# pnpmの準備
+# --- ステージ1: ビルド ---
+FROM node:20-slim AS builder
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
 WORKDIR /app
 
-# 1. すべてのファイルを一気にコピー（これが一番確実です）
+# モノレポ全体のファイルをコピー
 COPY . .
 
-# 2. 依存関係のインストール
+# 依存関係のインストール（フローズンロックファイルで確実な再現性を確保）
 RUN pnpm install --frozen-lockfile
 
-# 3. ビルド（共通ライブラリ -> サーバーの順）
+# 共通ライブラリをビルド（必須手順）
 RUN pnpm --filter @repo/shared build
+# サーバーアプリをビルド
 RUN pnpm --filter server build
+# 実行に不要なdevDependenciesを削除
+RUN pnpm prune --prod
 
-# 4. 実行ディレクトリに移動
-WORKDIR /app/apps/server
+# --- ステージ2: 本番実行 ---
+FROM node:20-slim AS runner
+WORKDIR /app
 
-# 環境変数の設定
+# 本番実行に必要なファイルだけを抽出
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/shared ./packages/shared
+COPY --from=builder /app/apps/server/dist ./apps/server/dist
+COPY --from=builder /app/apps/server/package.json ./apps/server/package.json
+
+# 環境変数のデフォルト設定
 ENV NODE_ENV=production
-
-# ポートの開放
+ENV PORT=3000
 EXPOSE 3000
 
-# サーバー起動
-CMD ["node", "dist/index.js"]
+# サーバー起動（apps/server/package.json の start スクリプトを呼び出す）
+WORKDIR /app/apps/server
+CMD ["npm", "run", "start"]
