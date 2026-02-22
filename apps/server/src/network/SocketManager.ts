@@ -10,10 +10,10 @@ export class SocketManager {
   private gameManager: GameManager;
   private roomManager: RoomManager;
 
-  constructor(io: Server, gameManager: GameManager) {
+  constructor(io: Server, gameManager: GameManager, roomManager: RoomManager) {
     this.io = io;
     this.gameManager = gameManager;
-    this.roomManager = new RoomManager();
+    this.roomManager = roomManager;
   }
 
   public initialize() {
