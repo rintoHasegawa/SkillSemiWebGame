@@ -1,18 +1,8 @@
 // クライアント画面遷移利用ゲーム状態型
-export const GameState = {
-  TITLE: 'title',
-  LOBBY: 'lobby',
-  PLAYING: 'playing',
-} as const;
-export type GameState = typeof GameState[keyof typeof GameState];
+export type GameState = "title" | "lobby" | "playing";
 
 // ルーム進行フェーズ状態型
-export const RoomStatus = {
-  WAITING: 'waiting',
-  PLAYING: 'playing',
-  RESULT: 'result',
-} as const;
-export type RoomStatus = typeof RoomStatus[keyof typeof RoomStatus];
+export type RoomStatus = "waiting" | "playing" | "result";
 
 // ルーム所属プレイヤー情報型
 export interface RoomMember {

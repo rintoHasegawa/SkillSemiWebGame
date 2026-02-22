@@ -6,13 +6,14 @@ import { TitleScene } from "./scenes/TitleScene";
 import { LobbyScene } from "./scenes/LobbyScene";
 import { GameScene } from "./scenes/GameScene";
 
-import { roomTypes } from "@repo/shared";
+import { GameState } from "@repo/shared";
+import type { GameStateType, Room } from "@repo/shared";
 
 export default function App() {
   // 現在シーン状態
-  const [gameState, setGameState] = useState<roomTypes.GameState>(roomTypes.GameState.TITLE);
+  const [gameState, setGameState] = useState<GameStateType>(GameState.TITLE);
   // 参加中ルーム情報
-  const [room, setRoom] = useState<roomTypes.Room | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
   // 自身ソケットID
   const [myId, setMyId] = useState<string | null>(null);
 
@@ -21,18 +22,18 @@ export default function App() {
     socketClient.onConnect((id) => setMyId(id));
     socketClient.onRoomUpdate((updatedRoom) => {
       setRoom(updatedRoom);
-      setGameState(roomTypes.GameState.LOBBY);
+      setGameState(GameState.LOBBY);
     });
-    socketClient.onGameStart(() => setGameState(roomTypes.GameState.PLAYING));
+    socketClient.onGameStart(() => setGameState(GameState.PLAYING));
   }, []);
 
   // タイトル画面分岐
-  if (gameState === roomTypes.GameState.TITLE) {
+  if (gameState === GameState.TITLE) {
     return <TitleScene onJoin={(payload) => socketClient.joinRoom(payload.roomId, payload.playerName)} />;
   }
   
   // ロビー画面分岐
-  if (gameState === roomTypes.GameState.LOBBY) {
+  if (gameState === GameState.LOBBY) {
     return <LobbyScene room={room} myId={myId} onStart={() => socketClient.startGame()} />;
   }
 
