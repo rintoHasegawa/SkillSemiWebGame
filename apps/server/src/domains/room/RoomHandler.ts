@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { RoomManager } from "../managers/RoomManager.js";
+import { RoomManager } from "./RoomManager";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
 import type { JoinRoomPayload } from "@repo/shared/src/domains/room/room.type";
 

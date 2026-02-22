@@ -59,6 +59,7 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │       │   ├── handlers/   # 処理ハンドラ (GameHandler, RoomHandler)
     │       │   ├── managers/   # 管理クラス (GameManager, RoomManager)
     │       │   ├── network/    # WebSocket処理 (SocketManager)
+    │       │   ├── states/     # 状態ストア (MapStore)
     │       │   └── index.ts    # エントリーポイント
     │       ├── tsconfig.json
     │       └── package.json

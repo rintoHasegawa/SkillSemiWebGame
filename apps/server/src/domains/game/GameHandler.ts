@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
-import { GameManager } from "../managers/GameManager.js";
-import { RoomManager } from "../managers/RoomManager.js";
+import { GameManager } from "./GameManager";
+import { RoomManager } from "../room/RoomManager";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
 import { RoomStatus } from "@repo/shared/src/domains/room/room.type";
 import type { MovePayload } from "@repo/shared/src/domains/player/player.type";

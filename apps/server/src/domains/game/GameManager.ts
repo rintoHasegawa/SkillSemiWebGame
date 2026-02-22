@@ -1,6 +1,6 @@
-import { Player } from "../entities/Player.js";
+import { Player } from "./entities/Player.js";
 import { GAME_CONFIG } from "@repo/shared/src/config/gameConfig";
-import { MapStore } from "../states/MapStore";
+import { MapStore } from "./states/MapStore";
 import { getGridIndexFromPosition } from "@repo/shared/src/domains/gridMap/gridMap.logic";
 import type { CellUpdate } from "@repo/shared/src/domains/gridMap/gridMap.type";
 import { SocketEvents } from "@repo/shared/src/protocol/events"

@@ -1,9 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { GameManager } from "../managers/GameManager.js";
-import { RoomManager } from "../managers/RoomManager.js";
+import { GameManager } from "../domains/game/GameManager";
+import { RoomManager } from "../domains/room/RoomManager";
 import { SocketEvents } from "@repo/shared/src/protocol/events";
-import { registerRoomHandlers, handleRoomDisconnect } from "../handlers/RoomHandler.js";
-import { registerGameHandlers, handleGameDisconnect } from "../handlers/GameHandler.js";
+import { registerRoomHandlers, handleRoomDisconnect } from "../domains/room/RoomHandler";
+import { registerGameHandlers, handleGameDisconnect } from "../domains/game/GameHandler";
 
 export class SocketManager {
   private io: Server;

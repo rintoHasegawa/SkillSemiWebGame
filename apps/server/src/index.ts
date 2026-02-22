@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import { createServer } from "http";
-import { GameManager } from "./managers/GameManager.js";
-import { SocketManager } from "./network/SocketManager.js";
+import { GameManager } from "./domains/game/GameManager";
+import { SocketManager } from "./network/SocketManager";
 
 // サーバー待受ポート
 const PORT = 3000;
