@@ -140,26 +140,28 @@ export class GameManager {
     const me = this.players[this.myId];
     if (!me || !(me instanceof LocalPlayer)) return;
 
+    const deltaSeconds = ticker.deltaMS / 1000;
+
     // 1. 自プレイヤーの移動と送信
     const { x: dx, y: dy } = this.joystickInput;
     const isMoving = dx !== 0 || dy !== 0;
 
     if (isMoving) {
-      me.move(dx / MAX_DIST, dy / MAX_DIST, ticker.deltaTime);
+      me.move(dx / MAX_DIST, dy / MAX_DIST, deltaSeconds);
       
       const now = performance.now();
       if (now - this.lastPositionSentTime >= config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
-        socketClient.sendMove(me.x, me.y);
+        socketClient.sendMove(me.gridX, me.gridY);
         this.lastPositionSentTime = now;
       }
     } else if (this.wasMoving) {
-      socketClient.sendMove(me.x, me.y);
+      socketClient.sendMove(me.gridX, me.gridY);
     }
     this.wasMoving = isMoving;
 
     // 2. 全プレイヤーの更新（Lerpなど）
     Object.values(this.players).forEach((player) => {
-      player.update(ticker.deltaTime);
+      player.update(deltaSeconds);
     });
 
     // 3. カメラの追従（自分を中心に）

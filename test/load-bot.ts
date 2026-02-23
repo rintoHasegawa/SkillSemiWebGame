@@ -106,9 +106,9 @@ function createBot(index: number, counters: Stats): Bot {
   };
 
   const tickMove = () => {
-    const frameDelta = MOVE_TICK_MS / (1000 / 60);
-    posX += dirX * BOT_SPEED * frameDelta;
-    posY += dirY * BOT_SPEED * frameDelta;
+    const dtSec = MOVE_TICK_MS / 1000;
+    posX += dirX * BOT_SPEED * dtSec;
+    posY += dirY * BOT_SPEED * dtSec;
 
     if (posX < BOT_RADIUS) {
       posX = BOT_RADIUS;

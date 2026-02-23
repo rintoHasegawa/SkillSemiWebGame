@@ -6,24 +6,25 @@ export const GAME_CONFIG = {
   // ネットワーク・描画補間設定
   PLAYER_POSITION_UPDATE_MS: 50,  // 座標送信間隔（20Hz）
   PLAYER_LERP_SMOOTHNESS: 0.3,    // 補間の滑らかさ
-  PLAYER_LERP_SNAP_THRESHOLD: 0.5,  // 吸着距離閾値
+  PLAYER_LERP_SNAP_THRESHOLD: 0.005,  // 吸着距離閾値（グリッド単位）
 
   // 画面サイズ設定
   SCREEN_WIDTH: 1280,
   SCREEN_HEIGHT: 720,
 
-  // グリッド（マス）設定を新設
+  // グリッド（マス）設定
   GRID_CELL_SIZE: 100, // 1マスのサイズ（px）
-  GRID_COLS: 20,       // 横のマス数
-  GRID_ROWS: 20,       // 縦のマス数
+  GRID_COLS: 20,       // 横のマス数（グリッド単位）
+  GRID_ROWS: 20,       // 縦のマス数（グリッド単位）
   
   // マップサイズはグリッド設定から自動計算させる（ハードコーディングを避ける）
-  get MAP_WIDTH() { return this.GRID_COLS * this.GRID_CELL_SIZE; },
-  get MAP_HEIGHT() { return this.GRID_ROWS * this.GRID_CELL_SIZE; },
+  get MAP_WIDTH_PX() { return this.GRID_COLS * this.GRID_CELL_SIZE; },
+  get MAP_HEIGHT_PX() { return this.GRID_ROWS * this.GRID_CELL_SIZE; },
 
-  // プレイヤー挙動設定
-  PLAYER_RADIUS: 10,      // プレイヤー半径
-  PLAYER_SPEED: 5,        // 60fps基準の1フレーム当たりの移動量（px）
+  // プレイヤー挙動設定（内部座標はグリッド単位）
+  PLAYER_RADIUS_PX: 10,   // 描画用のプレイヤー半径（px）
+  get PLAYER_RADIUS() { return this.PLAYER_RADIUS_PX / this.GRID_CELL_SIZE; },
+  PLAYER_SPEED: 3,        // 1秒当たりの移動量（グリッド単位）
 
   // チームカラー設定
   // teamId インデックス順カラー配列
