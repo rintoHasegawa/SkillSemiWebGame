@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import path from 'node:path'
 import react from '@vitejs/plugin-react'
 import { config } from '@repo/shared'
 
@@ -8,6 +9,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        '@client': path.resolve(__dirname, 'src'),
+      },
+    },
     server: isProd
       ? undefined
       : {

@@ -1,5 +1,5 @@
 import { Application, Container, Ticker } from "pixi.js";
-import { socketManager } from "../../network/SocketManager";
+import { socketManager } from "@client/network/SocketManager";
 import { config } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
 import { BasePlayer, LocalPlayer, RemotePlayer } from "./Player";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socketManager } from "../network/SocketManager";
+import { socketManager } from "@client/network/SocketManager";
 import { appConsts } from "@repo/shared";
 import type { appTypes, roomTypes } from "@repo/shared";
 

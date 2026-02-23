@@ -1,4 +1,4 @@
-import { socketManager } from "./network/SocketManager";
+import { socketManager } from "@client/network/SocketManager";
 import { useAppFlow } from "./hooks/useAppFlow";
 
 // 画面遷移先シーンコンポーネント群
