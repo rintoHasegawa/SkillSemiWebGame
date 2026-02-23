@@ -55,7 +55,7 @@
     ・URL: 本番サーバURL
     ・DEV_URL: 開発サーバURL
     ・BOTS: 同時接続数
-    ・DURATION_MS: 実行時間 (ms)
+    ・DURATION_MS: 実行時間 (ms)。0以下またはInfinityで無期限
     ・JOIN_DELAY_MS: 参加間隔 (ms)
     ・MOVE_TICK_MS: 移動送信間隔 (ms)
     ・BOT_SPEED: 移動速度

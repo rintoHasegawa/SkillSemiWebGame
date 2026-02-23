@@ -74,17 +74,19 @@ for (let i = 0; i < BOTS; i += 1) {
   }, delay);
 }
 
-// 指定時間後に全ボットを停止。
-setTimeout(() => {
-  console.log("Stopping bots...");
-  for (const bot of bots) {
-    bot.stop();
-  }
+// 指定時間後に全ボットを停止。無期限の場合は停止タイマーを設定しない。
+if (Number.isFinite(DURATION_MS) && DURATION_MS > 0) {
   setTimeout(() => {
-    console.log("Final stats:", stats);
-    process.exit(0);
-  }, 500);
-}, DURATION_MS);
+    console.log("Stopping bots...");
+    for (const bot of bots) {
+      bot.stop();
+    }
+    setTimeout(() => {
+      console.log("Final stats:", stats);
+      process.exit(0);
+    }, 500);
+  }, DURATION_MS);
+}
 
 function createBot(index: number, counters: Stats, url: string): Bot {
   const roomId = ROOM_ID;
