@@ -107,7 +107,7 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │           ├── index.ts                                # 共有エクスポート
     │           ├── config/
     │           │   ├── index.ts                            # 設定エクスポート
-    │           │   └── gameConfig.ts                       # 共通定数
+    │           │   ├── gameConfig.ts                       # 共通定数
     │           │   └── networkConfig.ts                    # 通信設定
     │           ├── domains/
     │           │   ├── gridMap/
@@ -120,6 +120,12 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │           │       └── room.type.ts                    # ルーム型
     │           └── protocol/
     │               └── events.ts                           # 通信イベント定義
+    ├── test/                                                # テスト用スクリプト群
+    │   ├── load-bot.constants.ts                            # 負荷テスト定数
+    │   ├── load-bot.ts                                      # 負荷テスト実行
+    │   ├── node_modules/                                    # テスト依存
+    │   ├── package.json                                     # テスト依存・スクリプト
+    │   └── tsconfig.json                                    # テストTS設定
     ├── .gitignore                                           # Git除外設定
     ├── .npmrc                                               # pnpm設定
     ├── docker-compose.prod.yml                              # 本番Compose定義

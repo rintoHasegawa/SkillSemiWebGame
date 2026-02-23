@@ -5,7 +5,9 @@ import {
   JOIN_DELAY_MS,
   MAX_X,
   MAX_Y,
-  MOVE_INTERVAL_MS,
+  MOVE_TICK_MS,
+  BOT_SPEED,
+  BOT_RADIUS,
   ROOM_ID,
   SOCKET_PATH,
   SOCKET_TRANSPORTS,
@@ -50,7 +52,9 @@ console.log("Load test starting...", {
   joinDelayMs: JOIN_DELAY_MS,
   startGame: START_GAME,
   startDelayMs: START_DELAY_MS,
-  moveIntervalMs: MOVE_INTERVAL_MS,
+  moveTickMs: MOVE_TICK_MS,
+  botSpeed: BOT_SPEED,
+  botRadius: BOT_RADIUS,
   maxX: MAX_X,
   maxY: MAX_Y,
 });
@@ -90,6 +94,41 @@ function createBot(index: number, counters: Stats): Bot {
   });
 
   let moveTimer: NodeJS.Timeout | null = null;
+  let posX = BOT_RADIUS + Math.random() * (MAX_X - BOT_RADIUS * 2);
+  let posY = BOT_RADIUS + Math.random() * (MAX_Y - BOT_RADIUS * 2);
+  let dirX = 1;
+  let dirY = 0;
+
+  const updateDirection = () => {
+    const angle = Math.random() * Math.PI * 2;
+    dirX = Math.cos(angle);
+    dirY = Math.sin(angle);
+  };
+
+  const tickMove = () => {
+    const frameDelta = MOVE_TICK_MS / (1000 / 60);
+    posX += dirX * BOT_SPEED * frameDelta;
+    posY += dirY * BOT_SPEED * frameDelta;
+
+    if (posX < BOT_RADIUS) {
+      posX = BOT_RADIUS;
+      updateDirection();
+    } else if (posX > MAX_X - BOT_RADIUS) {
+      posX = MAX_X - BOT_RADIUS;
+      updateDirection();
+    }
+
+    if (posY < BOT_RADIUS) {
+      posY = BOT_RADIUS;
+      updateDirection();
+    } else if (posY > MAX_Y - BOT_RADIUS) {
+      posY = MAX_Y - BOT_RADIUS;
+      updateDirection();
+    }
+
+    socket.emit("move", { x: posX, y: posY });
+    counters.moveSent += 1;
+  };
 
   socket.on("connect", () => {
     counters.connected += 1;
@@ -109,13 +148,9 @@ function createBot(index: number, counters: Stats): Bot {
   socket.on("game-start", () => {
     counters.gameStarts += 1;
     // ゲーム開始後に定期的な移動イベントを送信。
-    if (!moveTimer && MOVE_INTERVAL_MS > 0) {
-      moveTimer = setInterval(() => {
-        const x = Math.random() * MAX_X;
-        const y = Math.random() * MAX_Y;
-        socket.emit("move", { x, y });
-        counters.moveSent += 1;
-      }, MOVE_INTERVAL_MS);
+    if (!moveTimer && MOVE_TICK_MS > 0) {
+      updateDirection();
+      moveTimer = setInterval(tickMove, MOVE_TICK_MS);
     }
   });
 

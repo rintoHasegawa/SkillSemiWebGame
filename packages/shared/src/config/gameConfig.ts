@@ -23,7 +23,7 @@ export const GAME_CONFIG = {
 
   // プレイヤー挙動設定
   PLAYER_RADIUS: 10,      // プレイヤー半径
-  PLAYER_SPEED: 5,        // 移動速度（ピクセル/秒）
+  PLAYER_SPEED: 5,        // 60fps基準の1フレーム当たりの移動量（px）
 
   // チームカラー設定
   // teamId インデックス順カラー配列
