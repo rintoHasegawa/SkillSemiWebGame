@@ -56,11 +56,13 @@ export const useJoystick = ({ onMove, maxDist }: Props): UseJoystickReturn => {
       const angle = Math.atan2(dy, dx);
 
       const limitedDist = Math.min(dist, limit);
-      const moveX = Math.cos(angle) * limitedDist;
-      const moveY = Math.sin(angle) * limitedDist;
+      const offsetX = Math.cos(angle) * limitedDist;
+      const offsetY = Math.sin(angle) * limitedDist;
+      const normalizedX = offsetX / limit;
+      const normalizedY = offsetY / limit;
 
-      setStickPos({ x: moveX, y: moveY });
-      onMove(moveX, moveY);
+      setStickPos({ x: offsetX, y: offsetY });
+      onMove(normalizedX, normalizedY);
     },
     [isMoving, basePos.x, basePos.y, limit, onMove]
   );
