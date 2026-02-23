@@ -1,4 +1,4 @@
-import { RoomStatus, config } from "@repo/shared";
+import { RoomPhase, config } from "@repo/shared";
 import type { Room, RoomMember } from "@repo/shared";
 
 export class RoomManager {
@@ -12,7 +12,7 @@ export class RoomManager {
         roomId: roomId,
         ownerId: socketId,
         players: [],
-        status: RoomStatus.WAITING,
+        status: RoomPhase.WAITING,
         maxPlayers: config.GAME_CONFIG.MAX_PLAYERS_PER_ROOM
       };
       this.rooms.set(roomId, room);

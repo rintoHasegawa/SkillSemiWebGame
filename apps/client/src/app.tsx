@@ -6,18 +6,18 @@ import { TitleScene } from "./scenes/title/TitleScene";
 import { LobbyScene } from "./scenes/lobby/LobbyScene";
 import { GameScene } from "./scenes/game/GameScene";
 
-import { AppState } from "@repo/shared";
+import { ScenePhase } from "@repo/shared";
 
 export default function App() {
-  const { appState, room, myId } = useAppFlow();
+  const { scenePhase, room, myId } = useAppFlow();
 
   // タイトル画面分岐
-  if (appState === AppState.TITLE) {
+  if (scenePhase === ScenePhase.TITLE) {
     return <TitleScene onJoin={(payload) => socketClient.joinRoom(payload)} />;
   }
   
   // ロビー画面分岐
-  if (appState === AppState.LOBBY) {
+  if (scenePhase === ScenePhase.LOBBY) {
     return <LobbyScene room={room} myId={myId} onStart={() => socketClient.startGame()} />;
   }
 

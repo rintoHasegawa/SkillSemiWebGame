@@ -1,8 +1,5 @@
-// クライアント画面遷移利用アプリ状態型
-export type AppState = "title" | "lobby" | "playing";
-
 // ルーム進行フェーズ状態型
-export type RoomStatus = "waiting" | "playing" | "result";
+export type RoomPhase = "waiting" | "playing" | "result";
 
 // ルーム所属プレイヤー情報型
 export interface RoomMember {
@@ -17,7 +14,7 @@ export interface Room {
   roomId: string;
   ownerId: string;
   players: RoomMember[];
-  status: RoomStatus;
+  status: RoomPhase;
   maxPlayers: number;
 }
 

@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { socketClient } from "../network/SocketClient";
-import { AppState } from "@repo/shared";
-import type { AppState as AppStateType, Room } from "@repo/shared";
+import { ScenePhase } from "@repo/shared";
+import type { ScenePhase as ScenePhaseType, Room } from "@repo/shared";
 
 type AppFlowState = {
-  appState: AppStateType;
+  scenePhase: ScenePhaseType;
   room: Room | null;
   myId: string | null;
 };
 
 export const useAppFlow = (): AppFlowState => {
-  const [appState, setAppState] = useState<AppStateType>(AppState.TITLE);
+  const [scenePhase, setScenePhase] = useState<ScenePhaseType>(ScenePhase.TITLE);
   const [room, setRoom] = useState<Room | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
 
@@ -18,10 +18,10 @@ export const useAppFlow = (): AppFlowState => {
     socketClient.onConnect((id) => setMyId(id));
     socketClient.onRoomUpdate((updatedRoom) => {
       setRoom(updatedRoom);
-      setAppState(AppState.LOBBY);
+      setScenePhase(ScenePhase.LOBBY);
     });
-    socketClient.onGameStart(() => setAppState(AppState.PLAYING));
+    socketClient.onGameStart(() => setScenePhase(ScenePhase.PLAYING));
   }, []);
 
-  return { appState, room, myId };
+  return { scenePhase, room, myId };
 };
