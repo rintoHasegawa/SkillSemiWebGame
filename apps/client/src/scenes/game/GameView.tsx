@@ -3,7 +3,7 @@
  * ゲーム画面の描画専用コンポーネント
  * タイマー表示，PixiJSの描画領域，入力UIの配置のみを担当する
  */
-import { Joystick } from "./input/joystick/Joystick";
+import { JoystickInputLayer } from "./input/joystick/JoystickInputLayer";
 
 /** 表示と入力に必要なプロパティ */
 type Props = {
@@ -51,7 +51,7 @@ export const GameView = ({ timeLeft, pixiContainerRef, onInput }: Props) => {
 
       {/* UI 配置領域 */}
       <div style={{ position: "absolute", zIndex: 20, width: "100%", height: "100%" }}>
-        <Joystick onInput={onInput} />
+        <JoystickInputLayer onInput={onInput} />
       </div>
     </div>
   );

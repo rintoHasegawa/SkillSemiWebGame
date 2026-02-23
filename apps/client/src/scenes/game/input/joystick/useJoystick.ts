@@ -5,18 +5,14 @@
  */
 import { useCallback, useState } from "react";
 import type React from "react";
-
-/** UI側と共有する最大半径の既定値 */
-export const MAX_DIST = 60;
+import { MAX_DIST } from "./joystick.constants";
+import type { Point } from "./joystick.types";
 
 /** フックに渡す入力コールバックと設定 */
 type Props = {
   onInput: (moveX: number, moveY: number) => void;
   maxDist?: number;
 };
-
-/** 2D座標の簡易型 */
-type Point = { x: number; y: number };
 
 /** フックが返すUI向けの状態とハンドラ */
 type UseJoystickReturn = {
