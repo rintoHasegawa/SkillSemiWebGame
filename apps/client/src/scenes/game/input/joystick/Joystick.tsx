@@ -3,12 +3,12 @@ import { MAX_DIST, useJoystick } from "./useJoystick";
 export { MAX_DIST } from "./useJoystick";
 
 type Props = {
-  onMove: (moveX: number, moveY: number) => void;
+  onInput: (moveX: number, moveY: number) => void;
 };
 
-export const Joystick = ({ onMove }: Props) => {
+export const Joystick = ({ onInput }: Props) => {
   const { isMoving, basePos, stickPos, handleStart, handleMove, handleEnd } =
-    useJoystick({ onMove });
+    useJoystick({ onInput });
 
   return (
     <div

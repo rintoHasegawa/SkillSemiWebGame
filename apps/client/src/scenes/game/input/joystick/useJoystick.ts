@@ -4,7 +4,7 @@ import type React from "react";
 export const MAX_DIST = 60;
 
 type Props = {
-  onMove: (moveX: number, moveY: number) => void;
+  onInput: (moveX: number, moveY: number) => void;
   maxDist?: number;
 };
 
@@ -29,7 +29,7 @@ const getClientPoint = (e: React.TouchEvent | React.MouseEvent): Point | null =>
   return { x: e.clientX, y: e.clientY };
 };
 
-export const useJoystick = ({ onMove, maxDist }: Props): UseJoystickReturn => {
+export const useJoystick = ({ onInput, maxDist }: Props): UseJoystickReturn => {
   const [isMoving, setIsMoving] = useState(false);
   const [basePos, setBasePos] = useState<Point>({ x: 0, y: 0 });
   const [stickPos, setStickPos] = useState<Point>({ x: 0, y: 0 });
@@ -62,16 +62,16 @@ export const useJoystick = ({ onMove, maxDist }: Props): UseJoystickReturn => {
       const normalizedY = offsetY / limit;
 
       setStickPos({ x: offsetX, y: offsetY });
-      onMove(normalizedX, normalizedY);
+      onInput(normalizedX, normalizedY);
     },
-    [isMoving, basePos.x, basePos.y, limit, onMove]
+    [isMoving, basePos.x, basePos.y, limit, onInput]
   );
 
   const handleEnd = useCallback(() => {
     setIsMoving(false);
     setStickPos({ x: 0, y: 0 });
-    onMove(0, 0);
-  }, [onMove]);
+    onInput(0, 0);
+  }, [onInput]);
 
   return { isMoving, basePos, stickPos, handleStart, handleMove, handleEnd };
 };
