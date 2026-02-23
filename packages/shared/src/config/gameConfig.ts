@@ -40,8 +40,3 @@ export const GAME_CONFIG = {
   MAP_GRID_COLOR: 0x333333,   // グリッド線の色
   MAP_BORDER_COLOR: 0xff4444, // プレイ領域外枠の色
 } as const;
-
-export const NETWORK_CONFIG = {
-  DEV_SERVER_URL: "http://localhost:3000",
-  PROD_SERVER_URL: "https://skillsemiwebgame.onrender.com",
-} as const;

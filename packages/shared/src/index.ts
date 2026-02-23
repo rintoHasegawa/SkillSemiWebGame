@@ -12,4 +12,4 @@ export type {
 	JoinRoomPayload,
 } from "./domains/room/room.type";
 export * as protocol from "./protocol/events";
-export * as config from "./config/gameConfig";  
+export * as config from "./config";
