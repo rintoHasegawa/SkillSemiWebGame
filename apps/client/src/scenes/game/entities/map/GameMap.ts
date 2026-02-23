@@ -1,4 +1,3 @@
-// apps/client/src/scenes/game/GameMap.ts
 import { Container, Graphics } from "pixi.js";
 import { config } from "@repo/shared";
 import type { gridMapTypes } from "@repo/shared";

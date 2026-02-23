@@ -2,9 +2,8 @@ import { Application, Container, Ticker } from "pixi.js";
 import { socketManager } from "@client/network/SocketManager";
 import { config } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
-import { BasePlayer, LocalPlayer, RemotePlayer } from "./Player";
-import { GameMap } from "./GameMap";
-import { MAX_DIST } from "./VirtualJoystick";
+import { BasePlayer, LocalPlayer, RemotePlayer } from "./entities/player/Player";
+import { GameMap } from "./entities/map/GameMap";
 
 export class GameManager {
   private app: Application;
@@ -147,7 +146,7 @@ export class GameManager {
     const isMoving = dx !== 0 || dy !== 0;
 
     if (isMoving) {
-      me.move(dx / MAX_DIST, dy / MAX_DIST, deltaSeconds);
+      me.move(dx, dy, deltaSeconds);
       
       const now = performance.now();
       if (now - this.lastPositionSentTime >= config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
