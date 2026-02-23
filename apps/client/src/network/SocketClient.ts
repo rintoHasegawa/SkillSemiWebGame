@@ -16,7 +16,7 @@ export class SocketClient {
       : config.NETWORK_CONFIG.DEV_SERVER_URL;
 
     this.socket = io(SERVER_URL, {
-      transports: ["websocket", "polling"], // 接続の安定性を高める
+      transports: [...config.NETWORK_CONFIG.SOCKET_TRANSPORTS], // 接続の安定性を高める
       withCredentials: true
     });
   }

@@ -3,17 +3,18 @@ import { createServer } from "http";
 import { GameManager } from "./domains/game/GameManager";
 import { RoomManager } from "./domains/room/RoomManager";
 import { SocketManager } from "./network/SocketManager";
+import { config } from "@repo/shared";
 
 // サーバー待受ポート
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || config.NETWORK_CONFIG.DEV_SERVER_PORT;
 
 // HTTP サーバー・Socket.io サーバー生成
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
     // 開発環境向け全オリジン許可設定
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: config.NETWORK_CONFIG.CORS_ORIGIN,
+    methods: [...config.NETWORK_CONFIG.CORS_METHODS]
   },
 });
 
