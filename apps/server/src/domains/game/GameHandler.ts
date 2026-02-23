@@ -14,7 +14,22 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
   // ゲーム開始要求処理
   socket.on(protocol.SocketEvents.START_GAME, () => {
     const room = roomManager.getRoomByOwnerId(socket.id);
-    
+    if (!room) {
+      console.log("[GameHandler] START_GAME ignored (no room)", { socketId: socket.id });
+      return;
+    }
+
+    if (room.status === RoomStatus.PLAYING) {
+      console.log("[GameHandler] START_GAME ignored (already playing)", { roomId: room.roomId });
+      return;
+    }
+
+    console.log("[GameHandler] START_GAME accepted", {
+      roomId: room.roomId,
+      ownerId: socket.id,
+      totalPlayers: room.players.length
+    });
+
     if (room) {
       room.status = RoomStatus.PLAYING;
 
@@ -59,6 +74,7 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
   socket.on(protocol.SocketEvents.READY_FOR_GAME, () => {
     const allPlayers = gameManager.getAllPlayers();
     socket.emit(protocol.SocketEvents.CURRENT_PLAYERS, allPlayers);
+    console.log("[GameHandler] READY_FOR_GAME received", { socketId: socket.id, totalPlayers: allPlayers.length });
 
     // 準備が完了したクライアントに対して、改めて開始時刻を個別に教える
     // Socket.ioの仕様上、socket.roomsには自身のIDと参加中のルームIDが含まれるため、そこからルームIDを特定する
@@ -68,7 +84,10 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
       if (startTime) {
         // io.to() による全員への一斉送信ではなく、socket.emit() でこの本人にだけ送る
         socket.emit(protocol.SocketEvents.GAME_START, { startTime });
+        console.log("[GameHandler] GAME_START sent to ready client", { socketId: socket.id, roomId, startTime });
       }
+    } else {
+      console.log("[GameHandler] READY_FOR_GAME missing roomId", { socketId: socket.id });
     }
   });
 
@@ -87,4 +106,5 @@ export const handleGameDisconnect = (io: Server, gameManager: GameManager, playe
   gameManager.removePlayer(playerId);
   // 全体にプレイヤー削除を通知
   io.emit(protocol.SocketEvents.REMOVE_PLAYER, playerId);
+  console.log("[GameHandler] player removed", { playerId });
 };
