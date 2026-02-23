@@ -3,7 +3,7 @@ import { socketManager } from "@client/network/SocketManager";
 import { config } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
 import { LocalPlayerController, RemotePlayerController } from "./entities/player/PlayerController";
-import { GameMap } from "./entities/map/GameMap";
+import { GameMapController } from "./entities/map/GameMapController";
 
 export class GameManager {
   private app: Application;
@@ -11,7 +11,7 @@ export class GameManager {
   private players: Record<string, LocalPlayerController | RemotePlayerController> = {};
   private myId: string;
   private container: HTMLDivElement;
-  private gameMap!: GameMap;
+  private gameMap!: GameMapController;
   private gameStartTime: number | null = null;
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
@@ -60,9 +60,9 @@ export class GameManager {
     this.container.appendChild(this.app.canvas);
 
     // 背景マップの配置
-    const gameMap = new GameMap();
+    const gameMap = new GameMapController();
     this.gameMap = gameMap;
-    this.worldContainer.addChild(gameMap);
+    this.worldContainer.addChild(gameMap.getDisplayObject());
     this.app.stage.addChild(this.worldContainer);
 
     // ネットワークイベントの登録
