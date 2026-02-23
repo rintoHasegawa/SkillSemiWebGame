@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { GameManager } from "./GameManager";
 import { RoomManager } from "../room/RoomManager";
-import { protocol, RoomPhase } from "@repo/shared";
+import { protocol, roomConsts } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
 
 export const registerGameHandlers = (io: Server, socket: Socket, gameManager: GameManager, roomManager: RoomManager) => {
@@ -19,7 +19,7 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
       return;
     }
 
-    if (room.status === RoomPhase.PLAYING) {
+    if (room.status === roomConsts.RoomPhase.PLAYING) {
       console.log("[GameHandler] START_GAME ignored (already playing)", { roomId: room.roomId });
       return;
     }
@@ -31,7 +31,7 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
     });
 
     if (room) {
-      room.status = RoomPhase.PLAYING;
+      room.status = roomConsts.RoomPhase.PLAYING;
 
       const playerIds = room.players.map((p: { id: string }) => p.id);
       
@@ -60,7 +60,7 @@ export const registerGameHandlers = (io: Server, socket: Socket, gameManager: Ga
           // 3分経過時に GameLoop から呼ばれる処理
           console.log(`[GameHandler] ルーム ${room.roomId} のゲームが終了しました (3分経過)`);
           io.to(room.roomId).emit(protocol.SocketEvents.GAME_END); // クライアントへ終了通知
-          room.status = RoomPhase.WAITING; // ルーム状態を待機に戻す
+          room.status = roomConsts.RoomPhase.WAITING; // ルーム状態を待機に戻す
         }
       );
         
