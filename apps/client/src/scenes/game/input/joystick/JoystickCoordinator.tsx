@@ -6,7 +6,7 @@
 import { useCallback } from "react";
 import type React from "react";
 import { JoystickView } from "./JoystickView";
-import type { NormalizedInput } from "./joystick.types";
+import type { NormalizedInput } from "./common";
 import { useJoystick } from "./useJoystick";
 
 /** JoystickCoordinator が提供する描画用データと入力ハンドラ */

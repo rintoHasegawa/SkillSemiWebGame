@@ -6,7 +6,7 @@
 import { JoystickCoordinator } from "./JoystickCoordinator";
 
 /** 入力半径の既定値を外部から参照できるように再公開 */
-export { MAX_DIST } from "./joystick.constants";
+export { MAX_DIST } from "./common";
 
 /** JoystickInputLayer の入力コールバック */
 type Props = {

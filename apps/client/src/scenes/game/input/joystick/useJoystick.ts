@@ -5,8 +5,9 @@
  */
 import { useCallback, useState } from "react";
 import type React from "react";
-import { MAX_DIST } from "./joystick.constants";
-import type { NormalizedInput, Point } from "./joystick.types";
+import { MAX_DIST } from "./common";
+import { computeJoystick } from "./JoystickModel";
+import type { NormalizedInput, Point } from "./common";
 
 /** フックに渡す設定 */
 type Props = {
@@ -59,19 +60,9 @@ export const useJoystick = ({ maxDist }: Props): UseJoystickReturn => {
       const point = getClientPoint(e);
       if (!point) return null;
 
-      const dx = point.x - center.x;
-      const dy = point.y - center.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const angle = Math.atan2(dy, dx);
-
-      const limitedDist = Math.min(dist, radius);
-      const offsetX = Math.cos(angle) * limitedDist;
-      const offsetY = Math.sin(angle) * limitedDist;
-      const normalizedX = offsetX / radius;
-      const normalizedY = offsetY / radius;
-
-      setKnobOffset({ x: offsetX, y: offsetY });
-      return { x: normalizedX, y: normalizedY };
+      const computed = computeJoystick(center, point, radius);
+      setKnobOffset(computed.knobOffset);
+      return computed.normalized;
     },
     [isMoving, center.x, center.y, radius]
   );

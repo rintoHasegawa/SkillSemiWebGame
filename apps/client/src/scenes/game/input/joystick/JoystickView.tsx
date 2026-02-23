@@ -3,7 +3,7 @@
  * ジョイスティックの見た目だけを描画するコンポーネント
  * 入力処理は持たず，受け取った座標情報をもとにUIを描く
  */
-import type { Point } from "./joystick.types";
+import type { Point } from "./common";
 
 /** 表示に必要な座標と状態 */
 type Props = {
