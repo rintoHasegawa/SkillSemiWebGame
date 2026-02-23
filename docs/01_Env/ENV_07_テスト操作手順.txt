@@ -29,7 +29,7 @@
 2-2. 設定値
 ■ 接続先URL
 ・既定値: https://skillsemiwebgame.onrender.com
-・変更方法: 環境変数で指定する
+・変更方法: コマンドライン引数(--dev)または定数を編集する
 
 
 3. 実行手順 (Execution Steps)
@@ -43,20 +43,30 @@
 
 3-2. 実行
     - コマンド: $ pnpm start
+    - 開発環境に接続する場合: $ pnpm start -- --dev
 
 
 4. パラメータ一覧 (Parameters)
 ------------------------------------------------------------------------
-4-1. 環境変数
-    ・TARGET_URL: 接続先URL
+4-1. コマンドライン引数
+    ・--dev: 開発環境(DEV_SERVER_URL)に接続する
+
+4-2. 定数 (load-bot.constants.ts)
+    ・URL: 本番サーバURL
+    ・DEV_URL: 開発サーバURL
     ・BOTS: 同時接続数
-    ・ROOMS: ルーム数
     ・DURATION_MS: 実行時間 (ms)
     ・JOIN_DELAY_MS: 参加間隔 (ms)
-    ・START_GAME: ゲーム開始の有効化 (1/0)
-    ・MOVE_INTERVAL_MS: 移動送信間隔 (ms)
+    ・MOVE_TICK_MS: 移動送信間隔 (ms)
+    ・BOT_SPEED: 移動速度
+    ・BOT_RADIUS: プレイヤー半径
+    ・START_DELAY_MS: 開始遅延 (ms)
     ・MAX_X: X座標上限
     ・MAX_Y: Y座標上限
+    ・ROOM_ID: ルームID
+    ・START_GAME: ゲーム開始の有効化 (true/false)
+    ・SOCKET_PATH: Socket.IOのパス
+    ・SOCKET_TRANSPORTS: Socket.IOのトランスポート
 
 
 5. 出力と終了 (Output & Termination)

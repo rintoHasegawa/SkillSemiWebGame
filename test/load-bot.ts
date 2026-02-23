@@ -13,6 +13,7 @@ import {
   SOCKET_TRANSPORTS,
   START_DELAY_MS,
   START_GAME,
+  DEV_URL,
   URL,
 } from "./load-bot.constants.js";
 
@@ -44,8 +45,13 @@ const stats: Stats = {
 const bots: Bot[] = [];
 // 既にオーナーがいるルームを追跡。
 
+const args = new Set(process.argv.slice(2));
+const useDev = args.has("--dev");
+const targetUrl = useDev ? DEV_URL : URL;
+
 console.log("Load test starting...", {
-  url: URL,
+  env: useDev ? "dev" : "prod",
+  url: targetUrl,
   bots: BOTS,
   roomId: ROOM_ID,
   durationMs: DURATION_MS,
@@ -63,7 +69,7 @@ console.log("Load test starting...", {
 for (let i = 0; i < BOTS; i += 1) {
   const delay = i * JOIN_DELAY_MS;
   setTimeout(() => {
-    const bot = createBot(i, stats);
+    const bot = createBot(i, stats, targetUrl);
     bots.push(bot);
   }, delay);
 }
@@ -80,13 +86,13 @@ setTimeout(() => {
   }, 500);
 }, DURATION_MS);
 
-function createBot(index: number, counters: Stats): Bot {
+function createBot(index: number, counters: Stats, url: string): Bot {
   const roomId = ROOM_ID;
   const playerName = `bot-${index}`;
   const isOwner = index === 0;
 
   // 固定トランスポートで再接続なしのクライアント接続。
-  const socket = io(URL, {
+  const socket = io(url, {
     transports: SOCKET_TRANSPORTS,
     path: SOCKET_PATH,
     reconnection: false,
