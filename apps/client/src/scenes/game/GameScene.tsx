@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { VirtualJoystick } from "./VirtualJoystick";
+import { VirtualJoystick } from "./input/joystick/VirtualJoystick";
 import { GameManager } from "./GameManager";
 import { config } from "@repo/shared";
 

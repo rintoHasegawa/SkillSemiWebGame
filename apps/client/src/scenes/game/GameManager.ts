@@ -2,9 +2,9 @@ import { Application, Container, Ticker } from "pixi.js";
 import { socketManager } from "@client/network/SocketManager";
 import { config } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
-import { BasePlayer, LocalPlayer, RemotePlayer } from "./Player";
-import { GameMap } from "./GameMap";
-import { MAX_DIST } from "./VirtualJoystick";
+import { BasePlayer, LocalPlayer, RemotePlayer } from "./entities/player/Player";
+import { GameMap } from "./entities/map/GameMap";
+import { MAX_DIST } from "./input/joystick/VirtualJoystick";
 
 export class GameManager {
   private app: Application;
