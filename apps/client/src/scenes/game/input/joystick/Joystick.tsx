@@ -1,13 +1,22 @@
+/**
+ * Joystick
+ * 画面上のジョイスティックUIの入口
+ * ポインターイベントを受け取り，useJoystick に処理を委譲し，描画は JoystickView に渡す
+ */
+import { JoystickView } from "./JoystickView";
 import { MAX_DIST, useJoystick } from "./useJoystick";
 
+/** 入力半径の既定値を外部から参照できるように再公開 */
 export { MAX_DIST } from "./useJoystick";
 
+/** Joystick コンポーネントの入力コールバック */
 type Props = {
   onInput: (moveX: number, moveY: number) => void;
 };
 
+/** ポインター入力と描画を結びつけるジョイスティックUI */
 export const Joystick = ({ onInput }: Props) => {
-  const { isMoving, basePos, stickPos, handleStart, handleMove, handleEnd } =
+  const { isMoving, center, knobOffset, radius, handleStart, handleMove, handleEnd } =
     useJoystick({ onInput });
 
   return (
@@ -30,35 +39,13 @@ export const Joystick = ({ onInput }: Props) => {
         touchAction: "none",
       }}
     >
-      {isMoving && (
-        <div
-          style={{
-            position: "fixed",
-            left: basePos.x - MAX_DIST,
-            top: basePos.y - MAX_DIST,
-            width: MAX_DIST * 2,
-            height: MAX_DIST * 2,
-            background: "rgba(255, 255, 255, 0.1)",
-            borderRadius: "50%",
-            border: "2px solid rgba(255, 255, 255, 0.3)",
-            pointerEvents: "none",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
-              width: 40,
-              height: 40,
-              background: "rgba(255, 255, 255, 0.8)",
-              borderRadius: "50%",
-              transform: `translate(calc(-50% + ${stickPos.x}px), calc(-50% + ${stickPos.y}px))`,
-              boxShadow: "0 0 10px rgba(0,0,0,0.5)",
-            }}
-          />
-        </div>
-      )}
+      {/* 見た目のみの描画（入力は扱わない） */}
+      <JoystickView
+        isActive={isMoving}
+        center={center}
+        knobOffset={knobOffset}
+        radius={radius ?? MAX_DIST}
+      />
     </div>
   );
 };
