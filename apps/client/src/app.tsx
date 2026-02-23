@@ -1,31 +1,15 @@
-import { useEffect, useState } from "react";
 import { socketClient } from "./network/SocketClient";
+import { useGameFlow } from "./hooks/useGameFlow";
 
 // 画面遷移先シーンコンポーネント群
-import { TitleScene } from "./scenes/TitleScene";
-import { LobbyScene } from "./scenes/LobbyScene";
-import { GameScene } from "./scenes/GameScene";
+import { TitleScene } from "./scenes/title/TitleScene";
+import { LobbyScene } from "./scenes/lobby/LobbyScene";
+import { GameScene } from "./scenes/game/GameScene";
 
 import { GameState } from "@repo/shared";
-import type { GameStateType, Room } from "@repo/shared";
 
 export default function App() {
-  // 現在シーン状態
-  const [gameState, setGameState] = useState<GameStateType>(GameState.TITLE);
-  // 参加中ルーム情報
-  const [room, setRoom] = useState<Room | null>(null);
-  // 自身ソケットID
-  const [myId, setMyId] = useState<string | null>(null);
-
-  // 接続・ルーム更新・開始通知の購読処理
-  useEffect(() => {
-    socketClient.onConnect((id) => setMyId(id));
-    socketClient.onRoomUpdate((updatedRoom) => {
-      setRoom(updatedRoom);
-      setGameState(GameState.LOBBY);
-    });
-    socketClient.onGameStart(() => setGameState(GameState.PLAYING));
-  }, []);
+  const { gameState, room, myId } = useGameFlow();
 
   // タイトル画面分岐
   if (gameState === GameState.TITLE) {
