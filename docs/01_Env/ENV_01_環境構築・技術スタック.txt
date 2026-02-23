@@ -106,7 +106,9 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │       └── src/
     │           ├── index.ts                                # 共有エクスポート
     │           ├── config/
+    │           │   ├── index.ts                            # 設定エクスポート
     │           │   └── gameConfig.ts                       # 共通定数
+    │           │   └── networkConfig.ts                    # 通信設定
     │           ├── domains/
     │           │   ├── gridMap/
     │           │   │   ├── gridMap.logic.ts                # マップ計算
