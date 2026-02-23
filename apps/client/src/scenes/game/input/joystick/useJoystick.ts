@@ -6,11 +6,10 @@
 import { useCallback, useState } from "react";
 import type React from "react";
 import { MAX_DIST } from "./joystick.constants";
-import type { Point } from "./joystick.types";
+import type { NormalizedInput, Point } from "./joystick.types";
 
-/** フックに渡す入力コールバックと設定 */
+/** フックに渡す設定 */
 type Props = {
-  onInput: (moveX: number, moveY: number) => void;
   maxDist?: number;
 };
 
@@ -21,7 +20,7 @@ type UseJoystickReturn = {
   knobOffset: Point;
   radius: number;
   handleStart: (e: React.TouchEvent | React.MouseEvent) => void;
-  handleMove: (e: React.TouchEvent | React.MouseEvent) => void;
+  handleMove: (e: React.TouchEvent | React.MouseEvent) => NormalizedInput | null;
   handleEnd: () => void;
 };
 
@@ -37,7 +36,7 @@ const getClientPoint = (e: React.TouchEvent | React.MouseEvent): Point | null =>
 };
 
 /** 正規化ベクトルの出力とUI用の座標を提供するフック */
-export const useJoystick = ({ onInput, maxDist }: Props): UseJoystickReturn => {
+export const useJoystick = ({ maxDist }: Props): UseJoystickReturn => {
   const [isMoving, setIsMoving] = useState(false);
   const [center, setCenter] = useState<Point>({ x: 0, y: 0 });
   const [knobOffset, setKnobOffset] = useState<Point>({ x: 0, y: 0 });
@@ -53,12 +52,12 @@ export const useJoystick = ({ onInput, maxDist }: Props): UseJoystickReturn => {
     setIsMoving(true);
   }, []);
 
-  // 入力座標からベクトルを計算し，半径でクランプして正規化出力する
+  // 入力座標からベクトルを計算し，半径でクランプして正規化する
   const handleMove = useCallback(
     (e: React.TouchEvent | React.MouseEvent) => {
-      if (!isMoving) return;
+      if (!isMoving) return null;
       const point = getClientPoint(e);
-      if (!point) return;
+      if (!point) return null;
 
       const dx = point.x - center.x;
       const dy = point.y - center.y;
@@ -72,17 +71,16 @@ export const useJoystick = ({ onInput, maxDist }: Props): UseJoystickReturn => {
       const normalizedY = offsetY / radius;
 
       setKnobOffset({ x: offsetX, y: offsetY });
-      onInput(normalizedX, normalizedY);
+      return { x: normalizedX, y: normalizedY };
     },
-    [isMoving, center.x, center.y, radius, onInput]
+    [isMoving, center.x, center.y, radius]
   );
 
-  // 入力終了時に状態をリセットして停止入力を通知する
+  // 入力終了時に状態をリセットする
   const handleEnd = useCallback(() => {
     setIsMoving(false);
     setKnobOffset({ x: 0, y: 0 });
-    onInput(0, 0);
-  }, [onInput]);
+  }, []);
 
   return { isMoving, center, knobOffset, radius, handleStart, handleMove, handleEnd };
 };
