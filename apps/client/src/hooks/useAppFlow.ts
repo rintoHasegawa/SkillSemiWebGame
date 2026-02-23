@@ -15,8 +15,8 @@ export const useAppFlow = (): AppFlowState => {
   const [myId, setMyId] = useState<string | null>(null);
 
   useEffect(() => {
-    socketManager.connection.onConnect((id) => setMyId(id));
-    socketManager.room.onRoomUpdate((updatedRoom) => {
+    socketManager.common.onConnect((id) => setMyId(id));
+    socketManager.lobby.onRoomUpdate((updatedRoom) => {
       setRoom(updatedRoom);
       setScenePhase(appConsts.ScenePhase.LOBBY);
     });

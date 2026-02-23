@@ -1,11 +1,11 @@
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
 
-type ConnectionHandler = {
+type CommonHandler = {
   onConnect: (callback: (id: string) => void) => void;
 };
 
-export const createConnectionHandler = (socket: Socket): ConnectionHandler => {
+export const createCommonHandler = (socket: Socket): CommonHandler => {
   return {
     onConnect: (callback: (id: string) => void) => {
       if (socket.connected) {
@@ -19,4 +19,4 @@ export const createConnectionHandler = (socket: Socket): ConnectionHandler => {
   };
 };
 
-export type { ConnectionHandler };
+export type { CommonHandler };

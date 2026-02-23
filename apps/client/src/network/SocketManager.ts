@@ -1,13 +1,15 @@
 import { io, Socket } from "socket.io-client";
 import { config } from "@repo/shared";
-import { createConnectionHandler, type ConnectionHandler } from "./handlers/ConnectionHandler";
-import { createRoomHandler, type RoomHandler } from "./handlers/RoomHandler";
+import { createCommonHandler, type CommonHandler } from "./handlers/CommonHandler";
+import { createTitleHandler, type TitleHandler } from "./handlers/TitleHandler";
+import { createLobbyHandler, type LobbyHandler } from "./handlers/LobbyHandler";
 import { createGameHandler, type GameHandler } from "./handlers/GameHandler";
 
 export class SocketManager {
   public socket: Socket;
-  public connection: ConnectionHandler;
-  public room: RoomHandler;
+  public common: CommonHandler;
+  public title: TitleHandler;
+  public lobby: LobbyHandler;
   public game: GameHandler;
 
   constructor() {
@@ -20,8 +22,9 @@ export class SocketManager {
       withCredentials: true
     });
 
-    this.connection = createConnectionHandler(this.socket);
-    this.room = createRoomHandler(this.socket);
+    this.common = createCommonHandler(this.socket);
+    this.title = createTitleHandler(this.socket);
+    this.lobby = createLobbyHandler(this.socket);
     this.game = createGameHandler(this.socket);
   }
 }

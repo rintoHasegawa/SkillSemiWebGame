@@ -13,12 +13,12 @@ export default function App() {
 
   // タイトル画面分岐
   if (scenePhase === appConsts.ScenePhase.TITLE) {
-    return <TitleScene onJoin={(payload) => socketManager.room.joinRoom(payload)} />;
+    return <TitleScene onJoin={(payload) => socketManager.title.joinRoom(payload)} />;
   }
   
   // ロビー画面分岐
   if (scenePhase === appConsts.ScenePhase.LOBBY) {
-    return <LobbyScene room={room} myId={myId} onStart={() => socketManager.room.startGame()} />;
+    return <LobbyScene room={room} myId={myId} onStart={() => socketManager.lobby.startGame()} />;
   }
 
   // プレイ画面分岐

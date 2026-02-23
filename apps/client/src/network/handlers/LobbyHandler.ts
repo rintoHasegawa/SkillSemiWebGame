@@ -2,17 +2,13 @@ import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
 
-type RoomHandler = {
-  joinRoom: (payload: roomTypes.JoinRoomPayload) => void;
+type LobbyHandler = {
   onRoomUpdate: (callback: (room: roomTypes.Room) => void) => void;
   startGame: () => void;
 };
 
-export const createRoomHandler = (socket: Socket): RoomHandler => {
+export const createLobbyHandler = (socket: Socket): LobbyHandler => {
   return {
-    joinRoom: (payload: roomTypes.JoinRoomPayload) => {
-      socket.emit(protocol.SocketEvents.JOIN_ROOM, payload);
-    },
     onRoomUpdate: (callback: (room: roomTypes.Room) => void) => {
       socket.on(protocol.SocketEvents.ROOM_UPDATE, callback);
     },
@@ -22,4 +18,4 @@ export const createRoomHandler = (socket: Socket): RoomHandler => {
   };
 };
 
-export type { RoomHandler };
+export type { LobbyHandler };
