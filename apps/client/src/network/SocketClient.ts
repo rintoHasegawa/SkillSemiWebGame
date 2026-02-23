@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import { protocol } from "@repo/shared";
+import { protocol, config } from "@repo/shared";
 import type { playerTypes, gridMapTypes, roomTypes } from "@repo/shared";
 
 /**
@@ -11,7 +11,9 @@ export class SocketClient {
   constructor() {
     // サーバー（バックエンド）のURLを直接指定する
     // 本番環境（Render）のURLを指定することで、プロキシなしで直接通信させます
-    const SERVER_URL = "localhost:3000"; // 開発環境用URL
+    const SERVER_URL = import.meta.env.PROD
+      ? config.NETWORK_CONFIG.PROD_SERVER_URL
+      : config.NETWORK_CONFIG.DEV_SERVER_URL;
 
     this.socket = io(SERVER_URL, {
       transports: ["websocket", "polling"], // 接続の安定性を高める
