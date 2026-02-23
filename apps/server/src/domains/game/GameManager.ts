@@ -27,8 +27,8 @@ export class GameManager {
   // 新規プレイヤー登録と初期位置設定処理
   addPlayer(id: string): Player {
     const player = new Player(id);
-    player.x = config.GAME_CONFIG.MAP_WIDTH / 2;
-    player.y = config.GAME_CONFIG.MAP_HEIGHT / 2;
+    player.x = config.GAME_CONFIG.GRID_COLS / 2;
+    player.y = config.GAME_CONFIG.GRID_ROWS / 2;
     this.players.set(id, player);
     console.log("[GameManager] player added", { playerId: id, totalPlayers: this.players.size });
     return player;

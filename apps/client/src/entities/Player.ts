@@ -8,24 +8,30 @@ import type { playerTypes } from "@repo/shared";
 export abstract class BasePlayer extends Graphics {
   public id: string;
   public teamId: number;
+  public gridX: number;
+  public gridY: number;
 
   constructor(data: playerTypes.PlayerData, isLocal: boolean = false) {
     super();
     this.id = data.id;
     this.teamId = data.teamId;
     
-    // 初期座標のセット
-    this.position.set(data.x, data.y);
+    // 初期座標のセット（内部はグリッド単位）
+    this.gridX = data.x;
+    this.gridY = data.y;
 
     // gameConfigから定数を取得
     const { 
-      PLAYER_RADIUS, 
+      GRID_CELL_SIZE,
+      PLAYER_RADIUS_PX, 
       TEAM_COLORS,
       PLAYER_LOCAL_STROKE_COLOR,
       PLAYER_LOCAL_STROKE_WIDTH,
       PLAYER_REMOTE_STROKE_COLOR,
       PLAYER_REMOTE_STROKE_WIDTH
     } = config.GAME_CONFIG;
+
+    this.position.set(this.gridX * GRID_CELL_SIZE, this.gridY * GRID_CELL_SIZE);
 
     // チームIDに対応する色をHEX文字列('#RRGGBB')で取得し、PixiJS用の数値(0xRRGGBB)に変換
     const colorString = TEAM_COLORS[this.teamId] || '#FFFFFF';
@@ -36,9 +42,14 @@ export abstract class BasePlayer extends Graphics {
     const strokeWidth = isLocal ? PLAYER_LOCAL_STROKE_WIDTH : PLAYER_REMOTE_STROKE_WIDTH;
 
     // 塗りつぶしと枠線を同時に描画
-    this.circle(0, 0, PLAYER_RADIUS)
+    this.circle(0, 0, PLAYER_RADIUS_PX)
         .fill(hexColor)
         .stroke({ width: strokeWidth, color: strokeColor });
+  }
+
+  protected syncDisplayPosition() {
+    const { GRID_CELL_SIZE } = config.GAME_CONFIG;
+    this.position.set(this.gridX * GRID_CELL_SIZE, this.gridY * GRID_CELL_SIZE);
   }
 
   // 毎フレーム呼ばれる更新メソッド（サブクラスで具体的な処理を実装させる）
@@ -57,15 +68,17 @@ export class LocalPlayer extends BasePlayer {
    * 入力ベクトルと経過時間基準の座標更新処理
    */
   public move(vx: number, vy: number, deltaTime: number) {
-    const { PLAYER_SPEED, MAP_WIDTH, MAP_HEIGHT, PLAYER_RADIUS } = config.GAME_CONFIG;
+    const { PLAYER_SPEED, GRID_COLS, GRID_ROWS, PLAYER_RADIUS } = config.GAME_CONFIG;
 
     const speed = PLAYER_SPEED * deltaTime;
-    this.x += vx * speed;
-    this.y += vy * speed;
+    this.gridX += vx * speed;
+    this.gridY += vy * speed;
 
     // 画面外に出ないようにクランプ
-    this.x = Math.max(PLAYER_RADIUS, Math.min(MAP_WIDTH - PLAYER_RADIUS, this.x));
-    this.y = Math.max(PLAYER_RADIUS, Math.min(MAP_HEIGHT - PLAYER_RADIUS, this.y));
+    this.gridX = Math.max(PLAYER_RADIUS, Math.min(GRID_COLS - PLAYER_RADIUS, this.gridX));
+    this.gridY = Math.max(PLAYER_RADIUS, Math.min(GRID_ROWS - PLAYER_RADIUS, this.gridY));
+
+    this.syncDisplayPosition();
   }
 
   public update(_deltaTime: number): void {
@@ -77,21 +90,21 @@ export class LocalPlayer extends BasePlayer {
  * 他プレイヤー（サーバーからの通信を受信して補間・吸着移動する）
  */
 export class RemotePlayer extends BasePlayer {
-  private targetX: number;
-  private targetY: number;
+  private targetGridX: number;
+  private targetGridY: number;
 
   constructor(data: playerTypes.PlayerData) {
     super(data, false);
-    this.targetX = data.x;
-    this.targetY = data.y;
+    this.targetGridX = data.x;
+    this.targetGridY = data.y;
   }
 
   /**
    * サーバーから受信した最新の座標を目標としてセットする
    */
   public setTargetPosition(x?: number, y?: number) {
-    if (x !== undefined) this.targetX = x;
-    if (y !== undefined) this.targetY = y;
+    if (x !== undefined) this.targetGridX = x;
+    if (y !== undefined) this.targetGridY = y;
   }
 
   /**
@@ -100,21 +113,23 @@ export class RemotePlayer extends BasePlayer {
   public update(deltaTime: number): void {
     const { PLAYER_LERP_SNAP_THRESHOLD, PLAYER_LERP_SMOOTHNESS } = config.GAME_CONFIG;
 
-    const diffX = this.targetX - this.x;
-    const diffY = this.targetY - this.y;
+    const diffX = this.targetGridX - this.gridX;
+    const diffY = this.targetGridY - this.gridY;
 
     // X軸の補間
     if (Math.abs(diffX) < PLAYER_LERP_SNAP_THRESHOLD) {
-      this.x = this.targetX;
+      this.gridX = this.targetGridX;
     } else {
-      this.x += diffX * PLAYER_LERP_SMOOTHNESS * deltaTime;
+      this.gridX += diffX * PLAYER_LERP_SMOOTHNESS * deltaTime;
     }
 
     // Y軸の補間
     if (Math.abs(diffY) < PLAYER_LERP_SNAP_THRESHOLD) {
-      this.y = this.targetY;
+      this.gridY = this.targetGridY;
     } else {
-      this.y += diffY * PLAYER_LERP_SMOOTHNESS * deltaTime;
+      this.gridY += diffY * PLAYER_LERP_SMOOTHNESS * deltaTime;
     }
+
+    this.syncDisplayPosition();
   }
 }

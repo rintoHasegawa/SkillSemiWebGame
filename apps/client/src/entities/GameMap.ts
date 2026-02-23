@@ -50,24 +50,24 @@ export class GameMap extends Container {
   // 設定値参照によるマップ外観（背景・グリッド線）の組み立て処理
   private drawBaseMap() {
     const { 
-      MAP_WIDTH, MAP_HEIGHT, GRID_CELL_SIZE, 
+      MAP_WIDTH_PX, MAP_HEIGHT_PX, GRID_CELL_SIZE, 
       MAP_BG_COLOR, MAP_GRID_COLOR, MAP_BORDER_COLOR 
     } = config.GAME_CONFIG;
 
     // マップ全域背景レイヤー
-    this.bgGraphics.rect(0, 0, MAP_WIDTH, MAP_HEIGHT).fill(MAP_BG_COLOR);
+    this.bgGraphics.rect(0, 0, MAP_WIDTH_PX, MAP_HEIGHT_PX).fill(MAP_BG_COLOR);
     
     // 縦方向グリッド線
-    for (let x = 0; x <= MAP_WIDTH; x += GRID_CELL_SIZE) {
-      this.gridGraphics.moveTo(x, 0).lineTo(x, MAP_HEIGHT).stroke({ width: 1, color: MAP_GRID_COLOR });
+    for (let x = 0; x <= MAP_WIDTH_PX; x += GRID_CELL_SIZE) {
+      this.gridGraphics.moveTo(x, 0).lineTo(x, MAP_HEIGHT_PX).stroke({ width: 1, color: MAP_GRID_COLOR });
     }
     // 横方向グリッド線
-    for (let y = 0; y <= MAP_HEIGHT; y += GRID_CELL_SIZE) {
-      this.gridGraphics.moveTo(0, y).lineTo(MAP_WIDTH, y).stroke({ width: 1, color: MAP_GRID_COLOR });
+    for (let y = 0; y <= MAP_HEIGHT_PX; y += GRID_CELL_SIZE) {
+      this.gridGraphics.moveTo(0, y).lineTo(MAP_WIDTH_PX, y).stroke({ width: 1, color: MAP_GRID_COLOR });
     }
     
     // プレイ領域外枠
-    this.gridGraphics.rect(0, 0, MAP_WIDTH, MAP_HEIGHT).stroke({ width: 5, color: MAP_BORDER_COLOR });
+    this.gridGraphics.rect(0, 0, MAP_WIDTH_PX, MAP_HEIGHT_PX).stroke({ width: 5, color: MAP_BORDER_COLOR });
   }
 
   /**
