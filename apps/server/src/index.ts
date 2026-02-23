@@ -9,7 +9,17 @@ import { config } from "@repo/shared";
 const PORT = process.env.PORT || config.NETWORK_CONFIG.DEV_SERVER_PORT;
 
 // HTTP サーバー・Socket.io サーバー生成
-const httpServer = createServer();
+const httpServer = createServer((req, res) => {
+  // Render の HTTP ヘルスチェック向けに 200 を返す
+  if (req.url === "/") {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("ok");
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+  res.end("not found");
+});
 const io = new Server(httpServer, {
   cors: {
     // 開発環境向け全オリジン許可設定
