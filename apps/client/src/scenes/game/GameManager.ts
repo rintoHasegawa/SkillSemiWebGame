@@ -2,13 +2,13 @@ import { Application, Container, Ticker } from "pixi.js";
 import { socketManager } from "@client/network/SocketManager";
 import { config } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
-import { BasePlayer, LocalPlayer, RemotePlayer } from "./entities/player/Player";
+import { LocalPlayerController, RemotePlayerController } from "./entities/player/PlayerController";
 import { GameMap } from "./entities/map/GameMap";
 
 export class GameManager {
   private app: Application;
   private worldContainer: Container;
-  private players: Record<string, BasePlayer> = {};
+  private players: Record<string, LocalPlayerController | RemotePlayerController> = {};
   private myId: string;
   private container: HTMLDivElement;
   private gameMap!: GameMap;
@@ -90,16 +90,16 @@ export class GameManager {
     socketManager.game.onCurrentPlayers((serverPlayers: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => {
       const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as playerTypes.PlayerData[];
       playersArray.forEach((p) => {
-        const playerSprite = p.id === this.myId ? new LocalPlayer(p) : new RemotePlayer(p);
-        this.worldContainer.addChild(playerSprite);
-        this.players[p.id] = playerSprite;
+        const playerController = p.id === this.myId ? new LocalPlayerController(p) : new RemotePlayerController(p);
+        this.worldContainer.addChild(playerController.getDisplayObject());
+        this.players[p.id] = playerController;
       });
     });
 
     socketManager.game.onNewPlayer((p: playerTypes.PlayerData) => {
-      const playerSprite = new RemotePlayer(p);
-      this.worldContainer.addChild(playerSprite);
-      this.players[p.id] = playerSprite;
+      const playerController = new RemotePlayerController(p);
+      this.worldContainer.addChild(playerController.getDisplayObject());
+      this.players[p.id] = playerController;
     });
 
     // サーバーからの GAME_START を検知して開始時刻をセットする
@@ -113,15 +113,15 @@ export class GameManager {
     socketManager.game.onUpdatePlayer((data: Partial<playerTypes.PlayerData> & { id: string }) => {
       if (data.id === this.myId) return;
       const target = this.players[data.id];
-      if (target && target instanceof RemotePlayer) {
-        target.setTargetPosition(data.x, data.y);
+      if (target && target instanceof RemotePlayerController) {
+        target.applyRemoteUpdate({ x: data.x, y: data.y });
       }
     });
 
     socketManager.game.onRemovePlayer((id: string) => {
       const target = this.players[id];
       if (target) {
-        this.worldContainer.removeChild(target);
+        this.worldContainer.removeChild(target.getDisplayObject());
         target.destroy();
         delete this.players[id];
       }
@@ -137,7 +137,7 @@ export class GameManager {
    */
   private tick(ticker: Ticker) {
     const me = this.players[this.myId];
-    if (!me || !(me instanceof LocalPlayer)) return;
+    if (!me || !(me instanceof LocalPlayerController)) return;
 
     const deltaSeconds = ticker.deltaMS / 1000;
 
@@ -146,27 +146,36 @@ export class GameManager {
     const isMoving = dx !== 0 || dy !== 0;
 
     if (isMoving) {
-      me.move(dx, dy, deltaSeconds);
+      me.applyLocalInput({ axisX: dx, axisY: dy, deltaTime: deltaSeconds });
+      me.tick();
       
       const now = performance.now();
       if (now - this.lastPositionSentTime >= config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
-        socketManager.game.sendMove(me.gridX, me.gridY);
+        const position = me.getPosition();
+        socketManager.game.sendMove(position.x, position.y);
         this.lastPositionSentTime = now;
       }
     } else if (this.wasMoving) {
-      socketManager.game.sendMove(me.gridX, me.gridY);
+      me.tick();
+      const position = me.getPosition();
+      socketManager.game.sendMove(position.x, position.y);
+    } else {
+      me.tick();
     }
     this.wasMoving = isMoving;
 
     // 2. 全プレイヤーの更新（Lerpなど）
     Object.values(this.players).forEach((player) => {
-      player.update(deltaSeconds);
+      if (player instanceof RemotePlayerController) {
+        player.tick(deltaSeconds);
+      }
     });
 
     // 3. カメラの追従（自分を中心に）
+    const meDisplay = me.getDisplayObject();
     this.worldContainer.position.set(
-      -(me.x - this.app.screen.width / 2),
-      -(me.y - this.app.screen.height / 2)
+      -(meDisplay.x - this.app.screen.width / 2),
+      -(meDisplay.y - this.app.screen.height / 2)
     );
   }
 

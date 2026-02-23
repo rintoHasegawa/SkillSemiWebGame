@@ -84,7 +84,7 @@ export class GameMap extends Container {
 
       // 塗布済み（-1以外）の場合のみ色を塗る
       if (teamId !== -1) {
-        // Player.ts と同様に、文字列のカラーコードを PixiJS 用の数値に変換
+        // 他の描画処理と同様に，文字列のカラーコードをPixiJS用の数値に変換
         const colorString = TEAM_COLORS[teamId] || '#FFFFFF';
         const hexColor = parseInt(colorString.replace("#", "0x"), 16);
 
