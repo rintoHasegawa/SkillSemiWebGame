@@ -1,4 +1,4 @@
-// apps/client/src/game/map/GameMap.ts (パスは適宜読み替えてください)
+// apps/client/src/scenes/game/GameMap.ts
 import { Container, Graphics } from "pixi.js";
 import { config } from "@repo/shared";
 import type { gridMapTypes } from "@repo/shared";

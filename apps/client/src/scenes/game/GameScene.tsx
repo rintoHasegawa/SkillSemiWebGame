@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { VirtualJoystick } from "../input/VirtualJoystick";
-import { GameManager } from "../managers/GameManager";
+import { VirtualJoystick } from "./VirtualJoystick";
+import { GameManager } from "./GameManager";
 import { config } from "@repo/shared";
 
 interface GameSceneProps {

@@ -17,6 +17,11 @@
     
     // ↓ ここが重要：React用に設定
     "jsx": "react-jsx",
+
+    "baseUrl": ".",
+    "paths": {
+      "@client/*": ["src/*"]
+    },
     
     // ⚠️ 削除したもの:
     // - "paths": { ... } (Preactへの誘導を削除)
