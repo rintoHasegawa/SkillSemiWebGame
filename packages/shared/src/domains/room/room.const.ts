@@ -1,11 +1,11 @@
-import type { GameState as GameStateType, RoomStatus as RoomStatusType } from "./room.type";
+import type { AppState as AppStateType, RoomStatus as RoomStatusType } from "./room.type";
 
-// クライアント画面遷移利用ゲーム状態の値
-export const GameState = {
+// クライアント画面遷移利用アプリ状態の値
+export const AppState = {
   TITLE: "title",
   LOBBY: "lobby",
   PLAYING: "playing",
-} as const satisfies Record<string, GameStateType>;
+} as const satisfies Record<string, AppStateType>;
 
 // ルーム進行フェーズ状態の値
 export const RoomStatus = {

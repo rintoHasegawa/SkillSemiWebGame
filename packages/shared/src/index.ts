@@ -3,9 +3,9 @@ export * as gridMapTypes from "./domains/gridMap/gridMap.type";
 export * as gridMapLogic from "./domains/gridMap/gridMap.logic";
 export * as playerTypes from "./domains/player/player.type";
 export * as roomTypes from "./domains/room/room.type";
-export { GameState, RoomStatus } from "./domains/room/room.const";
+export { AppState, RoomStatus } from "./domains/room/room.const";
 export type {
-	GameState as GameStateType,
+	AppState as AppStateType,
 	RoomStatus as RoomStatusType,
 	Room,
 	RoomMember,

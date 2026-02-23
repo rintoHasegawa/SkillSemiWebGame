@@ -1,5 +1,5 @@
-// クライアント画面遷移利用ゲーム状態型
-export type GameState = "title" | "lobby" | "playing";
+// クライアント画面遷移利用アプリ状態型
+export type AppState = "title" | "lobby" | "playing";
 
 // ルーム進行フェーズ状態型
 export type RoomStatus = "waiting" | "playing" | "result";

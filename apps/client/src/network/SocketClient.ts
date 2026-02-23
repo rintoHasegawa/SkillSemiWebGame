@@ -83,12 +83,10 @@ export class SocketClient {
   }
 
   /**
-    * ルーム入室リクエスト送信
-   * @param roomId 入室先のID
-   * @param playerName 表示名
+   * ルーム入室リクエスト送信
+   * @param payload 入室ペイロード
    */
-  joinRoom(roomId: string, playerName: string) {
-    const payload: roomTypes.JoinRoomPayload = { roomId, playerName };
+  joinRoom(payload: roomTypes.JoinRoomPayload) {
     this.socket.emit(protocol.SocketEvents.JOIN_ROOM, payload);
   }
 

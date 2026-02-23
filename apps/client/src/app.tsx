@@ -1,23 +1,23 @@
 import { socketClient } from "./network/SocketClient";
-import { useGameFlow } from "./hooks/useGameFlow";
+import { useAppFlow } from "./hooks/useAppFlow";
 
 // 画面遷移先シーンコンポーネント群
 import { TitleScene } from "./scenes/title/TitleScene";
 import { LobbyScene } from "./scenes/lobby/LobbyScene";
 import { GameScene } from "./scenes/game/GameScene";
 
-import { GameState } from "@repo/shared";
+import { AppState } from "@repo/shared";
 
 export default function App() {
-  const { gameState, room, myId } = useGameFlow();
+  const { appState, room, myId } = useAppFlow();
 
   // タイトル画面分岐
-  if (gameState === GameState.TITLE) {
-    return <TitleScene onJoin={(payload) => socketClient.joinRoom(payload.roomId, payload.playerName)} />;
+  if (appState === AppState.TITLE) {
+    return <TitleScene onJoin={(payload) => socketClient.joinRoom(payload)} />;
   }
   
   // ロビー画面分岐
-  if (gameState === GameState.LOBBY) {
+  if (appState === AppState.LOBBY) {
     return <LobbyScene room={room} myId={myId} onStart={() => socketClient.startGame()} />;
   }
 
