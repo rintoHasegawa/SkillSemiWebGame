@@ -1,5 +1,5 @@
 import { Application, Container, Ticker } from "pixi.js";
-import { socketClient } from "../../network/SocketClient";
+import { socketManager } from "../../network/SocketManager";
 import { config } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
 import { BasePlayer, LocalPlayer, RemotePlayer } from "./Player";
@@ -70,7 +70,7 @@ export class GameManager {
     this.setupSocketListeners();
 
     // サーバーへゲーム準備完了を通知
-    socketClient.readyForGame();
+    socketManager.game.readyForGame();
 
     // メインループの登録
     this.app.ticker.add(this.tick.bind(this));
@@ -88,7 +88,7 @@ export class GameManager {
    * ソケットイベントの登録
    */
   private setupSocketListeners() {
-    socketClient.onCurrentPlayers((serverPlayers: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => {
+    socketManager.game.onCurrentPlayers((serverPlayers: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => {
       const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as playerTypes.PlayerData[];
       playersArray.forEach((p) => {
         const playerSprite = p.id === this.myId ? new LocalPlayer(p) : new RemotePlayer(p);
@@ -97,21 +97,21 @@ export class GameManager {
       });
     });
 
-    socketClient.onNewPlayer((p: playerTypes.PlayerData) => {
+    socketManager.game.onNewPlayer((p: playerTypes.PlayerData) => {
       const playerSprite = new RemotePlayer(p);
       this.worldContainer.addChild(playerSprite);
       this.players[p.id] = playerSprite;
     });
 
     // サーバーからの GAME_START を検知して開始時刻をセットする
-    socketClient.onGameStart((data) => {
+    socketManager.game.onGameStart((data) => {
       if (data && data.startTime) {
         this.setGameStart(data.startTime);
         console.log(`[GameManager] ゲーム開始時刻同期完了: ${data.startTime}`);
       }
     });
 
-    socketClient.onUpdatePlayer((data: Partial<playerTypes.PlayerData> & { id: string }) => {
+    socketManager.game.onUpdatePlayer((data: Partial<playerTypes.PlayerData> & { id: string }) => {
       if (data.id === this.myId) return;
       const target = this.players[data.id];
       if (target && target instanceof RemotePlayer) {
@@ -119,7 +119,7 @@ export class GameManager {
       }
     });
 
-    socketClient.onRemovePlayer((id: string) => {
+    socketManager.game.onRemovePlayer((id: string) => {
       const target = this.players[id];
       if (target) {
         this.worldContainer.removeChild(target);
@@ -128,7 +128,7 @@ export class GameManager {
       }
     });
 
-    socketClient.onUpdateMapCells((updates) => {
+    socketManager.game.onUpdateMapCells((updates) => {
       this.gameMap.updateCells(updates);
     });
   }
@@ -151,11 +151,11 @@ export class GameManager {
       
       const now = performance.now();
       if (now - this.lastPositionSentTime >= config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
-        socketClient.sendMove(me.gridX, me.gridY);
+        socketManager.game.sendMove(me.gridX, me.gridY);
         this.lastPositionSentTime = now;
       }
     } else if (this.wasMoving) {
-      socketClient.sendMove(me.gridX, me.gridY);
+      socketManager.game.sendMove(me.gridX, me.gridY);
     }
     this.wasMoving = isMoving;
 
@@ -182,6 +182,6 @@ export class GameManager {
     this.players = {};
     
     // イベント購読の解除
-    socketClient.removeAllListeners();
+    socketManager.game.removeAllListeners();
   }
 }

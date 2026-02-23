@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socketClient } from "../network/SocketClient";
+import { socketManager } from "../network/SocketManager";
 import { appConsts } from "@repo/shared";
 import type { appTypes, roomTypes } from "@repo/shared";
 
@@ -15,12 +15,12 @@ export const useAppFlow = (): AppFlowState => {
   const [myId, setMyId] = useState<string | null>(null);
 
   useEffect(() => {
-    socketClient.onConnect((id) => setMyId(id));
-    socketClient.onRoomUpdate((updatedRoom) => {
+    socketManager.connection.onConnect((id) => setMyId(id));
+    socketManager.room.onRoomUpdate((updatedRoom) => {
       setRoom(updatedRoom);
       setScenePhase(appConsts.ScenePhase.LOBBY);
     });
-    socketClient.onGameStart(() => setScenePhase(appConsts.ScenePhase.PLAYING));
+    socketManager.game.onGameStart(() => setScenePhase(appConsts.ScenePhase.PLAYING));
   }, []);
 
   return { scenePhase, room, myId };

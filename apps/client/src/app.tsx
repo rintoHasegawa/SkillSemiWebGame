@@ -1,4 +1,4 @@
-import { socketClient } from "./network/SocketClient";
+import { socketManager } from "./network/SocketManager";
 import { useAppFlow } from "./hooks/useAppFlow";
 
 // 画面遷移先シーンコンポーネント群
@@ -13,12 +13,12 @@ export default function App() {
 
   // タイトル画面分岐
   if (scenePhase === appConsts.ScenePhase.TITLE) {
-    return <TitleScene onJoin={(payload) => socketClient.joinRoom(payload)} />;
+    return <TitleScene onJoin={(payload) => socketManager.room.joinRoom(payload)} />;
   }
   
   // ロビー画面分岐
   if (scenePhase === appConsts.ScenePhase.LOBBY) {
-    return <LobbyScene room={room} myId={myId} onStart={() => socketClient.startGame()} />;
+    return <LobbyScene room={room} myId={myId} onStart={() => socketManager.room.startGame()} />;
   }
 
   // プレイ画面分岐
