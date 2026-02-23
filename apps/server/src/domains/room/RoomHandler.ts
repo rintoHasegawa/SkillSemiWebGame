@@ -7,6 +7,7 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
   
   socket.on(protocol.SocketEvents.JOIN_ROOM, (data: roomTypes.JoinRoomPayload) => {
     const { roomId, playerName } = data;
+    console.log("[RoomHandler] JOIN_ROOM received", { roomId, socketId: socket.id, playerName });
     
     socket.join(roomId);
 
@@ -15,6 +16,11 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
 
     // ルーム内全員向け最新状態配信
     io.to(roomId).emit(protocol.SocketEvents.ROOM_UPDATE, room);
+    console.log("[RoomHandler] ROOM_UPDATE emitted", {
+      roomId,
+      ownerId: room.ownerId,
+      totalPlayers: room.players.length
+    });
   });
 
 };
@@ -25,9 +31,18 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
 export const handleRoomDisconnect = (io: Server, socket: Socket, roomManager: RoomManager) => {
   // ルームからの除外処理
   const updatedRooms = roomManager.removePlayer(socket.id);
+  console.log("[RoomHandler] disconnect cleanup", {
+    socketId: socket.id,
+    updatedRoomCount: updatedRooms.length
+  });
   
   // 更新があったルーム（オーナー変更など）にのみ通知を飛ばす
   updatedRooms.forEach(room => {
     io.to(room.roomId).emit(protocol.SocketEvents.ROOM_UPDATE, room);
+    console.log("[RoomHandler] ROOM_UPDATE emitted", {
+      roomId: room.roomId,
+      ownerId: room.ownerId,
+      totalPlayers: room.players.length
+    });
   });
 };

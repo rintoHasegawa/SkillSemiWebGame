@@ -30,12 +30,18 @@ export class GameManager {
     player.x = config.GAME_CONFIG.MAP_WIDTH / 2;
     player.y = config.GAME_CONFIG.MAP_HEIGHT / 2;
     this.players.set(id, player);
+    console.log("[GameManager] player added", { playerId: id, totalPlayers: this.players.size });
     return player;
   }
 
   // プレイヤー登録解除処理
   removePlayer(id: string) {
-    this.players.delete(id);
+    const existed = this.players.delete(id);
+    if (existed) {
+      console.log("[GameManager] player removed", { playerId: id, totalPlayers: this.players.size });
+    } else {
+      console.log("[GameManager] player remove ignored (not found)", { playerId: id });
+    }
   }
 
   // 指定IDプレイヤー参照取得
@@ -54,6 +60,8 @@ export class GameManager {
       }
       player.x = x;
       player.y = y;
+    } else {
+      console.log("[GameManager] move ignored (player not found)", { playerId: id });
     }
   }
 
@@ -69,7 +77,10 @@ export class GameManager {
     onTick: (data: TickData) => void,
     onGameEnd: () => void
   ) {
-    if (this.gameLoops.has(roomId)) return;
+    if (this.gameLoops.has(roomId)) {
+      console.log("[GameManager] startGameLoop ignored (already running)", { roomId });
+      return;
+    }
 
     const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
 
@@ -94,6 +105,7 @@ export class GameManager {
 
     loop.start();
     this.gameLoops.set(roomId, loop);
+    console.log("[GameManager] game loop started", { roomId, playerCount: playerIds.length });
   }
 
   /**
@@ -105,6 +117,9 @@ export class GameManager {
       loop.stop();
       this.gameLoops.delete(roomId);
       this.roomStartTimes.delete(roomId); // 停止時も忘れずクリア
+      console.log("[GameManager] game loop stopped", { roomId });
+    } else {
+      console.log("[GameManager] stopGameLoop ignored (not running)", { roomId });
     }
   }
 
