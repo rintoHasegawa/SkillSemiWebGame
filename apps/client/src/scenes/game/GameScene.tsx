@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+/**
+ * GameScene
+ * メインゲーム画面の表示とライフサイクルを管理する
+ * GameManagerの初期化と入力配線を行う
+ */
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GameInputManager } from "./GameInputManager";
 import { GameManager } from "./GameManager";
 import { GameView } from "./GameView";
 import { config } from "@repo/shared";
@@ -15,6 +21,7 @@ interface GameSceneProps {
 export function GameScene({ myId }: GameSceneProps) {
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
+  const inputManagerRef = useRef<GameInputManager | null>(null);
 
   // gameConfig から初期表示時間文字列を生成する関数
   const getInitialTimeDisplay = () => {
@@ -36,6 +43,7 @@ export function GameScene({ myId }: GameSceneProps) {
     
     // 参照を保持（入力を渡すため）
     gameManagerRef.current = manager;
+    inputManagerRef.current = new GameInputManager(manager);
 
     // 描画用のタイマーループ (100msごとに更新して滑らかにする)
     const timerInterval = setInterval(() => {
@@ -49,17 +57,20 @@ export function GameScene({ myId }: GameSceneProps) {
     // コンポーネント破棄時のクリーンアップ
     return () => {
       manager.destroy();
+      inputManagerRef.current = null;
       clearInterval(timerInterval); // クリーンアップ
     };
   }, [myId]);
+
+  const handleInput = useCallback((x: number, y: number) => {
+    inputManagerRef.current?.handleJoystickInput(x, y);
+  }, []);
 
   return (
     <GameView
       timeLeft={timeLeft}
       pixiContainerRef={pixiContainerRef}
-      onInput={(x, y) => {
-        gameManagerRef.current?.setJoystickInput(x, y);
-      }}
+      onJoystickInput={handleInput}
     />
   );
 }

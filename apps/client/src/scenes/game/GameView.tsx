@@ -9,11 +9,11 @@ import { JoystickInputLayer } from "./input/joystick/JoystickInputLayer";
 type Props = {
   timeLeft: string;
   pixiContainerRef: React.RefObject<HTMLDivElement>;
-  onInput: (x: number, y: number) => void;
+  onJoystickInput: (x: number, y: number) => void;
 };
 
 /** 画面描画と入力UIをまとめて描画する */
-export const GameView = ({ timeLeft, pixiContainerRef, onInput }: Props) => {
+export const GameView = ({ timeLeft, pixiContainerRef, onJoystickInput }: Props) => {
   return (
     <div
       style={{
@@ -51,7 +51,7 @@ export const GameView = ({ timeLeft, pixiContainerRef, onInput }: Props) => {
 
       {/* UI 配置領域 */}
       <div style={{ position: "absolute", zIndex: 20, width: "100%", height: "100%" }}>
-        <JoystickInputLayer onInput={onInput} />
+        <JoystickInputLayer onInput={onJoystickInput} />
       </div>
     </div>
   );
