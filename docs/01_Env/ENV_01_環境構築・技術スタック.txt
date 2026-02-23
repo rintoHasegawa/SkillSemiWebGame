@@ -114,6 +114,7 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │           │   ├── player/
     │           │   │   └── player.type.ts                  # プレイヤー型
     │           │   └── room/
+    │           │       ├── room.const.ts                   # ルーム定数
     │           │       └── room.type.ts                    # ルーム型
     │           └── protocol/
     │               └── events.ts                           # 通信イベント定義
