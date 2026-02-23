@@ -4,7 +4,7 @@ import { config } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
 import { BasePlayer, LocalPlayer, RemotePlayer } from "./entities/player/Player";
 import { GameMap } from "./entities/map/GameMap";
-import { MAX_DIST } from "./input/joystick/VirtualJoystick";
+import { MAX_DIST } from "./input/joystick/Joystick";
 
 export class GameManager {
   private app: Application;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { VirtualJoystick } from "./input/joystick/VirtualJoystick";
+import { Joystick } from "./input/joystick/Joystick";
 import { GameManager } from "./GameManager";
 import { config } from "@repo/shared";
 
@@ -74,7 +74,7 @@ export function GameScene({ myId }: GameSceneProps) {
       
       {/* UI 配置領域 */}
       <div style={{ position: "absolute", zIndex: 20, width: "100%", height: "100%" }}>
-        <VirtualJoystick 
+        <Joystick 
           onMove={(x, y) => { 
             // ジョイスティックの入力を毎フレーム Manager に渡す
             gameManagerRef.current?.setJoystickInput(x, y); 
