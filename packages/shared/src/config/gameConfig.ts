@@ -5,8 +5,12 @@ export const GAME_CONFIG = {
 
   // ネットワーク・描画補間設定
   PLAYER_POSITION_UPDATE_MS: 50,  // 座標送信間隔（20Hz）
-  PLAYER_LERP_SMOOTHNESS: 0.3,    // 補間の滑らかさ
-  PLAYER_LERP_SNAP_THRESHOLD: 0.005,  // 吸着距離閾値（グリッド単位）
+  PLAYER_LERP_SMOOTHNESS: 18,     // 補間の滑らかさ（秒基準、目安: 12〜20）
+  // 値を大きくすると追従が速くなるが、震えや跳ねが出やすい
+  // 値を小さくすると遅延感が増えるが、動きは滑らかになる
+  PLAYER_LERP_SNAP_THRESHOLD: 0.005,  // 吸着距離閾値（グリッド単位、目安: 0.003〜0.02）
+  // 値を大きくすると目標に早く吸着し、停止時のブレが減るが急停止になりやすい
+  // 値を小さくすると吸着が遅くなり、停止時にゆらぎが残りやすい
 
   // 画面サイズ設定
   SCREEN_WIDTH: 1280,
@@ -22,8 +26,8 @@ export const GAME_CONFIG = {
   get MAP_HEIGHT_PX() { return this.GRID_ROWS * this.GRID_CELL_SIZE; },
 
   // プレイヤー挙動設定（内部座標はグリッド単位）
-  PLAYER_RADIUS_PX: 10,   // 描画用のプレイヤー半径（px）
-  get PLAYER_RADIUS() { return this.PLAYER_RADIUS_PX / this.GRID_CELL_SIZE; },
+  PLAYER_RADIUS: 0.1,     // プレイヤー半径（グリッド単位、目安: 0.05〜0.2）
+  get PLAYER_RADIUS_PX() { return this.PLAYER_RADIUS * this.GRID_CELL_SIZE; },
   PLAYER_SPEED: 3,        // 1秒当たりの移動量（グリッド単位）
 
   // チームカラー設定
