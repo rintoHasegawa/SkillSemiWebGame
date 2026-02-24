@@ -3,7 +3,7 @@
  * ジョイスティック入力の受け取りと表示状態の橋渡しを担うプレゼンター
  * 入力イベントをコントローラーへ委譲し，描画用状態をViewへ渡す
  */
-import { useJoystickController } from "./JoystickController";
+import { useJoystickController } from "./useJoystickController";
 import { JoystickView } from "./JoystickView";
 
 /** 入力半径の既定値を外部から参照できるように再公開 */

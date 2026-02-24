@@ -1,20 +1,20 @@
 /**
- * JoystickController
- * 入力イベントとジョイスティック計算結果の仲介を担うコントローラー
- * useJoystick の出力を受けて onInput 通知と終了時リセット通知を統一する
+ * useJoystickController
+ * 入力イベントとジョイスティック計算結果の仲介を担うフック
+ * useJoystickState の出力を受けて onInput 通知と終了時リセット通知を統一する
  */
 import { useCallback } from 'react';
 import type React from 'react';
 import type { NormalizedInput, Point } from './common';
-import { useJoystick } from './useJoystick';
+import { useJoystickState } from './useJoystickState';
 
-/** コントローラーに渡す入力設定 */
+/** フックに渡す入力設定 */
 type Props = {
   onInput: (moveX: number, moveY: number) => void;
   maxDist?: number;
 };
 
-/** コントローラーが返す描画状態と入力ハンドラ */
+/** フックが返す描画状態と入力ハンドラ */
 type UseJoystickControllerReturn = {
   isMoving: boolean;
   center: Point;
@@ -25,7 +25,7 @@ type UseJoystickControllerReturn = {
   handleEnd: () => void;
 };
 
-/** 入力イベントと通知処理を仲介するフック型コントローラー */
+/** 入力イベントと通知処理を仲介するフック */
 export const useJoystickController = ({ onInput, maxDist }: Props): UseJoystickControllerReturn => {
   const {
     isMoving,
@@ -35,7 +35,7 @@ export const useJoystickController = ({ onInput, maxDist }: Props): UseJoystickC
     handleStart,
     handleMove: baseHandleMove,
     handleEnd: baseHandleEnd,
-  } = useJoystick({ maxDist });
+  } = useJoystickState({ maxDist });
 
   const emitInput = useCallback(
     (normalized: NormalizedInput) => {

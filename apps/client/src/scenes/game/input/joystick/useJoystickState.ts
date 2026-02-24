@@ -1,13 +1,13 @@
 /**
- * useJoystick
- * ジョイスティック入力を受け取り，座標計算と正規化ベクトルの出力を行うフック
- * UI描画に必要な中心点・ノブ位置・半径も合わせて提供する
+ * useJoystickState
+ * ジョイスティック入力状態の管理と入力ハンドラの提供を担うフック
+ * UI描画に必要な中心点，ノブ位置，半径を保持する
  */
-import { useCallback, useState } from "react";
-import type React from "react";
-import { MAX_DIST } from "./common";
-import { computeJoystick } from "./JoystickModel";
-import type { NormalizedInput, Point } from "./common";
+import { useCallback, useState } from 'react';
+import type React from 'react';
+import { MAX_DIST } from './common';
+import { computeJoystick } from './JoystickModel';
+import type { NormalizedInput, Point } from './common';
 
 /** フックに渡す設定 */
 type Props = {
@@ -15,7 +15,7 @@ type Props = {
 };
 
 /** フックが返すUI向けの状態とハンドラ */
-type UseJoystickReturn = {
+type UseJoystickStateReturn = {
   isMoving: boolean;
   center: Point;
   knobOffset: Point;
@@ -25,9 +25,9 @@ type UseJoystickReturn = {
   handleEnd: () => void;
 };
 
-/** タッチとマウスからクライアント座標を共通化して取得 */
+/** タッチとマウスからクライアント座標を共通化して取得する */
 const getClientPoint = (e: React.TouchEvent | React.MouseEvent): Point | null => {
-  if ("touches" in e) {
+  if ('touches' in e) {
     const touch = e.touches[0];
     if (!touch) return null;
     return { x: touch.clientX, y: touch.clientY };
@@ -36,8 +36,8 @@ const getClientPoint = (e: React.TouchEvent | React.MouseEvent): Point | null =>
   return { x: e.clientX, y: e.clientY };
 };
 
-/** 正規化ベクトルの出力とUI用の座標を提供するフック */
-export const useJoystick = ({ maxDist }: Props): UseJoystickReturn => {
+/** ジョイスティック入力状態と入力ハンドラを提供する */
+export const useJoystickState = ({ maxDist }: Props): UseJoystickStateReturn => {
   const [isMoving, setIsMoving] = useState(false);
   const [center, setCenter] = useState<Point>({ x: 0, y: 0 });
   const [knobOffset, setKnobOffset] = useState<Point>({ x: 0, y: 0 });
