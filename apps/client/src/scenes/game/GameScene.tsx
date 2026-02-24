@@ -11,10 +11,7 @@ interface GameSceneProps {
   myId: string | null;
 }
 
-/**
- * メインゲーム画面コンポーネント
- * UIの描画と GameManager への入力伝達のみを担当する
- */
+/** メインゲーム画面を描画し入力をゲーム制御へ橋渡しする */
 export function GameScene({ myId }: GameSceneProps) {
   const { pixiContainerRef, timeLeft, handleInput } = useGameSceneController(myId);
 

@@ -1,8 +1,13 @@
+/**
+ * GameNetworkSync
+ * ソケットイベントとゲーム内状態更新の同期を担う
+ * プレイヤー生成更新削除とマップ更新購読を管理する
+ */
 import { Container } from "pixi.js";
 import type { playerTypes } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
-import { LocalPlayerController, RemotePlayerController } from "../entities/player/PlayerController";
-import { GameMapController } from "../entities/map/GameMapController";
+import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
+import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import type { GamePlayers } from "./game.types";
 
 type GameNetworkSyncOptions = {
@@ -13,6 +18,7 @@ type GameNetworkSyncOptions = {
   onGameStart: (startTime: number) => void;
 };
 
+/** ゲーム中のネットワークイベント購読と同期処理を管理する */
 export class GameNetworkSync {
   private worldContainer: Container;
   private players: GamePlayers;

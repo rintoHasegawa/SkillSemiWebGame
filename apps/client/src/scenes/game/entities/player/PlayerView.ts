@@ -6,9 +6,7 @@
 import { Graphics } from 'pixi.js';
 import { config } from '@repo/shared';
 
-/**
- * プレイヤーの描画責務を担うビュー
- */
+/** プレイヤーのPixi描画オブジェクトを管理するビュー */
 export class PlayerView {
   public readonly displayObject: Graphics;
 
