@@ -74,10 +74,6 @@ export class PlayerRegistry {
     }
   }
 
-  public getAllPlayers(): Player[] {
-    return Array.from(this.players.values());
-  }
-
   public getPlayersRef(): Map<string, Player> {
     return this.players;
   }

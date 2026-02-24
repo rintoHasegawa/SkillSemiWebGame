@@ -28,11 +28,6 @@ export class GameManager {
     this.playerRegistry.removePlayer(id);
   }
 
-  // 指定IDプレイヤー参照取得
-  getPlayer(id: string) {
-    return this.playerRegistry.getPlayer(id);
-  }
-
   // 指定プレイヤー座標更新処理
   movePlayer(id: string, x: number, y: number) {
     this.playerRegistry.movePlayer(id, x, y);
@@ -58,11 +53,6 @@ export class GameManager {
    */
   stopGameLoop(roomId: string) {
     this.gameSessionService.stopGameLoop(roomId);
-  }
-
-  // 登録中全プレイヤー配列取得
-  getAllPlayers() {
-    return this.playerRegistry.getAllPlayers();
   }
 
   // 指定ID配列のプレイヤーを取得
