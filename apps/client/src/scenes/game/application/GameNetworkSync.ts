@@ -19,6 +19,50 @@ export class GameNetworkSync {
   private myId: string;
   private gameMap: GameMapController;
   private onGameStart: (startTime: number) => void;
+  private isBound = false;
+
+  private handleCurrentPlayers = (serverPlayers: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => {
+    const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as playerTypes.PlayerData[];
+    playersArray.forEach((p) => {
+      const playerController = p.id === this.myId ? new LocalPlayerController(p) : new RemotePlayerController(p);
+      this.worldContainer.addChild(playerController.getDisplayObject());
+      this.players[p.id] = playerController;
+    });
+  };
+
+  private handleNewPlayer = (p: playerTypes.PlayerData) => {
+    const playerController = new RemotePlayerController(p);
+    this.worldContainer.addChild(playerController.getDisplayObject());
+    this.players[p.id] = playerController;
+  };
+
+  private handleGameStart = (data: { startTime: number }) => {
+    if (data && data.startTime) {
+      this.onGameStart(data.startTime);
+      console.log(`[GameManager] ゲーム開始時刻同期完了: ${data.startTime}`);
+    }
+  };
+
+  private handleUpdatePlayer = (data: Partial<playerTypes.PlayerData> & { id: string }) => {
+    if (data.id === this.myId) return;
+    const target = this.players[data.id];
+    if (target && target instanceof RemotePlayerController) {
+      target.applyRemoteUpdate({ x: data.x, y: data.y });
+    }
+  };
+
+  private handleRemovePlayer = (id: string) => {
+    const target = this.players[id];
+    if (target) {
+      this.worldContainer.removeChild(target.getDisplayObject());
+      target.destroy();
+      delete this.players[id];
+    }
+  };
+
+  private handleUpdateMapCells = (updates: Parameters<GameMapController["updateCells"]>[0]) => {
+    this.gameMap.updateCells(updates);
+  };
 
   constructor({ worldContainer, players, myId, gameMap, onGameStart }: GameNetworkSyncOptions) {
     this.worldContainer = worldContainer;
@@ -29,51 +73,28 @@ export class GameNetworkSync {
   }
 
   public bind() {
-    socketManager.game.onCurrentPlayers((serverPlayers: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => {
-      const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as playerTypes.PlayerData[];
-      playersArray.forEach((p) => {
-        const playerController = p.id === this.myId ? new LocalPlayerController(p) : new RemotePlayerController(p);
-        this.worldContainer.addChild(playerController.getDisplayObject());
-        this.players[p.id] = playerController;
-      });
-    });
+    if (this.isBound) return;
 
-    socketManager.game.onNewPlayer((p: playerTypes.PlayerData) => {
-      const playerController = new RemotePlayerController(p);
-      this.worldContainer.addChild(playerController.getDisplayObject());
-      this.players[p.id] = playerController;
-    });
+    socketManager.game.onCurrentPlayers(this.handleCurrentPlayers);
+    socketManager.game.onNewPlayer(this.handleNewPlayer);
+    socketManager.game.onGameStart(this.handleGameStart);
+    socketManager.game.onUpdatePlayer(this.handleUpdatePlayer);
+    socketManager.game.onRemovePlayer(this.handleRemovePlayer);
+    socketManager.game.onUpdateMapCells(this.handleUpdateMapCells);
 
-    socketManager.game.onGameStart((data) => {
-      if (data && data.startTime) {
-        this.onGameStart(data.startTime);
-        console.log(`[GameManager] ゲーム開始時刻同期完了: ${data.startTime}`);
-      }
-    });
-
-    socketManager.game.onUpdatePlayer((data: Partial<playerTypes.PlayerData> & { id: string }) => {
-      if (data.id === this.myId) return;
-      const target = this.players[data.id];
-      if (target && target instanceof RemotePlayerController) {
-        target.applyRemoteUpdate({ x: data.x, y: data.y });
-      }
-    });
-
-    socketManager.game.onRemovePlayer((id: string) => {
-      const target = this.players[id];
-      if (target) {
-        this.worldContainer.removeChild(target.getDisplayObject());
-        target.destroy();
-        delete this.players[id];
-      }
-    });
-
-    socketManager.game.onUpdateMapCells((updates) => {
-      this.gameMap.updateCells(updates);
-    });
+    this.isBound = true;
   }
 
   public unbind() {
-    socketManager.game.removeAllListeners();
+    if (!this.isBound) return;
+
+    socketManager.game.offCurrentPlayers(this.handleCurrentPlayers);
+    socketManager.game.offNewPlayer(this.handleNewPlayer);
+    socketManager.game.offGameStart(this.handleGameStart);
+    socketManager.game.offUpdatePlayer(this.handleUpdatePlayer);
+    socketManager.game.offRemovePlayer(this.handleRemovePlayer);
+    socketManager.game.offUpdateMapCells(this.handleUpdateMapCells);
+
+    this.isBound = false;
   }
 }
