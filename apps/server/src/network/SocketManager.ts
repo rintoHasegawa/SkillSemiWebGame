@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
-import { registerRoomHandlers, handleRoomDisconnect } from "@server/network/handlers/RoomHandler";
-import { registerGameHandlers, handleGameDisconnect } from "@server/network/handlers/GameHandler";
+import { registerRoomHandlers, handleRoomDisconnect } from "./handlers/RoomHandler";
+import { registerGameHandlers, handleGameDisconnect } from "./handlers/GameHandler";
 
 export class SocketManager {
   private io: Server;

@@ -21,6 +21,29 @@ export default [
     },
     rules: {
       'local/prefer-relative-for-local-server-path': 'warn',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'socket.io',
+              message:
+                'socket.io の import は network 配下のみにしてください。',
+            },
+            {
+              name: 'socket.io-client',
+              message:
+                'socket.io-client の import は network 配下のみにしてください。',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/network/**/*.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 ];

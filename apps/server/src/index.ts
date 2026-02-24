@@ -1,8 +1,8 @@
-import { Server } from "socket.io";
 import { createServer } from "http";
 import { GameManager } from "./domains/game/GameManager";
 import { RoomManager } from "./domains/room/RoomManager";
 import { SocketManager } from "./network/SocketManager";
+import { createIo } from "./network/createIo";
 import { config } from "@repo/shared";
 
 // サーバー待受ポート
@@ -20,13 +20,7 @@ const httpServer = createServer((req, res) => {
   res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
   res.end("not found");
 });
-const io = new Server(httpServer, {
-  cors: {
-    // 開発環境向け全オリジン許可設定
-    origin: config.NETWORK_CONFIG.CORS_ORIGIN,
-    methods: [...config.NETWORK_CONFIG.CORS_METHODS]
-  },
-});
+const io = createIo(httpServer);
 
 // ゲーム管理・通信管理クラス初期化
 const gameManager = new GameManager();
