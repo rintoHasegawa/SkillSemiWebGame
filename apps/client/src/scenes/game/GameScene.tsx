@@ -1,8 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { Joystick } from "./input/joystick/Joystick";
+/**
+ * GameScene
+ * メインゲーム画面の表示とライフサイクルを管理する
+ * GameManagerの初期化と入力配線を行う
+ */
+import { useCallback, useEffect, useRef, useState } from "react";
+import { GameInputManager } from "./GameInputManager";
 import { GameManager } from "./GameManager";
+import { GameView } from "./GameView";
 import { config } from "@repo/shared";
 
+/** GameScene の入力プロパティ */
 interface GameSceneProps {
   myId: string | null;
 }
@@ -14,6 +21,7 @@ interface GameSceneProps {
 export function GameScene({ myId }: GameSceneProps) {
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
+  const inputManagerRef = useRef<GameInputManager | null>(null);
 
   // gameConfig から初期表示時間文字列を生成する関数
   const getInitialTimeDisplay = () => {
@@ -33,8 +41,9 @@ export function GameScene({ myId }: GameSceneProps) {
     const manager = new GameManager(pixiContainerRef.current, myId);
     manager.init();
     
-    // 参照を保持（ジョイスティック入力を渡すため）
+    // 参照を保持（入力を渡すため）
     gameManagerRef.current = manager;
+    inputManagerRef.current = new GameInputManager(manager);
 
     // 描画用のタイマーループ (100msごとに更新して滑らかにする)
     const timerInterval = setInterval(() => {
@@ -48,39 +57,20 @@ export function GameScene({ myId }: GameSceneProps) {
     // コンポーネント破棄時のクリーンアップ
     return () => {
       manager.destroy();
+      inputManagerRef.current = null;
       clearInterval(timerInterval); // クリーンアップ
     };
   }, [myId]);
 
+  const handleInput = useCallback((x: number, y: number) => {
+    inputManagerRef.current?.handleJoystickInput(x, y);
+  }, []);
+
   return (
-    <div style={{
-      width: "100vw", height: "100vh", overflow: "hidden", position: "relative", backgroundColor: "#000",
-      userSelect: "none", // 画面全体のテキスト選択を無効化
-      WebkitUserSelect: "none" // Safari対策
-    }}>
-      {/* タイマーUIの表示 */}
-      <div style={{
-        position: "absolute", top: "20px", left: "50%", transform: "translateX(-50%)",
-        zIndex: 10, color: "white", fontSize: "32px", fontWeight: "bold",
-        textShadow: "2px 2px 4px rgba(0,0,0,0.5)", fontFamily: "monospace",
-        userSelect: "none", // 画面全体のテキスト選択を無効化
-        WebkitUserSelect: "none" // Safari対策
-      }}>
-        {timeLeft}
-      </div>
-      
-      {/* PixiJS Canvas 配置領域 */}
-      <div ref={pixiContainerRef} style={{ position: "absolute", top: 0, left: 0, zIndex: 1 }} />
-      
-      {/* UI 配置領域 */}
-      <div style={{ position: "absolute", zIndex: 20, width: "100%", height: "100%" }}>
-        <Joystick 
-          onInput={(x, y) => { 
-            // ジョイスティックの入力を毎フレーム Manager に渡す
-            gameManagerRef.current?.setJoystickInput(x, y); 
-          }} 
-        />
-      </div>
-    </div>
+    <GameView
+      timeLeft={timeLeft}
+      pixiContainerRef={pixiContainerRef}
+      onJoystickInput={handleInput}
+    />
   );
 }
