@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
-import { readyForGameUseCase } from "@server/domains/game/application/useCases/executeReadyForGameUseCase";
+import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
 
 export const onReadyForGame = (
   socket: Socket,

@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
-import { disconnectUseCase } from "@server/domains/game/application/useCases/executeDisconnectUseCase";
+import { disconnectUseCase } from "@server/domains/game/application/useCases/disconnectUseCase";
 
 export const onDisconnect = (
   io: Server,

@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io";
 import { RoomManager } from "./RoomManager";
 import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
-import { joinRoomUseCase } from "./application/useCases/executeJoinRoomUseCase";
-import { roomDisconnectUseCase } from "./application/useCases/executeRoomDisconnectUseCase";
+import { joinRoomUseCase } from "./application/useCases/joinRoomUseCase";
+import { roomDisconnectUseCase } from "./application/useCases/roomDisconnectUseCase";
 
 export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: RoomManager) => {
   

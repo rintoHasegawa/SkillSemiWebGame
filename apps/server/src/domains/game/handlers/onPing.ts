@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { pingUseCase } from "@server/domains/game/application/useCases/executePingUseCase";
+import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 
 export const onPing = (socket: Socket, clientTime: number) => {
   pingUseCase({

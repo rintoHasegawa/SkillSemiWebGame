@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
-import { startGameUseCase } from "@server/domains/game/application/useCases/executeStartGameUseCase";
+import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 
 export const onStartGame = (
   io: Server,
