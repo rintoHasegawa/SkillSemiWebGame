@@ -1,5 +1,6 @@
 import { protocol } from "@repo/shared";
 import type { DisconnectPlayerPort } from "../ports/gameUseCasePorts";
+import { logEvent } from "@server/network/logging/logEvent";
 
 type EmitToAll = (event: string, payload?: unknown) => void;
 
@@ -16,5 +17,9 @@ export const disconnectUseCase = ({
 }: DisconnectUseCaseParams) => {
   gameManager.removePlayer(playerId);
   emitToAll(protocol.SocketEvents.REMOVE_PLAYER, playerId);
-  console.log("[GameHandler] player removed", { playerId });
+  logEvent("GameUseCase", {
+    event: "DISCONNECT",
+    result: "player_removed",
+    socketId: playerId,
+  });
 };

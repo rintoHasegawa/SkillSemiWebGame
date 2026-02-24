@@ -1,5 +1,6 @@
 import { config } from "@repo/shared";
 import { Player } from "../../entities/Player.js";
+import { logEvent } from "@server/network/logging/logEvent";
 
 export class PlayerRegistry {
   private players: Map<string, Player>;
@@ -13,16 +14,30 @@ export class PlayerRegistry {
     player.x = config.GAME_CONFIG.GRID_COLS / 2;
     player.y = config.GAME_CONFIG.GRID_ROWS / 2;
     this.players.set(id, player);
-    console.log("[GameManager] player added", { playerId: id, totalPlayers: this.players.size });
+    logEvent("PlayerRegistry", {
+      event: "PLAYER_ADD",
+      result: "added",
+      socketId: id,
+      totalPlayers: this.players.size,
+    });
     return player;
   }
 
   public removePlayer(id: string) {
     const existed = this.players.delete(id);
     if (existed) {
-      console.log("[GameManager] player removed", { playerId: id, totalPlayers: this.players.size });
+      logEvent("PlayerRegistry", {
+        event: "PLAYER_REMOVE",
+        result: "removed",
+        socketId: id,
+        totalPlayers: this.players.size,
+      });
     } else {
-      console.log("[GameManager] player remove ignored (not found)", { playerId: id });
+      logEvent("PlayerRegistry", {
+        event: "PLAYER_REMOVE",
+        result: "ignored_not_found",
+        socketId: id,
+      });
     }
   }
 
@@ -33,15 +48,29 @@ export class PlayerRegistry {
   public movePlayer(id: string, x: number, y: number) {
     const player = this.players.get(id);
     if (player) {
-      console.log(`Move Request -> ID:${id.slice(0, 4)} x:${Math.round(x)} y:${Math.round(y)}`);
+      logEvent("PlayerRegistry", {
+        event: "MOVE",
+        result: "received",
+        socketId: id,
+        x: Math.round(x),
+        y: Math.round(y),
+      });
       if (typeof x !== "number" || typeof y !== "number" || isNaN(x) || isNaN(y)) {
-        console.log("⚠️ 無効なデータなので無視しました");
+        logEvent("PlayerRegistry", {
+          event: "MOVE",
+          result: "ignored_invalid_payload",
+          socketId: id,
+        });
         return;
       }
       player.x = x;
       player.y = y;
     } else {
-      console.log("[GameManager] move ignored (player not found)", { playerId: id });
+      logEvent("PlayerRegistry", {
+        event: "MOVE",
+        result: "ignored_player_not_found",
+        socketId: id,
+      });
     }
   }
 

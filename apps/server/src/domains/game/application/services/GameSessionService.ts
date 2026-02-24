@@ -3,6 +3,7 @@ import type { gridMapTypes } from "@repo/shared";
 import { GameLoop, type TickData } from "../../GameLoop";
 import { Player } from "../../entities/Player.js";
 import { MapStore } from "../../states/MapStore";
+import { logEvent } from "@server/network/logging/logEvent";
 
 export class GameSessionService {
   private mapStore: MapStore;
@@ -26,7 +27,11 @@ export class GameSessionService {
     onGameEnd: () => void
   ) {
     if (this.gameLoops.has(roomId)) {
-      console.log("[GameManager] startGameLoop ignored (already running)", { roomId });
+      logEvent("GameSessionService", {
+        event: "START_GAME_LOOP",
+        result: "ignored_already_running",
+        roomId,
+      });
       return;
     }
 
@@ -49,7 +54,12 @@ export class GameSessionService {
 
     loop.start();
     this.gameLoops.set(roomId, loop);
-    console.log("[GameManager] game loop started", { roomId, playerCount: playerIds.length });
+    logEvent("GameSessionService", {
+      event: "START_GAME_LOOP",
+      result: "started",
+      roomId,
+      playerCount: playerIds.length,
+    });
   }
 
   public stopGameLoop(roomId: string) {
@@ -58,9 +68,17 @@ export class GameSessionService {
       loop.stop();
       this.gameLoops.delete(roomId);
       this.roomStartTimes.delete(roomId);
-      console.log("[GameManager] game loop stopped", { roomId });
+      logEvent("GameSessionService", {
+        event: "STOP_GAME_LOOP",
+        result: "stopped",
+        roomId,
+      });
     } else {
-      console.log("[GameManager] stopGameLoop ignored (not running)", { roomId });
+      logEvent("GameSessionService", {
+        event: "STOP_GAME_LOOP",
+        result: "ignored_not_running",
+        roomId,
+      });
     }
   }
 

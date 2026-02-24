@@ -1,5 +1,6 @@
 import { protocol } from "@repo/shared";
 import type { DisconnectRoomPort } from "../ports/roomUseCasePorts";
+import { logEvent } from "@server/network/logging/logEvent";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
@@ -15,15 +16,20 @@ export const roomDisconnectUseCase = ({
   emitToRoom,
 }: RoomDisconnectUseCaseParams) => {
   const updatedRooms = roomManager.removePlayer(socketId);
-  console.log("[RoomHandler] disconnect cleanup", {
+  logEvent("RoomUseCase", {
+    event: "DISCONNECT",
+    result: "processed",
     socketId,
     updatedRoomCount: updatedRooms.length,
   });
 
   updatedRooms.forEach((room) => {
     emitToRoom(room.roomId, protocol.SocketEvents.ROOM_UPDATE, room);
-    console.log("[RoomHandler] ROOM_UPDATE emitted", {
+    logEvent("RoomUseCase", {
+      event: "ROOM_UPDATE",
+      result: "emitted",
       roomId: room.roomId,
+      socketId,
       ownerId: room.ownerId,
       totalPlayers: room.players.length,
     });
