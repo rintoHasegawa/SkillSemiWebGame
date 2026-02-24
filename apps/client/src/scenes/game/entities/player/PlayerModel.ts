@@ -6,9 +6,7 @@
 import { config } from '@repo/shared';
 import type { playerTypes } from '@repo/shared';
 
-/**
- * プレイヤーの計算責務を担うモデル
- */
+/** プレイヤーの座標計算と補間計算を管理するモデル */
 export class PlayerModel {
   public readonly id: string;
   public readonly teamId: number;

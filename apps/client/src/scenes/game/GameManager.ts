@@ -1,3 +1,8 @@
+/**
+ * GameManager
+ * ゲーム全体の初期化，更新，破棄のライフサイクルを管理する
+ * マップ，ネットワーク同期，ゲームループを統合する
+ */
 import { Application, Container, Ticker } from "pixi.js";
 import { socketManager } from "@client/network/SocketManager";
 import { GameMapController } from "./entities/map/GameMapController";
@@ -6,6 +11,7 @@ import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
 import type { GamePlayers } from "./application/game.types";
 
+/** ゲームシーンの実行ライフサイクルを管理するマネージャー */
 export class GameManager {
   private app: Application;
   private worldContainer: Container;

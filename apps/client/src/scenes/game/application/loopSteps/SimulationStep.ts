@@ -1,3 +1,8 @@
+/**
+ * SimulationStep
+ * ゲームループのシミュレーション段を担う
+ * ローカル更新とリモート補間更新を順に実行する
+ */
 import { config } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
 import { LocalPlayerController, RemotePlayerController } from "../../entities/player/PlayerController";
@@ -10,11 +15,17 @@ type SimulationStepParams = {
   isMoving: boolean;
 };
 
+/** シミュレーション段の更新処理を担うステップ */
 export class SimulationStep {
   private lastPositionSentTime = 0;
   private wasMoving = false;
 
   public run({ me, players, deltaSeconds, isMoving }: SimulationStepParams) {
+    this.runLocalSimulation({ me, isMoving });
+    this.runRemoteSimulation({ players, deltaSeconds });
+  }
+
+  private runLocalSimulation({ me, isMoving }: Pick<SimulationStepParams, "me" | "isMoving">) {
     if (isMoving) {
       me.tick();
 
@@ -33,7 +44,9 @@ export class SimulationStep {
     }
 
     this.wasMoving = isMoving;
+  }
 
+  private runRemoteSimulation({ players, deltaSeconds }: Pick<SimulationStepParams, "players" | "deltaSeconds">) {
     Object.values(players).forEach((player) => {
       if (player instanceof RemotePlayerController) {
         player.tick(deltaSeconds);

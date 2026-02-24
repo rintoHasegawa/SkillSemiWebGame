@@ -1,3 +1,8 @@
+/**
+ * useGameSceneController
+ * ゲーム画面の状態管理と GameManager 連携を担うフック
+ * Pixi描画領域，残り時間表示，入力橋渡しを提供する
+ */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { config } from "@repo/shared";
 import { GameInputManager } from "../GameInputManager";
@@ -11,6 +16,7 @@ const formatRemainingTime = (remaining: number) => {
 
 const getInitialTimeDisplay = () => formatRemainingTime(config.GAME_CONFIG.GAME_DURATION_SEC);
 
+/** ゲーム画面の状態と入力ハンドラを提供するフック */
 export const useGameSceneController = (myId: string | null) => {
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gameManagerRef = useRef<GameManager | null>(null);

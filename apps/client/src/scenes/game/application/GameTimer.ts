@@ -1,5 +1,11 @@
+/**
+ * GameTimer
+ * ゲーム開始時刻を基準に残り時間を計算する
+ * 表示用の残り秒数取得を提供する
+ */
 import { config } from "@repo/shared";
 
+/** ゲーム制限時間の残り秒数を管理するタイマーモデル */
 export class GameTimer {
   private gameStartTime: number | null = null;
 

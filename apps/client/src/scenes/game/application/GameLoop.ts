@@ -1,3 +1,8 @@
+/**
+ * GameLoop
+ * 毎フレームの入力，シミュレーション，カメラ更新を進行する
+ * 各 Step を呼び出して更新順序を統制する
+ */
 import { Application, Container, Ticker } from "pixi.js";
 import { LocalPlayerController } from "../entities/player/PlayerController";
 import type { GamePlayers } from "./game.types";
@@ -13,6 +18,7 @@ type GameLoopOptions = {
   getJoystickInput: () => { x: number; y: number };
 };
 
+/** ゲームのフレーム更新順序を管理するループ制御クラス */
 export class GameLoop {
   private app: Application;
   private worldContainer: Container;
