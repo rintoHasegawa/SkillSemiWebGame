@@ -7,9 +7,6 @@ import { useJoystickController } from "./useJoystickController";
 import { JoystickView } from "./JoystickView";
 import type { UseJoystickInputPresenterProps } from "./common";
 
-/** 入力半径の既定値を外部から参照できるように再公開 */
-export { MAX_DIST } from "./common";
-
 /** 入力と表示状態の橋渡しを行う */
 export const JoystickInputPresenter = ({ onInput, maxDist }: UseJoystickInputPresenterProps) => {
   const { isMoving, center, knobOffset, radius, handleStart, handleMove, handleEnd } =

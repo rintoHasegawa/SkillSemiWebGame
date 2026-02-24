@@ -4,7 +4,7 @@
  * UI描画に必要な中心点，ノブ位置，半径を保持する
  */
 import { useCallback, useState } from 'react';
-import { MAX_DIST } from './common';
+import { JOYSTICK_DEADZONE, MAX_DIST } from './common';
 import { computeJoystick } from './JoystickModel';
 import type {
   JoystickPointerEvent,
@@ -49,6 +49,13 @@ export const useJoystickState = ({ maxDist }: UseJoystickStateProps): UseJoystic
       if (!point) return null;
 
       const computed = computeJoystick(center, point, radius);
+
+      const magnitude = Math.hypot(computed.normalized.x, computed.normalized.y);
+      if (magnitude < JOYSTICK_DEADZONE) {
+        setKnobOffset({ x: 0, y: 0 });
+        return { x: 0, y: 0 };
+      }
+
       setKnobOffset(computed.knobOffset);
       return computed.normalized;
     },

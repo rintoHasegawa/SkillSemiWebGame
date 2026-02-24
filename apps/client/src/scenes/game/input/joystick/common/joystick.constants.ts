@@ -7,6 +7,15 @@
 /** UI側と共有する最大半径の既定値 */
 export const MAX_DIST = 60;
 
+/** 微小入力をゼロ扱いにするデッドゾーン閾値 */
+export const JOYSTICK_DEADZONE = 0.08;
+
+/** 連続送信を間引く最小移動量閾値 */
+export const JOYSTICK_MIN_MOVEMENT_DELTA = 0.02;
+
+/** 入力終了時にゼロ入力を送信するかどうかの方針 */
+export const JOYSTICK_SEND_ZERO_ON_END = true;
+
 /** ジョイスティックベースの背景色 */
 export const JOYSTICK_BASE_BG_COLOR = 'rgba(255, 255, 255, 0.1)';
 
