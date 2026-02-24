@@ -2,7 +2,7 @@ import { Player } from "./entities/Player.js";
 import { MapStore } from "./states/MapStore";
 import { gridMapLogic, config } from "@repo/shared";
 import type { gridMapTypes } from "@repo/shared";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 // コールバックで渡すデータの型定義
 export interface TickData {

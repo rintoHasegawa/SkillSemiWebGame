@@ -1,6 +1,6 @@
 import { protocol } from "@repo/shared";
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 type EmitToSocket = (event: string, payload?: unknown) => void;
 

@@ -1,6 +1,6 @@
 import { config, roomConsts } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 export class RoomJoinService {
   constructor(private rooms: Map<string, roomTypes.Room>) {}

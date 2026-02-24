@@ -1,6 +1,6 @@
 import { config } from "@repo/shared";
 import { Player } from "../../entities/Player.js";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 export class PlayerRegistry {
   private players: Map<string, Player>;

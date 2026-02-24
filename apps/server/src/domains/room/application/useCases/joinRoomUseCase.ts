@@ -1,7 +1,7 @@
 import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
 import type { JoinRoomPort } from "../ports/roomUseCasePorts";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
