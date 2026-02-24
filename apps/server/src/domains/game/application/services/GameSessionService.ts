@@ -63,25 +63,4 @@ export class GameSessionService {
       playerCount: playerIds.length,
     });
   }
-
-  public stopGameLoop(roomId: string) {
-    const loop = this.gameLoops.get(roomId);
-    if (loop) {
-      loop.stop();
-      this.gameLoops.delete(roomId);
-      this.roomStartTimes.delete(roomId);
-      this.mapStores.delete(roomId);
-      logEvent("GameSessionService", {
-        event: "STOP_GAME_LOOP",
-        result: "stopped",
-        roomId,
-      });
-    } else {
-      logEvent("GameSessionService", {
-        event: "STOP_GAME_LOOP",
-        result: "ignored_not_running",
-        roomId,
-      });
-    }
-  }
 }

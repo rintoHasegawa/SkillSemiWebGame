@@ -48,13 +48,6 @@ export class GameManager {
     this.gameSessionService.startGameLoop(roomId, playerIds, onTick, onGameEnd);
   }
 
-  /**
-   * ゲームループを停止する
-   */
-  stopGameLoop(roomId: string) {
-    this.gameSessionService.stopGameLoop(roomId);
-  }
-
   // 指定ID配列のプレイヤーを取得
   getPlayersByIds(playerIds: string[]) {
     return playerIds
