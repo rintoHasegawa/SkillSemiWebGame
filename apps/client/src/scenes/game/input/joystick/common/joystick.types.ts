@@ -47,3 +47,9 @@ export type UseJoystickControllerReturn = {
 	handleMove: (e: JoystickPointerEvent) => void;
 	handleEnd: () => void;
 };
+
+/** JoystickInputPresenter に渡す入力設定型 */
+export type UseJoystickInputPresenterProps = {
+	onInput: (moveX: number, moveY: number) => void;
+	maxDist?: number;
+};

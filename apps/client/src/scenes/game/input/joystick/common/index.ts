@@ -10,6 +10,7 @@ export type {
 	Point,
 	UseJoystickControllerProps,
 	UseJoystickControllerReturn,
+	UseJoystickInputPresenterProps,
 	UseJoystickStateProps,
 	UseJoystickStateReturn,
 } from './joystick.types';
