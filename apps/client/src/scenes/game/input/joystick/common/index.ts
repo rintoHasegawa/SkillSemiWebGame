@@ -13,7 +13,16 @@ export type {
 	UseJoystickInputPresenterProps,
 	UseJoystickStateProps,
 	UseJoystickStateReturn,
+	UseJoystickViewProps,
 } from './joystick.types';
 
 /** 共有定数を再公開する */
-export { MAX_DIST } from './joystick.constants';
+export {
+	JOYSTICK_BASE_BG_COLOR,
+	JOYSTICK_BASE_BORDER_COLOR,
+	JOYSTICK_BASE_BORDER_WIDTH,
+	JOYSTICK_KNOB_BG_COLOR,
+	JOYSTICK_KNOB_SHADOW,
+	JOYSTICK_KNOB_SIZE,
+	MAX_DIST,
+} from './joystick.constants';

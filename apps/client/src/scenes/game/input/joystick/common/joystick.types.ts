@@ -53,3 +53,11 @@ export type UseJoystickInputPresenterProps = {
 	onInput: (moveX: number, moveY: number) => void;
 	maxDist?: number;
 };
+
+/** JoystickView に渡す描画状態型 */
+export type UseJoystickViewProps = {
+	isActive: boolean;
+	center: Point;
+	knobOffset: Point;
+	radius: number;
+};
