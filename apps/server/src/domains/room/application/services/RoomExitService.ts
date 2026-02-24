@@ -1,5 +1,5 @@
 import type { roomTypes } from "@repo/shared";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 export class RoomExitService {
   constructor(private rooms: Map<string, roomTypes.Room>) {}

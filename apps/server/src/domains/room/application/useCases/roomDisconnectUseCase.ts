@@ -1,6 +1,6 @@
 import { protocol } from "@repo/shared";
 import type { DisconnectRoomPort } from "../ports/roomUseCasePorts";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 

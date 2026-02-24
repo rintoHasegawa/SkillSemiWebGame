@@ -1,7 +1,7 @@
 import { protocol, roomConsts } from "@repo/shared";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import type { StartGamePort } from "../ports/gameUseCasePorts";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 

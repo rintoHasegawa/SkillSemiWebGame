@@ -95,20 +95,35 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │       ├── tsconfig.json                               # TS設定
     │       └── src/
     │           ├── index.ts                                # サーバー起点
+    │           ├── logging/
+    │           │   └── logEvent.ts                         # 共通ログ出力
     │           ├── domains/
     │           │   ├── game/
-    │           │   │   ├── GameHandler.ts                  # ゲーム入出力
     │           │   │   ├── GameLoop.ts                     # 固定ループ
     │           │   │   ├── GameManager.ts                  # ゲーム状態管理
+    │           │   │   ├── application/                    # ユースケース・サービス
     │           │   │   ├── entities/
     │           │   │   │   └── Player.ts                   # サーバーPlayer
     │           │   │   └── states/
     │           │   │       └── MapStore.ts                 # マップ状態保持
     │           │   └── room/
-    │           │       ├── RoomHandler.ts                  # ルーム入出力
+    │           │       ├── application/                    # ユースケース・サービス
     │           │       └── RoomManager.ts                  # ルーム管理
     │           └── network/
-    │               └── SocketManager.ts                    # WS接続管理
+    │               ├── SocketManager.ts                    # WS接続管理
+    │               ├── adapters/
+    │               │   └── socketEmitters.ts              # 送信アダプタ
+    │               ├── handlers/
+    │               │   ├── CommonHandler.ts               # 共通WSハンドラ
+    │               │   ├── GameHandler.ts                 # ゲームWSハンドラ(中間層)
+    │               │   ├── RoomHandler.ts                 # ルームWSハンドラ(中間層)
+    │               │   ├── game/                          # ゲーム中粒度配線
+    │               │   └── room/                          # ルーム中粒度配線
+    │               ├── bootstrap/
+    │               │   ├── createHttpServer.ts            # HTTP生成
+    │               │   ├── createIo.ts                    # Socket.IO生成
+    │               │   └── boot.ts                        # 起動配線
+    │               └── createIo.ts                        # 互換用ファイル
     ├── docs/
     │   ├── 01_Env/
     │   │   ├── ENV_01_環境構築・技術スタック.txt                # 環境・技術定義
@@ -188,13 +203,13 @@ Pixel Paint War - 開発環境・技術スタック定義書
         - 採用理由: 50人同時対戦時の大量のスプライト描画と60fps維持のため．
     ・UI Library: Preact (または Vanilla HTML/CSS)
         - 採用理由: ゲームループへの負荷を避けつつ，軽量なHUDを構築するため．
-    ・Network: Native WebSocket API
+    ・Network: socket.io-client
 
 3-3. バックエンド (Server)
     ・Runtime: Node.js
     ・Execution: tsx (開発時の高速実行・ウォッチ用)
-    ・WebSocket Library: ws
-        - 採用理由: 軽量かつ標準的．uWebSockets.js への移行も視野に入れるが初期は ws で実装．
+    ・WebSocket Library: Socket.IO
+        - 採用理由: 接続管理・イベント配線を明確化しやすく，Client 側 (socket.io-client) と整合するため．
     ・Logic: 独自ループ (20Hz固定)
         - Physics Engine: 使用しない (shared/physics.ts による独自グリッド判定)
 

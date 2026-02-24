@@ -3,7 +3,7 @@ import type { gridMapTypes } from "@repo/shared";
 import { GameLoop, type TickData } from "../../GameLoop";
 import { Player } from "../../entities/Player.js";
 import { MapStore } from "../../states/MapStore";
-import { logEvent } from "@server/network/logging/logEvent";
+import { logEvent } from "@server/logging/logEvent";
 
 export class GameSessionService {
   private mapStore: MapStore;
