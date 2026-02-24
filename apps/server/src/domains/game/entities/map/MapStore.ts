@@ -1,9 +1,13 @@
-// apps/server/src/domains/game/entities/map/MapStore.ts
+/**
+ * MapStore
+ * 塗り状態グリッドと差分更新キューを保持して提供する
+ */
 import type { gridMapTypes } from "@repo/shared";
 import { createInitialGridColors } from "./mapGrid.js";
 import { paintCellIfChanged } from "./mapPainting.js";
 import { drainPendingUpdates } from "./mapUpdates.js";
 
+/** ルーム内マップの塗り状態と更新差分を管理するストア */
 export class MapStore {
   // 全マスの現在の色（teamId）を保持
   private gridColors: number[];

@@ -1,3 +1,7 @@
+/**
+ * GameSessionLifecycleService
+ * ゲームセッションの開始，参照，終了時クリーンアップを管理する
+ */
 import { config } from "@repo/shared";
 import { type TickData } from "../../loop/GameLoop";
 import { logEvent } from "@server/logging/logEvent";
@@ -6,6 +10,7 @@ import { GameRoomSession } from "./GameRoomSession";
 type SessionStore = Map<string, GameRoomSession>;
 type PlayerRoomIndex = Map<string, string>;
 
+/** ゲームセッションのライフサイクル操作を提供するサービス */
 export class GameSessionLifecycleService {
   constructor(
     private sessions: SessionStore,

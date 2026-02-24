@@ -1,3 +1,7 @@
+/**
+ * GameRoomSession
+ * 1ルーム分のゲーム進行状態とゲームループ実行を管理する
+ */
 import { logEvent } from "@server/logging/logEvent";
 import { GameLoop, type TickData } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
@@ -8,6 +12,7 @@ import {
   setPlayerPosition,
 } from "../../entities/player/playerMovement.js";
 
+/** ルーム単位のゲーム状態とループ進行を保持するセッションクラス */
 export class GameRoomSession {
   private players: Map<string, Player>;
   private mapStore: MapStore;

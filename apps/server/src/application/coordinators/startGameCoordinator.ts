@@ -1,14 +1,20 @@
+/**
+ * startGameCoordinator
+ * START_GAMEイベントの調停を行い，ルーム状態更新とゲーム開始処理を橋渡しする
+ */
 import { roomConsts } from "@repo/shared";
 import { GameManager } from "@server/domains/game/GameManager";
-import { type GameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
+import {
+  type GameOutputPort,
+  type StartGameRoomPort,
+} from "@server/domains/game/application/ports/gameUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
-import { RoomManager } from "@server/domains/room/RoomManager";
 import { logEvent } from "@server/logging/logEvent";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
   gameManager: GameManager;
-  roomManager: RoomManager;
+  roomManager: StartGameRoomPort;
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayerToRoom"
@@ -18,6 +24,7 @@ type StartGameCoordinatorParams = {
   >;
 };
 
+/** START_GAME受信時にルーム状態遷移を判定し，ゲーム開始ユースケースを実行する */
 export const startGameCoordinator = ({
   ownerId,
   gameManager,

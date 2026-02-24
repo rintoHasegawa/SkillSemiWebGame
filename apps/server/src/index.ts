@@ -1,3 +1,7 @@
+/**
+ * index
+ * サーバー起動時にHTTPサーバー生成とブート処理を実行する
+ */
 import { createHttpServer } from "./network/bootstrap/createHttpServer";
 import { boot } from "./network/bootstrap/boot";
 import { config } from "@repo/shared";

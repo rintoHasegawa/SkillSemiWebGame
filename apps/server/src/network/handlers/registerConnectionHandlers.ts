@@ -6,9 +6,10 @@ import { Server, Socket } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
-import { registerRoomHandlers, handleRoomDisconnect } from "./RoomHandler";
-import { registerGameHandlers, handleGameDisconnect } from "./GameHandler";
+import { registerRoomHandlers } from "./RoomHandler";
+import { registerGameHandlers } from "./GameHandler";
 import { logEvent } from "@server/logging/logEvent";
+import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
 
 type RegisterConnectionHandlersParams = {
   io: Server;
@@ -41,10 +42,12 @@ export const registerConnectionHandlers = ({
         socketId: socket.id,
       });
 
-      const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
-
-      handleGameDisconnect(io, gameManager, roomId, socket.id);
-      handleRoomDisconnect(io, socket, roomManager);
+      disconnectCoordinator({
+        io,
+        socketId: socket.id,
+        gameManager,
+        roomManager,
+      });
     });
   });
 };

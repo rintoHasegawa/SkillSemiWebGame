@@ -1,3 +1,7 @@
+/**
+ * GameManager
+ * ゲームセッション集合の生成，更新，参照管理を統括する
+ */
 import { type TickData } from "./loop/GameLoop";
 import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
@@ -5,6 +9,7 @@ import { GameSessionLifecycleService } from "./application/services/GameSessionL
 import { GamePlayerOperationService } from "./application/services/GamePlayerOperationService";
 
 // プレイヤー集合の生成・更新・参照管理クラス
+/** ゲームセッションのライフサイクルとプレイヤー操作を統括するマネージャ */
 export class GameManager {
   private sessions: Map<string, GameRoomSession>;
   private playerToRoom: Map<string, string>;
