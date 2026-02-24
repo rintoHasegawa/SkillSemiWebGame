@@ -18,13 +18,8 @@ export const handleGameDisconnect = (
 
   disconnectUseCase({
     gameManager,
+    roomId,
     playerId,
-    publishPlayerRemoved: (removedPlayerId) => {
-      if (!roomId) {
-        return;
-      }
-
-      gameDisconnectPublisher.publishPlayerRemovedToRoom(roomId, removedPlayerId);
-    },
+    output: gameDisconnectPublisher,
   });
 };

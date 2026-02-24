@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import type { gridMapTypes, playerTypes, roomTypes } from "@repo/shared";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
+import type { GameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = roomTypes.Room["roomId"];
@@ -17,20 +18,10 @@ type UpdatePlayerPayload = playerTypes.PlayerData;
 type MapCellUpdatesPayload = gridMapTypes.CellUpdate[];
 
 /** ゲーム進行中イベントの送信インターフェース */
-export type GameEventPublisher = {
-  publishPongToSocket: (payload: PongPayload) => void;
-  publishUpdatePlayerToRoom: (roomId: RoomId, playerData: UpdatePlayerPayload) => void;
-  publishMapCellUpdatesToRoom: (roomId: RoomId, cellUpdates: MapCellUpdatesPayload) => void;
-  publishGameEndToRoom: (roomId: RoomId) => void;
-  publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => void;
-  publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => void;
-  publishGameStartToSocket: (payload: GameStartPayload) => void;
-};
+export type GameEventPublisher = Omit<GameOutputPort, "publishPlayerRemovedToRoom">;
 
 /** 切断時に配信するゲームイベントの送信インターフェース */
-export type GameDisconnectPublisher = {
-  publishPlayerRemovedToRoom: (roomId: RoomId, removedPlayerId: SocketId) => void;
-};
+export type GameDisconnectPublisher = Pick<GameOutputPort, "publishPlayerRemovedToRoom">;
 
 /** 共通送信コンテキストからゲームイベント送信関数群を生成する */
 export const createGameEventPublisher = (common: CommonHandlerContext): GameEventPublisher => {

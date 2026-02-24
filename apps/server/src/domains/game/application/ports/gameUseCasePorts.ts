@@ -1,5 +1,5 @@
 import type { TickData } from "../../loop/GameLoop";
-import type { playerTypes } from "@repo/shared";
+import type { gridMapTypes, playerTypes, roomTypes } from "@repo/shared";
 
 export interface StartGamePort {
   startRoomSession(
@@ -22,4 +22,18 @@ export interface MovePlayerPort {
 
 export interface DisconnectPlayerPort {
   removePlayer(id: string): void;
+}
+
+export interface GameOutputPort {
+  publishPongToSocket(payload: { clientTime: number; serverTime: number }): void;
+  publishUpdatePlayerToRoom(roomId: roomTypes.Room["roomId"], playerData: playerTypes.PlayerData): void;
+  publishMapCellUpdatesToRoom(
+    roomId: roomTypes.Room["roomId"],
+    cellUpdates: gridMapTypes.CellUpdate[]
+  ): void;
+  publishGameEndToRoom(roomId: roomTypes.Room["roomId"]): void;
+  publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: { startTime: number }): void;
+  publishCurrentPlayersToSocket(players: playerTypes.PlayerData[]): void;
+  publishGameStartToSocket(payload: { startTime: number }): void;
+  publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: string): void;
 }

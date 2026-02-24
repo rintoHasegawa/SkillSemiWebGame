@@ -1,24 +1,22 @@
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
-import type { playerTypes } from "@repo/shared";
+import type { GameOutputPort } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
 
 type ReadyForGameUseCaseParams = {
   socketId: string;
   roomId?: string;
   gameManager: ReadyForGamePort;
-  publishCurrentPlayers: (players: playerTypes.PlayerData[]) => void;
-  publishGameStart: (payload: { startTime: number }) => void;
+  output: Pick<GameOutputPort, "publishCurrentPlayersToSocket" | "publishGameStartToSocket">;
 };
 
 export const readyForGameUseCase = ({
   socketId,
   roomId,
   gameManager,
-  publishCurrentPlayers,
-  publishGameStart,
+  output,
 }: ReadyForGameUseCaseParams) => {
   if (!roomId) {
-    publishCurrentPlayers([]);
+    output.publishCurrentPlayersToSocket([]);
     logEvent("GameUseCase", {
       event: "READY_FOR_GAME",
       result: "ignored_missing_room",
@@ -28,7 +26,7 @@ export const readyForGameUseCase = ({
   }
 
   const roomPlayers = gameManager.getRoomPlayers(roomId);
-  publishCurrentPlayers(roomPlayers);
+  output.publishCurrentPlayersToSocket(roomPlayers);
 
   logEvent("GameUseCase", {
     event: "READY_FOR_GAME",
@@ -43,7 +41,7 @@ export const readyForGameUseCase = ({
     return;
   }
 
-  publishGameStart({ startTime });
+  output.publishGameStartToSocket({ startTime });
   logEvent("GameUseCase", {
     event: "GAME_START",
     result: "emitted",

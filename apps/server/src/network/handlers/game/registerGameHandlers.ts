@@ -6,7 +6,6 @@ import { Server, Socket } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
-import type { playerTypes } from "@repo/shared";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
@@ -39,7 +38,7 @@ export const registerGameHandlers = (
 
     pingUseCase({
       clientTime,
-      publishPong: gamePublisher.publishPongToSocket,
+      output: gamePublisher,
     });
   });
 
@@ -49,10 +48,7 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      publishUpdatePlayer: gamePublisher.publishUpdatePlayerToRoom,
-      publishMapCellUpdates: gamePublisher.publishMapCellUpdatesToRoom,
-      publishGameEnd: gamePublisher.publishGameEndToRoom,
-      publishGameStart: gamePublisher.publishGameStartToRoom,
+      output: gamePublisher,
     });
   });
 
@@ -64,8 +60,7 @@ export const registerGameHandlers = (
       socketId: socket.id,
       roomId,
       gameManager,
-      publishCurrentPlayers: gamePublisher.publishCurrentPlayersToSocket,
-      publishGameStart: gamePublisher.publishGameStartToSocket,
+      output: gamePublisher,
     });
   });
 

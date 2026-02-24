@@ -1,13 +1,15 @@
+import type { GameOutputPort } from "../ports/gameUseCasePorts";
+
 type PingUseCaseParams = {
   clientTime: number;
-  publishPong: (payload: { clientTime: number; serverTime: number }) => void;
+  output: Pick<GameOutputPort, "publishPongToSocket">;
 };
 
 export const pingUseCase = ({
   clientTime,
-  publishPong,
+  output,
 }: PingUseCaseParams) => {
-  publishPong({
+  output.publishPongToSocket({
     clientTime,
     serverTime: Date.now(),
   });
