@@ -30,6 +30,10 @@ export const useAppFlow = (): AppFlowState => {
   };
 
   const requestJoin = (payload: roomTypes.JoinRoomPayload) => {
+    if (isJoining) {
+      return;
+    }
+
     clearJoinTimeout();
     setJoinErrorMessage(null);
     setIsJoining(true);
