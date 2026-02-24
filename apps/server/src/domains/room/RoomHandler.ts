@@ -2,24 +2,28 @@ import { Server, Socket } from "socket.io";
 import { RoomManager } from "./RoomManager";
 import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
+import { joinRoomUseCase } from "./application/useCases/joinRoomUseCase";
+import { roomDisconnectUseCase } from "./application/useCases/roomDisconnectUseCase";
 
 export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: RoomManager) => {
   
   socket.on(protocol.SocketEvents.JOIN_ROOM, (data: roomTypes.JoinRoomPayload) => {
-    const { roomId, playerName } = data;
-    console.log("[RoomHandler] JOIN_ROOM received", { roomId, socketId: socket.id, playerName });
+    const { roomId } = data;
     
     socket.join(roomId);
 
-    // RoomManagerにデータ操作を依頼
-    const room = roomManager.addPlayerToRoom(roomId, socket.id, playerName);
+    joinRoomUseCase({
+      roomManager,
+      socketId: socket.id,
+      data,
+      emitToRoom: (targetRoomId, event, payload) => {
+        if (payload === undefined) {
+          io.to(targetRoomId).emit(event);
+          return;
+        }
 
-    // ルーム内全員向け最新状態配信
-    io.to(roomId).emit(protocol.SocketEvents.ROOM_UPDATE, room);
-    console.log("[RoomHandler] ROOM_UPDATE emitted", {
-      roomId,
-      ownerId: room.ownerId,
-      totalPlayers: room.players.length
+        io.to(targetRoomId).emit(event, payload);
+      },
     });
   });
 
@@ -29,20 +33,16 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
  * 切断時のルームクリーンアップ処理
  */
 export const handleRoomDisconnect = (io: Server, socket: Socket, roomManager: RoomManager) => {
-  // ルームからの除外処理
-  const updatedRooms = roomManager.removePlayer(socket.id);
-  console.log("[RoomHandler] disconnect cleanup", {
+  roomDisconnectUseCase({
+    roomManager,
     socketId: socket.id,
-    updatedRoomCount: updatedRooms.length
-  });
-  
-  // 更新があったルーム（オーナー変更など）にのみ通知を飛ばす
-  updatedRooms.forEach(room => {
-    io.to(room.roomId).emit(protocol.SocketEvents.ROOM_UPDATE, room);
-    console.log("[RoomHandler] ROOM_UPDATE emitted", {
-      roomId: room.roomId,
-      ownerId: room.ownerId,
-      totalPlayers: room.players.length
-    });
+    emitToRoom: (roomId, event, payload) => {
+      if (payload === undefined) {
+        io.to(roomId).emit(event);
+        return;
+      }
+
+      io.to(roomId).emit(event, payload);
+    },
   });
 };
