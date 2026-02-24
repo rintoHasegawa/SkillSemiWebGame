@@ -3,6 +3,7 @@
  * ルーム状態の保持とルーム操作サービスへの委譲を担うマネージャ
  */
 import type { roomTypes } from "@repo/shared";
+import { roomConsts } from "@repo/shared";
 import { RoomJoinService } from "./application/services/RoomJoinService";
 import { RoomExitService } from "./application/services/RoomExitService";
 import { RoomQueryService } from "./application/services/RoomQueryService";
@@ -44,5 +45,27 @@ export class RoomManager {
   // プレイヤーIDから所属ルームを取得する
   public getRoomByPlayerId(playerId: string): roomTypes.Room | undefined {
     return this.roomQueryService.getRoomByPlayerId(playerId);
+  }
+
+  // ルーム状態をPLAYINGへ更新する
+  public markRoomPlaying(roomId: string): roomTypes.Room | undefined {
+    const room = this.roomQueryService.getRoomById(roomId);
+    if (!room) {
+      return undefined;
+    }
+
+    room.status = roomConsts.RoomPhase.PLAYING;
+    return room;
+  }
+
+  // ルーム状態をWAITINGへ更新する
+  public markRoomWaiting(roomId: string): roomTypes.Room | undefined {
+    const room = this.roomQueryService.getRoomById(roomId);
+    if (!room) {
+      return undefined;
+    }
+
+    room.status = roomConsts.RoomPhase.WAITING;
+    return room;
   }
 }

@@ -7,13 +7,13 @@ import { GameManager } from "@server/domains/game/GameManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
-import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 import { logEvent } from "@server/logging/logEvent";
 import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
+import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
@@ -44,7 +44,7 @@ export const registerGameHandlers = (
 
   // オーナー開始要求に応じてゲーム進行ユースケースを起動する
   socket.on(protocol.SocketEvents.START_GAME, () => {
-    startGameUseCase({
+    startGameCoordinator({
       ownerId: socket.id,
       gameManager,
       roomManager,
