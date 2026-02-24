@@ -1,6 +1,7 @@
-import { Player } from "./entities/Player.js";
-import { MapStore } from "./states/MapStore";
-import { gridMapLogic, config } from "@repo/shared";
+import { Player } from "../entities/player/Player.js";
+import { MapStore } from "../entities/map/MapStore";
+import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
+import { config } from "@repo/shared";
 import type { gridMapTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 
@@ -52,7 +53,7 @@ export class GameLoop {
         const player = this.players.get(id);
         if (!player) return;
 
-        const gridIndex = gridMapLogic.getGridIndexFromPosition(player.x, player.y);
+        const gridIndex = getPlayerGridIndex(player);
         if (gridIndex !== null) {
           this.mapStore.paintCell(gridIndex, player.teamId);
         }

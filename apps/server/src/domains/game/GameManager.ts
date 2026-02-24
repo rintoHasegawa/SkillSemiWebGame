@@ -1,36 +1,36 @@
-import { GameLoop, type TickData } from "./GameLoop";
-import { Player } from "./entities/Player.js";
-import { PlayerRegistry } from "./application/services/PlayerRegistry";
-import { GameSessionService } from "./application/services/GameSessionService";
+import { type TickData } from "./loop/GameLoop";
+import { Player } from "./entities/player/Player.js";
+import { GameRoomSession } from "./application/services/GameRoomSession";
+import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
+import { GamePlayerOperationService } from "./application/services/GamePlayerOperationService";
 
 // プレイヤー集合の生成・更新・参照管理クラス
 export class GameManager {
-  private playerRegistry: PlayerRegistry;
-  private gameSessionService: GameSessionService;
+  private sessions: Map<string, GameRoomSession>;
+  private playerToRoom: Map<string, string>;
+  private lifecycleService: GameSessionLifecycleService;
+  private playerOperationService: GamePlayerOperationService;
 
   constructor() {
-    this.playerRegistry = new PlayerRegistry();
-    this.gameSessionService = new GameSessionService(this.playerRegistry.getPlayersRef());
+    this.sessions = new Map();
+    this.playerToRoom = new Map();
+    this.lifecycleService = new GameSessionLifecycleService(this.sessions, this.playerToRoom);
+    this.playerOperationService = new GamePlayerOperationService(this.sessions, this.playerToRoom);
   }
 
   // 外部（GameHandlerなど）から開始時刻を取得できるようにする
   getRoomStartTime(roomId: string): number | undefined {
-    return this.gameSessionService.getRoomStartTime(roomId);
-  }
-
-  // 新規プレイヤー登録と初期位置設定処理
-  addPlayer(id: string): Player {
-    return this.playerRegistry.addPlayer(id);
+    return this.lifecycleService.getRoomStartTime(roomId);
   }
 
   // プレイヤー登録解除処理
   removePlayer(id: string) {
-    this.playerRegistry.removePlayer(id);
+    this.playerOperationService.removePlayer(id);
   }
 
   // 指定プレイヤー座標更新処理
   movePlayer(id: string, x: number, y: number) {
-    this.playerRegistry.movePlayer(id, x, y);
+    this.playerOperationService.movePlayer(id, x, y);
   }
 
   /**
@@ -39,19 +39,17 @@ export class GameManager {
    * @param playerIds このルームに参加しているプレイヤーのIDリスト
    * @param onTick 毎フレーム実行される送信用のコールバック関数
    */
-  startGameLoop(
+  startRoomSession(
     roomId: string, 
     playerIds: string[], 
     onTick: (data: TickData) => void,
     onGameEnd: () => void
   ) {
-    this.gameSessionService.startGameLoop(roomId, playerIds, onTick, onGameEnd);
+    this.lifecycleService.startRoomSession(roomId, playerIds, onTick, onGameEnd);
   }
 
-  // 指定ID配列のプレイヤーを取得
-  getPlayersByIds(playerIds: string[]) {
-    return playerIds
-      .map((playerId) => this.playerRegistry.getPlayer(playerId))
-      .filter((player): player is Player => player !== undefined);
+  // 指定ルームのプレイヤーを取得
+  getRoomPlayers(roomId: string): Player[] {
+    return this.lifecycleService.getRoomPlayers(roomId);
   }
 }

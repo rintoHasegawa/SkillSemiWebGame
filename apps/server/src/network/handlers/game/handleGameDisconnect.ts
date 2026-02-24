@@ -5,7 +5,7 @@
 import { Server } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
 import { disconnectUseCase } from "@server/domains/game/application/useCases/disconnectUseCase";
-import { createGameDisconnectPublisher } from "./createGameEventPublisher";
+import { createGameDisconnectOutputAdapter } from "./createGameOutputAdapter";
 
 /** 切断したプレイヤーをゲーム管理から除外し通知する */
 export const handleGameDisconnect = (
@@ -14,17 +14,12 @@ export const handleGameDisconnect = (
   roomId: string | undefined,
   playerId: string
 ) => {
-  const gameDisconnectPublisher = createGameDisconnectPublisher(io);
+  const gameDisconnectOutputAdapter = createGameDisconnectOutputAdapter(io);
 
   disconnectUseCase({
     gameManager,
+    roomId,
     playerId,
-    publishPlayerRemoved: (removedPlayerId) => {
-      if (!roomId) {
-        return;
-      }
-
-      gameDisconnectPublisher.publishPlayerRemovedToRoom(roomId, removedPlayerId);
-    },
+    output: gameDisconnectOutputAdapter,
   });
 };

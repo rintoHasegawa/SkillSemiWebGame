@@ -1,27 +1,26 @@
 import { roomConsts } from "@repo/shared";
-import type { gridMapTypes, playerTypes } from "@repo/shared";
 import { RoomManager } from "@server/domains/room/RoomManager";
-import type { StartGamePort } from "../ports/gameUseCasePorts";
+import type { GameOutputPort, StartGamePort } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
 
 type StartGameUseCaseParams = {
   ownerId: string;
   gameManager: StartGamePort;
   roomManager: RoomManager;
-  publishUpdatePlayer: (roomId: string, playerData: playerTypes.PlayerData) => void;
-  publishMapCellUpdates: (roomId: string, cellUpdates: gridMapTypes.CellUpdate[]) => void;
-  publishGameEnd: (roomId: string) => void;
-  publishGameStart: (roomId: string, payload: { startTime: number }) => void;
+  output: Pick<
+    GameOutputPort,
+    | "publishUpdatePlayerToRoom"
+    | "publishMapCellUpdatesToRoom"
+    | "publishGameEndToRoom"
+    | "publishGameStartToRoom"
+  >;
 };
 
 export const startGameUseCase = ({
   ownerId,
   gameManager,
   roomManager,
-  publishUpdatePlayer,
-  publishMapCellUpdates,
-  publishGameEnd,
-  publishGameStart,
+  output,
 }: StartGameUseCaseParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
   if (!room) {
@@ -55,20 +54,16 @@ export const startGameUseCase = ({
 
   const playerIds = room.players.map((p: { id: string }) => p.id);
 
-  room.players.forEach((p: { id: string }) => {
-    gameManager.addPlayer(p.id);
-  });
-
-  gameManager.startGameLoop(
+  gameManager.startRoomSession(
     room.roomId,
     playerIds,
     (tickData) => {
       tickData.players.forEach((playerData) => {
-        publishUpdatePlayer(room.roomId, playerData);
+        output.publishUpdatePlayerToRoom(room.roomId, playerData);
       });
 
       if (tickData.cellUpdates.length > 0) {
-        publishMapCellUpdates(room.roomId, tickData.cellUpdates);
+        output.publishMapCellUpdatesToRoom(room.roomId, tickData.cellUpdates);
       }
     },
     () => {
@@ -78,11 +73,11 @@ export const startGameUseCase = ({
         roomId: room.roomId,
         reason: "duration_elapsed",
       });
-      publishGameEnd(room.roomId);
+      output.publishGameEndToRoom(room.roomId);
       room.status = roomConsts.RoomPhase.WAITING;
     }
   );
 
   const startTime = gameManager.getRoomStartTime(room.roomId) || Date.now();
-  publishGameStart(room.roomId, { startTime });
+  output.publishGameStartToRoom(room.roomId, { startTime });
 };

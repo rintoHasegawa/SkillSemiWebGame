@@ -6,13 +6,12 @@ import { Server, Socket } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
-import type { playerTypes } from "@repo/shared";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { createGameEventPublisher } from "./createGameEventPublisher";
+import { createGameOutputAdapter } from "./createGameOutputAdapter";
 import { logEvent } from "@server/logging/logEvent";
 import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
 
@@ -24,7 +23,7 @@ export const registerGameHandlers = (
   roomManager: RoomManager
 ) => {
   const common = createCommonHandlerContext(io, socket);
-  const gamePublisher = createGameEventPublisher(common);
+  const gameOutputAdapter = createGameOutputAdapter(common);
 
   // 遅延計測用のPINGを検証しPONGを返す
   socket.on(protocol.SocketEvents.PING, (clientTime: unknown) => {
@@ -39,7 +38,7 @@ export const registerGameHandlers = (
 
     pingUseCase({
       clientTime,
-      publishPong: gamePublisher.publishPongToSocket,
+      output: gameOutputAdapter,
     });
   });
 
@@ -49,27 +48,19 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      publishUpdatePlayer: gamePublisher.publishUpdatePlayerToRoom,
-      publishMapCellUpdates: gamePublisher.publishMapCellUpdatesToRoom,
-      publishGameEnd: gamePublisher.publishGameEndToRoom,
-      publishGameStart: gamePublisher.publishGameStartToRoom,
+      output: gameOutputAdapter,
     });
   });
 
   // 参加者の準備完了通知を受けて現在状態を返す
   socket.on(protocol.SocketEvents.READY_FOR_GAME, () => {
     const roomId = Array.from(socket.rooms).find((room) => room !== socket.id);
-    const playerIds = roomId
-      ? (roomManager.getRoomById(roomId)?.players ?? []).map((p) => p.id)
-      : [];
 
     readyForGameUseCase({
       socketId: socket.id,
       roomId,
-      playerIds,
       gameManager,
-      publishCurrentPlayers: gamePublisher.publishCurrentPlayersToSocket,
-      publishGameStart: gamePublisher.publishGameStartToSocket,
+      output: gameOutputAdapter,
     });
   });
 

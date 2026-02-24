@@ -1,6 +1,8 @@
-// apps/server/src/states/MapStore.ts
+// apps/server/src/domains/game/entities/map/MapStore.ts
 import type { gridMapTypes } from "@repo/shared";
-import { config } from "@repo/shared";
+import { createInitialGridColors } from "./mapGrid.js";
+import { paintCellIfChanged } from "./mapPainting.js";
+import { drainPendingUpdates } from "./mapUpdates.js";
 
 export class MapStore {
   // 全マスの現在の色（teamId）を保持
@@ -10,8 +12,7 @@ export class MapStore {
 
   constructor() {
     // 初期状態は -1 (無色) などで初期化
-    const totalCells = config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS;
-    this.gridColors = new Array(totalCells).fill(-1);
+    this.gridColors = createInitialGridColors();
     this.pendingUpdates = [];
   }
 
@@ -19,18 +20,18 @@ export class MapStore {
    * マスを塗り、色が変化した場合のみ差分キューに追加する
    */
   public paintCell(index: number, teamId: number): void {
-    if (this.gridColors[index] !== teamId) {
-      this.gridColors[index] = teamId;
-      this.pendingUpdates.push({ index, teamId });
-    }
+    paintCellIfChanged({
+      gridColors: this.gridColors,
+      pendingUpdates: this.pendingUpdates,
+      index,
+      teamId,
+    });
   }
 
   /**
    * 溜まっている差分を取得し、キューをクリアする（ループ送信時に使用）
    */
   public getAndClearUpdates(): gridMapTypes.CellUpdate[] {
-    const updates = [...this.pendingUpdates];
-    this.pendingUpdates = [];
-    return updates;
+    return drainPendingUpdates(this.pendingUpdates);
   }
 }
