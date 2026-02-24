@@ -1,8 +1,12 @@
-import { config } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 import { GameLoop, type TickData } from "../../GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
+import { createSpawnedPlayer } from "../../entities/player/playerSpawn.js";
+import {
+  isValidPosition,
+  setPlayerPosition,
+} from "../../entities/player/playerMovement.js";
 
 export class GameRoomSession {
   private players: Map<string, Player>;
@@ -15,9 +19,7 @@ export class GameRoomSession {
     this.mapStore = new MapStore();
 
     playerIds.forEach((playerId) => {
-      const player = new Player(playerId);
-      player.x = config.GAME_CONFIG.GRID_COLS / 2;
-      player.y = config.GAME_CONFIG.GRID_ROWS / 2;
+      const player = createSpawnedPlayer(playerId);
       this.players.set(playerId, player);
     });
   }
@@ -60,7 +62,7 @@ export class GameRoomSession {
       return;
     }
 
-    if (typeof x !== "number" || typeof y !== "number" || isNaN(x) || isNaN(y)) {
+    if (!isValidPosition(x, y)) {
       logEvent("GameRoomSession", {
         event: "MOVE",
         result: "ignored_invalid_payload",
@@ -70,8 +72,7 @@ export class GameRoomSession {
       return;
     }
 
-    player.x = x;
-    player.y = y;
+    setPlayerPosition(player, x, y);
   }
 
   public removePlayer(id: string): boolean {
