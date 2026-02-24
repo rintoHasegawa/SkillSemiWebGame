@@ -6,16 +6,14 @@ import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { roomTypes } from "@repo/shared";
+import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = roomTypes.Room["roomId"];
 type RoomUpdatePayload = roomTypes.Room;
 
 /** ルーム更新イベントの送信インターフェース */
-export type RoomEventPublisher = {
-  publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => void;
-  publishJoinRejected: (payload: roomTypes.JoinRoomRejectedPayload) => void;
-};
+export type RoomEventPublisher = RoomOutputPort;
 
 /** 共通送信コンテキストからルームイベント送信関数を生成する */
 export const createRoomEventPublisher = (
@@ -32,15 +30,14 @@ export const createRoomEventPublisher = (
 };
 
 /** 切断時のルーム更新送信関数を生成する */
-export const createRoomDisconnectPublisher = (io: Server): RoomEventPublisher => {
+export const createRoomDisconnectPublisher = (
+  io: Server
+): Pick<RoomOutputPort, "publishRoomUpdate"> => {
   const emitToRoom = createEmitToRoom(io);
 
   return {
     publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => {
       emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
-    },
-    publishJoinRejected: () => {
-      return;
     },
   };
 };

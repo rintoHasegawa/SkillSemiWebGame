@@ -18,6 +18,6 @@ export const handleRoomDisconnect = (
   roomDisconnectUseCase({
     roomManager,
     socketId: socket.id,
-    publishRoomUpdate: roomDisconnectPublisher.publishRoomUpdate,
+    output: roomDisconnectPublisher,
   });
 };

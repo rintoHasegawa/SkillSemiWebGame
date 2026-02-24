@@ -10,6 +10,12 @@ export type JoinRoomResult = {
   status: "joined" | "duplicate" | "full";
 };
 
+/** ルームユースケースが利用する出力ポート */
+export interface RoomOutputPort {
+  publishRoomUpdate(roomId: roomTypes.Room["roomId"], room: roomTypes.Room): void;
+  publishJoinRejected(payload: roomTypes.JoinRoomRejectedPayload): void;
+}
+
 /** ルーム参加ユースケースが利用する参加操作ポート */
 export interface JoinRoomPort {
   addPlayerToRoom(roomId: string, socketId: string, playerName: string): JoinRoomResult;
