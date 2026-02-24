@@ -1,5 +1,4 @@
-import { config, gridMapLogic } from "@repo/shared";
-import type { gridMapTypes } from "@repo/shared";
+import { config } from "@repo/shared";
 import { GameLoop, type TickData } from "../../GameLoop";
 import { Player } from "../../entities/Player.js";
 import { MapStore } from "../../states/MapStore";
@@ -84,20 +83,5 @@ export class GameSessionService {
         roomId,
       });
     }
-  }
-
-  public paintAndGetUpdates(roomId: string, playerId: string): gridMapTypes.CellUpdate[] {
-    const mapStore = this.mapStores.get(roomId);
-    if (!mapStore) return [];
-
-    const player = this.players.get(playerId);
-    if (!player) return [];
-
-    const gridIndex = gridMapLogic.getGridIndexFromPosition(player.x, player.y);
-    if (gridIndex !== null) {
-      mapStore.paintCell(gridIndex, player.teamId);
-    }
-
-    return mapStore.getAndClearUpdates();
   }
 }

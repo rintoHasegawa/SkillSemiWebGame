@@ -1,5 +1,4 @@
 import { GameLoop, type TickData } from "./GameLoop";
-import type { gridMapTypes } from "@repo/shared";
 import { Player } from "./entities/Player.js";
 import { PlayerRegistry } from "./application/services/PlayerRegistry";
 import { GameSessionService } from "./application/services/GameSessionService";
@@ -71,10 +70,5 @@ export class GameManager {
     return playerIds
       .map((playerId) => this.playerRegistry.getPlayer(playerId))
       .filter((player): player is Player => player !== undefined);
-  }
-
-  // 【一時的】移動したプレイヤーの足元を塗り、差分を返すメソッド
-  public paintAndGetUpdates(roomId: string, playerId: string): gridMapTypes.CellUpdate[] {
-    return this.gameSessionService.paintAndGetUpdates(roomId, playerId);
   }
 }
