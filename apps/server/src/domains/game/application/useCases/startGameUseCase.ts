@@ -1,4 +1,5 @@
 import { roomConsts } from "@repo/shared";
+import type { gridMapTypes, playerTypes } from "@repo/shared";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import type { StartGamePort } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
@@ -7,8 +8,8 @@ type StartGameUseCaseParams = {
   ownerId: string;
   gameManager: StartGamePort;
   roomManager: RoomManager;
-  publishUpdatePlayer: (roomId: string, playerData: unknown) => void;
-  publishMapCellUpdates: (roomId: string, cellUpdates: unknown[]) => void;
+  publishUpdatePlayer: (roomId: string, playerData: playerTypes.PlayerData) => void;
+  publishMapCellUpdates: (roomId: string, cellUpdates: gridMapTypes.CellUpdate[]) => void;
   publishGameEnd: (roomId: string) => void;
   publishGameStart: (roomId: string, payload: { startTime: number }) => void;
 };

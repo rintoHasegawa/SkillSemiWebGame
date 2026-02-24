@@ -1,11 +1,12 @@
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
+import type { playerTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 
 type ReadyForGameUseCaseParams = {
   socketId: string;
   roomId?: string;
   gameManager: ReadyForGamePort;
-  publishCurrentPlayers: (players: unknown[]) => void;
+  publishCurrentPlayers: (players: playerTypes.PlayerData[]) => void;
   publishGameStart: (payload: { startTime: number }) => void;
 };
 
