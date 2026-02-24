@@ -2,7 +2,6 @@ import type { TickData } from "../../GameLoop";
 import type { playerTypes } from "@repo/shared";
 
 export interface StartGamePort {
-  addPlayer(id: string): void;
   startGameLoop(
     roomId: string,
     playerIds: string[],
@@ -13,7 +12,7 @@ export interface StartGamePort {
 }
 
 export interface ReadyForGamePort {
-  getPlayersByIds(playerIds: string[]): playerTypes.PlayerData[];
+  getRoomPlayers(roomId: string): playerTypes.PlayerData[];
   getRoomStartTime(roomId: string): number | undefined;
 }
 

@@ -5,7 +5,6 @@ import { logEvent } from "@server/logging/logEvent";
 type ReadyForGameUseCaseParams = {
   socketId: string;
   roomId?: string;
-  playerIds: string[];
   gameManager: ReadyForGamePort;
   publishCurrentPlayers: (players: playerTypes.PlayerData[]) => void;
   publishGameStart: (payload: { startTime: number }) => void;
@@ -14,12 +13,21 @@ type ReadyForGameUseCaseParams = {
 export const readyForGameUseCase = ({
   socketId,
   roomId,
-  playerIds,
   gameManager,
   publishCurrentPlayers,
   publishGameStart,
 }: ReadyForGameUseCaseParams) => {
-  const roomPlayers = gameManager.getPlayersByIds(playerIds);
+  if (!roomId) {
+    publishCurrentPlayers([]);
+    logEvent("GameUseCase", {
+      event: "READY_FOR_GAME",
+      result: "ignored_missing_room",
+      socketId,
+    });
+    return;
+  }
+
+  const roomPlayers = gameManager.getRoomPlayers(roomId);
   publishCurrentPlayers(roomPlayers);
 
   logEvent("GameUseCase", {
@@ -29,15 +37,6 @@ export const readyForGameUseCase = ({
     roomId,
     totalPlayers: roomPlayers.length,
   });
-
-  if (!roomId) {
-    logEvent("GameUseCase", {
-      event: "READY_FOR_GAME",
-      result: "ignored_missing_room",
-      socketId,
-    });
-    return;
-  }
 
   const startTime = gameManager.getRoomStartTime(roomId);
   if (!startTime) {

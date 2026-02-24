@@ -55,10 +55,6 @@ export const startGameUseCase = ({
 
   const playerIds = room.players.map((p: { id: string }) => p.id);
 
-  room.players.forEach((p: { id: string }) => {
-    gameManager.addPlayer(p.id);
-  });
-
   gameManager.startGameLoop(
     room.roomId,
     playerIds,

@@ -1,22 +1,23 @@
 import { config } from "@repo/shared";
-import { GameLoop, type TickData } from "../../GameLoop";
-import { Player } from "../../entities/Player.js";
-import { MapStore } from "../../states/MapStore";
+import { type TickData } from "../../GameLoop";
 import { logEvent } from "@server/logging/logEvent";
+import { GameRoomSession } from "./GameRoomSession";
 
 export class GameSessionService {
-  private mapStores: Map<string, MapStore>;
-  private gameLoops: Map<string, GameLoop>;
-  private roomStartTimes: Map<string, number>;
+  private sessions: Map<string, GameRoomSession>;
+  private playerToRoom: Map<string, string>;
 
-  constructor(private players: Map<string, Player>) {
-    this.mapStores = new Map();
-    this.gameLoops = new Map();
-    this.roomStartTimes = new Map();
+  constructor() {
+    this.sessions = new Map();
+    this.playerToRoom = new Map();
   }
 
   public getRoomStartTime(roomId: string): number | undefined {
-    return this.roomStartTimes.get(roomId);
+    return this.sessions.get(roomId)?.getStartTime();
+  }
+
+  public getRoomPlayers(roomId: string) {
+    return this.sessions.get(roomId)?.getPlayers() ?? [];
   }
 
   public startGameLoop(
@@ -25,7 +26,7 @@ export class GameSessionService {
     onTick: (data: TickData) => void,
     onGameEnd: () => void
   ) {
-    if (this.gameLoops.has(roomId)) {
+    if (this.sessions.has(roomId)) {
       logEvent("GameSessionService", {
         event: "START_GAME_LOOP",
         result: "ignored_already_running",
@@ -35,32 +36,78 @@ export class GameSessionService {
     }
 
     const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
-    this.roomStartTimes.set(roomId, Date.now());
-    const mapStore = this.mapStores.get(roomId) ?? new MapStore();
-    this.mapStores.set(roomId, mapStore);
+    const session = new GameRoomSession(roomId, playerIds);
 
-    const loop = new GameLoop(
-      roomId,
-      tickRate,
-      playerIds,
-      this.players,
-      mapStore,
-      onTick,
-      () => {
-        this.roomStartTimes.delete(roomId);
-        this.gameLoops.delete(roomId);
-        this.mapStores.delete(roomId);
-        onGameEnd();
-      }
-    );
+    playerIds.forEach((playerId) => {
+      this.playerToRoom.set(playerId, roomId);
+    });
 
-    loop.start();
-    this.gameLoops.set(roomId, loop);
+    this.sessions.set(roomId, session);
+    session.start(tickRate, onTick, () => {
+      this.clearRoomPlayerIndex(roomId);
+      this.sessions.delete(roomId);
+      onGameEnd();
+    });
+
     logEvent("GameSessionService", {
       event: "START_GAME_LOOP",
       result: "started",
       roomId,
       playerCount: playerIds.length,
+    });
+  }
+
+  public movePlayer(id: string, x: number, y: number): void {
+    const roomId = this.playerToRoom.get(id);
+    if (!roomId) {
+      logEvent("GameSessionService", {
+        event: "MOVE",
+        result: "ignored_player_not_in_session",
+        socketId: id,
+      });
+      return;
+    }
+
+    this.sessions.get(roomId)?.movePlayer(id, x, y);
+  }
+
+  public removePlayer(id: string): void {
+    const roomId = this.playerToRoom.get(id);
+    if (!roomId) {
+      logEvent("GameSessionService", {
+        event: "REMOVE_PLAYER",
+        result: "ignored_player_not_in_session",
+        socketId: id,
+      });
+      return;
+    }
+
+    const session = this.sessions.get(roomId);
+    if (!session) {
+      this.playerToRoom.delete(id);
+      return;
+    }
+
+    const removed = session.removePlayer(id);
+    this.playerToRoom.delete(id);
+
+    if (removed && session.isEmpty()) {
+      session.dispose();
+      this.sessions.delete(roomId);
+      logEvent("GameSessionService", {
+        event: "REMOVE_PLAYER",
+        result: "session_disposed_empty_room",
+        roomId,
+        socketId: id,
+      });
+    }
+  }
+
+  private clearRoomPlayerIndex(roomId: string): void {
+    Array.from(this.playerToRoom.entries()).forEach(([playerId, mappedRoomId]) => {
+      if (mappedRoomId === roomId) {
+        this.playerToRoom.delete(playerId);
+      }
     });
   }
 }
