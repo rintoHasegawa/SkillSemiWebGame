@@ -21,7 +21,7 @@ export const registerRoomHandlers = (
   const roomOutputAdapter = createRoomOutputAdapter(common);
 
   // 参加要求のペイロード検証と参加処理を実行する
-  socket.on(protocol.SocketEvents.JOIN_ROOM, (data: unknown) => {
+  socket.on(protocol.SocketEvents.JOIN_ROOM, async (data: unknown) => {
     if (!isJoinRoomPayload(data)) {
       logEvent("Network", {
         event: "JOIN_ROOM",
@@ -61,7 +61,7 @@ export const registerRoomHandlers = (
         return;
 
       case "joined":
-        socket.join(roomId);
+        await socket.join(roomId);
         roomOutputAdapter.publishRoomUpdateToRoom(roomId, joinResult.room);
         logEvent("RoomUseCase", {
           event: "ROOM_UPDATE",

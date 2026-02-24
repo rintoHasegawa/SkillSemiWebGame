@@ -14,10 +14,10 @@ type JoinRoomUseCaseParams = {
   roomManager: JoinRoomPort;
   socketId: string;
   data: roomTypes.JoinRoomPayload;
-  output: RoomOutputPort;
+  output: Pick<RoomOutputPort, "publishJoinRejectedToSocket">;
 };
 
-/** 参加イベントを受け取り，ルーム更新を配信する */
+/** 参加イベントを受け取り，参加可否を判定する */
 export const joinRoomUseCase = ({
   roomManager,
   socketId,
@@ -49,8 +49,6 @@ export const joinRoomUseCase = ({
     });
     return joinResult;
   }
-
-  output.publishRoomUpdateToRoom(roomId, joinResult.room);
 
   return joinResult;
 };
