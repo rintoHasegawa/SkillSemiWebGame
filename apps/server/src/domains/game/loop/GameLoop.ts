@@ -1,6 +1,6 @@
-import { Player } from "./entities/player/Player.js";
-import { MapStore } from "./entities/map/MapStore";
-import { getPlayerGridIndex } from "./entities/player/playerPosition.js";
+import { Player } from "../entities/player/Player.js";
+import { MapStore } from "../entities/map/MapStore";
+import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@repo/shared";
 import type { gridMapTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";

@@ -1,5 +1,5 @@
 import { logEvent } from "@server/logging/logEvent";
-import { GameLoop, type TickData } from "../../GameLoop";
+import { GameLoop, type TickData } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
 import { createSpawnedPlayer } from "../../entities/player/playerSpawn.js";

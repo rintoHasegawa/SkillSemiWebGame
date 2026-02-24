@@ -1,4 +1,4 @@
-import { type TickData } from "./GameLoop";
+import { type TickData } from "./loop/GameLoop";
 import { Player } from "./entities/player/Player.js";
 import { GameSessionService } from "./application/services/GameSessionService";
 

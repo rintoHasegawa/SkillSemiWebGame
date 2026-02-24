@@ -1,5 +1,5 @@
 import { config } from "@repo/shared";
-import { type TickData } from "../../GameLoop";
+import { type TickData } from "../../loop/GameLoop";
 import { logEvent } from "@server/logging/logEvent";
 import { GameRoomSession } from "./GameRoomSession";
 

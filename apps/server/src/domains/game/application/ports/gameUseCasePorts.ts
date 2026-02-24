@@ -1,4 +1,4 @@
-import type { TickData } from "../../GameLoop";
+import type { TickData } from "../../loop/GameLoop";
 import type { playerTypes } from "@repo/shared";
 
 export interface StartGamePort {
