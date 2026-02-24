@@ -1,13 +1,22 @@
 import { Server } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
-import { protocol } from "@repo/shared";
+import { executeDisconnectUseCase } from "@server/domains/game/application/useCases/executeDisconnectUseCase";
 
 export const onDisconnect = (
   io: Server,
   gameManager: GameManager,
   playerId: string
 ) => {
-  gameManager.removePlayer(playerId);
-  io.emit(protocol.SocketEvents.REMOVE_PLAYER, playerId);
-  console.log("[GameHandler] player removed", { playerId });
+  executeDisconnectUseCase({
+    gameManager,
+    playerId,
+    emitToAll: (event, payload) => {
+      if (payload === undefined) {
+        io.emit(event);
+        return;
+      }
+
+      io.emit(event, payload);
+    },
+  });
 };
