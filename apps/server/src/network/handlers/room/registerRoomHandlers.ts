@@ -33,20 +33,20 @@ export const registerRoomHandlers = (
     }
 
     const { roomId } = data;
-
-    socket.join(roomId);
+    let joinedRoom: roomTypes.Room | null = null;
 
     const joinResult = joinRoomUseCase({
       roomManager,
       socketId: socket.id,
       data,
-      publishRoomUpdate: roomPublisher.publishRoomUpdate,
+      publishRoomUpdate: (_roomId, room) => {
+        joinedRoom = room;
+      },
     });
 
     // 参加拒否時は理由を通知する
     switch (joinResult.status) {
       case "full":
-        socket.leave(roomId);
         roomPublisher.publishJoinRejected({
           roomId,
           reason: "full",
@@ -73,6 +73,12 @@ export const registerRoomHandlers = (
         return;
 
       case "joined":
+        socket.join(roomId);
+        if (joinedRoom) {
+          roomPublisher.publishRoomUpdate(roomId, joinedRoom);
+        }
+        return;
+
       default:
         return;
     }
