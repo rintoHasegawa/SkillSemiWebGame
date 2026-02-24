@@ -29,8 +29,9 @@ export const useGameSceneController = (myId: string | null) => {
     });
 
     const timerInterval = setInterval(() => {
-      setTimeLeft(formatRemainingTime(manager.getRemainingTime()));
-    }, 100);
+      const nextDisplay = formatRemainingTime(manager.getRemainingTime());
+      setTimeLeft((prev) => (prev === nextDisplay ? prev : nextDisplay));
+    }, config.GAME_CONFIG.TIMER_DISPLAY_UPDATE_MS);
 
     return () => {
       manager.destroy();

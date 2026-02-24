@@ -1,8 +1,9 @@
 import { Application, Container, Ticker } from "pixi.js";
-import { config } from "@repo/shared";
-import { socketManager } from "@client/network/SocketManager";
-import { LocalPlayerController, RemotePlayerController } from "../entities/player/PlayerController";
+import { LocalPlayerController } from "../entities/player/PlayerController";
 import type { GamePlayers } from "./game.types";
+import { InputStep } from "./loopSteps/InputStep";
+import { SimulationStep } from "./loopSteps/SimulationStep";
+import { CameraStep } from "./loopSteps/CameraStep";
 
 type GameLoopOptions = {
   app: Application;
@@ -17,16 +18,18 @@ export class GameLoop {
   private worldContainer: Container;
   private players: GamePlayers;
   private myId: string;
-  private getJoystickInput: () => { x: number; y: number };
-  private lastPositionSentTime = 0;
-  private wasMoving = false;
+  private inputStep: InputStep;
+  private simulationStep: SimulationStep;
+  private cameraStep: CameraStep;
 
   constructor({ app, worldContainer, players, myId, getJoystickInput }: GameLoopOptions) {
     this.app = app;
     this.worldContainer = worldContainer;
     this.players = players;
     this.myId = myId;
-    this.getJoystickInput = getJoystickInput;
+    this.inputStep = new InputStep({ getJoystickInput });
+    this.simulationStep = new SimulationStep();
+    this.cameraStep = new CameraStep();
   }
 
   public tick = (ticker: Ticker) => {
@@ -34,36 +37,19 @@ export class GameLoop {
     if (!me || !(me instanceof LocalPlayerController)) return;
 
     const deltaSeconds = ticker.deltaMS / 1000;
+    const { isMoving } = this.inputStep.run({ me, deltaSeconds });
 
-    const { x: dx, y: dy } = this.getJoystickInput();
-    const isMoving = dx !== 0 || dy !== 0;
-
-    if (isMoving) {
-      me.applyLocalInput({ axisX: dx, axisY: dy, deltaTime: deltaSeconds });
-      me.tick();
-
-      const now = performance.now();
-      if (now - this.lastPositionSentTime >= config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
-        const position = me.getPosition();
-        socketManager.game.sendMove(position.x, position.y);
-        this.lastPositionSentTime = now;
-      }
-    } else if (this.wasMoving) {
-      me.tick();
-      const position = me.getPosition();
-      socketManager.game.sendMove(position.x, position.y);
-    } else {
-      me.tick();
-    }
-    this.wasMoving = isMoving;
-
-    Object.values(this.players).forEach((player) => {
-      if (player instanceof RemotePlayerController) {
-        player.tick(deltaSeconds);
-      }
+    this.simulationStep.run({
+      me,
+      players: this.players,
+      deltaSeconds,
+      isMoving,
     });
 
-    const meDisplay = me.getDisplayObject();
-    this.worldContainer.position.set(-(meDisplay.x - this.app.screen.width / 2), -(meDisplay.y - this.app.screen.height / 2));
+    this.cameraStep.run({
+      app: this.app,
+      worldContainer: this.worldContainer,
+      me,
+    });
   };
 }
