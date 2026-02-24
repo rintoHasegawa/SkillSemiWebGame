@@ -15,12 +15,26 @@ export const useAppFlow = (): AppFlowState => {
   const [myId, setMyId] = useState<string | null>(null);
 
   useEffect(() => {
-    socketManager.common.onConnect((id) => setMyId(id));
-    socketManager.lobby.onRoomUpdate((updatedRoom) => {
+    const handleConnect = (id: string) => {
+      setMyId(id);
+    };
+    const handleRoomUpdate = (updatedRoom: roomTypes.Room) => {
       setRoom(updatedRoom);
       setScenePhase(appConsts.ScenePhase.LOBBY);
-    });
-    socketManager.game.onGameStart(() => setScenePhase(appConsts.ScenePhase.PLAYING));
+    };
+    const handleGameStart = () => {
+      setScenePhase(appConsts.ScenePhase.PLAYING);
+    };
+
+    socketManager.common.onConnect(handleConnect);
+    socketManager.lobby.onRoomUpdate(handleRoomUpdate);
+    socketManager.game.onGameStart(handleGameStart);
+
+    return () => {
+      socketManager.common.offConnect(handleConnect);
+      socketManager.lobby.offRoomUpdate(handleRoomUpdate);
+      socketManager.game.offGameStart(handleGameStart);
+    };
   }, []);
 
   return { scenePhase, room, myId };
