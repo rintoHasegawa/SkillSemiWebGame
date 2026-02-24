@@ -4,10 +4,12 @@ import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
 import { joinRoomUseCase } from "./application/useCases/joinRoomUseCase";
 import { roomDisconnectUseCase } from "./application/useCases/roomDisconnectUseCase";
-import { createEmitToRoom } from "./application/adapters/createEmitToRoom";
+import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
+
+const getEmitToRoom = (io: Server) => createEmitToRoom(io);
 
 export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: RoomManager) => {
-  const emitToRoom = createEmitToRoom(io);
+  const emitToRoom = getEmitToRoom(io);
   
   socket.on(protocol.SocketEvents.JOIN_ROOM, (data: roomTypes.JoinRoomPayload) => {
     const { roomId } = data;
@@ -28,7 +30,7 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
  * 切断時のルームクリーンアップ処理
  */
 export const handleRoomDisconnect = (io: Server, socket: Socket, roomManager: RoomManager) => {
-  const emitToRoom = createEmitToRoom(io);
+  const emitToRoom = getEmitToRoom(io);
 
   roomDisconnectUseCase({
     roomManager,
