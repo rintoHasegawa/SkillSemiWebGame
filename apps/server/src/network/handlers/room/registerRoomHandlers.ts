@@ -1,3 +1,7 @@
+/**
+ * registerRoomHandlers
+ * ルーム参加イベントの受信ハンドラを登録する
+ */
 import { Server, Socket } from "socket.io";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
@@ -8,6 +12,7 @@ import { createRoomEventPublisher } from "./createRoomEventPublisher";
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import { logEvent } from "@server/logging/logEvent";
 
+/** ルーム参加イベントを検証して参加ユースケースへ連携する */
 export const registerRoomHandlers = (
   io: Server,
   socket: Socket,
@@ -16,6 +21,7 @@ export const registerRoomHandlers = (
   const common = createCommonHandlerContext(io, socket);
   const roomPublisher = createRoomEventPublisher(common);
 
+  // 参加要求のペイロード検証と参加処理を実行する
   socket.on(protocol.SocketEvents.JOIN_ROOM, (data: unknown) => {
     if (!isJoinRoomPayload(data)) {
       logEvent("Network", {

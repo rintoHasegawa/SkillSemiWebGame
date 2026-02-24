@@ -1,3 +1,7 @@
+/**
+ * createGameEventPublisher
+ * ゲーム系ユースケースから利用する送信関数群を生成する
+ */
 import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import type { gridMapTypes, playerTypes, roomTypes } from "@repo/shared";
@@ -12,6 +16,7 @@ type CurrentPlayersPayload = playerTypes.PlayerData[];
 type UpdatePlayerPayload = playerTypes.PlayerData;
 type MapCellUpdatesPayload = gridMapTypes.CellUpdate[];
 
+/** ゲーム進行中イベントの送信インターフェース */
 export type GameEventPublisher = {
   publishPongToSocket: (payload: PongPayload) => void;
   publishUpdatePlayerToRoom: (roomId: RoomId, playerData: UpdatePlayerPayload) => void;
@@ -22,10 +27,12 @@ export type GameEventPublisher = {
   publishGameStartToSocket: (payload: GameStartPayload) => void;
 };
 
+/** 切断時に配信するゲームイベントの送信インターフェース */
 export type GameDisconnectPublisher = {
   publishPlayerRemovedToAll: (removedPlayerId: SocketId) => void;
 };
 
+/** 共通送信コンテキストからゲームイベント送信関数群を生成する */
 export const createGameEventPublisher = (common: CommonHandlerContext): GameEventPublisher => {
   return {
     publishPongToSocket: (payload: PongPayload) => {
@@ -52,6 +59,7 @@ export const createGameEventPublisher = (common: CommonHandlerContext): GameEven
   };
 };
 
+/** ゲーム切断時の送信関数群を生成する */
 export const createGameDisconnectPublisher = (io: Server): GameDisconnectPublisher => {
   const emitToAll = createEmitToAll(io);
 

@@ -1,3 +1,7 @@
+/**
+ * CommonHandler
+ * 各ハンドラで共有する送信関数群を組み立てる
+ */
 import { Server, Socket } from "socket.io";
 import {
   createEmitToAll,
@@ -5,12 +9,14 @@ import {
   createEmitToSocket,
 } from "@server/network/adapters/socketEmitters";
 
+/** ハンドラで共通利用する送信コンテキスト */
 export type CommonHandlerContext = {
   emitToAll: ReturnType<typeof createEmitToAll>;
   emitToRoom: ReturnType<typeof createEmitToRoom>;
   emitToSocket: ReturnType<typeof createEmitToSocket>;
 };
 
+/** 送信先別のエミッタをまとめた共通コンテキストを生成する */
 export const createCommonHandlerContext = (
   io: Server,
   socket: Socket
