@@ -4,29 +4,17 @@
  * UI描画に必要な中心点，ノブ位置，半径を保持する
  */
 import { useCallback, useState } from 'react';
-import type React from 'react';
 import { MAX_DIST } from './common';
 import { computeJoystick } from './JoystickModel';
-import type { NormalizedInput, Point } from './common';
-
-/** フックに渡す設定 */
-type Props = {
-  maxDist?: number;
-};
-
-/** フックが返すUI向けの状態とハンドラ */
-type UseJoystickStateReturn = {
-  isMoving: boolean;
-  center: Point;
-  knobOffset: Point;
-  radius: number;
-  handleStart: (e: React.TouchEvent | React.MouseEvent) => void;
-  handleMove: (e: React.TouchEvent | React.MouseEvent) => NormalizedInput | null;
-  handleEnd: () => void;
-};
+import type {
+  JoystickPointerEvent,
+  Point,
+  UseJoystickStateProps,
+  UseJoystickStateReturn,
+} from './common';
 
 /** タッチとマウスからクライアント座標を共通化して取得する */
-const getClientPoint = (e: React.TouchEvent | React.MouseEvent): Point | null => {
+const getClientPoint = (e: JoystickPointerEvent): Point | null => {
   if ('touches' in e) {
     const touch = e.touches[0];
     if (!touch) return null;
@@ -37,14 +25,14 @@ const getClientPoint = (e: React.TouchEvent | React.MouseEvent): Point | null =>
 };
 
 /** ジョイスティック入力状態と入力ハンドラを提供する */
-export const useJoystickState = ({ maxDist }: Props): UseJoystickStateReturn => {
+export const useJoystickState = ({ maxDist }: UseJoystickStateProps): UseJoystickStateReturn => {
   const [isMoving, setIsMoving] = useState(false);
   const [center, setCenter] = useState<Point>({ x: 0, y: 0 });
   const [knobOffset, setKnobOffset] = useState<Point>({ x: 0, y: 0 });
   const radius = maxDist ?? MAX_DIST;
 
   // 入力開始時の基準座標をセットする
-  const handleStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+  const handleStart = useCallback((e: JoystickPointerEvent) => {
     const point = getClientPoint(e);
     if (!point) return;
 
@@ -55,7 +43,7 @@ export const useJoystickState = ({ maxDist }: Props): UseJoystickStateReturn => 
 
   // 入力座標からベクトルを計算し，半径でクランプして正規化する
   const handleMove = useCallback(
-    (e: React.TouchEvent | React.MouseEvent) => {
+    (e: JoystickPointerEvent) => {
       if (!isMoving) return null;
       const point = getClientPoint(e);
       if (!point) return null;

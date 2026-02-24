@@ -4,7 +4,15 @@
  * 呼び出し側のimport先を共通化する
  */
 /** 共有型を再公開する */
-export type { NormalizedInput, Point } from './joystick.types';
+export type {
+	JoystickPointerEvent,
+	NormalizedInput,
+	Point,
+	UseJoystickControllerProps,
+	UseJoystickControllerReturn,
+	UseJoystickStateProps,
+	UseJoystickStateReturn,
+} from './joystick.types';
 
 /** 共有定数を再公開する */
 export { MAX_DIST } from './joystick.constants';
