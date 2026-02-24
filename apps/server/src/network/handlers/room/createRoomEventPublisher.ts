@@ -4,7 +4,7 @@ import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { roomTypes } from "@repo/shared";
 import type { CommonHandlerContext } from "../CommonHandler";
 
-type RoomId = string;
+type RoomId = roomTypes.Room["roomId"];
 type RoomUpdatePayload = roomTypes.Room;
 
 export type RoomEventPublisher = {

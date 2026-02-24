@@ -6,7 +6,7 @@ type JoinRoomUseCaseParams = {
   roomManager: JoinRoomPort;
   socketId: string;
   data: roomTypes.JoinRoomPayload;
-  publishRoomUpdate: (roomId: string, room: roomTypes.Room) => void;
+  publishRoomUpdate: (roomId: roomTypes.Room["roomId"], room: roomTypes.Room) => void;
 };
 
 export const joinRoomUseCase = ({

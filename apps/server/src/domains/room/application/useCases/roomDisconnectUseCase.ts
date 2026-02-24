@@ -5,7 +5,7 @@ import { logEvent } from "@server/logging/logEvent";
 type RoomDisconnectUseCaseParams = {
   roomManager: DisconnectRoomPort;
   socketId: string;
-  publishRoomUpdate: (roomId: string, room: roomTypes.Room) => void;
+  publishRoomUpdate: (roomId: roomTypes.Room["roomId"], room: roomTypes.Room) => void;
 };
 
 export const roomDisconnectUseCase = ({

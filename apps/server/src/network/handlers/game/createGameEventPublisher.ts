@@ -1,11 +1,11 @@
 import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
-import type { gridMapTypes, playerTypes } from "@repo/shared";
+import type { gridMapTypes, playerTypes, roomTypes } from "@repo/shared";
 import { createEmitToAll } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
-type RoomId = string;
-type SocketId = string;
+type RoomId = roomTypes.Room["roomId"];
+type SocketId = playerTypes.PlayerData["id"];
 type PongPayload = { clientTime: number; serverTime: number };
 type GameStartPayload = { startTime: number };
 type CurrentPlayersPayload = playerTypes.PlayerData[];
