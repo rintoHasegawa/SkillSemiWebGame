@@ -47,19 +47,45 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │   │   │   ├── main.tsx                                # 起動エントリ
     │   │   │   ├── assets/
     │   │   │   │   └── preact.svg                          # ロゴ素材
-    │   │   │   ├── entities/
-    │   │   │   │   ├── GameMap.ts                          # マップ描画
-    │   │   │   │   └── Player.ts                           # プレイヤー描画
-    │   │   │   ├── input/
-    │   │   │   │   └── VirtualJoystick.tsx                 # 仮想スティック
-    │   │   │   ├── managers/
-    │   │   │   │   └── GameManager.ts                      # ゲーム制御
+    │   │   │   ├── hooks/
+    │   │   │   │   └── useAppFlow.ts                        # 画面遷移フック
     │   │   │   ├── network/
-    │   │   │   │   └── SocketClient.ts                     # WSクライアント
+    │   │   │   │   ├── SocketManager.ts                    # WSクライアント
+    │   │   │   │   └── handlers/
+    │   │   │   │       ├── CommonHandler.ts                # 共通WSハンドラ
+    │   │   │   │       ├── GameHandler.ts                  # ゲームWSハンドラ
+    │   │   │   │       ├── LobbyHandler.ts                 # ロビーWSハンドラ
+    │   │   │   │       └── TitleHandler.ts                 # タイトルWSハンドラ
     │   │   │   └── scenes/
-    │   │   │       ├── GameScene.tsx                       # ゲーム画面
-    │   │   │       ├── LobbyScene.tsx                      # ロビー画面
-    │   │   │       └── TitleScene.tsx                      # タイトル画面
+    │   │   │       ├── game/
+    │   │   │       │   ├── GameInputManager.ts             # 入力管理
+    │   │   │       │   ├── GameManager.ts                  # ゲーム制御
+    │   │   │       │   ├── GameScene.tsx                   # ゲーム画面
+    │   │   │       │   ├── GameView.tsx                    # ゲーム描画
+    │   │   │       │   ├── entities/
+    │   │   │       │   │   ├── map/
+    │   │   │       │   │   │   ├── GameMapController.ts    # マップ制御
+    │   │   │       │   │   │   ├── GameMapModel.ts         # マップモデル
+    │   │   │       │   │   │   └── GameMapView.ts          # マップ描画
+    │   │   │       │   │   └── player/
+    │   │   │       │   │       ├── PlayerController.ts     # プレイヤー制御
+    │   │   │       │   │       ├── PlayerModel.ts          # プレイヤーモデル
+    │   │   │       │   │       └── PlayerView.ts           # プレイヤー描画
+    │   │   │       │   └── input/
+    │   │   │       │       ├── joystick/
+    │   │   │       │       │   ├── JoystickInputPresenter.tsx # 仮想スティックUI
+    │   │   │       │       │   ├── JoystickModel.ts        # スティックモデル
+    │   │   │       │       │   ├── JoystickView.tsx        # スティック描画
+    │   │   │       │       │   └── common/
+    │   │   │       │       │       ├── index.ts            # スティック共通
+    │   │   │       │       │       ├── joystick.constants.ts # スティック定数
+    │   │   │       │       │       └── joystick.types.ts   # スティック型
+    │   │   │       │       ├── useJoystickController.ts    # スティック制御フック
+    │   │   │       │       └── useJoystickState.ts         # スティック状態
+    │   │   │       ├── lobby/
+    │   │   │       │   └── LobbyScene.tsx                  # ロビー画面
+    │   │   │       └── title/
+    │   │   │           └── TitleScene.tsx                  # タイトル画面
     │   │   ├── tsconfig.app.json                           # アプリTS設定
     │   │   ├── tsconfig.json                               # TS親設定
     │   │   ├── tsconfig.node.json                          # Node向けTS設定
@@ -110,6 +136,9 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │           │   ├── gameConfig.ts                       # 共通定数
     │           │   └── networkConfig.ts                    # 通信設定
     │           ├── domains/
+    │           │   ├── app/
+    │           │   │   ├── app.const.ts                    # アプリ定数
+    │           │   │   └── app.type.ts                     # アプリ型
     │           │   ├── gridMap/
     │           │   │   ├── gridMap.logic.ts                # マップ計算
     │           │   │   └── gridMap.type.ts                 # マップ型定義

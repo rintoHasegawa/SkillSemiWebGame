@@ -4,6 +4,7 @@ import type { roomTypes } from "@repo/shared";
 
 type LobbyHandler = {
   onRoomUpdate: (callback: (room: roomTypes.Room) => void) => void;
+  offRoomUpdate: (callback: (room: roomTypes.Room) => void) => void;
   startGame: () => void;
 };
 
@@ -11,6 +12,9 @@ export const createLobbyHandler = (socket: Socket): LobbyHandler => {
   return {
     onRoomUpdate: (callback: (room: roomTypes.Room) => void) => {
       socket.on(protocol.SocketEvents.ROOM_UPDATE, callback);
+    },
+    offRoomUpdate: (callback: (room: roomTypes.Room) => void) => {
+      socket.off(protocol.SocketEvents.ROOM_UPDATE, callback);
     },
     startGame: () => {
       socket.emit(protocol.SocketEvents.START_GAME);
