@@ -5,12 +5,13 @@
 import { config, roomConsts } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
+import type { JoinRoomResult } from "../ports/roomUseCasePorts";
 
 /** 参加要求に応じてルーム作成と参加者追加を行うサービス */
 export class RoomJoinService {
   constructor(private rooms: Map<string, roomTypes.Room>) {}
 
-  public addPlayerToRoom(roomId: string, socketId: string, playerName: string): roomTypes.Room {
+  public addPlayerToRoom(roomId: string, socketId: string, playerName: string): JoinRoomResult {
     let room = this.rooms.get(roomId);
     if (!room) {
       room = {
@@ -30,6 +31,32 @@ export class RoomJoinService {
       });
     }
 
+    // 同一ソケットの重複参加を防止する
+    const alreadyJoined = room.players.some((player) => player.id === socketId);
+    if (alreadyJoined) {
+      logEvent("RoomJoinService", {
+        event: "PLAYER_JOIN",
+        result: "ignored_duplicate",
+        roomId,
+        socketId,
+        totalPlayers: room.players.length,
+      });
+      return { room, status: "duplicate" };
+    }
+
+    // ルーム満員時の参加を拒否する
+    if (room.players.length >= room.maxPlayers) {
+      logEvent("RoomJoinService", {
+        event: "PLAYER_JOIN",
+        result: "ignored_room_full",
+        roomId,
+        socketId,
+        maxPlayers: room.maxPlayers,
+        totalPlayers: room.players.length,
+      });
+      return { room, status: "full" };
+    }
+
     const newPlayer: roomTypes.RoomMember = {
       id: socketId,
       name: playerName,
@@ -47,6 +74,6 @@ export class RoomJoinService {
       totalPlayers: room.players.length,
     });
 
-    return room;
+    return { room, status: "joined" };
   }
 }

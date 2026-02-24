@@ -36,11 +36,22 @@ export const registerRoomHandlers = (
 
     socket.join(roomId);
 
-    joinRoomUseCase({
+    const joinResult = joinRoomUseCase({
       roomManager,
       socketId: socket.id,
       data,
       publishRoomUpdate: roomPublisher.publishRoomUpdate,
     });
+
+    // 満員拒否時はソケットのルーム参加状態を巻き戻す
+    if (joinResult.status === "full") {
+      socket.leave(roomId);
+      logEvent("Network", {
+        event: "JOIN_ROOM",
+        result: "rejected_room_full",
+        roomId,
+        socketId: socket.id,
+      });
+    }
   });
 };

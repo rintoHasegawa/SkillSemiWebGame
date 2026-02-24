@@ -1,6 +1,6 @@
 export const GAME_CONFIG = {
   // ゲーム設定
-  MAX_PLAYERS_PER_ROOM: 4,  // ルーム収容人数設定
+  MAX_PLAYERS_PER_ROOM: 100,  // ルーム収容人数設定
   GAME_DURATION_SEC: 180, // 1ゲームの制限時間（3分 = 180秒）
 
   // UI表示更新設定

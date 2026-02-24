@@ -6,6 +6,7 @@ import type { roomTypes } from "@repo/shared";
 import { RoomJoinService } from "./application/services/RoomJoinService";
 import { RoomExitService } from "./application/services/RoomExitService";
 import { RoomQueryService } from "./application/services/RoomQueryService";
+import type { JoinRoomResult } from "./application/ports/roomUseCasePorts";
 
 /** ルーム操作の公開インターフェースを提供するマネージャ */
 export class RoomManager {
@@ -21,7 +22,7 @@ export class RoomManager {
   }
 
   // ルームにプレイヤーを追加する，ルームが未作成なら新規作成する
-  public addPlayerToRoom(roomId: string, socketId: string, playerName: string): roomTypes.Room {
+  public addPlayerToRoom(roomId: string, socketId: string, playerName: string): JoinRoomResult {
     return this.roomJoinService.addPlayerToRoom(roomId, socketId, playerName);
   }
 

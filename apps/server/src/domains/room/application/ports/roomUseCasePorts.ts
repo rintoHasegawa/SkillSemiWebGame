@@ -4,9 +4,15 @@
  */
 import type { roomTypes } from "@repo/shared";
 
+/** ルーム参加処理の実行結果 */
+export type JoinRoomResult = {
+  room: roomTypes.Room;
+  status: "joined" | "duplicate" | "full";
+};
+
 /** ルーム参加ユースケースが利用する参加操作ポート */
 export interface JoinRoomPort {
-  addPlayerToRoom(roomId: string, socketId: string, playerName: string): roomTypes.Room;
+  addPlayerToRoom(roomId: string, socketId: string, playerName: string): JoinRoomResult;
 }
 
 /** ルーム切断ユースケースが利用する退出操作ポート */
