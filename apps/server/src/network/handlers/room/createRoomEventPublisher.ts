@@ -14,6 +14,7 @@ type RoomUpdatePayload = roomTypes.Room;
 /** ルーム更新イベントの送信インターフェース */
 export type RoomEventPublisher = {
   publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => void;
+  publishJoinRejected: (payload: roomTypes.JoinRoomRejectedPayload) => void;
 };
 
 /** 共通送信コンテキストからルームイベント送信関数を生成する */
@@ -23,6 +24,9 @@ export const createRoomEventPublisher = (
   return {
     publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
+    },
+    publishJoinRejected: (payload: roomTypes.JoinRoomRejectedPayload) => {
+      common.emitToSocket(protocol.SocketEvents.ROOM_JOIN_REJECTED, payload);
     },
   };
 };
@@ -34,6 +38,9 @@ export const createRoomDisconnectPublisher = (io: Server): RoomEventPublisher =>
   return {
     publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => {
       emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
+    },
+    publishJoinRejected: () => {
+      return;
     },
   };
 };

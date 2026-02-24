@@ -9,11 +9,16 @@ import { GameScene } from "./scenes/game/GameScene";
 import { appConsts } from "@repo/shared";
 
 export default function App() {
-  const { scenePhase, room, myId } = useAppFlow();
+  const { scenePhase, room, myId, joinErrorMessage } = useAppFlow();
 
   // タイトル画面分岐
   if (scenePhase === appConsts.ScenePhase.TITLE) {
-    return <TitleScene onJoin={(payload) => socketManager.title.joinRoom(payload)} />;
+    return (
+      <TitleScene
+        onJoin={(payload) => socketManager.title.joinRoom(payload)}
+        joinErrorMessage={joinErrorMessage}
+      />
+    );
   }
   
   // ロビー画面分岐

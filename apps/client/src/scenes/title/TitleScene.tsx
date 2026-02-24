@@ -5,9 +5,11 @@ import type { roomTypes } from "@repo/shared";
 type Props = {
   // 入室実行時呼び出しコールバック
   onJoin: (payload: roomTypes.JoinRoomPayload) => void;
+  // 入室失敗時の表示メッセージ
+  joinErrorMessage: string | null;
 };
 
-export const TitleScene = ({ onJoin }: Props) => {
+export const TitleScene = ({ onJoin, joinErrorMessage }: Props) => {
   // プレイヤー名入力値
   const [playerName, setPlayerName] = useState("");
   // ルームID入力値
@@ -59,6 +61,10 @@ export const TitleScene = ({ onJoin }: Props) => {
       >
         ルームに入る / 作る
       </button>
+
+      {joinErrorMessage && (
+        <p style={{ marginTop: "14px", color: "#f87171", fontWeight: "bold" }}>{joinErrorMessage}</p>
+      )}
     </div>
   );
 };

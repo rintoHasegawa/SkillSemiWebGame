@@ -46,6 +46,10 @@ export const registerRoomHandlers = (
     // 満員拒否時はソケットのルーム参加状態を巻き戻す
     if (joinResult.status === "full") {
       socket.leave(roomId);
+      roomPublisher.publishJoinRejected({
+        roomId,
+        reason: "full",
+      });
       logEvent("Network", {
         event: "JOIN_ROOM",
         result: "rejected_room_full",
