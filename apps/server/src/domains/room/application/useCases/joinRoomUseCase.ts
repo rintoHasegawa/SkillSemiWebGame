@@ -1,3 +1,7 @@
+/**
+ * joinRoomUseCase
+ * ルーム参加要求を処理し，状態更新を配信するユースケース
+ */
 import type { roomTypes } from "@repo/shared";
 import type { JoinRoomPort } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
@@ -9,6 +13,7 @@ type JoinRoomUseCaseParams = {
   publishRoomUpdate: (roomId: roomTypes.Room["roomId"], room: roomTypes.Room) => void;
 };
 
+/** 参加イベントを受け取り，ルーム更新を配信する */
 export const joinRoomUseCase = ({
   roomManager,
   socketId,

@@ -1,7 +1,12 @@
+/**
+ * RoomJoinService
+ * ルーム作成とプレイヤー参加処理を担うサービス
+ */
 import { config, roomConsts } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 
+/** 参加要求に応じてルーム作成と参加者追加を行うサービス */
 export class RoomJoinService {
   constructor(private rooms: Map<string, roomTypes.Room>) {}
 
