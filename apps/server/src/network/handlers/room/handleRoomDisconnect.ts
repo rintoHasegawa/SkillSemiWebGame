@@ -3,7 +3,7 @@
  * ルーム切断ユースケースを呼び出してルーム状態更新を配信する
  */
 import { Server } from "socket.io";
-import { RoomManager } from "@server/domains/room/RoomManager";
+import type { DisconnectRoomPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { roomDisconnectUseCase } from "@server/domains/room/application/useCases/roomDisconnectUseCase";
 import { createRoomDisconnectOutputAdapter } from "./createRoomOutputAdapter";
 
@@ -11,7 +11,7 @@ import { createRoomDisconnectOutputAdapter } from "./createRoomOutputAdapter";
 export const handleRoomDisconnect = (
   io: Server,
   socketId: string,
-  roomManager: RoomManager
+  roomManager: DisconnectRoomPort
 ) => {
   const roomDisconnectOutputAdapter = createRoomDisconnectOutputAdapter(io);
 

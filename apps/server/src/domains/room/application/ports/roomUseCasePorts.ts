@@ -25,3 +25,8 @@ export interface JoinRoomPort {
 export interface DisconnectRoomPort {
   removePlayer(socketId: string): roomTypes.Room[];
 }
+
+/** 切断調停で利用するプレイヤー所属ルーム参照ポート */
+export interface FindRoomByPlayerPort {
+  getRoomByPlayerId(playerId: string): roomTypes.Room | undefined;
+}

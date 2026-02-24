@@ -3,7 +3,7 @@
  * ルーム参加イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { RoomManager } from "@server/domains/room/RoomManager";
+import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { protocol } from "@repo/shared";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
@@ -15,7 +15,7 @@ import { logEvent } from "@server/logging/logEvent";
 export const registerRoomHandlers = (
   io: Server,
   socket: Socket,
-  roomManager: RoomManager
+  roomManager: JoinRoomPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const roomOutputAdapter = createRoomOutputAdapter(common);
