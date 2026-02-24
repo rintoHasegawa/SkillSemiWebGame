@@ -1,4 +1,5 @@
 import type { roomTypes } from "@repo/shared";
+import { logEvent } from "@server/network/logging/logEvent";
 
 export class RoomExitService {
   constructor(private rooms: Map<string, roomTypes.Room>) {}
@@ -13,7 +14,9 @@ export class RoomExitService {
       }
 
       room.players.splice(playerIndex, 1);
-      console.log("[RoomManager] player left", {
+      logEvent("RoomExitService", {
+        event: "PLAYER_LEAVE",
+        result: "removed",
         roomId,
         socketId,
         totalPlayers: room.players.length,
@@ -21,15 +24,23 @@ export class RoomExitService {
 
       if (room.players.length === 0) {
         this.rooms.delete(roomId);
-        console.log("[RoomManager] deleted room", { roomId });
+        logEvent("RoomExitService", {
+          event: "ROOM_DELETE",
+          result: "deleted",
+          roomId,
+          socketId,
+        });
         continue;
       }
 
       if (room.ownerId === socketId) {
         room.ownerId = room.players[0].id;
         room.players[0].isOwner = true;
-        console.log("[RoomManager] transferred ownership", {
+        logEvent("RoomExitService", {
+          event: "OWNER_TRANSFER",
+          result: "transferred",
           roomId,
+          socketId,
           newOwnerId: room.ownerId,
         });
       }

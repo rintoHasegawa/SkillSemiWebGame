@@ -1,5 +1,6 @@
 import { config, roomConsts } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
+import { logEvent } from "@server/network/logging/logEvent";
 
 export class RoomJoinService {
   constructor(private rooms: Map<string, roomTypes.Room>) {}
@@ -15,7 +16,13 @@ export class RoomJoinService {
         maxPlayers: config.GAME_CONFIG.MAX_PLAYERS_PER_ROOM,
       };
       this.rooms.set(roomId, room);
-      console.log("[RoomManager] created room", { roomId, ownerId: socketId });
+      logEvent("RoomJoinService", {
+        event: "ROOM_CREATE",
+        result: "created",
+        roomId,
+        socketId,
+        ownerId: socketId,
+      });
     }
 
     const newPlayer: roomTypes.RoomMember = {
@@ -26,7 +33,9 @@ export class RoomJoinService {
     };
 
     room.players.push(newPlayer);
-    console.log("[RoomManager] player joined", {
+    logEvent("RoomJoinService", {
+      event: "PLAYER_JOIN",
+      result: "joined",
       roomId,
       socketId,
       playerName,

@@ -2,6 +2,7 @@ import { Player } from "./entities/Player.js";
 import { MapStore } from "./states/MapStore";
 import { gridMapLogic, config } from "@repo/shared";
 import type { gridMapTypes } from "@repo/shared";
+import { logEvent } from "@server/network/logging/logEvent";
 
 // コールバックで渡すデータの型定義
 export interface TickData {
@@ -76,14 +77,23 @@ export class GameLoop {
       
     }, this.tickRate);
 
-    console.log(`[GameLoop] Started for room: ${this.roomId} at ${this.tickRate}ms`);
+    logEvent("GameLoop", {
+      event: "GAME_LOOP",
+      result: "started",
+      roomId: this.roomId,
+      tickRate: this.tickRate,
+    });
   }
 
   stop() {
     if (this.loopId) {
       clearInterval(this.loopId);
       this.loopId = null;
-      console.log(`[GameLoop] Stopped for room: ${this.roomId}`);
+      logEvent("GameLoop", {
+        event: "GAME_LOOP",
+        result: "stopped",
+        roomId: this.roomId,
+      });
     }
   }
 }

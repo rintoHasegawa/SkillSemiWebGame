@@ -1,5 +1,6 @@
 import { protocol } from "@repo/shared";
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
+import { logEvent } from "@server/network/logging/logEvent";
 
 type EmitToSocket = (event: string, payload?: unknown) => void;
 
@@ -19,13 +20,20 @@ export const readyForGameUseCase = ({
   const allPlayers = gameManager.getAllPlayers();
   emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, allPlayers);
 
-  console.log("[GameHandler] READY_FOR_GAME received", {
+  logEvent("GameUseCase", {
+    event: "READY_FOR_GAME",
+    result: "received",
     socketId,
+    roomId,
     totalPlayers: allPlayers.length,
   });
 
   if (!roomId) {
-    console.log("[GameHandler] READY_FOR_GAME missing roomId", { socketId });
+    logEvent("GameUseCase", {
+      event: "READY_FOR_GAME",
+      result: "ignored_missing_room",
+      socketId,
+    });
     return;
   }
 
@@ -35,7 +43,9 @@ export const readyForGameUseCase = ({
   }
 
   emitToSocket(protocol.SocketEvents.GAME_START, { startTime });
-  console.log("[GameHandler] GAME_START sent to ready client", {
+  logEvent("GameUseCase", {
+    event: "GAME_START",
+    result: "emitted",
     socketId,
     roomId,
     startTime,

@@ -1,6 +1,7 @@
 import { protocol, roomConsts } from "@repo/shared";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import type { StartGamePort } from "../ports/gameUseCasePorts";
+import { logEvent } from "@server/network/logging/logEvent";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
@@ -19,18 +20,29 @@ export const startGameUseCase = ({
 }: StartGameUseCaseParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
   if (!room) {
-    console.log("[GameHandler] START_GAME ignored (no room)", { socketId: ownerId });
+    logEvent("GameUseCase", {
+      event: "START_GAME",
+      result: "ignored_no_room",
+      socketId: ownerId,
+    });
     return;
   }
 
   if (room.status === roomConsts.RoomPhase.PLAYING) {
-    console.log("[GameHandler] START_GAME ignored (already playing)", { roomId: room.roomId });
+    logEvent("GameUseCase", {
+      event: "START_GAME",
+      result: "ignored_already_playing",
+      roomId: room.roomId,
+      socketId: ownerId,
+    });
     return;
   }
 
-  console.log("[GameHandler] START_GAME accepted", {
+  logEvent("GameUseCase", {
+    event: "START_GAME",
+    result: "accepted",
     roomId: room.roomId,
-    ownerId,
+    socketId: ownerId,
     totalPlayers: room.players.length,
   });
 
@@ -55,7 +67,12 @@ export const startGameUseCase = ({
       }
     },
     () => {
-      console.log(`[GameHandler] ルーム ${room.roomId} のゲームが終了しました (3分経過)`);
+      logEvent("GameUseCase", {
+        event: "GAME_END",
+        result: "emitted",
+        roomId: room.roomId,
+        reason: "duration_elapsed",
+      });
       emitToRoom(room.roomId, protocol.SocketEvents.GAME_END);
       room.status = roomConsts.RoomPhase.WAITING;
     }
