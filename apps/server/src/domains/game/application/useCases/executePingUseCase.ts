@@ -2,15 +2,15 @@ import { protocol } from "@repo/shared";
 
 type EmitToSocket = (event: string, payload?: unknown) => void;
 
-type ExecutePingUseCaseParams = {
+type PingUseCaseParams = {
   clientTime: number;
   emitToSocket: EmitToSocket;
 };
 
-export const executePingUseCase = ({
+export const pingUseCase = ({
   clientTime,
   emitToSocket,
-}: ExecutePingUseCaseParams) => {
+}: PingUseCaseParams) => {
   emitToSocket(protocol.SocketEvents.PONG, {
     clientTime,
     serverTime: Date.now(),

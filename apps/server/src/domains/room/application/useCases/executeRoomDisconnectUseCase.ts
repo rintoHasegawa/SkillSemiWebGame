@@ -1,19 +1,19 @@
 import { protocol } from "@repo/shared";
-import { RoomManager } from "@server/domains/room/RoomManager";
+import type { DisconnectRoomPort } from "../ports/roomUseCasePorts";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
-type ExecuteRoomDisconnectUseCaseParams = {
-  roomManager: RoomManager;
+type RoomDisconnectUseCaseParams = {
+  roomManager: DisconnectRoomPort;
   socketId: string;
   emitToRoom: EmitToRoom;
 };
 
-export const executeRoomDisconnectUseCase = ({
+export const roomDisconnectUseCase = ({
   roomManager,
   socketId,
   emitToRoom,
-}: ExecuteRoomDisconnectUseCaseParams) => {
+}: RoomDisconnectUseCaseParams) => {
   const updatedRooms = roomManager.removePlayer(socketId);
   console.log("[RoomHandler] disconnect cleanup", {
     socketId,

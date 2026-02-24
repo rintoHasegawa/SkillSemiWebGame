@@ -1,8 +1,8 @@
 import { Socket } from "socket.io";
-import { executePingUseCase } from "@server/domains/game/application/useCases/executePingUseCase";
+import { pingUseCase } from "@server/domains/game/application/useCases/executePingUseCase";
 
 export const onPing = (socket: Socket, clientTime: number) => {
-  executePingUseCase({
+  pingUseCase({
     clientTime,
     emitToSocket: (event, payload) => {
       if (payload === undefined) {

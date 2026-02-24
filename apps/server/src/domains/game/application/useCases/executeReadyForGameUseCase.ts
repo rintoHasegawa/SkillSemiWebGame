@@ -3,19 +3,19 @@ import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
 
 type EmitToSocket = (event: string, payload?: unknown) => void;
 
-type ExecuteReadyForGameUseCaseParams = {
+type ReadyForGameUseCaseParams = {
   socketId: string;
   roomId?: string;
   gameManager: ReadyForGamePort;
   emitToSocket: EmitToSocket;
 };
 
-export const executeReadyForGameUseCase = ({
+export const readyForGameUseCase = ({
   socketId,
   roomId,
   gameManager,
   emitToSocket,
-}: ExecuteReadyForGameUseCaseParams) => {
+}: ReadyForGameUseCaseParams) => {
   const allPlayers = gameManager.getAllPlayers();
   emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, allPlayers);
 

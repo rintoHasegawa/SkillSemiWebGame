@@ -4,19 +4,19 @@ import type { StartGamePort } from "../ports/gameUseCasePorts";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
-type ExecuteStartGameUseCaseParams = {
+type StartGameUseCaseParams = {
   ownerId: string;
   gameManager: StartGamePort;
   roomManager: RoomManager;
   emitToRoom: EmitToRoom;
 };
 
-export const executeStartGameUseCase = ({
+export const startGameUseCase = ({
   ownerId,
   gameManager,
   roomManager,
   emitToRoom,
-}: ExecuteStartGameUseCaseParams) => {
+}: StartGameUseCaseParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
   if (!room) {
     console.log("[GameHandler] START_GAME ignored (no room)", { socketId: ownerId });

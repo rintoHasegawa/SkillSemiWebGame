@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io";
 import { RoomManager } from "./RoomManager";
 import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
-import { executeJoinRoomUseCase } from "./application/useCases/executeJoinRoomUseCase";
-import { executeRoomDisconnectUseCase } from "./application/useCases/executeRoomDisconnectUseCase";
+import { joinRoomUseCase } from "./application/useCases/executeJoinRoomUseCase";
+import { roomDisconnectUseCase } from "./application/useCases/executeRoomDisconnectUseCase";
 
 export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: RoomManager) => {
   
@@ -12,7 +12,7 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
     
     socket.join(roomId);
 
-    executeJoinRoomUseCase({
+    joinRoomUseCase({
       roomManager,
       socketId: socket.id,
       data,
@@ -33,7 +33,7 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
  * 切断時のルームクリーンアップ処理
  */
 export const handleRoomDisconnect = (io: Server, socket: Socket, roomManager: RoomManager) => {
-  executeRoomDisconnectUseCase({
+  roomDisconnectUseCase({
     roomManager,
     socketId: socket.id,
     emitToRoom: (roomId, event, payload) => {

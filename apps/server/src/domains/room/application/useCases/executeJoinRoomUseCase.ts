@@ -1,22 +1,22 @@
 import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
-import { RoomManager } from "@server/domains/room/RoomManager";
+import type { JoinRoomPort } from "../ports/roomUseCasePorts";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
-type ExecuteJoinRoomUseCaseParams = {
-  roomManager: RoomManager;
+type JoinRoomUseCaseParams = {
+  roomManager: JoinRoomPort;
   socketId: string;
   data: roomTypes.JoinRoomPayload;
   emitToRoom: EmitToRoom;
 };
 
-export const executeJoinRoomUseCase = ({
+export const joinRoomUseCase = ({
   roomManager,
   socketId,
   data,
   emitToRoom,
-}: ExecuteJoinRoomUseCaseParams) => {
+}: JoinRoomUseCaseParams) => {
   const { roomId, playerName } = data;
   console.log("[RoomHandler] JOIN_ROOM received", { roomId, socketId, playerName });
 

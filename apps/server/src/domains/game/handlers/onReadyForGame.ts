@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
-import { executeReadyForGameUseCase } from "@server/domains/game/application/useCases/executeReadyForGameUseCase";
+import { readyForGameUseCase } from "@server/domains/game/application/useCases/executeReadyForGameUseCase";
 
 export const onReadyForGame = (
   socket: Socket,
@@ -8,7 +8,7 @@ export const onReadyForGame = (
 ) => {
   const roomId = Array.from(socket.rooms).find((room) => room !== socket.id);
 
-  executeReadyForGameUseCase({
+  readyForGameUseCase({
     socketId: socket.id,
     roomId,
     gameManager,
