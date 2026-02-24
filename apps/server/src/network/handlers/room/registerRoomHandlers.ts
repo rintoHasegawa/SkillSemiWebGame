@@ -21,7 +21,9 @@ export const registerRoomHandlers = (
       roomManager,
       socketId: socket.id,
       data,
-      emitToRoom: common.emitToRoom,
+      publishRoomUpdate: (roomId, room) => {
+        common.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
+      },
     });
   });
 };

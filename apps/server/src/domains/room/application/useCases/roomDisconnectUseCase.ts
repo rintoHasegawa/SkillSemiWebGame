@@ -1,19 +1,17 @@
-import { protocol } from "@repo/shared";
 import type { DisconnectRoomPort } from "../ports/roomUseCasePorts";
+import type { roomTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
-
-type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
 type RoomDisconnectUseCaseParams = {
   roomManager: DisconnectRoomPort;
   socketId: string;
-  emitToRoom: EmitToRoom;
+  publishRoomUpdate: (roomId: string, room: roomTypes.Room) => void;
 };
 
 export const roomDisconnectUseCase = ({
   roomManager,
   socketId,
-  emitToRoom,
+  publishRoomUpdate,
 }: RoomDisconnectUseCaseParams) => {
   const updatedRooms = roomManager.removePlayer(socketId);
   logEvent("RoomUseCase", {
@@ -24,7 +22,7 @@ export const roomDisconnectUseCase = ({
   });
 
   updatedRooms.forEach((room) => {
-    emitToRoom(room.roomId, protocol.SocketEvents.ROOM_UPDATE, room);
+    publishRoomUpdate(room.roomId, room);
     logEvent("RoomUseCase", {
       event: "ROOM_UPDATE",
       result: "emitted",

@@ -123,7 +123,6 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │               │   ├── createHttpServer.ts            # HTTP生成
     │               │   ├── createIo.ts                    # Socket.IO生成
     │               │   └── boot.ts                        # 起動配線
-    │               └── createIo.ts                        # 互換用ファイル
     ├── docs/
     │   ├── 01_Env/
     │   │   ├── ENV_01_環境構築・技術スタック.txt                # 環境・技術定義

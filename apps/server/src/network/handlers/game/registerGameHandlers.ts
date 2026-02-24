@@ -20,7 +20,9 @@ export const registerGameHandlers = (
   socket.on(protocol.SocketEvents.PING, (clientTime: number) => {
     pingUseCase({
       clientTime,
-      emitToSocket: common.emitToSocket,
+      publishPong: (payload) => {
+        common.emitToSocket(protocol.SocketEvents.PONG, payload);
+      },
     });
   });
 
@@ -29,7 +31,18 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      emitToRoom: common.emitToRoom,
+      publishUpdatePlayer: (roomId, playerData) => {
+        common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_PLAYER, playerData);
+      },
+      publishMapCellUpdates: (roomId, cellUpdates) => {
+        common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, cellUpdates);
+      },
+      publishGameEnd: (roomId) => {
+        common.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
+      },
+      publishGameStart: (roomId, payload) => {
+        common.emitToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
+      },
     });
   });
 
@@ -40,7 +53,12 @@ export const registerGameHandlers = (
       socketId: socket.id,
       roomId,
       gameManager,
-      emitToSocket: common.emitToSocket,
+      publishCurrentPlayers: (players) => {
+        common.emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, players);
+      },
+      publishGameStart: (payload) => {
+        common.emitToSocket(protocol.SocketEvents.GAME_START, payload);
+      },
     });
   });
 
