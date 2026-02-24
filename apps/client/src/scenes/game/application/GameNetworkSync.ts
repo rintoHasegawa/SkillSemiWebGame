@@ -6,8 +6,8 @@
 import { Container } from "pixi.js";
 import type { playerTypes } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
-import { LocalPlayerController, RemotePlayerController } from "../entities/player/PlayerController";
-import { GameMapController } from "../entities/map/GameMapController";
+import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
+import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import type { GamePlayers } from "./game.types";
 
 type GameNetworkSyncOptions = {

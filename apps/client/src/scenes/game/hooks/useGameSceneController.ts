@@ -5,8 +5,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { config } from "@repo/shared";
-import { GameInputManager } from "../GameInputManager";
-import { GameManager } from "../GameManager";
+import { GameInputManager } from "@client/scenes/game/GameInputManager";
+import { GameManager } from "@client/scenes/game/GameManager";
 
 const formatRemainingTime = (remaining: number) => {
   const mins = Math.floor(remaining / 60);

@@ -5,7 +5,7 @@
  */
 import { config } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
-import { LocalPlayerController, RemotePlayerController } from "../../entities/player/PlayerController";
+import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { GamePlayers } from "../game.types";
 
 type SimulationStepParams = {

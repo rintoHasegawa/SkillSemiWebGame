@@ -4,7 +4,7 @@
  * 各 Step を呼び出して更新順序を統制する
  */
 import { Application, Container, Ticker } from "pixi.js";
-import { LocalPlayerController } from "../entities/player/PlayerController";
+import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { GamePlayers } from "./game.types";
 import { InputStep } from "./loopSteps/InputStep";
 import { SimulationStep } from "./loopSteps/SimulationStep";

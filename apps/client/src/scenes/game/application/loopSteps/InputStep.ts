@@ -3,7 +3,7 @@
  * ゲームループの入力段を担う
  * ジョイスティック入力をローカルプレイヤーへ適用する
  */
-import { LocalPlayerController } from "../../entities/player/PlayerController";
+import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 
 type InputStepOptions = {
   getJoystickInput: () => { x: number; y: number };

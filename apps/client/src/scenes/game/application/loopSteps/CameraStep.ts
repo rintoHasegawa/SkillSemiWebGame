@@ -4,7 +4,7 @@
  * ローカルプレイヤー位置に応じてワールド座標を更新する
  */
 import { Application, Container } from "pixi.js";
-import { LocalPlayerController } from "../../entities/player/PlayerController";
+import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 
 type CameraStepParams = {
   app: Application;
