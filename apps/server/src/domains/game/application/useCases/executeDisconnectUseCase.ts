@@ -1,10 +1,10 @@
 import { protocol } from "@repo/shared";
-import { GameManager } from "@server/domains/game/GameManager";
+import type { DisconnectPlayerPort } from "../ports/gameUseCasePorts";
 
 type EmitToAll = (event: string, payload?: unknown) => void;
 
 type ExecuteDisconnectUseCaseParams = {
-  gameManager: GameManager;
+  gameManager: DisconnectPlayerPort;
   playerId: string;
   emitToAll: EmitToAll;
 };

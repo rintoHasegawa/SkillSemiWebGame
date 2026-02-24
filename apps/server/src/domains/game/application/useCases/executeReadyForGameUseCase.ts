@@ -1,12 +1,12 @@
 import { protocol } from "@repo/shared";
-import { GameManager } from "@server/domains/game/GameManager";
+import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
 
 type EmitToSocket = (event: string, payload?: unknown) => void;
 
 type ExecuteReadyForGameUseCaseParams = {
   socketId: string;
   roomId?: string;
-  gameManager: GameManager;
+  gameManager: ReadyForGamePort;
   emitToSocket: EmitToSocket;
 };
 

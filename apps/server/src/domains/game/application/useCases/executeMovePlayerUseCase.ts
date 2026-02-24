@@ -1,8 +1,8 @@
-import { GameManager } from "@server/domains/game/GameManager";
 import type { playerTypes } from "@repo/shared";
+import type { MovePlayerPort } from "../ports/gameUseCasePorts";
 
 type ExecuteMovePlayerUseCaseParams = {
-  gameManager: GameManager;
+  gameManager: MovePlayerPort;
   playerId: string;
   move: playerTypes.MovePayload;
 };

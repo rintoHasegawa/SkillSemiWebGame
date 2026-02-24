@@ -1,12 +1,12 @@
 import { protocol, roomConsts } from "@repo/shared";
-import { GameManager } from "@server/domains/game/GameManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
+import type { StartGamePort } from "../ports/gameUseCasePorts";
 
 type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
 type ExecuteStartGameUseCaseParams = {
   ownerId: string;
-  gameManager: GameManager;
+  gameManager: StartGamePort;
   roomManager: RoomManager;
   emitToRoom: EmitToRoom;
 };
