@@ -8,6 +8,7 @@ import { startGameUseCase } from "@server/domains/game/application/useCases/star
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
+import { createGameEventPublisher } from "./createGameEventPublisher";
 
 export const registerGameHandlers = (
   io: Server,
@@ -16,13 +17,12 @@ export const registerGameHandlers = (
   roomManager: RoomManager
 ) => {
   const common = createCommonHandlerContext(io, socket);
+  const gamePublisher = createGameEventPublisher(common);
 
   socket.on(protocol.SocketEvents.PING, (clientTime: number) => {
     pingUseCase({
       clientTime,
-      publishPong: (payload) => {
-        common.emitToSocket(protocol.SocketEvents.PONG, payload);
-      },
+      publishPong: gamePublisher.publishPong,
     });
   });
 
@@ -31,18 +31,10 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      publishUpdatePlayer: (roomId, playerData) => {
-        common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_PLAYER, playerData);
-      },
-      publishMapCellUpdates: (roomId, cellUpdates) => {
-        common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, cellUpdates);
-      },
-      publishGameEnd: (roomId) => {
-        common.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
-      },
-      publishGameStart: (roomId, payload) => {
-        common.emitToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
-      },
+      publishUpdatePlayer: gamePublisher.publishUpdatePlayer,
+      publishMapCellUpdates: gamePublisher.publishMapCellUpdates,
+      publishGameEnd: gamePublisher.publishGameEnd,
+      publishGameStart: gamePublisher.publishGameStartToRoom,
     });
   });
 
@@ -53,12 +45,8 @@ export const registerGameHandlers = (
       socketId: socket.id,
       roomId,
       gameManager,
-      publishCurrentPlayers: (players) => {
-        common.emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, players);
-      },
-      publishGameStart: (payload) => {
-        common.emitToSocket(protocol.SocketEvents.GAME_START, payload);
-      },
+      publishCurrentPlayers: gamePublisher.publishCurrentPlayers,
+      publishGameStart: gamePublisher.publishGameStartToSocket,
     });
   });
 

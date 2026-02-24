@@ -4,6 +4,7 @@ import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
+import { createRoomEventPublisher } from "./createRoomEventPublisher";
 
 export const registerRoomHandlers = (
   io: Server,
@@ -11,6 +12,7 @@ export const registerRoomHandlers = (
   roomManager: RoomManager
 ) => {
   const common = createCommonHandlerContext(io, socket);
+  const roomPublisher = createRoomEventPublisher(common);
 
   socket.on(protocol.SocketEvents.JOIN_ROOM, (data: roomTypes.JoinRoomPayload) => {
     const { roomId } = data;
@@ -21,9 +23,7 @@ export const registerRoomHandlers = (
       roomManager,
       socketId: socket.id,
       data,
-      publishRoomUpdate: (roomId, room) => {
-        common.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
-      },
+      publishRoomUpdate: roomPublisher.publishRoomUpdate,
     });
   });
 };
