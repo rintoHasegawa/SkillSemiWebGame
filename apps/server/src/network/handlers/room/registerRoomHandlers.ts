@@ -74,9 +74,15 @@ export const registerRoomHandlers = (
 
       case "joined":
         socket.join(roomId);
-        if (joinedRoom) {
-          roomPublisher.publishRoomUpdate(roomId, joinedRoom);
-        }
+        roomPublisher.publishRoomUpdate(roomId, joinResult.room);
+        logEvent("RoomUseCase", {
+          event: "ROOM_UPDATE",
+          result: "emitted",
+          roomId,
+          socketId: socket.id,
+          ownerId: joinResult.room.ownerId,
+          totalPlayers: joinResult.room.players.length,
+        });
         return;
 
       default:

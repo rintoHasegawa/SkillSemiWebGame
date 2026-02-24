@@ -42,14 +42,6 @@ export const joinRoomUseCase = ({
   }
 
   publishRoomUpdate(roomId, joinResult.room);
-  logEvent("RoomUseCase", {
-    event: "ROOM_UPDATE",
-    result: "emitted",
-    roomId,
-    socketId,
-    ownerId: joinResult.room.ownerId,
-    totalPlayers: joinResult.room.players.length,
-  });
 
   return joinResult;
 };
