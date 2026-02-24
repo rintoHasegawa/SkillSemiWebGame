@@ -22,7 +22,7 @@ export const registerGameHandlers = (
   socket.on(protocol.SocketEvents.PING, (clientTime: number) => {
     pingUseCase({
       clientTime,
-      publishPong: gamePublisher.publishPong,
+      publishPong: gamePublisher.publishPongToSocket,
     });
   });
 
@@ -31,9 +31,9 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      publishUpdatePlayer: gamePublisher.publishUpdatePlayer,
-      publishMapCellUpdates: gamePublisher.publishMapCellUpdates,
-      publishGameEnd: gamePublisher.publishGameEnd,
+      publishUpdatePlayer: gamePublisher.publishUpdatePlayerToRoom,
+      publishMapCellUpdates: gamePublisher.publishMapCellUpdatesToRoom,
+      publishGameEnd: gamePublisher.publishGameEndToRoom,
       publishGameStart: gamePublisher.publishGameStartToRoom,
     });
   });
@@ -45,7 +45,7 @@ export const registerGameHandlers = (
       socketId: socket.id,
       roomId,
       gameManager,
-      publishCurrentPlayers: gamePublisher.publishCurrentPlayers,
+      publishCurrentPlayers: gamePublisher.publishCurrentPlayersToSocket,
       publishGameStart: gamePublisher.publishGameStartToSocket,
     });
   });

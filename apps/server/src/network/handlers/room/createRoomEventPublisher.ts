@@ -4,15 +4,18 @@ import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { roomTypes } from "@repo/shared";
 import type { CommonHandlerContext } from "../CommonHandler";
 
+type RoomId = string;
+type RoomUpdatePayload = roomTypes.Room;
+
 export type RoomEventPublisher = {
-  publishRoomUpdate: (roomId: string, room: roomTypes.Room) => void;
+  publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => void;
 };
 
 export const createRoomEventPublisher = (
   common: CommonHandlerContext
 ): RoomEventPublisher => {
   return {
-    publishRoomUpdate: (roomId: string, room: roomTypes.Room) => {
+    publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
     },
   };
@@ -22,7 +25,7 @@ export const createRoomDisconnectPublisher = (io: Server): RoomEventPublisher =>
   const emitToRoom = createEmitToRoom(io);
 
   return {
-    publishRoomUpdate: (roomId: string, room: roomTypes.Room) => {
+    publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => {
       emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
     },
   };

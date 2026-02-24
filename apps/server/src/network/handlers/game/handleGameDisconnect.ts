@@ -13,6 +13,6 @@ export const handleGameDisconnect = (
   disconnectUseCase({
     gameManager,
     playerId,
-    publishPlayerRemoved: gameDisconnectPublisher.publishPlayerRemoved,
+    publishPlayerRemoved: gameDisconnectPublisher.publishPlayerRemovedToAll,
   });
 };

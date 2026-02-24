@@ -4,41 +4,49 @@ import type { gridMapTypes, playerTypes } from "@repo/shared";
 import { createEmitToAll } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
+type RoomId = string;
+type SocketId = string;
+type PongPayload = { clientTime: number; serverTime: number };
+type GameStartPayload = { startTime: number };
+type CurrentPlayersPayload = playerTypes.PlayerData[];
+type UpdatePlayerPayload = playerTypes.PlayerData;
+type MapCellUpdatesPayload = gridMapTypes.CellUpdate[];
+
 export type GameEventPublisher = {
-  publishPong: (payload: { clientTime: number; serverTime: number }) => void;
-  publishUpdatePlayer: (roomId: string, playerData: playerTypes.PlayerData) => void;
-  publishMapCellUpdates: (roomId: string, cellUpdates: gridMapTypes.CellUpdate[]) => void;
-  publishGameEnd: (roomId: string) => void;
-  publishGameStartToRoom: (roomId: string, payload: { startTime: number }) => void;
-  publishCurrentPlayers: (players: playerTypes.PlayerData[]) => void;
-  publishGameStartToSocket: (payload: { startTime: number }) => void;
+  publishPongToSocket: (payload: PongPayload) => void;
+  publishUpdatePlayerToRoom: (roomId: RoomId, playerData: UpdatePlayerPayload) => void;
+  publishMapCellUpdatesToRoom: (roomId: RoomId, cellUpdates: MapCellUpdatesPayload) => void;
+  publishGameEndToRoom: (roomId: RoomId) => void;
+  publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => void;
+  publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => void;
+  publishGameStartToSocket: (payload: GameStartPayload) => void;
 };
 
 export type GameDisconnectPublisher = {
-  publishPlayerRemoved: (removedPlayerId: string) => void;
+  publishPlayerRemovedToAll: (removedPlayerId: SocketId) => void;
 };
 
 export const createGameEventPublisher = (common: CommonHandlerContext): GameEventPublisher => {
   return {
-    publishPong: (payload: { clientTime: number; serverTime: number }) => {
+    publishPongToSocket: (payload: PongPayload) => {
       common.emitToSocket(protocol.SocketEvents.PONG, payload);
     },
-    publishUpdatePlayer: (roomId: string, playerData: playerTypes.PlayerData) => {
+    publishUpdatePlayerToRoom: (roomId: RoomId, playerData: UpdatePlayerPayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_PLAYER, playerData);
     },
-    publishMapCellUpdates: (roomId: string, cellUpdates: gridMapTypes.CellUpdate[]) => {
+    publishMapCellUpdatesToRoom: (roomId: RoomId, cellUpdates: MapCellUpdatesPayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, cellUpdates);
     },
-    publishGameEnd: (roomId: string) => {
+    publishGameEndToRoom: (roomId: RoomId) => {
       common.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
     },
-    publishGameStartToRoom: (roomId: string, payload: { startTime: number }) => {
+    publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
     },
-    publishCurrentPlayers: (players: playerTypes.PlayerData[]) => {
+    publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => {
       common.emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, players);
     },
-    publishGameStartToSocket: (payload: { startTime: number }) => {
+    publishGameStartToSocket: (payload: GameStartPayload) => {
       common.emitToSocket(protocol.SocketEvents.GAME_START, payload);
     },
   };
@@ -48,7 +56,7 @@ export const createGameDisconnectPublisher = (io: Server): GameDisconnectPublish
   const emitToAll = createEmitToAll(io);
 
   return {
-    publishPlayerRemoved: (removedPlayerId: string) => {
+    publishPlayerRemovedToAll: (removedPlayerId: SocketId) => {
       emitToAll(protocol.SocketEvents.REMOVE_PLAYER, removedPlayerId);
     },
   };
