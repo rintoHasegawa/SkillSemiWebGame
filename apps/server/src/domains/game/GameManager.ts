@@ -2,8 +2,8 @@ import { type TickData } from "./GameLoop";
 import { Player } from "./entities/player/Player.js";
 import { GameSessionService } from "./application/services/GameSessionService";
 
-// ルーム単位セッションの生成・更新・参照管理クラス
-export class GameSessionManager {
+// プレイヤー集合の生成・更新・参照管理クラス
+export class GameManager {
   private gameSessionService: GameSessionService;
 
   constructor() {

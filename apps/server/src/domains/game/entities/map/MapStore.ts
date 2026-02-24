@@ -1,4 +1,4 @@
-// apps/server/src/states/MapStore.ts
+// apps/server/src/domains/game/entities/map/MapStore.ts
 import type { gridMapTypes } from "@repo/shared";
 import { config } from "@repo/shared";
 

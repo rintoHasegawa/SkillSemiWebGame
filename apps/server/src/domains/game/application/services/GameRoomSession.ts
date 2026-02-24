@@ -1,8 +1,8 @@
 import { config } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 import { GameLoop, type TickData } from "../../GameLoop";
-import { Player } from "../../entities/Player.js";
-import { MapStore } from "../../states/MapStore";
+import { Player } from "../../entities/player/Player.js";
+import { MapStore } from "../../entities/map/MapStore";
 
 export class GameRoomSession {
   private players: Map<string, Player>;

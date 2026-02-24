@@ -1,5 +1,5 @@
-import { Player } from "./entities/Player.js";
-import { MapStore } from "./states/MapStore";
+import { Player } from "./entities/player/Player.js";
+import { MapStore } from "./entities/map/MapStore";
 import { gridMapLogic, config } from "@repo/shared";
 import type { gridMapTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
