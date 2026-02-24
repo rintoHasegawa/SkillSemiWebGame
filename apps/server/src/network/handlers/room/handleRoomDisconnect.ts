@@ -1,11 +1,16 @@
 import { Server, Socket } from "socket.io";
 import { RoomManager } from "@server/domains/room/RoomManager";
-import { handleRoomDisconnect as handleDomainRoomDisconnect } from "@server/domains/room/RoomHandler";
+import { roomDisconnectUseCase } from "@server/domains/room/application/useCases/roomDisconnectUseCase";
+import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 
 export const handleRoomDisconnect = (
   io: Server,
   socket: Socket,
   roomManager: RoomManager
 ) => {
-  handleDomainRoomDisconnect(io, socket, roomManager);
+  roomDisconnectUseCase({
+    roomManager,
+    socketId: socket.id,
+    emitToRoom: createEmitToRoom(io),
+  });
 };
