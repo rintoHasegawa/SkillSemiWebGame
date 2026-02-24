@@ -12,14 +12,14 @@ import { logEvent } from "@server/logging/logEvent";
 
 type RegisterConnectionHandlersParams = {
   io: Server;
-  gameManager: GameSessionManager;
+  gameSessionManager: GameSessionManager;
   roomManager: RoomManager;
 };
 
 /** ソケット接続と切断イベントに対する共通ハンドラを登録する */
 export const registerConnectionHandlers = ({
   io,
-  gameManager,
+  gameSessionManager,
   roomManager,
 }: RegisterConnectionHandlersParams) => {
   io.on(protocol.SocketEvents.CONNECT, (socket: Socket) => {
@@ -31,7 +31,7 @@ export const registerConnectionHandlers = ({
     });
 
     registerRoomHandlers(io, socket, roomManager);
-    registerGameHandlers(io, socket, gameManager, roomManager);
+    registerGameHandlers(io, socket, gameSessionManager, roomManager);
 
     socket.on(protocol.SocketEvents.DISCONNECT, () => {
       // 切断ログ記録後にドメイン別の後処理を実行する
@@ -43,7 +43,7 @@ export const registerConnectionHandlers = ({
 
       const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
 
-      handleGameDisconnect(io, gameManager, roomId, socket.id);
+      handleGameDisconnect(io, gameSessionManager, roomId, socket.id);
       handleRoomDisconnect(io, socket, roomManager);
     });
   });

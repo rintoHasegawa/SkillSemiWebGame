@@ -10,12 +10,12 @@ import { registerConnectionHandlers } from "./handlers/registerConnectionHandler
 /** Socket.IOの接続ハンドラ登録を統括する */
 export class SocketManager {
   private io: Server;
-  private gameManager: GameSessionManager;
+  private gameSessionManager: GameSessionManager;
   private roomManager: RoomManager;
 
-  constructor(io: Server, gameManager: GameSessionManager, roomManager: RoomManager) {
+  constructor(io: Server, gameSessionManager: GameSessionManager, roomManager: RoomManager) {
     this.io = io;
-    this.gameManager = gameManager;
+    this.gameSessionManager = gameSessionManager;
     this.roomManager = roomManager;
   }
 
@@ -23,7 +23,7 @@ export class SocketManager {
     // 接続時に必要な各ドメインハンドラを登録する
     registerConnectionHandlers({
       io: this.io,
-      gameManager: this.gameManager,
+      gameSessionManager: this.gameSessionManager,
       roomManager: this.roomManager,
     });
   }
