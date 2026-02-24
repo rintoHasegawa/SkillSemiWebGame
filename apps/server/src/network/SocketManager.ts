@@ -1,10 +1,13 @@
-import { Server, Socket } from "socket.io";
+/**
+ * SocketManager
+ * Socket.IO接続ハンドラの登録を初期化するマネージャ
+ */
+import { Server } from "socket.io";
 import { GameManager } from "@server/domains/game/GameManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
-import { protocol } from "@repo/shared";
-import { registerRoomHandlers, handleRoomDisconnect } from "./handlers/RoomHandler";
-import { registerGameHandlers, handleGameDisconnect } from "./handlers/GameHandler";
+import { registerConnectionHandlers } from "./handlers/registerConnectionHandlers";
 
+/** Socket.IOの接続ハンドラ登録を統括する */
 export class SocketManager {
   private io: Server;
   private gameManager: GameManager;
@@ -17,22 +20,11 @@ export class SocketManager {
   }
 
   public initialize() {
-    this.io.on(protocol.SocketEvents.CONNECT, (socket: Socket) => {
-      console.log(`✅ User connected: ${socket.id}`);
-
-      registerRoomHandlers(this.io, socket, this.roomManager);
-      registerGameHandlers(this.io, socket, this.gameManager, this.roomManager);
-
-      socket.on(protocol.SocketEvents.DISCONNECT, () => {
-        console.log(`❌ User disconnected: ${socket.id}`);
-        
-        // 順番を厳守して実行
-        // 1. まずゲーム世界から消す（データ参照ができなくなる前に実行）
-        handleGameDisconnect(this.io, this.gameManager, socket.id);
-
-        // 2. 次にルームの枠組みから消す（オーナー移譲などのロジックを最後に実行）
-        handleRoomDisconnect(this.io, socket, this.roomManager);
-      });
+    // 接続時に必要な各ドメインハンドラを登録する
+    registerConnectionHandlers({
+      io: this.io,
+      gameManager: this.gameManager,
+      roomManager: this.roomManager,
     });
   }
 }

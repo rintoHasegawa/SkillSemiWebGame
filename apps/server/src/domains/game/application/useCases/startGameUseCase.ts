@@ -1,22 +1,27 @@
-import { protocol, roomConsts } from "@repo/shared";
+import { roomConsts } from "@repo/shared";
+import type { gridMapTypes, playerTypes } from "@repo/shared";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import type { StartGamePort } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
-
-type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
 type StartGameUseCaseParams = {
   ownerId: string;
   gameManager: StartGamePort;
   roomManager: RoomManager;
-  emitToRoom: EmitToRoom;
+  publishUpdatePlayer: (roomId: string, playerData: playerTypes.PlayerData) => void;
+  publishMapCellUpdates: (roomId: string, cellUpdates: gridMapTypes.CellUpdate[]) => void;
+  publishGameEnd: (roomId: string) => void;
+  publishGameStart: (roomId: string, payload: { startTime: number }) => void;
 };
 
 export const startGameUseCase = ({
   ownerId,
   gameManager,
   roomManager,
-  emitToRoom,
+  publishUpdatePlayer,
+  publishMapCellUpdates,
+  publishGameEnd,
+  publishGameStart,
 }: StartGameUseCaseParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
   if (!room) {
@@ -59,11 +64,11 @@ export const startGameUseCase = ({
     playerIds,
     (tickData) => {
       tickData.players.forEach((playerData) => {
-        emitToRoom(room.roomId, protocol.SocketEvents.UPDATE_PLAYER, playerData);
+        publishUpdatePlayer(room.roomId, playerData);
       });
 
       if (tickData.cellUpdates.length > 0) {
-        emitToRoom(room.roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, tickData.cellUpdates);
+        publishMapCellUpdates(room.roomId, tickData.cellUpdates);
       }
     },
     () => {
@@ -73,11 +78,11 @@ export const startGameUseCase = ({
         roomId: room.roomId,
         reason: "duration_elapsed",
       });
-      emitToRoom(room.roomId, protocol.SocketEvents.GAME_END);
+      publishGameEnd(room.roomId);
       room.status = roomConsts.RoomPhase.WAITING;
     }
   );
 
   const startTime = gameManager.getRoomStartTime(room.roomId) || Date.now();
-  emitToRoom(room.roomId, protocol.SocketEvents.GAME_START, { startTime });
+  publishGameStart(room.roomId, { startTime });
 };

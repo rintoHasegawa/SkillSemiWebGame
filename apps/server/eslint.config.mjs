@@ -46,4 +46,22 @@ export default [
       'no-restricted-imports': 'off',
     },
   },
+  {
+    files: ['src/domains/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@repo/shared',
+              importNames: ['protocol'],
+              message:
+                'domains 配下では protocol を直接 import せず、network でイベント名を解決してください。',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];

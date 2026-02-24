@@ -1,24 +1,24 @@
-import { protocol } from "@repo/shared";
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
+import type { playerTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
-
-type EmitToSocket = (event: string, payload?: unknown) => void;
 
 type ReadyForGameUseCaseParams = {
   socketId: string;
   roomId?: string;
   gameManager: ReadyForGamePort;
-  emitToSocket: EmitToSocket;
+  publishCurrentPlayers: (players: playerTypes.PlayerData[]) => void;
+  publishGameStart: (payload: { startTime: number }) => void;
 };
 
 export const readyForGameUseCase = ({
   socketId,
   roomId,
   gameManager,
-  emitToSocket,
+  publishCurrentPlayers,
+  publishGameStart,
 }: ReadyForGameUseCaseParams) => {
   const allPlayers = gameManager.getAllPlayers();
-  emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, allPlayers);
+  publishCurrentPlayers(allPlayers);
 
   logEvent("GameUseCase", {
     event: "READY_FOR_GAME",
@@ -42,7 +42,7 @@ export const readyForGameUseCase = ({
     return;
   }
 
-  emitToSocket(protocol.SocketEvents.GAME_START, { startTime });
+  publishGameStart({ startTime });
   logEvent("GameUseCase", {
     event: "GAME_START",
     result: "emitted",

@@ -1,22 +1,19 @@
-import { protocol } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
 import type { JoinRoomPort } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
-
-type EmitToRoom = (roomId: string, event: string, payload?: unknown) => void;
 
 type JoinRoomUseCaseParams = {
   roomManager: JoinRoomPort;
   socketId: string;
   data: roomTypes.JoinRoomPayload;
-  emitToRoom: EmitToRoom;
+  publishRoomUpdate: (roomId: roomTypes.Room["roomId"], room: roomTypes.Room) => void;
 };
 
 export const joinRoomUseCase = ({
   roomManager,
   socketId,
   data,
-  emitToRoom,
+  publishRoomUpdate,
 }: JoinRoomUseCaseParams) => {
   const { roomId, playerName } = data;
   logEvent("RoomUseCase", {
@@ -29,7 +26,7 @@ export const joinRoomUseCase = ({
 
   const room = roomManager.addPlayerToRoom(roomId, socketId, playerName);
 
-  emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
+  publishRoomUpdate(roomId, room);
   logEvent("RoomUseCase", {
     event: "ROOM_UPDATE",
     result: "emitted",

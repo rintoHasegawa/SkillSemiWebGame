@@ -101,13 +101,19 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │           │   ├── game/
     │           │   │   ├── GameLoop.ts                     # 固定ループ
     │           │   │   ├── GameManager.ts                  # ゲーム状態管理
-    │           │   │   ├── application/                    # ユースケース・サービス
+    │           │   │   ├── application/
+    │           │   │   │   ├── ports/                      # ユースケース入出力境界
+    │           │   │   │   ├── services/                   # ゲームアプリケーションサービス
+    │           │   │   │   └── useCases/                   # ゲームユースケース
     │           │   │   ├── entities/
     │           │   │   │   └── Player.ts                   # サーバーPlayer
     │           │   │   └── states/
     │           │   │       └── MapStore.ts                 # マップ状態保持
     │           │   └── room/
-    │           │       ├── application/                    # ユースケース・サービス
+    │           │       ├── application/
+    │           │       │   ├── ports/                      # ユースケース入出力境界
+    │           │       │   ├── services/                   # ルームアプリケーションサービス
+    │           │       │   └── useCases/                   # ルームユースケース
     │           │       └── RoomManager.ts                  # ルーム管理
     │           └── network/
     │               ├── SocketManager.ts                    # WS接続管理
@@ -117,13 +123,16 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │               │   ├── CommonHandler.ts               # 共通WSハンドラ
     │               │   ├── GameHandler.ts                 # ゲームWSハンドラ(中間層)
     │               │   ├── RoomHandler.ts                 # ルームWSハンドラ(中間層)
-    │               │   ├── game/                          # ゲーム中粒度配線
-    │               │   └── room/                          # ルーム中粒度配線
+    │               │   ├── game/
+    │               │   │   ├── handleGameDisconnect.ts    # ゲーム切断処理配線
+    │               │   │   └── registerGameHandlers.ts    # ゲーム受信イベント配線
+    │               │   └── room/
+    │               │       ├── handleRoomDisconnect.ts    # ルーム切断処理配線
+    │               │       └── registerRoomHandlers.ts    # ルーム受信イベント配線
     │               ├── bootstrap/
     │               │   ├── createHttpServer.ts            # HTTP生成
     │               │   ├── createIo.ts                    # Socket.IO生成
     │               │   └── boot.ts                        # 起動配線
-    │               └── createIo.ts                        # 互換用ファイル
     ├── docs/
     │   ├── 01_Env/
     │   │   ├── ENV_01_環境構築・技術スタック.txt                # 環境・技術定義
@@ -131,11 +140,13 @@ Pixel Paint War - 開発環境・技術スタック定義書
     │   │   ├── ENV_03_TypeScript概要.txt                     # TS基礎説明
     │   │   ├── ENV_04_スマホ実機デバッグ手順.txt                  # 実機デバッグ手順
     │   │   ├── ENV_05_Docker運用操作ガイド.txt                   # Docker運用手順
-    │   │   └── ENV_06_管理者用環境構築手順.txt                   # 管理者向け手順
+    │   │   ├── ENV_06_管理者用環境構築手順.txt                   # 管理者向け手順
+    │   │   └── ENV_07_テスト操作手順.txt                        # テスト操作手順
     │   ├── 02_Guide/
     │   │   ├── GUIDE_01_ドキュメント作成ガイド.txt               # 文書作成ルール
     │   │   ├── GUIDE_02_ファイル命名規則.txt                     # 命名規則
-    │   │   └── GUIDE_03_Git運用ルール.txt                      # Git運用ルール
+    │   │   ├── GUIDE_03_Git運用ルール.txt                      # Git運用ルール
+    │   │   └── GUIDE_04_コードコメント規則.txt                  # コメント運用ルール
     │   ├── 03_Plan/
     │   │   └── PLAN_01_移動テスト実装計画.txt                   # 実装計画
     │   └── 04_Spec/
@@ -290,3 +301,8 @@ Pixel Paint War - 開発環境・技術スタック定義書
    - OK: Client -> Shared
    - OK: Server -> Shared
    - NG: Client -> Server / Server -> Client (直接参照禁止)
+
+5-4. 通信境界の責務分離
+    - SocketEvents の解決（イベント名の参照）は `apps/server/src/network` 配下に集約する．
+    - `apps/server/src/domains` 配下では `protocol` を直接 import せず，意味名の Publisher 関数を受け取って利用する．
+    - Socket の接続制御・受信イベント登録・切断順序制御は network 層が担当し，業務ロジック判断は domain 層が担当する．
