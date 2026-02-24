@@ -59,10 +59,14 @@ export const registerGameHandlers = (
   // 参加者の準備完了通知を受けて現在状態を返す
   socket.on(protocol.SocketEvents.READY_FOR_GAME, () => {
     const roomId = Array.from(socket.rooms).find((room) => room !== socket.id);
+    const playerIds = roomId
+      ? (roomManager.getRoomById(roomId)?.players ?? []).map((p) => p.id)
+      : [];
 
     readyForGameUseCase({
       socketId: socket.id,
       roomId,
+      playerIds,
       gameManager,
       publishCurrentPlayers: gamePublisher.publishCurrentPlayersToSocket,
       publishGameStart: gamePublisher.publishGameStartToSocket,

@@ -41,7 +41,9 @@ export const registerConnectionHandlers = ({
         socketId: socket.id,
       });
 
-      handleGameDisconnect(io, gameManager, socket.id);
+      const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
+
+      handleGameDisconnect(io, gameManager, roomId, socket.id);
       handleRoomDisconnect(io, socket, roomManager);
     });
   });

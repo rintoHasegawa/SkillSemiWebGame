@@ -1,5 +1,9 @@
+/**
+ * joinRoomUseCase
+ * ルーム参加要求を処理し，状態更新を配信するユースケース
+ */
 import type { roomTypes } from "@repo/shared";
-import type { JoinRoomPort } from "../ports/roomUseCasePorts";
+import type { JoinRoomPort, JoinRoomResult } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
 
 type JoinRoomUseCaseParams = {
@@ -9,12 +13,13 @@ type JoinRoomUseCaseParams = {
   publishRoomUpdate: (roomId: roomTypes.Room["roomId"], room: roomTypes.Room) => void;
 };
 
+/** 参加イベントを受け取り，ルーム更新を配信する */
 export const joinRoomUseCase = ({
   roomManager,
   socketId,
   data,
   publishRoomUpdate,
-}: JoinRoomUseCaseParams) => {
+}: JoinRoomUseCaseParams): JoinRoomResult => {
   const { roomId, playerName } = data;
   logEvent("RoomUseCase", {
     event: "JOIN_ROOM",
@@ -24,15 +29,19 @@ export const joinRoomUseCase = ({
     playerName,
   });
 
-  const room = roomManager.addPlayerToRoom(roomId, socketId, playerName);
+  const joinResult = roomManager.addPlayerToRoom(roomId, socketId, playerName);
+  if (joinResult.status !== "joined") {
+    logEvent("RoomUseCase", {
+      event: "JOIN_ROOM",
+      result: "rejected",
+      reason: joinResult.status,
+      roomId,
+      socketId,
+    });
+    return joinResult;
+  }
 
-  publishRoomUpdate(roomId, room);
-  logEvent("RoomUseCase", {
-    event: "ROOM_UPDATE",
-    result: "emitted",
-    roomId,
-    socketId,
-    ownerId: room.ownerId,
-    totalPlayers: room.players.length,
-  });
+  publishRoomUpdate(roomId, joinResult.room);
+
+  return joinResult;
 };

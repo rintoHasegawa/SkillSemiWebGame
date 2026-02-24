@@ -13,7 +13,7 @@ export interface StartGamePort {
 }
 
 export interface ReadyForGamePort {
-  getAllPlayers(): playerTypes.PlayerData[];
+  getPlayersByIds(playerIds: string[]): playerTypes.PlayerData[];
   getRoomStartTime(roomId: string): number | undefined;
 }
 

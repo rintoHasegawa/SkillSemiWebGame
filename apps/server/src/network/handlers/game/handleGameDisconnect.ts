@@ -11,6 +11,7 @@ import { createGameDisconnectPublisher } from "./createGameEventPublisher";
 export const handleGameDisconnect = (
   io: Server,
   gameManager: GameManager,
+  roomId: string | undefined,
   playerId: string
 ) => {
   const gameDisconnectPublisher = createGameDisconnectPublisher(io);
@@ -18,6 +19,12 @@ export const handleGameDisconnect = (
   disconnectUseCase({
     gameManager,
     playerId,
-    publishPlayerRemoved: gameDisconnectPublisher.publishPlayerRemovedToAll,
+    publishPlayerRemoved: (removedPlayerId) => {
+      if (!roomId) {
+        return;
+      }
+
+      gameDisconnectPublisher.publishPlayerRemovedToRoom(roomId, removedPlayerId);
+    },
   });
 };

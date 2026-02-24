@@ -1,17 +1,16 @@
-import { config, gridMapLogic } from "@repo/shared";
-import type { gridMapTypes } from "@repo/shared";
+import { config } from "@repo/shared";
 import { GameLoop, type TickData } from "../../GameLoop";
 import { Player } from "../../entities/Player.js";
 import { MapStore } from "../../states/MapStore";
 import { logEvent } from "@server/logging/logEvent";
 
 export class GameSessionService {
-  private mapStore: MapStore;
+  private mapStores: Map<string, MapStore>;
   private gameLoops: Map<string, GameLoop>;
   private roomStartTimes: Map<string, number>;
 
   constructor(private players: Map<string, Player>) {
-    this.mapStore = new MapStore();
+    this.mapStores = new Map();
     this.gameLoops = new Map();
     this.roomStartTimes = new Map();
   }
@@ -37,17 +36,20 @@ export class GameSessionService {
 
     const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
     this.roomStartTimes.set(roomId, Date.now());
+    const mapStore = this.mapStores.get(roomId) ?? new MapStore();
+    this.mapStores.set(roomId, mapStore);
 
     const loop = new GameLoop(
       roomId,
       tickRate,
       playerIds,
       this.players,
-      this.mapStore,
+      mapStore,
       onTick,
       () => {
         this.roomStartTimes.delete(roomId);
         this.gameLoops.delete(roomId);
+        this.mapStores.delete(roomId);
         onGameEnd();
       }
     );
@@ -60,37 +62,5 @@ export class GameSessionService {
       roomId,
       playerCount: playerIds.length,
     });
-  }
-
-  public stopGameLoop(roomId: string) {
-    const loop = this.gameLoops.get(roomId);
-    if (loop) {
-      loop.stop();
-      this.gameLoops.delete(roomId);
-      this.roomStartTimes.delete(roomId);
-      logEvent("GameSessionService", {
-        event: "STOP_GAME_LOOP",
-        result: "stopped",
-        roomId,
-      });
-    } else {
-      logEvent("GameSessionService", {
-        event: "STOP_GAME_LOOP",
-        result: "ignored_not_running",
-        roomId,
-      });
-    }
-  }
-
-  public paintAndGetUpdates(playerId: string): gridMapTypes.CellUpdate[] {
-    const player = this.players.get(playerId);
-    if (!player) return [];
-
-    const gridIndex = gridMapLogic.getGridIndexFromPosition(player.x, player.y);
-    if (gridIndex !== null) {
-      this.mapStore.paintCell(gridIndex, player.teamId);
-    }
-
-    return this.mapStore.getAndClearUpdates();
   }
 }

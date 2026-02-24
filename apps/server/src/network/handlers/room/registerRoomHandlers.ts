@@ -33,14 +33,60 @@ export const registerRoomHandlers = (
     }
 
     const { roomId } = data;
+    let joinedRoom: roomTypes.Room | null = null;
 
-    socket.join(roomId);
-
-    joinRoomUseCase({
+    const joinResult = joinRoomUseCase({
       roomManager,
       socketId: socket.id,
       data,
-      publishRoomUpdate: roomPublisher.publishRoomUpdate,
+      publishRoomUpdate: (_roomId, room) => {
+        joinedRoom = room;
+      },
     });
+
+    // 参加拒否時は理由を通知する
+    switch (joinResult.status) {
+      case "full":
+        roomPublisher.publishJoinRejected({
+          roomId,
+          reason: "full",
+        });
+        logEvent("Network", {
+          event: "JOIN_ROOM",
+          result: "rejected_room_full",
+          roomId,
+          socketId: socket.id,
+        });
+        return;
+
+      case "duplicate":
+        roomPublisher.publishJoinRejected({
+          roomId,
+          reason: "duplicate",
+        });
+        logEvent("Network", {
+          event: "JOIN_ROOM",
+          result: "rejected_duplicate",
+          roomId,
+          socketId: socket.id,
+        });
+        return;
+
+      case "joined":
+        socket.join(roomId);
+        roomPublisher.publishRoomUpdate(roomId, joinResult.room);
+        logEvent("RoomUseCase", {
+          event: "ROOM_UPDATE",
+          result: "emitted",
+          roomId,
+          socketId: socket.id,
+          ownerId: joinResult.room.ownerId,
+          totalPlayers: joinResult.room.players.length,
+        });
+        return;
+
+      default:
+        return;
+    }
   });
 };

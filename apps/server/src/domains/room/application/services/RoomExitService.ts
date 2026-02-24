@@ -1,6 +1,11 @@
+/**
+ * RoomExitService
+ * ルーム退出処理とオーナー移譲処理を担うサービス
+ */
 import type { roomTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 
+/** 退出要求に応じてプレイヤー削除とルーム整理を行うサービス */
 export class RoomExitService {
   constructor(private rooms: Map<string, roomTypes.Room>) {}
 

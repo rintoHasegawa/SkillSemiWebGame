@@ -5,6 +5,7 @@ export const SocketEvents = {
   
   // ロビー・ルーム関連イベント名
   JOIN_ROOM: "join-room",
+  ROOM_JOIN_REJECTED: "room-join-rejected",
   ROOM_UPDATE: "room-update",
   START_GAME: "start-game",
   GAME_START: "game-start",

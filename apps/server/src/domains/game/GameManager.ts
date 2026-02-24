@@ -1,5 +1,4 @@
 import { GameLoop, type TickData } from "./GameLoop";
-import type { gridMapTypes } from "@repo/shared";
 import { Player } from "./entities/Player.js";
 import { PlayerRegistry } from "./application/services/PlayerRegistry";
 import { GameSessionService } from "./application/services/GameSessionService";
@@ -29,11 +28,6 @@ export class GameManager {
     this.playerRegistry.removePlayer(id);
   }
 
-  // 指定IDプレイヤー参照取得
-  getPlayer(id: string) {
-    return this.playerRegistry.getPlayer(id);
-  }
-
   // 指定プレイヤー座標更新処理
   movePlayer(id: string, x: number, y: number) {
     this.playerRegistry.movePlayer(id, x, y);
@@ -54,20 +48,10 @@ export class GameManager {
     this.gameSessionService.startGameLoop(roomId, playerIds, onTick, onGameEnd);
   }
 
-  /**
-   * ゲームループを停止する
-   */
-  stopGameLoop(roomId: string) {
-    this.gameSessionService.stopGameLoop(roomId);
-  }
-
-  // 登録中全プレイヤー配列取得
-  getAllPlayers() {
-    return this.playerRegistry.getAllPlayers();
-  }
-
-  // 【一時的】移動したプレイヤーの足元を塗り、差分を返すメソッド
-  public paintAndGetUpdates(playerId: string): gridMapTypes.CellUpdate[] {
-    return this.gameSessionService.paintAndGetUpdates(playerId);
+  // 指定ID配列のプレイヤーを取得
+  getPlayersByIds(playerIds: string[]) {
+    return playerIds
+      .map((playerId) => this.playerRegistry.getPlayer(playerId))
+      .filter((player): player is Player => player !== undefined);
   }
 }

@@ -1,10 +1,11 @@
 export const GAME_CONFIG = {
   // ゲーム設定
-  MAX_PLAYERS_PER_ROOM: 4,  // ルーム収容人数設定
+  MAX_PLAYERS_PER_ROOM: 100,  // ルーム収容人数設定
   GAME_DURATION_SEC: 180, // 1ゲームの制限時間（3分 = 180秒）
 
   // UI表示更新設定
   TIMER_DISPLAY_UPDATE_MS: 250, // 残り時間表示の更新間隔（ms）
+  JOIN_REQUEST_TIMEOUT_MS: 8000, // ルーム参加要求の待機タイムアウト（ms）
 
   // ネットワーク・描画補間設定
   PLAYER_POSITION_UPDATE_MS: 50,  // 座標送信間隔（20Hz）

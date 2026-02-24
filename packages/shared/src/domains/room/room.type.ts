@@ -23,3 +23,12 @@ export interface JoinRoomPayload {
   roomId: string;
   playerName: string;
 }
+
+// ルーム参加拒否理由型
+export type JoinRoomRejectedReason = "full" | "duplicate";
+
+// ルーム参加拒否通知ペイロード型
+export interface JoinRoomRejectedPayload {
+  roomId: string;
+  reason: JoinRoomRejectedReason;
+}
