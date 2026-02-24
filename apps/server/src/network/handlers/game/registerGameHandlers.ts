@@ -9,6 +9,8 @@ import { readyForGameUseCase } from "@server/domains/game/application/useCases/r
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { createGameEventPublisher } from "./createGameEventPublisher";
+import { logEvent } from "@server/logging/logEvent";
+import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
 
 export const registerGameHandlers = (
   io: Server,
@@ -19,7 +21,16 @@ export const registerGameHandlers = (
   const common = createCommonHandlerContext(io, socket);
   const gamePublisher = createGameEventPublisher(common);
 
-  socket.on(protocol.SocketEvents.PING, (clientTime: number) => {
+  socket.on(protocol.SocketEvents.PING, (clientTime: unknown) => {
+    if (!isPingPayload(clientTime)) {
+      logEvent("Network", {
+        event: "PING",
+        result: "ignored_invalid_payload",
+        socketId: socket.id,
+      });
+      return;
+    }
+
     pingUseCase({
       clientTime,
       publishPong: gamePublisher.publishPongToSocket,
@@ -50,7 +61,16 @@ export const registerGameHandlers = (
     });
   });
 
-  socket.on(protocol.SocketEvents.MOVE, (data: playerTypes.MovePayload) => {
+  socket.on(protocol.SocketEvents.MOVE, (data: unknown) => {
+    if (!isMovePayload(data)) {
+      logEvent("Network", {
+        event: "MOVE",
+        result: "ignored_invalid_payload",
+        socketId: socket.id,
+      });
+      return;
+    }
+
     movePlayerUseCase({
       gameManager,
       playerId: socket.id,
