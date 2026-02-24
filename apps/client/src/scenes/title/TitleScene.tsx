@@ -7,9 +7,11 @@ type Props = {
   onJoin: (payload: roomTypes.JoinRoomPayload) => void;
   // 入室失敗時の表示メッセージ
   joinErrorMessage: string | null;
+  // 入室リクエスト送信中フラグ
+  isJoining: boolean;
 };
 
-export const TitleScene = ({ onJoin, joinErrorMessage }: Props) => {
+export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
   // プレイヤー名入力値
   const [playerName, setPlayerName] = useState("");
   // ルームID入力値
@@ -46,12 +48,12 @@ export const TitleScene = ({ onJoin, joinErrorMessage }: Props) => {
       
       <button
         onClick={handleJoin}
-        disabled={!canJoin}
+        disabled={!canJoin || isJoining}
         style={{
           padding: "15px 30px",
           fontSize: "1.2rem",
-          cursor: !canJoin ? "not-allowed" : "pointer",
-          backgroundColor: !canJoin ? "#555" : "#3b82f6",
+          cursor: !canJoin || isJoining ? "not-allowed" : "pointer",
+          backgroundColor: !canJoin || isJoining ? "#555" : "#3b82f6",
           color: "white",
           border: "none",
           borderRadius: "5px",
@@ -59,7 +61,7 @@ export const TitleScene = ({ onJoin, joinErrorMessage }: Props) => {
           fontWeight: "bold"
         }}
       >
-        ルームに入る / 作る
+        {isJoining ? "参加中..." : "ルームに入る / 作る"}
       </button>
 
       {joinErrorMessage && (
