@@ -6,7 +6,7 @@ import { logEvent } from "@server/logging/logEvent";
 
 type StartGameUseCaseParams = {
   ownerId: string;
-  gameSessionManager: StartGamePort;
+  gameManager: StartGamePort;
   roomManager: RoomManager;
   publishUpdatePlayer: (roomId: string, playerData: playerTypes.PlayerData) => void;
   publishMapCellUpdates: (roomId: string, cellUpdates: gridMapTypes.CellUpdate[]) => void;
@@ -16,7 +16,7 @@ type StartGameUseCaseParams = {
 
 export const startGameUseCase = ({
   ownerId,
-  gameSessionManager,
+  gameManager,
   roomManager,
   publishUpdatePlayer,
   publishMapCellUpdates,
@@ -55,7 +55,7 @@ export const startGameUseCase = ({
 
   const playerIds = room.players.map((p: { id: string }) => p.id);
 
-  gameSessionManager.startRoomSession(
+  gameManager.startRoomSession(
     room.roomId,
     playerIds,
     (tickData) => {
@@ -79,6 +79,6 @@ export const startGameUseCase = ({
     }
   );
 
-  const startTime = gameSessionManager.getRoomStartTime(room.roomId) || Date.now();
+  const startTime = gameManager.getRoomStartTime(room.roomId) || Date.now();
   publishGameStart(room.roomId, { startTime });
 };

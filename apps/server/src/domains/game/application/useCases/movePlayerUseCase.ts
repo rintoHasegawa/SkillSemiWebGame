@@ -2,15 +2,15 @@ import type { playerTypes } from "@repo/shared";
 import type { MovePlayerPort } from "../ports/gameUseCasePorts";
 
 type MovePlayerUseCaseParams = {
-  gameSessionManager: MovePlayerPort;
+  gameManager: MovePlayerPort;
   playerId: string;
   move: playerTypes.MovePayload;
 };
 
 export const movePlayerUseCase = ({
-  gameSessionManager,
+  gameManager,
   playerId,
   move,
 }: MovePlayerUseCaseParams) => {
-  gameSessionManager.movePlayer(playerId, move.x, move.y);
+  gameManager.movePlayer(playerId, move.x, move.y);
 };

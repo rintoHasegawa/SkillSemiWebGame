@@ -10,14 +10,14 @@ import { createGameDisconnectPublisher } from "./createGameEventPublisher";
 /** 切断したプレイヤーをゲーム管理から除外し通知する */
 export const handleGameDisconnect = (
   io: Server,
-  gameSessionManager: GameManager,
+  gameManager: GameManager,
   roomId: string | undefined,
   playerId: string
 ) => {
   const gameDisconnectPublisher = createGameDisconnectPublisher(io);
 
   disconnectUseCase({
-    gameSessionManager,
+    gameManager,
     playerId,
     publishPlayerRemoved: (removedPlayerId) => {
       if (!roomId) {

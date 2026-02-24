@@ -20,7 +20,7 @@ import { isMovePayload, isPingPayload } from "@server/network/validation/socketP
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameSessionManager: GameManager,
+  gameManager: GameManager,
   roomManager: RoomManager
 ) => {
   const common = createCommonHandlerContext(io, socket);
@@ -47,7 +47,7 @@ export const registerGameHandlers = (
   socket.on(protocol.SocketEvents.START_GAME, () => {
     startGameUseCase({
       ownerId: socket.id,
-      gameSessionManager,
+      gameManager,
       roomManager,
       publishUpdatePlayer: gamePublisher.publishUpdatePlayerToRoom,
       publishMapCellUpdates: gamePublisher.publishMapCellUpdatesToRoom,
@@ -63,7 +63,7 @@ export const registerGameHandlers = (
     readyForGameUseCase({
       socketId: socket.id,
       roomId,
-      gameSessionManager,
+      gameManager,
       publishCurrentPlayers: gamePublisher.publishCurrentPlayersToSocket,
       publishGameStart: gamePublisher.publishGameStartToSocket,
     });
@@ -81,7 +81,7 @@ export const registerGameHandlers = (
     }
 
     movePlayerUseCase({
-      gameSessionManager,
+      gameManager,
       playerId: socket.id,
       move: data,
     });

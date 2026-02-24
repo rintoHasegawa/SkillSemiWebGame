@@ -12,9 +12,9 @@ import { createIo } from "./createIo";
 export const boot = (httpServer: HttpServer) => {
   // ネットワーク層とドメイン層の依存を構築する
   const io = createIo(httpServer);
-  const gameSessionManager = new GameManager();
+  const gameManager = new GameManager();
   const roomManager = new RoomManager();
-  const socketManager = new SocketManager(io, gameSessionManager, roomManager);
+  const socketManager = new SocketManager(io, gameManager, roomManager);
 
   socketManager.initialize();
 };
