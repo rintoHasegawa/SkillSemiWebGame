@@ -44,6 +44,10 @@ export const registerConnectionHandlers = ({
       const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
       handleGameDisconnect(io, gameManager, roomId, socket.id);
       handleRoomDisconnect(io, socket, roomManager);
+
+      if (roomId && !roomManager.getRoomById(roomId)) {
+        gameManager.stopGameLoop(roomId);
+      }
     });
   });
 };
