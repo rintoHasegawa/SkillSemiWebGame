@@ -1,5 +1,5 @@
 /**
- * createRoomEventPublisher
+ * createRoomOutputAdapter
  * ルーム系ユースケースから利用する送信関数を生成する
  */
 import { Server } from "socket.io";
@@ -12,13 +12,13 @@ import type { CommonHandlerContext } from "../CommonHandler";
 type RoomId = roomTypes.Room["roomId"];
 type RoomUpdatePayload = roomTypes.Room;
 
-/** ルーム更新イベントの送信インターフェース */
-export type RoomEventPublisher = RoomOutputPort;
+/** ルーム出力アダプターのインターフェース */
+export type RoomOutputAdapter = RoomOutputPort;
 
-/** 共通送信コンテキストからルームイベント送信関数を生成する */
-export const createRoomEventPublisher = (
+/** 共通送信コンテキストからルーム出力アダプターを生成する */
+export const createRoomOutputAdapter = (
   common: CommonHandlerContext
-): RoomEventPublisher => {
+): RoomOutputAdapter => {
   return {
     publishRoomUpdateToRoom: (roomId: RoomId, room: RoomUpdatePayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
@@ -29,8 +29,8 @@ export const createRoomEventPublisher = (
   };
 };
 
-/** 切断時のルーム更新送信関数を生成する */
-export const createRoomDisconnectPublisher = (
+/** 切断時のルーム出力アダプターを生成する */
+export const createRoomDisconnectOutputAdapter = (
   io: Server
 ): Pick<RoomOutputPort, "publishRoomUpdateToRoom"> => {
   const emitToRoom = createEmitToRoom(io);

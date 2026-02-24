@@ -5,7 +5,7 @@
 import { Server, Socket } from "socket.io";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { roomDisconnectUseCase } from "@server/domains/room/application/useCases/roomDisconnectUseCase";
-import { createRoomDisconnectPublisher } from "./createRoomEventPublisher";
+import { createRoomDisconnectOutputAdapter } from "./createRoomOutputAdapter";
 
 /** 切断ソケットのルーム離脱処理を実行して更新通知する */
 export const handleRoomDisconnect = (
@@ -13,11 +13,11 @@ export const handleRoomDisconnect = (
   socket: Socket,
   roomManager: RoomManager
 ) => {
-  const roomDisconnectPublisher = createRoomDisconnectPublisher(io);
+  const roomDisconnectOutputAdapter = createRoomDisconnectOutputAdapter(io);
 
   roomDisconnectUseCase({
     roomManager,
     socketId: socket.id,
-    output: roomDisconnectPublisher,
+    output: roomDisconnectOutputAdapter,
   });
 };

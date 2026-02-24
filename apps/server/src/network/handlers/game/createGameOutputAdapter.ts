@@ -1,5 +1,5 @@
 /**
- * createGameEventPublisher
+ * createGameOutputAdapter
  * ゲーム系ユースケースから利用する送信関数群を生成する
  */
 import { Server } from "socket.io";
@@ -17,14 +17,14 @@ type CurrentPlayersPayload = playerTypes.PlayerData[];
 type UpdatePlayerPayload = playerTypes.PlayerData;
 type MapCellUpdatesPayload = gridMapTypes.CellUpdate[];
 
-/** ゲーム進行中イベントの送信インターフェース */
-export type GameEventPublisher = Omit<GameOutputPort, "publishPlayerRemovedToRoom">;
+/** ゲーム出力アダプターのインターフェース */
+export type GameOutputAdapter = Omit<GameOutputPort, "publishPlayerRemovedToRoom">;
 
-/** 切断時に配信するゲームイベントの送信インターフェース */
-export type GameDisconnectPublisher = Pick<GameOutputPort, "publishPlayerRemovedToRoom">;
+/** ゲーム切断時の出力アダプターのインターフェース */
+export type GameDisconnectOutputAdapter = Pick<GameOutputPort, "publishPlayerRemovedToRoom">;
 
-/** 共通送信コンテキストからゲームイベント送信関数群を生成する */
-export const createGameEventPublisher = (common: CommonHandlerContext): GameEventPublisher => {
+/** 共通送信コンテキストからゲーム出力アダプターを生成する */
+export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutputAdapter => {
   return {
     publishPongToSocket: (payload: PongPayload) => {
       common.emitToSocket(protocol.SocketEvents.PONG, payload);
@@ -51,7 +51,7 @@ export const createGameEventPublisher = (common: CommonHandlerContext): GameEven
 };
 
 /** ゲーム切断時の送信関数群を生成する */
-export const createGameDisconnectPublisher = (io: Server): GameDisconnectPublisher => {
+export const createGameDisconnectOutputAdapter = (io: Server): GameDisconnectOutputAdapter => {
   const emitToRoom = createEmitToRoom(io);
 
   return {

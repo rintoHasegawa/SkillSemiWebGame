@@ -7,7 +7,7 @@ import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { createRoomEventPublisher } from "./createRoomEventPublisher";
+import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import { logEvent } from "@server/logging/logEvent";
 
@@ -18,7 +18,7 @@ export const registerRoomHandlers = (
   roomManager: RoomManager
 ) => {
   const common = createCommonHandlerContext(io, socket);
-  const roomPublisher = createRoomEventPublisher(common);
+  const roomOutputAdapter = createRoomOutputAdapter(common);
 
   // 参加要求のペイロード検証と参加処理を実行する
   socket.on(protocol.SocketEvents.JOIN_ROOM, (data: unknown) => {
@@ -37,7 +37,7 @@ export const registerRoomHandlers = (
       roomManager,
       socketId: socket.id,
       data,
-      output: roomPublisher,
+      output: roomOutputAdapter,
     });
 
     // 参加拒否時は理由を通知する
@@ -62,7 +62,7 @@ export const registerRoomHandlers = (
 
       case "joined":
         socket.join(roomId);
-        roomPublisher.publishRoomUpdateToRoom(roomId, joinResult.room);
+        roomOutputAdapter.publishRoomUpdateToRoom(roomId, joinResult.room);
         logEvent("RoomUseCase", {
           event: "ROOM_UPDATE",
           result: "emitted",

@@ -11,7 +11,7 @@ import { startGameUseCase } from "@server/domains/game/application/useCases/star
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { createGameEventPublisher } from "./createGameEventPublisher";
+import { createGameOutputAdapter } from "./createGameOutputAdapter";
 import { logEvent } from "@server/logging/logEvent";
 import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
 
@@ -23,7 +23,7 @@ export const registerGameHandlers = (
   roomManager: RoomManager
 ) => {
   const common = createCommonHandlerContext(io, socket);
-  const gamePublisher = createGameEventPublisher(common);
+  const gameOutputAdapter = createGameOutputAdapter(common);
 
   // 遅延計測用のPINGを検証しPONGを返す
   socket.on(protocol.SocketEvents.PING, (clientTime: unknown) => {
@@ -38,7 +38,7 @@ export const registerGameHandlers = (
 
     pingUseCase({
       clientTime,
-      output: gamePublisher,
+      output: gameOutputAdapter,
     });
   });
 
@@ -48,7 +48,7 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      output: gamePublisher,
+      output: gameOutputAdapter,
     });
   });
 
@@ -60,7 +60,7 @@ export const registerGameHandlers = (
       socketId: socket.id,
       roomId,
       gameManager,
-      output: gamePublisher,
+      output: gameOutputAdapter,
     });
   });
 
