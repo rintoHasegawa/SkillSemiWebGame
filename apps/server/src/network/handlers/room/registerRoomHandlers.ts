@@ -62,7 +62,7 @@ export const registerRoomHandlers = (
 
       case "joined":
         socket.join(roomId);
-        roomPublisher.publishRoomUpdate(roomId, joinResult.room);
+        roomPublisher.publishRoomUpdateToRoom(roomId, joinResult.room);
         logEvent("RoomUseCase", {
           event: "ROOM_UPDATE",
           result: "emitted",

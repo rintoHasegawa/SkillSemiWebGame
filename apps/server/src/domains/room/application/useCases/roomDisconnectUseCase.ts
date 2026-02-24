@@ -9,7 +9,7 @@ import { logEvent } from "@server/logging/logEvent";
 type RoomDisconnectUseCaseParams = {
   roomManager: DisconnectRoomPort;
   socketId: string;
-  output: Pick<RoomOutputPort, "publishRoomUpdate">;
+  output: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
 };
 
 /** 切断ソケットを各ルームから退出させ，更新ルームを配信する */
@@ -27,7 +27,7 @@ export const roomDisconnectUseCase = ({
   });
 
   updatedRooms.forEach((room) => {
-    output.publishRoomUpdate(room.roomId, room);
+    output.publishRoomUpdateToRoom(room.roomId, room);
     logEvent("RoomUseCase", {
       event: "ROOM_UPDATE",
       result: "emitted",

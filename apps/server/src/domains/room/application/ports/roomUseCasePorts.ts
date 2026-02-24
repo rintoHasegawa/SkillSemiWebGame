@@ -12,8 +12,8 @@ export type JoinRoomResult = {
 
 /** ルームユースケースが利用する出力ポート */
 export interface RoomOutputPort {
-  publishRoomUpdate(roomId: roomTypes.Room["roomId"], room: roomTypes.Room): void;
-  publishJoinRejected(payload: roomTypes.JoinRoomRejectedPayload): void;
+  publishRoomUpdateToRoom(roomId: roomTypes.Room["roomId"], room: roomTypes.Room): void;
+  publishJoinRejectedToSocket(payload: roomTypes.JoinRoomRejectedPayload): void;
 }
 
 /** ルーム参加ユースケースが利用する参加操作ポート */

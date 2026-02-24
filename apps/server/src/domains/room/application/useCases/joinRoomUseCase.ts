@@ -35,7 +35,7 @@ export const joinRoomUseCase = ({
 
   const joinResult = roomManager.addPlayerToRoom(roomId, socketId, playerName);
   if (joinResult.status !== "joined") {
-    output.publishJoinRejected({
+    output.publishJoinRejectedToSocket({
       roomId,
       reason: joinResult.status,
     });
@@ -50,7 +50,7 @@ export const joinRoomUseCase = ({
     return joinResult;
   }
 
-  output.publishRoomUpdate(roomId, joinResult.room);
+  output.publishRoomUpdateToRoom(roomId, joinResult.room);
 
   return joinResult;
 };

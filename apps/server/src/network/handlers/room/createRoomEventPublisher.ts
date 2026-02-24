@@ -20,10 +20,10 @@ export const createRoomEventPublisher = (
   common: CommonHandlerContext
 ): RoomEventPublisher => {
   return {
-    publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => {
+    publishRoomUpdateToRoom: (roomId: RoomId, room: RoomUpdatePayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
     },
-    publishJoinRejected: (payload: roomTypes.JoinRoomRejectedPayload) => {
+    publishJoinRejectedToSocket: (payload: roomTypes.JoinRoomRejectedPayload) => {
       common.emitToSocket(protocol.SocketEvents.ROOM_JOIN_REJECTED, payload);
     },
   };
@@ -32,11 +32,11 @@ export const createRoomEventPublisher = (
 /** 切断時のルーム更新送信関数を生成する */
 export const createRoomDisconnectPublisher = (
   io: Server
-): Pick<RoomOutputPort, "publishRoomUpdate"> => {
+): Pick<RoomOutputPort, "publishRoomUpdateToRoom"> => {
   const emitToRoom = createEmitToRoom(io);
 
   return {
-    publishRoomUpdate: (roomId: RoomId, room: RoomUpdatePayload) => {
+    publishRoomUpdateToRoom: (roomId: RoomId, room: RoomUpdatePayload) => {
       emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
     },
   };
