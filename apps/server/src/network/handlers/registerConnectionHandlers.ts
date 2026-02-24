@@ -3,18 +3,42 @@
  * 接続時にルームとゲームの各ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { GameManager } from "@server/domains/game/GameManager";
-import { RoomManager } from "@server/domains/room/RoomManager";
+import type {
+  DisconnectPlayerPort,
+  MovePlayerPort,
+  ReadyForGamePort,
+  ReadyForGameRoomPort,
+  StartGamePort,
+  StartGameRoomPort,
+} from "@server/domains/game/application/ports/gameUseCasePorts";
+import type {
+  DisconnectRoomPort,
+  FindRoomByPlayerPort,
+  JoinRoomPort,
+} from "@server/domains/room/application/ports/roomUseCasePorts";
 import { protocol } from "@repo/shared";
 import { registerRoomHandlers } from "./RoomHandler";
 import { registerGameHandlers } from "./GameHandler";
 import { logEvent } from "@server/logging/logEvent";
 import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
 
+type ConnectionGamePort =
+  & StartGamePort
+  & ReadyForGamePort
+  & MovePlayerPort
+  & DisconnectPlayerPort;
+
+type ConnectionRoomPort =
+  & JoinRoomPort
+  & StartGameRoomPort
+  & ReadyForGameRoomPort
+  & DisconnectRoomPort
+  & FindRoomByPlayerPort;
+
 type RegisterConnectionHandlersParams = {
   io: Server;
-  gameManager: GameManager;
-  roomManager: RoomManager;
+  gameManager: ConnectionGamePort;
+  roomManager: ConnectionRoomPort;
 };
 
 /** ソケット接続と切断イベントに対する共通ハンドラを登録する */

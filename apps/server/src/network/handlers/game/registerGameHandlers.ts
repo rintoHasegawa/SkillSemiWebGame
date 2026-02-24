@@ -3,8 +3,13 @@
  * ゲーム関連イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { GameManager } from "@server/domains/game/GameManager";
-import { RoomManager } from "@server/domains/room/RoomManager";
+import type {
+  MovePlayerPort,
+  ReadyForGamePort,
+  StartGamePort,
+  ReadyForGameRoomPort,
+  StartGameRoomPort,
+} from "@server/domains/game/application/ports/gameUseCasePorts";
 import { protocol } from "@repo/shared";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
@@ -19,8 +24,8 @@ import { readyForGameCoordinator } from "@server/application/coordinators/readyF
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: GameManager,
-  roomManager: RoomManager
+  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort,
+  roomManager: StartGameRoomPort & ReadyForGameRoomPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);

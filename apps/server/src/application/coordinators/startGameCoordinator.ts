@@ -3,9 +3,9 @@
  * START_GAMEイベントの調停を行い，ルーム状態更新とゲーム開始処理を橋渡しする
  */
 import { roomConsts } from "@repo/shared";
-import { GameManager } from "@server/domains/game/GameManager";
 import {
   type GameOutputPort,
+  type StartGamePort,
   type StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
@@ -13,7 +13,7 @@ import { logEvent } from "@server/logging/logEvent";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
-  gameManager: GameManager;
+  gameManager: StartGamePort;
   roomManager: StartGameRoomPort;
   output: Pick<
     GameOutputPort,
