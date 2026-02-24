@@ -43,7 +43,7 @@ export const registerRoomHandlers = (
       publishRoomUpdate: roomPublisher.publishRoomUpdate,
     });
 
-    // 満員拒否時はソケットのルーム参加状態を巻き戻す
+    // 参加拒否時は理由を通知する
     if (joinResult.status === "full") {
       socket.leave(roomId);
       roomPublisher.publishJoinRejected({
@@ -53,6 +53,20 @@ export const registerRoomHandlers = (
       logEvent("Network", {
         event: "JOIN_ROOM",
         result: "rejected_room_full",
+        roomId,
+        socketId: socket.id,
+      });
+      return;
+    }
+
+    if (joinResult.status === "duplicate") {
+      roomPublisher.publishJoinRejected({
+        roomId,
+        reason: "duplicate",
+      });
+      logEvent("Network", {
+        event: "JOIN_ROOM",
+        result: "rejected_duplicate",
         roomId,
         socketId: socket.id,
       });

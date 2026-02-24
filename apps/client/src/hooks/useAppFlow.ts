@@ -57,6 +57,11 @@ export const useAppFlow = (): AppFlowState => {
       setIsJoining(false);
       if (payload.reason === "full") {
         setJoinErrorMessage(`ルーム ${payload.roomId} は満員です`);
+        return;
+      }
+
+      if (payload.reason === "duplicate") {
+        setJoinErrorMessage(`ルーム ${payload.roomId} への参加要求が重複しました`);
       }
     };
     const handleGameStart = () => {
