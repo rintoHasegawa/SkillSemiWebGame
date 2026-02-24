@@ -20,7 +20,7 @@ export class GameSessionService {
     return this.sessions.get(roomId)?.getPlayers() ?? [];
   }
 
-  public startGameLoop(
+  public startRoomSession(
     roomId: string,
     playerIds: string[],
     onTick: (data: TickData) => void,

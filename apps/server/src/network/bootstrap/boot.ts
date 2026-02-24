@@ -3,7 +3,7 @@
  * HTTPサーバにSocket.IOと各マネージャを接続して起動準備を行う
  */
 import type { Server as HttpServer } from "http";
-import { GameManager } from "@server/domains/game/GameManager";
+import { GameSessionManager } from "@server/domains/game/GameSessionManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { SocketManager } from "../SocketManager";
 import { createIo } from "./createIo";
@@ -12,7 +12,7 @@ import { createIo } from "./createIo";
 export const boot = (httpServer: HttpServer) => {
   // ネットワーク層とドメイン層の依存を構築する
   const io = createIo(httpServer);
-  const gameManager = new GameManager();
+  const gameManager = new GameSessionManager();
   const roomManager = new RoomManager();
   const socketManager = new SocketManager(io, gameManager, roomManager);
 

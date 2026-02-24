@@ -3,7 +3,7 @@
  * ゲーム関連イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { GameManager } from "@server/domains/game/GameManager";
+import { GameSessionManager } from "@server/domains/game/GameSessionManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
 import type { playerTypes } from "@repo/shared";
@@ -20,7 +20,7 @@ import { isMovePayload, isPingPayload } from "@server/network/validation/socketP
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: GameManager,
+  gameManager: GameSessionManager,
   roomManager: RoomManager
 ) => {
   const common = createCommonHandlerContext(io, socket);

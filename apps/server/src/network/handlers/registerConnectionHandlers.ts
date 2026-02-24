@@ -3,7 +3,7 @@
  * 接続時にルームとゲームの各ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { GameManager } from "@server/domains/game/GameManager";
+import { GameSessionManager } from "@server/domains/game/GameSessionManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
 import { registerRoomHandlers, handleRoomDisconnect } from "./RoomHandler";
@@ -12,7 +12,7 @@ import { logEvent } from "@server/logging/logEvent";
 
 type RegisterConnectionHandlersParams = {
   io: Server;
-  gameManager: GameManager;
+  gameManager: GameSessionManager;
   roomManager: RoomManager;
 };
 

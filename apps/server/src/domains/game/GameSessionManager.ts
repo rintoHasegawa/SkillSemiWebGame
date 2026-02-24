@@ -2,8 +2,8 @@ import { type TickData } from "./GameLoop";
 import { Player } from "./entities/Player.js";
 import { GameSessionService } from "./application/services/GameSessionService";
 
-// プレイヤー集合の生成・更新・参照管理クラス
-export class GameManager {
+// ルーム単位セッションの生成・更新・参照管理クラス
+export class GameSessionManager {
   private gameSessionService: GameSessionService;
 
   constructor() {
@@ -31,13 +31,13 @@ export class GameManager {
    * @param playerIds このルームに参加しているプレイヤーのIDリスト
    * @param onTick 毎フレーム実行される送信用のコールバック関数
    */
-  startGameLoop(
+  startRoomSession(
     roomId: string, 
     playerIds: string[], 
     onTick: (data: TickData) => void,
     onGameEnd: () => void
   ) {
-    this.gameSessionService.startGameLoop(roomId, playerIds, onTick, onGameEnd);
+    this.gameSessionService.startRoomSession(roomId, playerIds, onTick, onGameEnd);
   }
 
   // 指定ルームのプレイヤーを取得

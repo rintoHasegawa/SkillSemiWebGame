@@ -3,17 +3,17 @@
  * Socket.IO接続ハンドラの登録を初期化するマネージャ
  */
 import { Server } from "socket.io";
-import { GameManager } from "@server/domains/game/GameManager";
+import { GameSessionManager } from "@server/domains/game/GameSessionManager";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { registerConnectionHandlers } from "./handlers/registerConnectionHandlers";
 
 /** Socket.IOの接続ハンドラ登録を統括する */
 export class SocketManager {
   private io: Server;
-  private gameManager: GameManager;
+  private gameManager: GameSessionManager;
   private roomManager: RoomManager;
 
-  constructor(io: Server, gameManager: GameManager, roomManager: RoomManager) {
+  constructor(io: Server, gameManager: GameSessionManager, roomManager: RoomManager) {
     this.io = io;
     this.gameManager = gameManager;
     this.roomManager = roomManager;

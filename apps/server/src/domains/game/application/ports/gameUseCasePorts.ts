@@ -2,7 +2,7 @@ import type { TickData } from "../../GameLoop";
 import type { playerTypes } from "@repo/shared";
 
 export interface StartGamePort {
-  startGameLoop(
+  startRoomSession(
     roomId: string,
     playerIds: string[],
     onTick: (data: TickData) => void,

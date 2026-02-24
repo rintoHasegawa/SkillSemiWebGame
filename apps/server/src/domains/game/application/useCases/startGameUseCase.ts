@@ -55,7 +55,7 @@ export const startGameUseCase = ({
 
   const playerIds = room.players.map((p: { id: string }) => p.id);
 
-  gameManager.startGameLoop(
+  gameManager.startRoomSession(
     room.roomId,
     playerIds,
     (tickData) => {
