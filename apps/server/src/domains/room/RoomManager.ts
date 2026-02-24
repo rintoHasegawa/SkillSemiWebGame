@@ -35,4 +35,14 @@ export class RoomManager {
   public getRoomByOwnerId(ownerId: string): roomTypes.Room | undefined {
     return this.roomQueryService.getRoomByOwnerId(ownerId);
   }
+
+  // ルームIDからルームを取得する
+  public getRoomById(roomId: string): roomTypes.Room | undefined {
+    return this.roomQueryService.getRoomById(roomId);
+  }
+
+  // プレイヤーIDから所属ルームを取得する
+  public getRoomByPlayerId(playerId: string): roomTypes.Room | undefined {
+    return this.roomQueryService.getRoomByPlayerId(playerId);
+  }
 }

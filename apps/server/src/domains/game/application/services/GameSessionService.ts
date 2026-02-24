@@ -6,12 +6,12 @@ import { MapStore } from "../../states/MapStore";
 import { logEvent } from "@server/logging/logEvent";
 
 export class GameSessionService {
-  private mapStore: MapStore;
+  private mapStores: Map<string, MapStore>;
   private gameLoops: Map<string, GameLoop>;
   private roomStartTimes: Map<string, number>;
 
   constructor(private players: Map<string, Player>) {
-    this.mapStore = new MapStore();
+    this.mapStores = new Map();
     this.gameLoops = new Map();
     this.roomStartTimes = new Map();
   }
@@ -37,17 +37,20 @@ export class GameSessionService {
 
     const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
     this.roomStartTimes.set(roomId, Date.now());
+    const mapStore = this.mapStores.get(roomId) ?? new MapStore();
+    this.mapStores.set(roomId, mapStore);
 
     const loop = new GameLoop(
       roomId,
       tickRate,
       playerIds,
       this.players,
-      this.mapStore,
+      mapStore,
       onTick,
       () => {
         this.roomStartTimes.delete(roomId);
         this.gameLoops.delete(roomId);
+        this.mapStores.delete(roomId);
         onGameEnd();
       }
     );
@@ -68,6 +71,7 @@ export class GameSessionService {
       loop.stop();
       this.gameLoops.delete(roomId);
       this.roomStartTimes.delete(roomId);
+      this.mapStores.delete(roomId);
       logEvent("GameSessionService", {
         event: "STOP_GAME_LOOP",
         result: "stopped",
@@ -82,15 +86,18 @@ export class GameSessionService {
     }
   }
 
-  public paintAndGetUpdates(playerId: string): gridMapTypes.CellUpdate[] {
+  public paintAndGetUpdates(roomId: string, playerId: string): gridMapTypes.CellUpdate[] {
+    const mapStore = this.mapStores.get(roomId);
+    if (!mapStore) return [];
+
     const player = this.players.get(playerId);
     if (!player) return [];
 
     const gridIndex = gridMapLogic.getGridIndexFromPosition(player.x, player.y);
     if (gridIndex !== null) {
-      this.mapStore.paintCell(gridIndex, player.teamId);
+      mapStore.paintCell(gridIndex, player.teamId);
     }
 
-    return this.mapStore.getAndClearUpdates();
+    return mapStore.getAndClearUpdates();
   }
 }

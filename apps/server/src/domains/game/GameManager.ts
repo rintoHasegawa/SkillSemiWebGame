@@ -66,8 +66,15 @@ export class GameManager {
     return this.playerRegistry.getAllPlayers();
   }
 
+  // 指定ID配列のプレイヤーを取得
+  getPlayersByIds(playerIds: string[]) {
+    return playerIds
+      .map((playerId) => this.playerRegistry.getPlayer(playerId))
+      .filter((player): player is Player => player !== undefined);
+  }
+
   // 【一時的】移動したプレイヤーの足元を塗り、差分を返すメソッド
-  public paintAndGetUpdates(playerId: string): gridMapTypes.CellUpdate[] {
-    return this.gameSessionService.paintAndGetUpdates(playerId);
+  public paintAndGetUpdates(roomId: string, playerId: string): gridMapTypes.CellUpdate[] {
+    return this.gameSessionService.paintAndGetUpdates(roomId, playerId);
   }
 }

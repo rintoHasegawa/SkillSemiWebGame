@@ -5,7 +5,7 @@
 import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import type { gridMapTypes, playerTypes, roomTypes } from "@repo/shared";
-import { createEmitToAll } from "@server/network/adapters/socketEmitters";
+import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = roomTypes.Room["roomId"];
@@ -29,7 +29,7 @@ export type GameEventPublisher = {
 
 /** 切断時に配信するゲームイベントの送信インターフェース */
 export type GameDisconnectPublisher = {
-  publishPlayerRemovedToAll: (removedPlayerId: SocketId) => void;
+  publishPlayerRemovedToRoom: (roomId: RoomId, removedPlayerId: SocketId) => void;
 };
 
 /** 共通送信コンテキストからゲームイベント送信関数群を生成する */
@@ -61,11 +61,11 @@ export const createGameEventPublisher = (common: CommonHandlerContext): GameEven
 
 /** ゲーム切断時の送信関数群を生成する */
 export const createGameDisconnectPublisher = (io: Server): GameDisconnectPublisher => {
-  const emitToAll = createEmitToAll(io);
+  const emitToRoom = createEmitToRoom(io);
 
   return {
-    publishPlayerRemovedToAll: (removedPlayerId: SocketId) => {
-      emitToAll(protocol.SocketEvents.REMOVE_PLAYER, removedPlayerId);
+    publishPlayerRemovedToRoom: (roomId: RoomId, removedPlayerId: SocketId) => {
+      emitToRoom(roomId, protocol.SocketEvents.REMOVE_PLAYER, removedPlayerId);
     },
   };
 };
