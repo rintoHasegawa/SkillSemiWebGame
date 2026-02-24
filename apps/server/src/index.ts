@@ -1,33 +1,13 @@
-import { createServer } from "http";
-import { GameManager } from "./domains/game/GameManager";
-import { RoomManager } from "./domains/room/RoomManager";
-import { SocketManager } from "./network/SocketManager";
-import { createIo } from "./network/createIo";
+import { createHttpServer } from "./network/bootstrap/createHttpServer";
+import { boot } from "./network/bootstrap/boot";
 import { config } from "@repo/shared";
 
 // サーバー待受ポート
 const PORT = process.env.PORT || config.NETWORK_CONFIG.DEV_SERVER_PORT;
 
 // HTTP サーバー・Socket.io サーバー生成
-const httpServer = createServer((req, res) => {
-  // Render の HTTP ヘルスチェック向けに 200 を返す
-  if (req.url === "/") {
-    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("ok");
-    return;
-  }
-
-  res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-  res.end("not found");
-});
-const io = createIo(httpServer);
-
-// ゲーム管理・通信管理クラス初期化
-const gameManager = new GameManager();
-const roomManager = new RoomManager();
-const socketManager = new SocketManager(io, gameManager, roomManager);
-
-socketManager.initialize();
+const httpServer = createHttpServer();
+boot(httpServer);
 
 // HTTP サーバー起動
 httpServer.listen(PORT, () => {
