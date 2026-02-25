@@ -3,6 +3,7 @@
  * START_GAMEイベントの調停を行い，ルーム状態更新とゲーム開始処理を橋渡しする
  */
 import {
+  type BombCleanupPort,
   type GameOutputPort,
   type StartGamePort,
   type StartGameRoomPort,
@@ -14,9 +15,8 @@ import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
-  gameManager: StartGamePort;
+  gameManager: StartGamePort & BombCleanupPort;
   roomManager: StartGameRoomPort;
-  onRoomGameEnded?: (roomId: string) => void;
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToRoom"
@@ -32,7 +32,6 @@ export const startGameCoordinator = ({
   ownerId,
   gameManager,
   roomManager,
-  onRoomGameEnded,
   output,
 }: StartGameCoordinatorParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
@@ -82,7 +81,7 @@ export const startGameCoordinator = ({
     gameManager,
     onGameEnd: () => {
       roomManager.markRoomWaiting(updatedRoom.roomId);
-      onRoomGameEnded?.(updatedRoom.roomId);
+      gameManager.clearBombRoomState(updatedRoom.roomId, "game-ended");
     },
     output,
   });

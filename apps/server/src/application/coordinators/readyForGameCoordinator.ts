@@ -4,15 +4,15 @@
  */
 import {
   type GameOutputPort,
+  type GameRoomLookupPort,
   type ReadyForGamePort,
-  type ReadyForGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
 
 type ReadyForGameCoordinatorParams = {
   socketId: string;
   gameManager: ReadyForGamePort;
-  roomManager: ReadyForGameRoomPort;
+  roomManager: GameRoomLookupPort;
   output: Pick<GameOutputPort, "publishCurrentPlayersToSocket" | "publishGameStartToSocket">;
 };
 

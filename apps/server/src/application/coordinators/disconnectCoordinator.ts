@@ -3,11 +3,13 @@
  * DISCONNECTイベントの調停を行い，ゲーム離脱処理とルーム離脱処理を順序実行する
  */
 import {
+  type BombCleanupPort,
   type DisconnectPlayerPort,
   type GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
   DisconnectRoomPort,
+  FindRoomByIdPort,
   FindRoomByPlayerPort,
   RoomOutputPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
@@ -17,8 +19,8 @@ import { roomDisconnectUseCase } from "@server/domains/room/application/useCases
 /** 切断調停で利用する入力ポートと出力ポートの契約 */
 export type DisconnectCoordinatorParams = {
   socketId: string;
-  gameManager: DisconnectPlayerPort;
-  roomManager: DisconnectRoomPort & FindRoomByPlayerPort;
+  gameManager: DisconnectPlayerPort & BombCleanupPort;
+  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
   gameOutput: Pick<GameOutputPort, "publishPlayerRemovedToRoom">;
   roomOutput: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
 };
@@ -45,4 +47,8 @@ export const disconnectCoordinator = ({
     socketId,
     output: roomOutput,
   });
+
+  if (roomId && !roomManager.getRoomById(roomId)) {
+    gameManager.clearBombRoomState(roomId, "room-deleted");
+  }
 };

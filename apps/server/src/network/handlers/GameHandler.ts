@@ -5,6 +5,3 @@
  */
 /** ゲームイベント受信ハンドラ登録関数を外部参照向けに再公開 */
 export { registerGameHandlers } from "./game/registerGameHandlers";
-
-/** ルーム終了時の爆弾状態掃除関数を外部参照向けに再公開 */
-export { clearBombRoomState } from "@server/domains/game/entities/bomb/BombRoomStateStore";

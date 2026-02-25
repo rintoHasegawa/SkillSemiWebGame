@@ -7,7 +7,7 @@ import { protocol } from "@repo/shared";
 import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes } from "@server/logging/index";
-import { clearBombRoomState, registerGameHandlers } from "./GameHandler";
+import { registerGameHandlers } from "./GameHandler";
 import { registerRoomHandlers } from "./RoomHandler";
 import { createGameDisconnectOutputAdapter } from "./game/createGameOutputAdapter";
 import { createRoomDisconnectOutputAdapter } from "./room/createRoomOutputAdapter";
@@ -36,8 +36,6 @@ export const registerConnectionHandlers = ({
     registerGameHandlers(io, socket, gameManager, roomManager);
 
     socket.on(protocol.SocketEvents.DISCONNECT, () => {
-      const roomIdBeforeDisconnect = roomManager.getRoomByPlayerId(socket.id)?.roomId;
-
       // 切断ログ記録後にドメイン別の後処理を実行する
       logEvent(logScopes.NETWORK, {
         event: protocol.SocketEvents.DISCONNECT,
@@ -52,10 +50,6 @@ export const registerConnectionHandlers = ({
         gameOutput: gameDisconnectOutputAdapter,
         roomOutput: roomDisconnectOutputAdapter,
       });
-
-      if (roomIdBeforeDisconnect && !roomManager.getRoomById(roomIdBeforeDisconnect)) {
-        clearBombRoomState(roomIdBeforeDisconnect, "room-deleted");
-      }
     });
   });
 };

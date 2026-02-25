@@ -7,19 +7,20 @@ import { protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
+  BombStatePort,
+  GameRoomLookupPort,
   MovePlayerPort,
   ReadyForGamePort,
-  ReadyForGameRoomPort,
   StartGamePort,
   StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
+import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
-import { clearBombRoomState, issueServerBombId, shouldBroadcastBombPlaced } from "@server/domains/game/entities/bomb/BombRoomStateStore";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
@@ -33,8 +34,8 @@ const gamePayloadValidators = {
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort,
-  roomManager: StartGameRoomPort & ReadyForGameRoomPort
+  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort & BombStatePort,
+  roomManager: StartGameRoomPort & GameRoomLookupPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -52,7 +53,6 @@ export const registerGameHandlers = (
     protocol.SocketEvents.PLACE_BOMB,
     gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB]
   );
-
   // 遅延計測用のPINGを検証しPONGを返す
   onEvent(protocol.SocketEvents.PING, (clientTime) => {
     if (!guardPingPayload(clientTime)) {
@@ -71,9 +71,6 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      onRoomGameEnded: (roomId) => {
-        clearBombRoomState(roomId, "game-ended");
-      },
       output: gameOutputAdapter,
     });
   });
@@ -107,23 +104,15 @@ export const registerGameHandlers = (
       return;
     }
 
-    const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
-    if (!roomId) {
-      return;
-    }
-
-    const nowMs = Date.now();
-    const dedupeKey = `${socket.id}:${data.requestId}`;
-    if (!shouldBroadcastBombPlaced(roomId, dedupeKey, nowMs)) {
-      return;
-    }
-
-    const payload = {
-      ...data,
-      bombId: issueServerBombId(roomId),
-      ownerId: socket.id,
-    };
-
-    common.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, payload);
+    placeBombUseCase({
+      roomResolver: roomManager,
+      bombStore: gameManager,
+      input: {
+        socketId: socket.id,
+        payload: data,
+        nowMs: Date.now(),
+      },
+      output: gameOutputAdapter,
+    });
   });
 };
