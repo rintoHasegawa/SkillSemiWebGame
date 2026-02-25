@@ -18,7 +18,8 @@ import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
-  gameManager: StartGamePort & BombCleanupPort;
+  gameManager: StartGamePort;
+  bombState: BombCleanupPort;
   roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
   output: Pick<
     GameOutputPort,
@@ -34,6 +35,7 @@ type StartGameCoordinatorParams = {
 export const startGameCoordinator = ({
   ownerId,
   gameManager,
+  bombState,
   roomManager,
   output,
 }: StartGameCoordinatorParams) => {
@@ -84,7 +86,7 @@ export const startGameCoordinator = ({
     gameManager,
     onGameEnd: () => {
       roomManager.markRoomWaiting(updatedRoom.roomId);
-      gameManager.clearBombRoomState(updatedRoom.roomId, "game-ended");
+      bombState.clearBombRoomState(updatedRoom.roomId, "game-ended");
     },
     output,
   });

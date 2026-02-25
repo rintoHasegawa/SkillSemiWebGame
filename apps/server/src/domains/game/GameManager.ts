@@ -3,10 +3,6 @@
  * ゲームセッション集合の生成，更新，参照管理を統括する
  */
 import type { gameTypes, GameResultPayload } from "@repo/shared";
-import {
-  BombRoomStateClearReason,
-  BombRoomStateStore,
-} from "./entities/bomb/BombRoomStateStore";
 import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
@@ -20,7 +16,6 @@ export class GameManager {
   private roomToPlayers: Map<string, Set<string>>;
   private lifecycleService: GameSessionLifecycleService;
   private playerOperationService: GamePlayerOperationService;
-  private bombRoomStateStore: BombRoomStateStore;
 
   constructor() {
     this.sessions = new Map();
@@ -28,7 +23,6 @@ export class GameManager {
     this.roomToPlayers = new Map();
     this.lifecycleService = new GameSessionLifecycleService(this.sessions, this.playerToRoom, this.roomToPlayers);
     this.playerOperationService = new GamePlayerOperationService(this.sessions, this.playerToRoom, this.roomToPlayers);
-    this.bombRoomStateStore = new BombRoomStateStore();
   }
 
   // 外部（GameHandlerなど）から開始時刻を取得できるようにする
@@ -64,20 +58,5 @@ export class GameManager {
   // 指定ルームのプレイヤーを取得
   getRoomPlayers(roomId: string): Player[] {
     return this.lifecycleService.getRoomPlayers(roomId);
-  }
-
-  // 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する
-  shouldBroadcastBombPlaced(roomId: string, dedupeKey: string, nowMs: number): boolean {
-    return this.bombRoomStateStore.shouldBroadcastBombPlaced(roomId, dedupeKey, nowMs);
-  }
-
-  // ルーム単位の連番からサーバー採番の爆弾IDを生成する
-  issueServerBombId(roomId: string): string {
-    return this.bombRoomStateStore.issueServerBombId(roomId);
-  }
-
-  // 指定ルームの爆弾採番状態と重複排除状態を破棄する
-  clearBombRoomState(roomId: string, reason: BombRoomStateClearReason): void {
-    this.bombRoomStateStore.clearBombRoomState(roomId, reason);
   }
 }
