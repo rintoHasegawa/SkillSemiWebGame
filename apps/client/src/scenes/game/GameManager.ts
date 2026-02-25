@@ -10,6 +10,7 @@ import { GameTimer } from "./application/GameTimer";
 import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
 import { BombManager } from "./application/BombManager";
+import { createBombIdFromPayload } from "./application/BombManager";
 import type { BombUpsertPayload } from "./application/BombManager";
 import type { GamePlayers } from "./application/game.types";
 
@@ -39,7 +40,11 @@ export class GameManager {
   public placeBomb(): string | null {
     if (this.isInputLocked) return null;
     if (!this.bombManager) return null;
-    return this.bombManager.placeBomb();
+    const placed = this.bombManager.placeBomb();
+    if (!placed) return null;
+
+    socketManager.game.sendPlaceBomb(placed.payload);
+    return placed.bombId;
   }
 
   public upsertBomb(bombId: string, payload: BombUpsertPayload): void {
@@ -96,6 +101,10 @@ export class GameManager {
       gameMap: this.gameMap,
       onGameStart: this.setGameStart.bind(this),
       onGameEnd: this.lockInput.bind(this),
+      onBombPlaced: (payload) => {
+        const bombId = createBombIdFromPayload(payload);
+        this.upsertBomb(bombId, payload);
+      },
     });
     this.networkSync.bind();
 

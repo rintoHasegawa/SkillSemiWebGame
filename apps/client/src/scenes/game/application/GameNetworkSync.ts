@@ -5,6 +5,7 @@
  */
 import { Container } from "pixi.js";
 import type {
+  BombPlacedPayload,
   CurrentPlayersPayload,
   GameStartPayload,
   NewPlayerPayload,
@@ -26,6 +27,7 @@ type GameNetworkSyncOptions = {
   gameMap: GameMapController;
   onGameStart: (startTime: number) => void;
   onGameEnd: () => void;
+  onBombPlaced: (payload: BombPlacedPayload) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -36,6 +38,7 @@ export class GameNetworkSync {
   private gameMap: GameMapController;
   private onGameStart: (startTime: number) => void;
   private onGameEnd: () => void;
+  private onBombPlaced: (payload: BombPlacedPayload) => void;
   private isBound = false;
 
   private debugLog = (message: string) => {
@@ -96,13 +99,18 @@ export class GameNetworkSync {
     this.onGameEnd();
   };
 
-  constructor({ worldContainer, players, myId, gameMap, onGameStart, onGameEnd }: GameNetworkSyncOptions) {
+  private handleBombPlaced = (payload: BombPlacedPayload) => {
+    this.onBombPlaced(payload);
+  };
+
+  constructor({ worldContainer, players, myId, gameMap, onGameStart, onGameEnd, onBombPlaced }: GameNetworkSyncOptions) {
     this.worldContainer = worldContainer;
     this.players = players;
     this.myId = myId;
     this.gameMap = gameMap;
     this.onGameStart = onGameStart;
     this.onGameEnd = onGameEnd;
+    this.onBombPlaced = onBombPlaced;
   }
 
   public bind() {
@@ -115,6 +123,7 @@ export class GameNetworkSync {
     socketManager.game.onRemovePlayer(this.handleRemovePlayer);
     socketManager.game.onUpdateMapCells(this.handleUpdateMapCells);
     socketManager.game.onGameEnd(this.handleGameEnd);
+    socketManager.game.onBombPlaced(this.handleBombPlaced);
 
     this.isBound = true;
   }
@@ -129,6 +138,7 @@ export class GameNetworkSync {
     socketManager.game.offRemovePlayer(this.handleRemovePlayer);
     socketManager.game.offUpdateMapCells(this.handleUpdateMapCells);
     socketManager.game.offGameEnd(this.handleGameEnd);
+    socketManager.game.offBombPlaced(this.handleBombPlaced);
 
     this.isBound = false;
   }

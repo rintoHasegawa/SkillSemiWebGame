@@ -46,13 +46,21 @@ type NetworkMoveLogPayload = {
   socketId: string;
 };
 
+/** NetworkのPLACE_BOMB不正ペイロードログ契約 */
+type NetworkPlaceBombLogPayload = {
+  event: typeof protocol.SocketEvents.PLACE_BOMB;
+  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  socketId: string;
+};
+
 /** Networkスコープのログ契約ユニオン */
 type NetworkLogPayload =
   | NetworkConnectLogPayload
   | NetworkDisconnectLogPayload
   | NetworkJoinRoomLogPayload
   | NetworkPingLogPayload
-  | NetworkMoveLogPayload;
+  | NetworkMoveLogPayload
+  | NetworkPlaceBombLogPayload;
 
 /** GameUseCaseのSTART_GAMEログ契約 */
 type GameUseCaseStartGameLogPayload = {

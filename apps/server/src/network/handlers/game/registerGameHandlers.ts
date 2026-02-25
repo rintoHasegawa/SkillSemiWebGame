@@ -16,7 +16,7 @@ import type {
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
+import { isBombPlacedPayload, isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
@@ -25,6 +25,7 @@ import { createGameOutputAdapter } from "./createGameOutputAdapter";
 const gamePayloadValidators = {
   [protocol.SocketEvents.PING]: isPingPayload,
   [protocol.SocketEvents.MOVE]: isMovePayload,
+  [protocol.SocketEvents.PLACE_BOMB]: isBombPlacedPayload,
 } as const;
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
@@ -45,6 +46,10 @@ export const registerGameHandlers = (
   const guardMovePayload = guardOnEvent(
     protocol.SocketEvents.MOVE,
     gamePayloadValidators[protocol.SocketEvents.MOVE]
+  );
+  const guardPlaceBombPayload = guardOnEvent(
+    protocol.SocketEvents.PLACE_BOMB,
+    gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB]
   );
 
   // 遅延計測用のPINGを検証しPONGを返す
@@ -90,5 +95,19 @@ export const registerGameHandlers = (
       playerId: socket.id,
       move: data,
     });
+  });
+
+  // 爆弾設置入力を検証し，所属ルームへ同期配信する
+  onEvent(protocol.SocketEvents.PLACE_BOMB, (data) => {
+    if (!guardPlaceBombPayload(data)) {
+      return;
+    }
+
+    const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
+    if (!roomId) {
+      return;
+    }
+
+    common.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, data);
   });
 };
