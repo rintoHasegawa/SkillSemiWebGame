@@ -21,6 +21,12 @@ import { isMovePayload, isPingPayload } from "@server/network/validation/socketP
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
+/** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
+const gamePayloadValidators = {
+  [protocol.SocketEvents.PING]: isPingPayload,
+  [protocol.SocketEvents.MOVE]: isMovePayload,
+} as const;
+
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
   io: Server,
@@ -34,7 +40,7 @@ export const registerGameHandlers = (
 
   // 遅延計測用のPINGを検証しPONGを返す
   onEvent(protocol.SocketEvents.PING, (clientTime) => {
-    if (!isPingPayload(clientTime)) {
+    if (!gamePayloadValidators[protocol.SocketEvents.PING](clientTime)) {
       logEvent("Network", {
         event: "PING",
         result: "ignored_invalid_payload",
@@ -71,7 +77,7 @@ export const registerGameHandlers = (
 
   // 移動入力を検証しプレイヤー移動ユースケースへ連携する
   onEvent(protocol.SocketEvents.MOVE, (data) => {
-    if (!isMovePayload(data)) {
+    if (!gamePayloadValidators[protocol.SocketEvents.MOVE](data)) {
       logEvent("Network", {
         event: "MOVE",
         result: "ignored_invalid_payload",

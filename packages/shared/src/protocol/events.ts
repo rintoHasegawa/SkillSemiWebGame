@@ -36,6 +36,12 @@ export const SocketEvents = {
   GAME_END: "game-end",   // 3分経過時のゲーム終了通知
 } as const;
 
+/**
+ * ------------------------------------------------------------
+ * ペイロード型定義
+ * ------------------------------------------------------------
+ */
+
 /** UPDATE_PLAYERS イベントで送受信するプレイヤー差分配列 */
 export type UpdatePlayersPayload = TickData["playerUpdates"];
 
@@ -66,26 +72,55 @@ export type PongPayload = {
   serverTime: number;
 };
 
-/** ソケットイベントごとのペイロード対応表 */
-export type SocketPayloadMap = {
+/**
+ * ------------------------------------------------------------
+ * イベント方向ごとのペイロード対応表
+ * ------------------------------------------------------------
+ */
+
+/** 接続ライフサイクルイベントのペイロード対応表 */
+export type ConnectionLifecycleEventPayloadMap = {
   [SocketEvents.CONNECT]: undefined;
   [SocketEvents.DISCONNECT]: undefined;
+};
+
+/** クライアントからサーバーへ送信するイベントごとのペイロード対応表 */
+export type ClientToServerEventPayloadMap = {
   [SocketEvents.JOIN_ROOM]: roomTypes.JoinRoomPayload;
+  [SocketEvents.START_GAME]: undefined;
+  [SocketEvents.READY_FOR_GAME]: undefined;
+  [SocketEvents.MOVE]: MovePayload;
+  [SocketEvents.PING]: PingPayload;
+};
+
+/** サーバーからクライアントへ送信するイベントごとのペイロード対応表 */
+export type ServerToClientEventPayloadMap = {
   [SocketEvents.ROOM_JOIN_REJECTED]: roomTypes.JoinRoomRejectedPayload;
   [SocketEvents.ROOM_UPDATE]: roomTypes.Room;
-  [SocketEvents.START_GAME]: undefined;
   [SocketEvents.GAME_START]: GameStartPayload;
-  [SocketEvents.READY_FOR_GAME]: undefined;
   [SocketEvents.CURRENT_PLAYERS]: CurrentPlayersPayload;
   [SocketEvents.NEW_PLAYER]: NewPlayerPayload;
   [SocketEvents.UPDATE_PLAYERS]: UpdatePlayersPayload;
   [SocketEvents.REMOVE_PLAYER]: RemovePlayerPayload;
-  [SocketEvents.MOVE]: MovePayload;
   [SocketEvents.UPDATE_MAP_CELLS]: UpdateMapCellsPayload;
-  [SocketEvents.PING]: PingPayload;
   [SocketEvents.PONG]: PongPayload;
   [SocketEvents.GAME_END]: undefined;
 };
 
-/** 指定イベント名に対応するペイロード型を取得するユーティリティ */
-export type PayloadOf<TEvent extends keyof SocketPayloadMap> = SocketPayloadMap[TEvent];
+/**
+ * ------------------------------------------------------------
+ * イベント名からペイロード型を引くユーティリティ
+ * ------------------------------------------------------------
+ */
+
+/** 接続ライフサイクルイベントのペイロード型を取得するユーティリティ */
+export type ConnectionLifecyclePayloadOf<TEvent extends keyof ConnectionLifecycleEventPayloadMap> =
+  ConnectionLifecycleEventPayloadMap[TEvent];
+
+/** クライアント送信イベントのペイロード型を取得するユーティリティ */
+export type ClientToServerPayloadOf<TEvent extends keyof ClientToServerEventPayloadMap> =
+  ClientToServerEventPayloadMap[TEvent];
+
+/** サーバー送信イベントのペイロード型を取得するユーティリティ */
+export type ServerToClientPayloadOf<TEvent extends keyof ServerToClientEventPayloadMap> =
+  ServerToClientEventPayloadMap[TEvent];
