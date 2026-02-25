@@ -10,7 +10,10 @@ export class TeamAssignmentService {
    * 現在のプレイヤー状況から、最も人数が少ないチームIDを算出する
    */
   public static getBalancedTeamId(currentPlayers: Map<string, Player>): number {
-    const teamCount = config.GAME_CONFIG.TEAM_COLORS.length;
+    const teamCount = config.GAME_CONFIG.TEAM_COUNT;
+    if (config.GAME_CONFIG.TEAM_COLORS.length !== teamCount) {
+      throw new Error("GAME_CONFIG mismatch: TEAM_COLORS length must equal TEAM_COUNT");
+    }
     const teamPopulations = new Array(teamCount).fill(0);
 
     // 現在の各チームの所属人数を数え上げる

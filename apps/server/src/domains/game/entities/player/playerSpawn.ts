@@ -10,12 +10,12 @@ import { Player } from "./Player.js";
 export const createSpawnedPlayer = (id: string, teamId: number): Player => {
   const player = new Player(id, teamId); // ここにteamIdを渡す！
 
-  const { GRID_COLS, GRID_ROWS } = config.GAME_CONFIG;
+  const { GRID_COLS, GRID_ROWS, TEAM_COUNT } = config.GAME_CONFIG;
 
   let baseX = GRID_COLS / 2;
   let baseY = GRID_ROWS / 2;
 
-  switch (player.teamId % 4) {
+  switch (player.teamId % TEAM_COUNT) {
     case 0: // 左上
       baseX = 2;
       baseY = 2;

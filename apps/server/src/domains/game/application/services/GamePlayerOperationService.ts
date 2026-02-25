@@ -53,7 +53,7 @@ export class GamePlayerOperationService {
     const removed = session.removePlayer(id);
     this.removePlayerFromIndexes(roomId, id, roomPlayerSet);
 
-    if (removed && session.isEmpty()) {
+    if (removed && session.getPlayers().length === 0) {
       session.dispose();
       this.sessions.delete(roomId);
       this.roomToPlayers.delete(roomId);

@@ -46,6 +46,7 @@ export const GAME_CONFIG = {
   BOMB_COOLDOWN_MS: 1200,  // 設置後に次の爆弾を置けるまでの待機時間（ms）
 
   // チームカラー設定
+  TEAM_COUNT: 4,
   // teamId インデックス順カラー配列
   TEAM_COLORS: ['#FF4B4B', '#4B4BFF', '#4BFF4B', '#FFD700'],
 
