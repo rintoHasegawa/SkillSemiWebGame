@@ -1,57 +1,35 @@
 /**
  * eventPayloadMaps
- * イベント方向ごとのペイロード対応表を定義する
- * イベント名定数とペイロード型の対応契約を集約する
+ * イベント方向ごとのペイロード対応表を再公開するエントリ
+ * 機能別に分割した対応表を合成して公開契約を維持する
  */
-import { SocketEvents } from "./socketEvents";
 import type {
-  BombPlacedPayload,
-  CurrentPlayersPayload,
-  GameResultPayload,
-  GameStartPayload,
-  JoinRoomPayload,
-  MovePayload,
-  NewPlayerPayload,
-  PingPayload,
-  PongPayload,
-  RemovePlayerPayload,
-  RoomJoinRejectedPayload,
-  RoomUpdatePayload,
-  UpdateMapCellsPayload,
-  UpdatePlayersPayload,
-} from "./eventPayloads";
+  ConnectionLifecycleEventPayloadMap as CommonConnectionLifecycleEventPayloadMap,
+} from "./maps/commonEventPayloadMap";
+import type {
+  LobbyClientToServerEventPayloadMap,
+  LobbyServerToClientEventPayloadMap,
+} from "./maps/lobbyEventPayloadMap";
+import type {
+  GameClientToServerEventPayloadMap,
+  GameServerToClientEventPayloadMap,
+} from "./maps/gameEventPayloadMap";
+
+/** 接続ライフサイクルイベントのペイロード対応表を再公開する */
+export type { ConnectionLifecycleEventPayloadMap } from "./maps/commonEventPayloadMap";
 
 /** 接続ライフサイクルイベントのペイロード対応表 */
-export type ConnectionLifecycleEventPayloadMap = {
-  [SocketEvents.CONNECT]: undefined;
-  [SocketEvents.DISCONNECT]: undefined;
-};
+type ConnectionLifecycleEventPayloadMap = CommonConnectionLifecycleEventPayloadMap;
 
 /** クライアントからサーバーへ送信するイベントごとのペイロード対応表 */
-export type ClientToServerEventPayloadMap = {
-  [SocketEvents.JOIN_ROOM]: JoinRoomPayload;
-  [SocketEvents.START_GAME]: undefined;
-  [SocketEvents.READY_FOR_GAME]: undefined;
-  [SocketEvents.MOVE]: MovePayload;
-  [SocketEvents.PLACE_BOMB]: BombPlacedPayload;
-  [SocketEvents.PING]: PingPayload;
-};
+export type ClientToServerEventPayloadMap =
+  & LobbyClientToServerEventPayloadMap
+  & GameClientToServerEventPayloadMap;
 
 /** サーバーからクライアントへ送信するイベントごとのペイロード対応表 */
-export type ServerToClientEventPayloadMap = {
-  [SocketEvents.ROOM_JOIN_REJECTED]: RoomJoinRejectedPayload;
-  [SocketEvents.ROOM_UPDATE]: RoomUpdatePayload;
-  [SocketEvents.GAME_START]: GameStartPayload;
-  [SocketEvents.CURRENT_PLAYERS]: CurrentPlayersPayload;
-  [SocketEvents.NEW_PLAYER]: NewPlayerPayload;
-  [SocketEvents.UPDATE_PLAYERS]: UpdatePlayersPayload;
-  [SocketEvents.REMOVE_PLAYER]: RemovePlayerPayload;
-  [SocketEvents.UPDATE_MAP_CELLS]: UpdateMapCellsPayload;
-  [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
-  [SocketEvents.PONG]: PongPayload;
-  [SocketEvents.GAME_END]: undefined;
-  [SocketEvents.GAME_RESULT]: GameResultPayload;
-};
+export type ServerToClientEventPayloadMap =
+  & LobbyServerToClientEventPayloadMap
+  & GameServerToClientEventPayloadMap;
 
 /** 接続ライフサイクルイベントのペイロード型を取得するユーティリティ */
 export type ConnectionLifecyclePayloadOf<TEvent extends keyof ConnectionLifecycleEventPayloadMap> =
