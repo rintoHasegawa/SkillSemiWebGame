@@ -7,15 +7,18 @@ import { logEvent } from "@server/logging/logEvent";
 import { logResults, logScopes } from "@server/logging/logEvents";
 
 type PayloadValidator<TPayload> = (value: unknown) => value is TPayload;
-type SocketEventName = (typeof protocol.SocketEvents)[keyof typeof protocol.SocketEvents];
+type PayloadGuardEventName =
+  | typeof protocol.SocketEvents.JOIN_ROOM
+  | typeof protocol.SocketEvents.PING
+  | typeof protocol.SocketEvents.MOVE;
 type EventBoundPayloadGuard<TPayload> = (payload: unknown) => payload is TPayload;
 
 /**
  * 受信ペイロードを検証し，不正時は共通ログを記録するガード関数を生成する
  */
 export const createPayloadGuard = (socketId: string) => {
-  const isValidPayload = <TPayload>(
-    event: SocketEventName,
+  const isValidPayload = <TPayload, TEvent extends PayloadGuardEventName>(
+    event: TEvent,
     payload: unknown,
     validator: PayloadValidator<TPayload>
   ): payload is TPayload => {
@@ -23,17 +26,37 @@ export const createPayloadGuard = (socketId: string) => {
       return true;
     }
 
-    logEvent(logScopes.NETWORK, {
-      event,
-      result: logResults.IGNORED_INVALID_PAYLOAD,
-      socketId,
-    });
+    switch (event) {
+      case protocol.SocketEvents.JOIN_ROOM:
+        logEvent(logScopes.NETWORK, {
+          event: protocol.SocketEvents.JOIN_ROOM,
+          result: logResults.IGNORED_INVALID_PAYLOAD,
+          socketId,
+        });
+        break;
+
+      case protocol.SocketEvents.PING:
+        logEvent(logScopes.NETWORK, {
+          event: protocol.SocketEvents.PING,
+          result: logResults.IGNORED_INVALID_PAYLOAD,
+          socketId,
+        });
+        break;
+
+      case protocol.SocketEvents.MOVE:
+        logEvent(logScopes.NETWORK, {
+          event: protocol.SocketEvents.MOVE,
+          result: logResults.IGNORED_INVALID_PAYLOAD,
+          socketId,
+        });
+        break;
+    }
 
     return false;
   };
 
-  const guardOnEvent = <TPayload>(
-    event: SocketEventName,
+  const guardOnEvent = <TPayload, TEvent extends PayloadGuardEventName>(
+    event: TEvent,
     validator: PayloadValidator<TPayload>
   ): EventBoundPayloadGuard<TPayload> => {
     return (payload: unknown): payload is TPayload => {
