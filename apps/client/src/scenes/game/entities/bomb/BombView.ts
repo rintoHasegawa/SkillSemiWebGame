@@ -13,6 +13,8 @@ export class BombView {
 
   private bombGraphic: Graphics;
   private explosionGraphic: Graphics;
+  private lastRenderedState: BombState | null = null;
+  private lastRenderedRadiusGrid: number | null = null;
 
   constructor() {
     this.displayObject = new Container();
@@ -31,9 +33,16 @@ export class BombView {
   }
 
   public renderState(state: BombState, radiusGrid: number): void {
+    if (this.lastRenderedState === state && this.lastRenderedRadiusGrid === radiusGrid) {
+      return;
+    }
+
     const { GRID_CELL_SIZE } = config.GAME_CONFIG;
     const bombRadiusPx = GRID_CELL_SIZE * 0.2;
     const explosionRadiusPx = radiusGrid * GRID_CELL_SIZE;
+
+    this.lastRenderedState = state;
+    this.lastRenderedRadiusGrid = radiusGrid;
 
     this.bombGraphic.clear();
     this.explosionGraphic.clear();

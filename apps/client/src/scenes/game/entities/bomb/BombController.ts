@@ -10,7 +10,6 @@ type BombControllerOptions = {
   x: number;
   y: number;
   radiusGrid: number;
-  placedAtElapsedMs: number;
   explodeAtElapsedMs: number;
 };
 
@@ -19,8 +18,8 @@ export class BombController {
   private readonly model: BombModel;
   private readonly view: BombView;
 
-  constructor({ x, y, radiusGrid, placedAtElapsedMs, explodeAtElapsedMs }: BombControllerOptions) {
-    this.model = new BombModel({ x, y, radiusGrid, placedAtElapsedMs, explodeAtElapsedMs });
+  constructor({ x, y, radiusGrid, explodeAtElapsedMs }: BombControllerOptions) {
+    this.model = new BombModel({ x, y, radiusGrid, explodeAtElapsedMs });
     this.view = new BombView();
 
     const pos = this.model.getPosition();
