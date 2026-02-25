@@ -6,8 +6,11 @@ import {
   type BombCleanupPort,
   type GameOutputPort,
   type StartGamePort,
-  type StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
+import type {
+  FindRoomByOwnerPort,
+  RoomPhaseTransitionPort,
+} from "@server/domains/room/application/ports/roomUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { logEvent } from "@server/logging/logger";
 import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
@@ -15,8 +18,9 @@ import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
-  gameManager: StartGamePort & BombCleanupPort;
-  roomManager: StartGameRoomPort;
+  gameManager: StartGamePort;
+  bombState: BombCleanupPort;
+  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToRoom"
@@ -31,6 +35,7 @@ type StartGameCoordinatorParams = {
 export const startGameCoordinator = ({
   ownerId,
   gameManager,
+  bombState,
   roomManager,
   output,
 }: StartGameCoordinatorParams) => {
@@ -81,7 +86,7 @@ export const startGameCoordinator = ({
     gameManager,
     onGameEnd: () => {
       roomManager.markRoomWaiting(updatedRoom.roomId);
-      gameManager.clearBombRoomState(updatedRoom.roomId, "game-ended");
+      bombState.clearBombRoomState(updatedRoom.roomId, "game-ended");
     },
     output,
   });

@@ -7,12 +7,16 @@ import { protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
-  BombStatePort,
-  GameRoomLookupPort,
+  FindRoomByOwnerPort,
+  FindRoomByPlayerPort,
+  RoomPhaseTransitionPort,
+} from "@server/domains/room/application/ports/roomUseCasePorts";
+import type {
+  BombPlacementPort,
+  BombCleanupPort,
   MovePlayerPort,
   ReadyForGamePort,
   StartGamePort,
-  StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
@@ -34,8 +38,9 @@ const gamePayloadValidators = {
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort & BombStatePort,
-  roomManager: StartGameRoomPort & GameRoomLookupPort
+  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort,
+  bombState: BombPlacementPort & BombCleanupPort,
+  roomManager: FindRoomByOwnerPort & FindRoomByPlayerPort & RoomPhaseTransitionPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -70,6 +75,7 @@ export const registerGameHandlers = (
     startGameCoordinator({
       ownerId: socket.id,
       gameManager,
+      bombState,
       roomManager,
       output: gameOutputAdapter,
     });
@@ -106,7 +112,7 @@ export const registerGameHandlers = (
 
     placeBombUseCase({
       roomResolver: roomManager,
-      bombStore: gameManager,
+      bombStore: bombState,
       input: {
         socketId: socket.id,
         payload: data,
