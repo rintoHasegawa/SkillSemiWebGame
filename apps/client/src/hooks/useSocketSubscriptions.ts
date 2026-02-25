@@ -16,6 +16,38 @@ type UseSocketSubscriptionsParams = {
   setScenePhase: (phase: appTypes.ScenePhase) => void;
 };
 
+type AppSocketHandlers = {
+  handleConnect: (id: string) => void;
+  handleRoomUpdate: (updatedRoom: roomTypes.Room) => void;
+  handleGameStart: () => void;
+  handleGameResult: (payload: GameResultPayload) => void;
+};
+
+const registerConnectionSubscriptions = ({ handleConnect }: AppSocketHandlers): void => {
+  socketManager.common.onConnect(handleConnect);
+};
+
+const unregisterConnectionSubscriptions = ({ handleConnect }: AppSocketHandlers): void => {
+  socketManager.common.offConnect(handleConnect);
+};
+
+const registerRoomSubscriptions = ({ handleRoomUpdate }: AppSocketHandlers): void => {
+  socketManager.lobby.onRoomUpdate(handleRoomUpdate);
+};
+
+const unregisterRoomSubscriptions = ({ handleRoomUpdate }: AppSocketHandlers): void => {
+  socketManager.lobby.offRoomUpdate(handleRoomUpdate);
+};
+
+const registerGameSubscriptions = ({ handleGameStart, handleGameResult }: AppSocketHandlers): void => {
+  socketManager.game.onceGameStart(handleGameStart);
+  socketManager.game.onGameResult(handleGameResult);
+};
+
+const unregisterGameSubscriptions = ({ handleGameResult }: AppSocketHandlers): void => {
+  socketManager.game.offGameResult(handleGameResult);
+};
+
 /** アプリ共通のソケット購読を登録しクリーンアップするフック */
 export const useSocketSubscriptions = ({
   completeJoinRequest,
@@ -25,36 +57,37 @@ export const useSocketSubscriptions = ({
   setScenePhase,
 }: UseSocketSubscriptionsParams): void => {
   useEffect(() => {
-    const handleConnect = (id: string) => {
+    const handlers: AppSocketHandlers = {
+      handleConnect: (id: string) => {
       setMyId(id);
-    };
+      },
 
-    const handleRoomUpdate = (updatedRoom: roomTypes.Room) => {
+      handleRoomUpdate: (updatedRoom: roomTypes.Room) => {
       completeJoinRequest();
       setRoom(updatedRoom);
       setScenePhase(appConsts.ScenePhase.LOBBY);
-    };
+      },
 
-    const handleGameStart = () => {
+      handleGameStart: () => {
       setGameResult(null);
       setScenePhase(appConsts.ScenePhase.PLAYING);
-    };
+      },
 
-    const handleGameResult = (payload: GameResultPayload) => {
+      handleGameResult: (payload: GameResultPayload) => {
       setGameResult(payload);
       setScenePhase(appConsts.ScenePhase.RESULT);
+      },
     };
 
-    socketManager.common.onConnect(handleConnect);
-    socketManager.lobby.onRoomUpdate(handleRoomUpdate);
-    socketManager.game.onceGameStart(handleGameStart);
-    socketManager.game.onGameResult(handleGameResult);
+    registerConnectionSubscriptions(handlers);
+    registerRoomSubscriptions(handlers);
+    registerGameSubscriptions(handlers);
 
     return () => {
       completeJoinRequest();
-      socketManager.common.offConnect(handleConnect);
-      socketManager.lobby.offRoomUpdate(handleRoomUpdate);
-      socketManager.game.offGameResult(handleGameResult);
+      unregisterConnectionSubscriptions(handlers);
+      unregisterRoomSubscriptions(handlers);
+      unregisterGameSubscriptions(handlers);
     };
   }, [completeJoinRequest, setGameResult, setMyId, setRoom, setScenePhase]);
 };

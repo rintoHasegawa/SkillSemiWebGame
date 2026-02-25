@@ -6,6 +6,8 @@
 import { Assets, Sprite, Texture } from "pixi.js";
 import { config } from "@client/config";
 
+const ENABLE_DEBUG_LOG = import.meta.env.DEV;
+
 export class PlayerView {
   public readonly displayObject: Sprite;
 
@@ -54,7 +56,6 @@ export class PlayerView {
   }
 
   /** BASE_URL対応のURLで画像を読み込み、スプライトに反映する */
-  /** BASE_URL対応のURLで画像を読み込み、スプライトに反映する */
   private async applyTexture(imageFileName: string): Promise<void> {
     try {
       const imageUrl = `${import.meta.env.BASE_URL}${imageFileName}`;
@@ -69,10 +70,11 @@ export class PlayerView {
       this.displayObject.width = PLAYER_RADIUS_PX * 2 * scaleRate;
       this.displayObject.height = PLAYER_RADIUS_PX * 2 * scaleRate;
 
-      // 👇 ちゃんとこの処理が実行されているか、ブラウザのログに出す！
-      console.log(
-        `🎨 画像を ${scaleRate} 倍のサイズ（${this.displayObject.width}）に拡大しました！`,
-      );
+      if (ENABLE_DEBUG_LOG) {
+        console.log(
+          `[PlayerView] 画像を ${scaleRate} 倍のサイズ（${this.displayObject.width}）に拡大`,
+        );
+      }
     } catch (error) {
       console.error(
         `[PlayerView] 画像の読み込みに失敗: ${imageFileName}`,
