@@ -61,3 +61,23 @@ export const GAME_CONFIG = {
   MAP_GRID_COLOR: 0x333333,   // グリッド線の色
   MAP_BORDER_COLOR: 0xff4444, // プレイ領域外枠の色
 } as const;
+
+/** TEAM_COUNT と TEAM_COLORS の整合性を検証する */
+export const validateTeamConfig = (): void => {
+  const { TEAM_COUNT, TEAM_COLORS } = GAME_CONFIG;
+  if (TEAM_COLORS.length !== TEAM_COUNT) {
+    throw new Error(
+      `GAME_CONFIG mismatch: TEAM_COLORS length (${TEAM_COLORS.length}) must equal TEAM_COUNT (${TEAM_COUNT})`,
+    );
+  }
+};
+
+/** teamId が有効範囲内かを検証する */
+export const assertValidTeamId = (teamId: number): void => {
+  validateTeamConfig();
+
+  const { TEAM_COUNT } = GAME_CONFIG;
+  if (!Number.isInteger(teamId) || teamId < 0 || teamId >= TEAM_COUNT) {
+    throw new Error(`Invalid teamId: ${teamId}`);
+  }
+};

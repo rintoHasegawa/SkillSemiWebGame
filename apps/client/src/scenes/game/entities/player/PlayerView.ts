@@ -10,7 +10,7 @@ export class PlayerView {
   public readonly displayObject: Sprite;
 
   constructor(teamId: number, isLocal: boolean) {
-    const { PLAYER_RADIUS_PX } = config.GAME_CONFIG;
+    const { PLAYER_RADIUS_PX, TEAM_COUNT } = config.GAME_CONFIG;
 
     // 🌟 1. チームIDと画像ファイル名の紐づけ（すべて .svg に変更しました！）
     const characterImages = [
@@ -20,8 +20,16 @@ export class PlayerView {
       "/yellow.svg", // teamId: 3 のときの画像
     ];
 
+    if (characterImages.length !== TEAM_COUNT) {
+      throw new Error(
+        `GAME_CONFIG mismatch: characterImages length (${characterImages.length}) must equal TEAM_COUNT (${TEAM_COUNT})`,
+      );
+    }
+
+    config.assertValidTeamId(teamId);
+
     // 配列から対応する画像ファイル名を取得（デフォルトは red.svg）
-    const imageFileName = (characterImages[teamId] || "/red.svg").replace(
+    const imageFileName = characterImages[teamId].replace(
       /^\//,
       "",
     );

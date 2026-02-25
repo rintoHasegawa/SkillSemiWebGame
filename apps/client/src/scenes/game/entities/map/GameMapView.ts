@@ -98,8 +98,9 @@ export class GameMapView {
 
   /** チームIDから塗り色の16進数カラー値を取得する */
   private toHexColor(teamId: number): number {
+    config.assertValidTeamId(teamId);
     const { TEAM_COLORS } = config.GAME_CONFIG;
-    const colorString = TEAM_COLORS[teamId] || '#FFFFFF';
+    const colorString = TEAM_COLORS[teamId];
     return parseInt(colorString.replace('#', '0x'), 16);
   }
 }
