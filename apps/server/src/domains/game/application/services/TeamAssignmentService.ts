@@ -2,7 +2,7 @@
  * TeamAssignmentService
  * プレイヤーのチーム割り当てロジックを提供するサービス
  */
-import { config } from "@repo/shared";
+import { config } from "@server/config";
 import type { Player } from "../../entities/player/Player.js";
 
 export class TeamAssignmentService {

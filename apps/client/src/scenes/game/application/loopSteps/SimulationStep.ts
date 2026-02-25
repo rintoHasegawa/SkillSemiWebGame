@@ -3,7 +3,7 @@
  * ゲームループのシミュレーション段を担う
  * ローカル更新とリモート補間更新を順に実行する
  */
-import { config } from "@repo/shared";
+import { config } from "@client/config";
 import { socketManager } from "@client/network/SocketManager";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { GamePlayers } from "../game.types";

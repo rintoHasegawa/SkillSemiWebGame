@@ -3,7 +3,7 @@
  * プレイヤーの座標計算と補間計算を担うモデル
  * ローカル移動，リモート目標座標，送信スナップショットを管理する
  */
-import { config } from '@repo/shared';
+import { config } from '@client/config';
 import type { playerTypes } from '@repo/shared';
 
 /** プレイヤーの座標計算と補間計算を管理するモデル */

@@ -2,7 +2,7 @@
  * GameSessionLifecycleService
  * ゲームセッションの開始，参照，終了時クリーンアップを管理する
  */
-import { config } from "@repo/shared";
+import { config } from "@server/config";
 import type { gameTypes, GameResultPayload } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";

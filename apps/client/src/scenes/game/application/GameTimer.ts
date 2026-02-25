@@ -3,7 +3,7 @@
  * ゲーム開始時刻を基準に残り時間を計算する
  * 表示用の残り秒数取得を提供する
  */
-import { config } from "@repo/shared";
+import { config } from "@client/config";
 
 /** 現在時刻ミリ秒を返す関数型 */
 export type NowMsProvider = () => number;

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import path from 'node:path'
 import react from '@vitejs/plugin-react'
-import { config } from '@repo/shared'
+import { config } from './src/config/index.ts'
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production'

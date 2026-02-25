@@ -4,7 +4,7 @@
  */
 import { createHttpServer } from "./network/bootstrap/createHttpServer";
 import { boot } from "./network/bootstrap/boot";
-import { config } from "@repo/shared";
+import { config } from "@server/config";
 
 // サーバー待受ポート
 const PORT = process.env.PORT || config.NETWORK_CONFIG.DEV_SERVER_PORT;

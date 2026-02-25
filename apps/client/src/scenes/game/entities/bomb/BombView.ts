@@ -4,7 +4,7 @@
  * 設置中の見た目と爆風円の表示を管理する
  */
 import { Container, Graphics } from "pixi.js";
-import { config } from "@repo/shared";
+import { config } from "@client/config";
 import type { BombState } from "./BombModel";
 
 /** 爆弾の描画表現を管理するビュー */

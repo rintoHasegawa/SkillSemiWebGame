@@ -3,7 +3,7 @@
  * マップ塗り状態から最終順位ペイロードを算出する純関数を提供する
  * 塗り率計算，同率順位付け，チーム名解決を一箇所で扱う
  */
-import { config } from "@repo/shared";
+import { config } from "@server/config";
 import type { GameResultPayload } from "@repo/shared";
 
 /** グリッド色配列からゲーム結果ペイロードを生成する */
