@@ -16,6 +16,7 @@ type StartGameCoordinatorParams = {
   ownerId: string;
   gameManager: StartGamePort;
   roomManager: StartGameRoomPort;
+  onRoomGameEnded?: (roomId: string) => void;
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToRoom"
@@ -31,6 +32,7 @@ export const startGameCoordinator = ({
   ownerId,
   gameManager,
   roomManager,
+  onRoomGameEnded,
   output,
 }: StartGameCoordinatorParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
@@ -80,6 +82,7 @@ export const startGameCoordinator = ({
     gameManager,
     onGameEnd: () => {
       roomManager.markRoomWaiting(updatedRoom.roomId);
+      onRoomGameEnded?.(updatedRoom.roomId);
     },
     output,
   });
