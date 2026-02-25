@@ -2,7 +2,8 @@
  * BombRoomStateStore
  * ルーム単位の爆弾重複排除状態と採番状態を管理する
  */
-import { config } from "@repo/shared";
+import { issueServerBombId } from "./bombIdentity.js";
+import { shouldBroadcastBombPlaced } from "./bombDedup.js";
 
 /** ルーム単位の爆弾重複排除状態と採番状態を保持するストア */
 export class BombRoomStateStore {
@@ -11,28 +12,20 @@ export class BombRoomStateStore {
 
   /** 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する */
   public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
-    this.cleanupExpiredBombDedup(nowMs);
-
-    if (this.bombDedupTable.has(dedupeKey)) {
-      return false;
-    }
-
-    const ttlMs = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
-    this.bombDedupTable.set(dedupeKey, nowMs + ttlMs);
-    return true;
+    return shouldBroadcastBombPlaced({
+      dedupTable: this.bombDedupTable,
+      dedupeKey,
+      nowMs,
+    });
   }
 
   /** セッション単位の連番からサーバー採番の爆弾IDを生成する */
   public issueServerBombId(roomId: string): string {
-    this.bombSerial += 1;
-    return `${roomId}:${this.bombSerial}`;
-  }
-
-  private cleanupExpiredBombDedup(nowMs: number): void {
-    this.bombDedupTable.forEach((expiresAtMs, dedupeKey) => {
-      if (expiresAtMs <= nowMs) {
-        this.bombDedupTable.delete(dedupeKey);
-      }
+    const { bombId, nextSerial } = issueServerBombId({
+      roomId,
+      currentSerial: this.bombSerial,
     });
+    this.bombSerial = nextSerial;
+    return bombId;
   }
 }
