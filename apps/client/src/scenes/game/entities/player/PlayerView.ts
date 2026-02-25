@@ -44,6 +44,7 @@ export class PlayerView {
   }
 
   /** BASE_URL対応のURLで画像を読み込み、スプライトに反映する */
+  /** BASE_URL対応のURLで画像を読み込み、スプライトに反映する */
   private async applyTexture(imageFileName: string): Promise<void> {
     try {
       const imageUrl = `${import.meta.env.BASE_URL}${imageFileName}`;
@@ -52,17 +53,16 @@ export class PlayerView {
 
       const { PLAYER_RADIUS_PX } = config.GAME_CONFIG;
 
-      // 当たり判定の本来のサイズ
-      const targetSize = PLAYER_RADIUS_PX * 2;
+      // 当たり判定の枠を強制的に何倍にするか（まずは 5倍 でテスト！）
+      const scaleRate = 5;
 
-      // 画像の元サイズから、当たり判定のサイズに合わせるための「倍率」を計算
-      const baseScale = targetSize / Math.max(texture.width, texture.height);
+      this.displayObject.width = PLAYER_RADIUS_PX * 2 * scaleRate;
+      this.displayObject.height = PLAYER_RADIUS_PX * 2 * scaleRate;
 
-      // 💡 ここがポイント！余白がある分、少し大きめに表示してあげる（1.5倍〜2倍など調整してください）
-      const visualScale = 1.5;
-
-      // 縦横比を崩さずにスケール（倍率）を設定
-      this.displayObject.scale.set(baseScale * visualScale);
+      // 👇 ちゃんとこの処理が実行されているか、ブラウザのログに出す！
+      console.log(
+        `🎨 画像を ${scaleRate} 倍のサイズ（${this.displayObject.width}）に拡大しました！`,
+      );
     } catch (error) {
       console.error(
         `[PlayerView] 画像の読み込みに失敗: ${imageFileName}`,
@@ -70,7 +70,6 @@ export class PlayerView {
       );
     }
   }
-
   /** グリッド座標を描画座標へ反映する */
   public syncPosition(gridX: number, gridY: number): void {
     const { GRID_CELL_SIZE } = config.GAME_CONFIG;
