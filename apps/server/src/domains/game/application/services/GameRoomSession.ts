@@ -18,8 +18,6 @@ import {
   setPlayerPosition,
 } from "../../entities/player/playerMovement.js";
 import { buildGameResultPayload } from "./gameResultCalculator.js";
-
-// 💡 追加: チーム割り当てサービスをインポート
 import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
 
 /** ルーム単位のゲーム状態とループ進行を保持するセッションクラス */
@@ -37,12 +35,12 @@ export class GameRoomSession {
     this.mapStore = new MapStore();
 
     playerIds.forEach((playerId) => {
-      // 💡 追加: 現在の this.players (生成済みのプレイヤー達) を見て、一番人数の少ないチームを算出する
+      // 現在のプレイヤー構成から人数が最も少ないチームを算出する
       const assignedTeamId = TeamAssignmentService.getBalancedTeamId(
         this.players,
       );
 
-      // 💡 修正: バランス良く割り当てられたチームIDを渡してプレイヤーを生成する
+      // 算出したチームIDを指定してプレイヤーを生成する
       const player = createSpawnedPlayer(playerId, assignedTeamId);
 
       this.players.set(playerId, player);
