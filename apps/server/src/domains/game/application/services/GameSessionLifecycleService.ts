@@ -5,6 +5,7 @@
 import { config } from "@repo/shared";
 import type { gameTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
+import { gameDomainLogEvents } from "@server/logging/logEvents";
 import { GameRoomSession } from "./GameRoomSession";
 
 type SessionStore = Map<string, GameRoomSession>;
@@ -35,7 +36,7 @@ export class GameSessionLifecycleService {
   ) {
     if (this.sessions.has(roomId)) {
       logEvent("GameSessionLifecycleService", {
-        event: "SESSION_START",
+        event: gameDomainLogEvents.SESSION_START,
         result: "ignored_already_running",
         roomId,
       });
@@ -59,7 +60,7 @@ export class GameSessionLifecycleService {
     });
 
     logEvent("GameSessionLifecycleService", {
-      event: "SESSION_START",
+      event: gameDomainLogEvents.SESSION_START,
       result: "started",
       roomId,
       playerCount: playerIds.length,

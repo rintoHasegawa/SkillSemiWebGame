@@ -4,6 +4,7 @@
  */
 import type { roomTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
+import { roomDomainLogEvents } from "@server/logging/logEvents";
 
 /** 退出要求に応じてプレイヤー削除とルーム整理を行うサービス */
 export class RoomExitService {
@@ -20,7 +21,7 @@ export class RoomExitService {
 
       room.players.splice(playerIndex, 1);
       logEvent("RoomExitService", {
-        event: "PLAYER_LEAVE",
+        event: roomDomainLogEvents.PLAYER_LEAVE,
         result: "removed",
         roomId,
         socketId,
@@ -30,7 +31,7 @@ export class RoomExitService {
       if (room.players.length === 0) {
         this.rooms.delete(roomId);
         logEvent("RoomExitService", {
-          event: "ROOM_DELETE",
+          event: roomDomainLogEvents.ROOM_DELETE,
           result: "deleted",
           roomId,
           socketId,
@@ -42,7 +43,7 @@ export class RoomExitService {
         room.ownerId = room.players[0].id;
         room.players[0].isOwner = true;
         logEvent("RoomExitService", {
-          event: "OWNER_TRANSFER",
+          event: roomDomainLogEvents.OWNER_TRANSFER,
           result: "transferred",
           roomId,
           socketId,

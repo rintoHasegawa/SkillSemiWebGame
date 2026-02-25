@@ -5,6 +5,7 @@
 import type { DisconnectRoomPort } from "../ports/roomUseCasePorts";
 import type { RoomOutputPort } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
+import { roomUseCaseLogEvents } from "@server/logging/logEvents";
 
 type RoomDisconnectUseCaseParams = {
   roomManager: DisconnectRoomPort;
@@ -20,7 +21,7 @@ export const roomDisconnectUseCase = ({
 }: RoomDisconnectUseCaseParams) => {
   const updatedRooms = roomManager.removePlayer(socketId);
   logEvent("RoomUseCase", {
-    event: "DISCONNECT",
+    event: roomUseCaseLogEvents.DISCONNECT,
     result: "processed",
     socketId,
     updatedRoomCount: updatedRooms.length,
@@ -29,7 +30,7 @@ export const roomDisconnectUseCase = ({
   updatedRooms.forEach((room) => {
     output.publishRoomUpdateToRoom(room.roomId, room);
     logEvent("RoomUseCase", {
-      event: "ROOM_UPDATE",
+      event: roomUseCaseLogEvents.ROOM_UPDATE,
       result: "emitted",
       roomId: room.roomId,
       socketId,
