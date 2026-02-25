@@ -6,8 +6,10 @@
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
 import type {
-  playerTypes,
   CurrentPlayersPayload,
+  GameStartPayload,
+  NewPlayerPayload,
+  RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
@@ -16,16 +18,16 @@ import type {
 export type GameHandler = {
   onCurrentPlayers: (callback: (players: CurrentPlayersPayload) => void) => void;
   offCurrentPlayers: (callback: (players: CurrentPlayersPayload) => void) => void;
-  onNewPlayer: (callback: (player: playerTypes.PlayerData) => void) => void;
-  offNewPlayer: (callback: (player: playerTypes.PlayerData) => void) => void;
+  onNewPlayer: (callback: (player: NewPlayerPayload) => void) => void;
+  offNewPlayer: (callback: (player: NewPlayerPayload) => void) => void;
   onUpdatePlayers: (callback: (players: UpdatePlayersPayload) => void) => void;
   offUpdatePlayers: (callback: (players: UpdatePlayersPayload) => void) => void;
-  onRemovePlayer: (callback: (id: string) => void) => void;
-  offRemovePlayer: (callback: (id: string) => void) => void;
+  onRemovePlayer: (callback: (id: RemovePlayerPayload) => void) => void;
+  offRemovePlayer: (callback: (id: RemovePlayerPayload) => void) => void;
   onUpdateMapCells: (callback: (updates: UpdateMapCellsPayload) => void) => void;
   offUpdateMapCells: (callback: (updates: UpdateMapCellsPayload) => void) => void;
-  onGameStart: (callback: (data: { startTime: number }) => void) => void;
-  offGameStart: (callback: (data: { startTime: number }) => void) => void;
+  onGameStart: (callback: (data: GameStartPayload) => void) => void;
+  offGameStart: (callback: (data: GameStartPayload) => void) => void;
   sendMove: (x: number, y: number) => void;
   readyForGame: () => void;
 };
@@ -70,7 +72,7 @@ export const createGameHandler = (socket: Socket): GameHandler => {
       socket.off(protocol.SocketEvents.GAME_START, callback);
     },
     sendMove: (x, y) => {
-      const payload: playerTypes.MovePayload = { x, y };
+      const payload = { x, y };
       socket.emit(protocol.SocketEvents.MOVE, payload);
     },
     readyForGame: () => {

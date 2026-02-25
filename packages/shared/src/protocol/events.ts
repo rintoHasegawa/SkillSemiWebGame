@@ -4,6 +4,7 @@
  * クライアントとサーバー間のイベント契約を共有する
  */
 import type { TickData } from "../domains/game/game.type";
+import type { PlayerData } from "../domains/player/player.type";
 
 /** ソケットイベント名の一覧定数 */
 export const SocketEvents = {
@@ -42,3 +43,12 @@ export type CurrentPlayersPayload = TickData["playerUpdates"];
 
 /** UPDATE_MAP_CELLS イベントで送受信するマップ差分配列 */
 export type UpdateMapCellsPayload = TickData["cellUpdates"];
+
+/** NEW_PLAYER イベントで送受信するプレイヤー情報 */
+export type NewPlayerPayload = PlayerData;
+
+/** REMOVE_PLAYER イベントで送受信するプレイヤーID */
+export type RemovePlayerPayload = PlayerData["id"];
+
+/** GAME_START イベントで送受信するゲーム開始情報 */
+export type GameStartPayload = { startTime: number };

@@ -4,7 +4,14 @@
  * プレイヤー生成更新削除とマップ更新購読を管理する
  */
 import { Container } from "pixi.js";
-import type { playerTypes, CurrentPlayersPayload, UpdateMapCellsPayload } from "@repo/shared";
+import type {
+  CurrentPlayersPayload,
+  GameStartPayload,
+  NewPlayerPayload,
+  RemovePlayerPayload,
+  UpdateMapCellsPayload,
+  UpdatePlayersPayload,
+} from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
@@ -35,20 +42,20 @@ export class GameNetworkSync {
     });
   };
 
-  private handleNewPlayer = (p: playerTypes.PlayerData) => {
+  private handleNewPlayer = (p: NewPlayerPayload) => {
     const playerController = new RemotePlayerController(p);
     this.worldContainer.addChild(playerController.getDisplayObject());
     this.players[p.id] = playerController;
   };
 
-  private handleGameStart = (data: { startTime: number }) => {
+  private handleGameStart = (data: GameStartPayload) => {
     if (data && data.startTime) {
       this.onGameStart(data.startTime);
       console.log(`[GameManager] ゲーム開始時刻同期完了: ${data.startTime}`);
     }
   };
 
-  private handlePlayerUpdates = (changedPlayers: playerTypes.PlayerData[]) => {
+  private handlePlayerUpdates = (changedPlayers: UpdatePlayersPayload) => {
     // UPDATE_PLAYERS は差分のみ届くため，対象IDだけ上書き更新する
     changedPlayers.forEach((playerData) => {
       if (playerData.id === this.myId) return;
@@ -60,7 +67,7 @@ export class GameNetworkSync {
     });
   };
 
-  private handleRemovePlayer = (id: string) => {
+  private handleRemovePlayer = (id: RemovePlayerPayload) => {
     const target = this.players[id];
     if (target) {
       this.worldContainer.removeChild(target.getDisplayObject());

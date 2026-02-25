@@ -7,6 +7,8 @@ import type {
   playerTypes,
   roomTypes,
   CurrentPlayersPayload,
+  GameStartPayload,
+  RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
@@ -62,8 +64,8 @@ export interface GameOutputPort {
     cellUpdates: UpdateMapCellsPayload
   ): void;
   publishGameEndToRoom(roomId: roomTypes.Room["roomId"]): void;
-  publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: { startTime: number }): void;
+  publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: GameStartPayload): void;
   publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
-  publishGameStartToSocket(payload: { startTime: number }): void;
-  publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: string): void;
+  publishGameStartToSocket(payload: GameStartPayload): void;
+  publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: RemovePlayerPayload): void;
 }

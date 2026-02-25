@@ -10,6 +10,9 @@ export * as roomConsts from "./domains/room/room.const";
 export * as protocol from "./protocol/events";
 export type {
 	CurrentPlayersPayload,
+	GameStartPayload,
+	NewPlayerPayload,
+	RemovePlayerPayload,
 	UpdateMapCellsPayload,
 	UpdatePlayersPayload,
 } from "./protocol/events";

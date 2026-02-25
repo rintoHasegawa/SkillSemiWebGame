@@ -5,9 +5,10 @@
 import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import type {
-  playerTypes,
+  GameStartPayload,
   roomTypes,
   CurrentPlayersPayload,
+  RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
@@ -16,9 +17,7 @@ import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = roomTypes.Room["roomId"];
-type SocketId = playerTypes.PlayerData["id"];
 type PongPayload = { clientTime: number; serverTime: number };
-type GameStartPayload = { startTime: number };
 
 /** ゲーム出力アダプターのインターフェース */
 export type GameOutputAdapter = Omit<GameOutputPort, "publishPlayerRemovedToRoom">;
@@ -58,7 +57,7 @@ export const createGameDisconnectOutputAdapter = (io: Server): GameDisconnectOut
   const emitToRoom = createEmitToRoom(io);
 
   return {
-    publishPlayerRemovedToRoom: (roomId: RoomId, removedPlayerId: SocketId) => {
+    publishPlayerRemovedToRoom: (roomId: RoomId, removedPlayerId: RemovePlayerPayload) => {
       emitToRoom(roomId, protocol.SocketEvents.REMOVE_PLAYER, removedPlayerId);
     },
   };
