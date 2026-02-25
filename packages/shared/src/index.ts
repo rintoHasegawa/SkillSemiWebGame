@@ -9,6 +9,10 @@ export * as roomTypes from "./domains/room/room.type";
 export * as roomConsts from "./domains/room/room.const";
 export * as protocol from "./protocol/events";
 export type {
+	ClientToServerEventPayloadMap,
+	ClientToServerPayloadOf,
+	ConnectionLifecycleEventPayloadMap,
+	ConnectionLifecyclePayloadOf,
 	CurrentPlayersPayload,
 	GameStartPayload,
 	MovePayload,
@@ -17,8 +21,11 @@ export type {
 	PingPayload,
 	PongPayload,
 	RemovePlayerPayload,
+	ServerToClientEventPayloadMap,
+	ServerToClientPayloadOf,
 	SocketPayloadMap,
 	UpdateMapCellsPayload,
 	UpdatePlayersPayload,
 } from "./protocol/events";
+export { createSocketEventBridge } from "./protocol/socketEventBridge";
 export * as config from "./config";

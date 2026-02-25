@@ -12,6 +12,10 @@ import { createServerSocketOnBridge } from "@server/network/handlers/socketEvent
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
 
+const roomPayloadValidators = {
+  [protocol.SocketEvents.JOIN_ROOM]: isJoinRoomPayload,
+} as const;
+
 /** ルーム参加イベントを検証して参加ユースケースへ連携する */
 export const registerRoomHandlers = (
   io: Server,
@@ -24,7 +28,7 @@ export const registerRoomHandlers = (
 
   // 参加要求のペイロード検証と参加処理を実行する
   onEvent(protocol.SocketEvents.JOIN_ROOM, async (data) => {
-    if (!isJoinRoomPayload(data)) {
+    if (!roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM](data)) {
       logEvent("Network", {
         event: "JOIN_ROOM",
         result: "ignored_invalid_payload",

@@ -1,6 +1,6 @@
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
-import type { PayloadOf } from "@repo/shared";
+import type { ConnectionLifecyclePayloadOf } from "@repo/shared";
 import { createClientSocketEventBridge } from "./socketEventBridge";
 
 type CommonHandler = {
@@ -11,7 +11,7 @@ type CommonHandler = {
 export const createCommonHandler = (socket: Socket): CommonHandler => {
   const connectListenerMap = new Map<
     (id: string) => void,
-    (payload: PayloadOf<typeof protocol.SocketEvents.CONNECT>) => void
+    (payload: ConnectionLifecyclePayloadOf<typeof protocol.SocketEvents.CONNECT>) => void
   >();
 
   const { onEvent, offEvent } = createClientSocketEventBridge(socket);
@@ -22,7 +22,7 @@ export const createCommonHandler = (socket: Socket): CommonHandler => {
         callback(socket.id || "");
       }
 
-      const listener = (_payload: PayloadOf<typeof protocol.SocketEvents.CONNECT>) => {
+      const listener = (_payload: ConnectionLifecyclePayloadOf<typeof protocol.SocketEvents.CONNECT>) => {
         callback(socket.id || "");
       };
 

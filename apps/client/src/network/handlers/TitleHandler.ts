@@ -1,13 +1,13 @@
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
-import type { PayloadOf } from "@repo/shared";
+import type { ClientToServerPayloadOf, ServerToClientPayloadOf } from "@repo/shared";
 import { createClientSocketEventBridge } from "./socketEventBridge";
 
 type TitleHandler = {
-  joinRoom: (payload: PayloadOf<typeof protocol.SocketEvents.JOIN_ROOM>) => void;
-  onJoinRejected: (callback: (payload: PayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
-  onceJoinRejected: (callback: (payload: PayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
-  offJoinRejected: (callback: (payload: PayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
+  joinRoom: (payload: ClientToServerPayloadOf<typeof protocol.SocketEvents.JOIN_ROOM>) => void;
+  onJoinRejected: (callback: (payload: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
+  onceJoinRejected: (callback: (payload: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
+  offJoinRejected: (callback: (payload: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
 };
 
 export const createTitleHandler = (socket: Socket): TitleHandler => {

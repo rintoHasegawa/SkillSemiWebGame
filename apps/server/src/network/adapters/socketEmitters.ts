@@ -3,23 +3,26 @@
  * Socket.IOの送信処理を用途別に生成するアダプタ
  */
 import { Server, Socket } from "socket.io";
-import type { PayloadOf, SocketPayloadMap } from "@repo/shared";
+import type {
+  ServerToClientEventPayloadMap,
+  ServerToClientPayloadOf,
+} from "@repo/shared";
 
-type SocketEventName = keyof SocketPayloadMap;
+type SocketEventName = keyof ServerToClientEventPayloadMap;
 
 type EmitToRoom = {
   <TEvent extends SocketEventName>(roomId: string, event: TEvent): void;
-  <TEvent extends SocketEventName>(roomId: string, event: TEvent, payload: PayloadOf<TEvent>): void;
+  <TEvent extends SocketEventName>(roomId: string, event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
 type EmitToSocket = {
   <TEvent extends SocketEventName>(event: TEvent): void;
-  <TEvent extends SocketEventName>(event: TEvent, payload: PayloadOf<TEvent>): void;
+  <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
 type EmitToAll = {
   <TEvent extends SocketEventName>(event: TEvent): void;
-  <TEvent extends SocketEventName>(event: TEvent, payload: PayloadOf<TEvent>): void;
+  <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
 const emitWithOptionalPayload = (

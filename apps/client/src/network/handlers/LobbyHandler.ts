@@ -1,12 +1,12 @@
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
-import type { PayloadOf } from "@repo/shared";
+import type { ServerToClientPayloadOf } from "@repo/shared";
 import { createClientSocketEventBridge } from "./socketEventBridge";
 
 type LobbyHandler = {
-  onRoomUpdate: (callback: (room: PayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
-  onceRoomUpdate: (callback: (room: PayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
-  offRoomUpdate: (callback: (room: PayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
+  onRoomUpdate: (callback: (room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
+  onceRoomUpdate: (callback: (room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
+  offRoomUpdate: (callback: (room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
   startGame: () => void;
 };
 

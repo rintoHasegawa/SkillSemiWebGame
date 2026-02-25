@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { useCallback, useReducer, useRef, useState } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { appConsts, config } from "@repo/shared";
 import type { appTypes, roomTypes } from "@repo/shared";
+import { useSocketSubscriptions } from "./useSocketSubscriptions";
 
 type AppFlowState = {
   scenePhase: appTypes.ScenePhase;
@@ -14,30 +15,37 @@ type AppFlowState = {
 
 type JoinState = {
   isJoining: boolean;
-  joinErrorMessage: string | null;
+  joinFailure: JoinFailure | null;
+};
+
+type JoinFailureReason = roomTypes.JoinRoomRejectedPayload["reason"] | "timeout";
+
+type JoinFailure = {
+  reason: JoinFailureReason;
+  roomId?: string;
 };
 
 type JoinAction =
   | { type: "start" }
-  | { type: "complete"; errorMessage: string | null };
+  | { type: "complete"; joinFailure: JoinFailure | null };
 
 const initialJoinState: JoinState = {
   isJoining: false,
-  joinErrorMessage: null,
+  joinFailure: null,
 };
 
 const joinReducer = (state: JoinState, action: JoinAction): JoinState => {
   if (action.type === "start") {
     return {
       isJoining: true,
-      joinErrorMessage: null,
+      joinFailure: null,
     };
   }
 
   if (action.type === "complete") {
     return {
       isJoining: false,
-      joinErrorMessage: action.errorMessage,
+      joinFailure: action.joinFailure,
     };
   }
 
@@ -70,19 +78,27 @@ export const useAppFlow = (): AppFlowState => {
     joinTimeoutRef.current = null;
   }, []);
 
-  const completeJoinRequest = useCallback((errorMessage: string | null = null) => {
+  const completeJoinRequest = useCallback((joinFailure: JoinFailure | null = null) => {
     clearJoinTimeout();
     clearJoinRejectedHandler();
-    dispatchJoin({ type: "complete", errorMessage });
+    dispatchJoin({ type: "complete", joinFailure });
   }, [clearJoinRejectedHandler, clearJoinTimeout]);
 
-  const getJoinRejectedMessage = useCallback((payload: roomTypes.JoinRoomRejectedPayload): string | null => {
-    if (payload.reason === "full") {
-      return `ルーム ${payload.roomId} は満員です`;
+  const getJoinErrorMessage = useCallback((joinFailure: JoinFailure | null): string | null => {
+    if (!joinFailure) {
+      return null;
     }
 
-    if (payload.reason === "duplicate") {
-      return `ルーム ${payload.roomId} への参加要求が重複しました`;
+    if (joinFailure.reason === "full") {
+      return `ルーム ${joinFailure.roomId ?? ""} は満員です`;
+    }
+
+    if (joinFailure.reason === "duplicate") {
+      return `ルーム ${joinFailure.roomId ?? ""} への参加要求が重複しました`;
+    }
+
+    if (joinFailure.reason === "timeout") {
+      return "参加要求がタイムアウトしました，もう一度お試しください";
     }
 
     return null;
@@ -97,49 +113,34 @@ export const useAppFlow = (): AppFlowState => {
     dispatchJoin({ type: "start" });
 
     const handleJoinRejected = (payload: roomTypes.JoinRoomRejectedPayload) => {
-      const joinRejectedMessage = getJoinRejectedMessage(payload);
-      completeJoinRequest(joinRejectedMessage);
+      completeJoinRequest({
+        reason: payload.reason,
+        roomId: payload.roomId,
+      });
     };
 
     joinRejectedHandlerRef.current = handleJoinRejected;
     socketManager.title.onceJoinRejected(handleJoinRejected);
 
     joinTimeoutRef.current = setTimeout(() => {
-      completeJoinRequest("参加要求がタイムアウトしました，もう一度お試しください");
+      completeJoinRequest({ reason: "timeout" });
     }, config.GAME_CONFIG.JOIN_REQUEST_TIMEOUT_MS);
 
     socketManager.title.joinRoom(payload);
-  }, [completeJoinRequest, getJoinRejectedMessage, joinState.isJoining]);
+  }, [completeJoinRequest, joinState.isJoining]);
 
-  useEffect(() => {
-    const handleConnect = (id: string) => {
-      setMyId(id);
-    };
-    const handleRoomUpdate = (updatedRoom: roomTypes.Room) => {
-      completeJoinRequest();
-      setRoom(updatedRoom);
-      setScenePhase(appConsts.ScenePhase.LOBBY);
-    };
-    const handleGameStart = () => {
-      setScenePhase(appConsts.ScenePhase.PLAYING);
-    };
-
-    socketManager.common.onConnect(handleConnect);
-    socketManager.lobby.onRoomUpdate(handleRoomUpdate);
-    socketManager.game.onceGameStart(handleGameStart);
-
-    return () => {
-      completeJoinRequest();
-      socketManager.common.offConnect(handleConnect);
-      socketManager.lobby.offRoomUpdate(handleRoomUpdate);
-    };
-  }, [completeJoinRequest]);
+  useSocketSubscriptions({
+    completeJoinRequest,
+    setMyId,
+    setRoom,
+    setScenePhase,
+  });
 
   return {
     scenePhase,
     room,
     myId,
-    joinErrorMessage: joinState.joinErrorMessage,
+    joinErrorMessage: getJoinErrorMessage(joinState.joinFailure),
     isJoining: joinState.isJoining,
     requestJoin,
   };
