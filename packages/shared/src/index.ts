@@ -13,9 +13,11 @@ export type {
 	GameStartPayload,
 	MovePayload,
 	NewPlayerPayload,
+	PayloadOf,
 	PingPayload,
 	PongPayload,
 	RemovePlayerPayload,
+	SocketPayloadMap,
 	UpdateMapCellsPayload,
 	UpdatePlayersPayload,
 } from "./protocol/events";

@@ -5,6 +5,7 @@
  */
 import type { TickData } from "../domains/game/game.type";
 import type { MovePayload as PlayerMovePayload, PlayerData } from "../domains/player/player.type";
+import type * as roomTypes from "../domains/room/room.type";
 
 /** ソケットイベント名の一覧定数 */
 export const SocketEvents = {
@@ -64,3 +65,27 @@ export type PongPayload = {
   clientTime: number;
   serverTime: number;
 };
+
+/** ソケットイベントごとのペイロード対応表 */
+export type SocketPayloadMap = {
+  [SocketEvents.CONNECT]: undefined;
+  [SocketEvents.DISCONNECT]: undefined;
+  [SocketEvents.JOIN_ROOM]: roomTypes.JoinRoomPayload;
+  [SocketEvents.ROOM_JOIN_REJECTED]: roomTypes.JoinRoomRejectedPayload;
+  [SocketEvents.ROOM_UPDATE]: roomTypes.Room;
+  [SocketEvents.START_GAME]: undefined;
+  [SocketEvents.GAME_START]: GameStartPayload;
+  [SocketEvents.READY_FOR_GAME]: undefined;
+  [SocketEvents.CURRENT_PLAYERS]: CurrentPlayersPayload;
+  [SocketEvents.NEW_PLAYER]: NewPlayerPayload;
+  [SocketEvents.UPDATE_PLAYERS]: UpdatePlayersPayload;
+  [SocketEvents.REMOVE_PLAYER]: RemovePlayerPayload;
+  [SocketEvents.MOVE]: MovePayload;
+  [SocketEvents.UPDATE_MAP_CELLS]: UpdateMapCellsPayload;
+  [SocketEvents.PING]: PingPayload;
+  [SocketEvents.PONG]: PongPayload;
+  [SocketEvents.GAME_END]: undefined;
+};
+
+/** 指定イベント名に対応するペイロード型を取得するユーティリティ */
+export type PayloadOf<TEvent extends keyof SocketPayloadMap> = SocketPayloadMap[TEvent];
