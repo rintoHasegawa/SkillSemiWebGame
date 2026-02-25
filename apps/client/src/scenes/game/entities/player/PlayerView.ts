@@ -21,7 +21,10 @@ export class PlayerView {
     ];
 
     // 配列から対応する画像ファイル名を取得（デフォルトは red.svg）
-    const imageFileName = (characterImages[teamId] || "/red.svg").replace(/^\//, "");
+    const imageFileName = (characterImages[teamId] || "/red.svg").replace(
+      /^\//,
+      "",
+    );
 
     // 🌟 2. スプライト（画像）の生成（初期は1x1テクスチャ）
     this.displayObject = new Sprite(Texture.WHITE);
@@ -46,8 +49,15 @@ export class PlayerView {
       const imageUrl = `${import.meta.env.BASE_URL}${imageFileName}`;
       const texture = await Assets.load(imageUrl);
       this.displayObject.texture = texture;
+
+      const { PLAYER_RADIUS_PX } = config.GAME_CONFIG;
+      this.displayObject.width = PLAYER_RADIUS_PX * 2;
+      this.displayObject.height = PLAYER_RADIUS_PX * 2;
     } catch (error) {
-      console.error(`[PlayerView] 画像の読み込みに失敗: ${imageFileName}`, error);
+      console.error(
+        `[PlayerView] 画像の読み込みに失敗: ${imageFileName}`,
+        error,
+      );
     }
   }
 
