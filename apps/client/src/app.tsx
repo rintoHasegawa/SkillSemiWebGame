@@ -5,11 +5,12 @@ import { useAppFlow } from "./hooks/useAppFlow";
 import { TitleScene } from "./scenes/title/TitleScene";
 import { LobbyScene } from "./scenes/lobby/LobbyScene";
 import { GameScene } from "./scenes/game/GameScene";
+import { ResultScene } from "./scenes/result/ResultScene";
 
 import { appConsts } from "@repo/shared";
 
 export default function App() {
-  const { scenePhase, room, myId, joinErrorMessage, isJoining, requestJoin } = useAppFlow();
+  const { scenePhase, room, myId, gameResult, joinErrorMessage, isJoining, requestJoin } = useAppFlow();
 
   // タイトル画面分岐
   if (scenePhase === appConsts.ScenePhase.TITLE) {
@@ -25,6 +26,11 @@ export default function App() {
   // ロビー画面分岐
   if (scenePhase === appConsts.ScenePhase.LOBBY) {
     return <LobbyScene room={room} myId={myId} onStart={() => socketManager.lobby.startGame()} />;
+  }
+
+  // 結果画面分岐
+  if (scenePhase === appConsts.ScenePhase.RESULT) {
+    return <ResultScene result={gameResult} />;
   }
 
   // プレイ画面分岐

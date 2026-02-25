@@ -7,6 +7,7 @@ import type {
   playerTypes,
   roomTypes,
   CurrentPlayersPayload,
+  GameResultPayload,
   GameStartPayload,
   PongPayload,
   RemovePlayerPayload,
@@ -20,7 +21,7 @@ export interface StartGamePort {
     roomId: string,
     playerIds: string[],
     onTick: (data: gameTypes.TickData) => void,
-    onGameEnd: () => void
+    onGameEnd: (payload: GameResultPayload) => void
   ): void;
   getRoomStartTime(roomId: string): number | undefined;
 }
@@ -65,6 +66,7 @@ export interface GameOutputPort {
     cellUpdates: UpdateMapCellsPayload
   ): void;
   publishGameEndToRoom(roomId: roomTypes.Room["roomId"]): void;
+  publishGameResultToRoom(roomId: roomTypes.Room["roomId"], payload: GameResultPayload): void;
   publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: GameStartPayload): void;
   publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
   publishGameStartToSocket(payload: GameStartPayload): void;

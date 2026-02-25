@@ -36,6 +36,7 @@ export const SocketEvents = {
   PING: "ping",           // クライアントからの時刻同期リクエスト（ラグ計算用）
   PONG: "pong",           // サーバーからの現在時刻レスポンス
   GAME_END: "game-end",   // 3分経過時のゲーム終了通知
+  GAME_RESULT: "game-result", // 3分終了時の最終結果通知
 } as const;
 
 /**
@@ -81,6 +82,19 @@ export type PongPayload = {
   serverTime: number;
 };
 
+/** GAME_RESULT イベントで送受信するランキング1行 */
+export type GameResultRanking = {
+  rank: number;
+  teamId: number;
+  teamName: string;
+  paintRate: number;
+};
+
+/** GAME_RESULT イベントで送受信する最終結果 */
+export type GameResultPayload = {
+  rankings: GameResultRanking[];
+};
+
 /**
  * ------------------------------------------------------------
  * イベント方向ごとのペイロード対応表
@@ -116,6 +130,7 @@ export type ServerToClientEventPayloadMap = {
   [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
   [SocketEvents.PONG]: PongPayload;
   [SocketEvents.GAME_END]: undefined;
+  [SocketEvents.GAME_RESULT]: GameResultPayload;
 };
 
 /**

@@ -3,7 +3,7 @@
  * ゲームセッションの開始，参照，終了時クリーンアップを管理する
  */
 import { config } from "@repo/shared";
-import type { gameTypes } from "@repo/shared";
+import type { gameTypes, GameResultPayload } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 import { GameRoomSession } from "./GameRoomSession";
@@ -32,7 +32,7 @@ export class GameSessionLifecycleService {
     roomId: string,
     playerIds: string[],
     onTick: (data: gameTypes.TickData) => void,
-    onGameEnd: () => void
+    onGameEnd: (payload: GameResultPayload) => void
   ) {
     if (this.sessions.has(roomId)) {
       logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
@@ -53,10 +53,10 @@ export class GameSessionLifecycleService {
     this.roomToPlayers.set(roomId, roomPlayerSet);
 
     this.sessions.set(roomId, session);
-    session.start(tickRate, onTick, () => {
+    session.start(tickRate, onTick, (payload) => {
       this.clearRoomPlayerIndex(roomId);
       this.sessions.delete(roomId);
-      onGameEnd();
+      onGameEnd(payload);
     });
 
     logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {

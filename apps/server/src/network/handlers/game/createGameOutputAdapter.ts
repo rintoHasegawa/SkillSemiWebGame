@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import type {
   GameStartPayload,
+  GameResultPayload,
   PongPayload,
   roomTypes,
   CurrentPlayersPayload,
@@ -39,6 +40,9 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
     },
     publishGameEndToRoom: (roomId: RoomId) => {
       common.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
+    },
+    publishGameResultToRoom: (roomId: RoomId, payload: GameResultPayload) => {
+      common.emitToRoom(roomId, protocol.SocketEvents.GAME_RESULT, payload);
     },
     publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.GAME_START, payload);

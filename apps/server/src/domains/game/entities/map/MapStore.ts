@@ -38,4 +38,9 @@ export class MapStore {
   public getAndClearUpdates(): gridMapTypes.CellUpdate[] {
     return drainPendingUpdates(this.pendingUpdates);
   }
+
+  /** 現在のマップ塗り状態をスナップショットとして返す */
+  public getGridColorsSnapshot(): number[] {
+    return [...this.gridColors];
+  }
 }

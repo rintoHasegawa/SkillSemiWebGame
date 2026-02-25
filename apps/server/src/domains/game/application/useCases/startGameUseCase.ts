@@ -16,6 +16,7 @@ type StartGameUseCaseParams = {
     | "publishUpdatePlayersToRoom"
     | "publishMapCellUpdatesToRoom"
     | "publishGameEndToRoom"
+    | "publishGameResultToRoom"
     | "publishGameStartToRoom"
   >;
 };
@@ -40,7 +41,7 @@ export const startGameUseCase = ({
         output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
       }
     },
-    () => {
+    (resultPayload) => {
       logEvent(logScopes.GAME_USE_CASE, {
         event: gameUseCaseLogEvents.GAME_END,
         result: logResults.EMITTED,
@@ -48,6 +49,7 @@ export const startGameUseCase = ({
         reason: "duration_elapsed",
       });
       output.publishGameEndToRoom(roomId);
+      output.publishGameResultToRoom(roomId, resultPayload);
       onGameEnd();
     }
   );
