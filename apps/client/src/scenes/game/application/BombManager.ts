@@ -9,11 +9,14 @@ import { LocalPlayerController } from "@client/scenes/game/entities/player/Playe
 import { BombController } from "@client/scenes/game/entities/bomb/BombController";
 import type { GamePlayers } from "./game.types";
 
+/** 経過時間ミリ秒を返す関数型 */
+export type ElapsedMsProvider = () => number;
+
 type BombManagerOptions = {
   worldContainer: Container;
   players: GamePlayers;
   myId: string;
-  getElapsedMs: () => number;
+  getElapsedMs: ElapsedMsProvider;
 };
 
 /** 爆弾エンティティのライフサイクルを管理する */
@@ -21,7 +24,7 @@ export class BombManager {
   private worldContainer: Container;
   private players: GamePlayers;
   private myId: string;
-  private getElapsedMs: () => number;
+  private getElapsedMs: ElapsedMsProvider;
   private bombs: BombController[] = [];
   private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
 
