@@ -3,6 +3,7 @@
  * ソケット受信ペイロードの型ガードを提供する
  */
 import type { playerTypes, roomTypes } from "@repo/shared";
+import type { PingPayload } from "@repo/shared";
 
 const isFiniteNumber = (value: unknown): value is number => {
   return typeof value === "number" && Number.isFinite(value);
@@ -13,7 +14,7 @@ const isNonEmptyString = (value: unknown): value is string => {
 };
 
 /** PINGイベントのペイロードが数値であるか判定する */
-export const isPingPayload = (value: unknown): value is number => {
+export const isPingPayload = (value: unknown): value is PingPayload => {
   return isFiniteNumber(value);
 };
 

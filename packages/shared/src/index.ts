@@ -13,6 +13,7 @@ export type {
 	GameStartPayload,
 	MovePayload,
 	NewPlayerPayload,
+	PingPayload,
 	PongPayload,
 	RemovePlayerPayload,
 	UpdateMapCellsPayload,

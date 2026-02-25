@@ -56,6 +56,9 @@ export type GameStartPayload = { startTime: number };
 /** MOVE イベントで送受信する移動入力情報 */
 export type MovePayload = PlayerMovePayload;
 
+/** PING イベントで送受信する時刻同期リクエスト */
+export type PingPayload = number;
+
 /** PONG イベントで送受信する時刻同期レスポンス */
 export type PongPayload = {
   clientTime: number;
