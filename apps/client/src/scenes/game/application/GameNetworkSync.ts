@@ -5,7 +5,7 @@
  */
 import { Container } from "pixi.js";
 import type {
-  BombNetworkPayload,
+  BombPlacedPayload,
   CurrentPlayersPayload,
   GameStartPayload,
   NewPlayerPayload,
@@ -27,7 +27,7 @@ type GameNetworkSyncOptions = {
   gameMap: GameMapController;
   onGameStart: (startTime: number) => void;
   onGameEnd: () => void;
-  onBombPlacedFromNetwork: (payload: BombNetworkPayload) => void;
+  onBombPlacedFromNetwork: (payload: BombPlacedPayload) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -38,7 +38,7 @@ export class GameNetworkSync {
   private gameMap: GameMapController;
   private onGameStart: (startTime: number) => void;
   private onGameEnd: () => void;
-  private onBombPlacedFromNetwork: (payload: BombNetworkPayload) => void;
+  private onBombPlacedFromNetwork: (payload: BombPlacedPayload) => void;
   private isBound = false;
 
   private debugLog = (message: string) => {
@@ -99,7 +99,7 @@ export class GameNetworkSync {
     this.onGameEnd();
   };
 
-  private handleBombPlaced = (payload: BombNetworkPayload) => {
+  private handleBombPlaced = (payload: BombPlacedPayload) => {
     this.onBombPlacedFromNetwork(payload);
   };
 

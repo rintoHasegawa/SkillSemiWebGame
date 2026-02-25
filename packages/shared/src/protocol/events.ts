@@ -22,6 +22,7 @@ export type {
   RemovePlayerPayload,
   GameStartPayload,
   MovePayload,
+  PlaceBombPayload,
   BombPlacedPayload,
   PingPayload,
   PongPayload,

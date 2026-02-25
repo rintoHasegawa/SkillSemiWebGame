@@ -10,5 +10,5 @@ export type BombNetworkPayload = BombPlacedPayload;
 
 /** 爆弾ペイロードから同期用IDを生成する */
 export const createBombIdFromPayload = (payload: BombNetworkPayload): string => {
-  return `${payload.x}:${payload.y}:${payload.explodeAtElapsedMs}`;
+  return payload.bombId;
 };

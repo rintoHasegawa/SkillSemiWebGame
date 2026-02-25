@@ -4,8 +4,7 @@
  * マップ，ネットワーク同期，ゲームループを統合する
  */
 import { Application, Container, Ticker } from "pixi.js";
-import { createBombIdFromPayload } from "@repo/shared";
-import type { BombNetworkPayload } from "@repo/shared";
+import type { BombPlacedPayload } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
 import { GameMapController } from "./entities/map/GameMapController";
 import { BombManager } from "./entities/bomb/BombManager";
@@ -44,15 +43,11 @@ export class GameManager {
     if (!placed) return null;
 
     socketManager.game.sendPlaceBomb(placed.payload);
-    return placed.bombId;
+    return placed.tempBombId;
   }
 
-  public upsertBombFromNetwork(bombId: string, payload: BombNetworkPayload): void {
-    this.bombManager?.upsertBombFromNetwork(bombId, payload);
-  }
-
-  public removeBomb(bombId: string): void {
-    this.bombManager?.removeBomb(bombId);
+  public applyPlacedBomb(payload: BombPlacedPayload): void {
+    this.bombManager?.applyPlacedBomb(payload);
   }
   
   // 入力と状態管理
@@ -102,8 +97,7 @@ export class GameManager {
       onGameStart: this.setGameStart.bind(this),
       onGameEnd: this.lockInput.bind(this),
       onBombPlacedFromNetwork: (payload) => {
-        const bombId = createBombIdFromPayload(payload);
-        this.upsertBombFromNetwork(bombId, payload);
+        this.applyPlacedBomb(payload);
       },
     });
     this.networkSync.bind();

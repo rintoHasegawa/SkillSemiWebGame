@@ -5,8 +5,7 @@
  */
 import type { Container } from "pixi.js";
 import { config } from "@client/config";
-import { createBombIdFromPayload } from "@repo/shared";
-import type { BombNetworkPayload } from "@repo/shared";
+import type { BombPlacedPayload, PlaceBombPayload } from "@repo/shared";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { BombController } from "./BombController";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
@@ -15,14 +14,17 @@ import type { GamePlayers } from "@client/scenes/game/application/game.types";
 export type ElapsedMsProvider = () => number;
 
 /** 爆弾の描画更新に使う入力データ型 */
-export type BombRenderPayload = BombNetworkPayload & {
+export type BombRenderPayload = {
+  x: number;
+  y: number;
+  explodeAtElapsedMs: number;
   radiusGrid: number;
 };
 
 /** 爆弾設置時に返す結果型 */
 export type BombPlacementResult = {
-  bombId: string;
-  payload: BombNetworkPayload;
+  tempBombId: string;
+  payload: PlaceBombPayload;
 };
 
 type BombManagerOptions = {
@@ -39,7 +41,9 @@ export class BombManager {
   private myId: string;
   private getElapsedMs: ElapsedMsProvider;
   private bombs = new Map<string, BombController>();
+  private pendingOwnRequestToTempBombId = new Map<string, string>();
   private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
+  private requestSerial = 0;
 
   constructor({ worldContainer, players, myId, getElapsedMs }: BombManagerOptions) {
     this.worldContainer = worldContainer;
@@ -48,7 +52,7 @@ export class BombManager {
     this.getElapsedMs = getElapsedMs;
   }
 
-  /** 自プレイヤー位置に爆弾を設置し，生成IDを返す */
+  /** 自プレイヤー位置に爆弾を仮IDで設置し，設置要求を返す */
   public placeBomb(): BombPlacementResult | null {
     const me = this.players[this.myId];
     if (!me || !(me instanceof LocalPlayerController)) return null;
@@ -60,29 +64,37 @@ export class BombManager {
     }
 
     const position = me.getPosition();
-    const payload: BombNetworkPayload = {
+    const requestId = this.createRequestId(elapsedMs);
+    const payload: PlaceBombPayload = {
+      requestId,
       x: position.x,
       y: position.y,
       explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
     };
-    const bombId = createBombIdFromPayload(payload);
+    const tempBombId = this.createTempBombId(requestId);
 
-    this.upsertBombFromNetwork(bombId, payload);
+    this.pendingOwnRequestToTempBombId.set(requestId, tempBombId);
+    this.upsertBomb(tempBombId, this.toRenderPayload(payload));
     this.lastBombPlacedElapsedMs = elapsedMs;
     return {
-      bombId,
+      tempBombId,
       payload,
     };
   }
 
-  /** 通信ペイロードから指定IDの爆弾を追加または更新する */
-  public upsertBombFromNetwork(bombId: string, payload: BombNetworkPayload): void {
-    const renderPayload: BombRenderPayload = {
-      ...payload,
-      radiusGrid: config.GAME_CONFIG.BOMB_RADIUS_GRID,
-    };
+  /** サーバー確定イベントを反映し，必要なら仮IDから正式IDへ置換する */
+  public applyPlacedBomb(payload: BombPlacedPayload): void {
+    if (payload.ownerId === this.myId) {
+      const tempBombId = this.pendingOwnRequestToTempBombId.get(payload.requestId);
+      if (tempBombId) {
+        this.pendingOwnRequestToTempBombId.delete(payload.requestId);
+        if (tempBombId !== payload.bombId) {
+          this.removeBomb(tempBombId);
+        }
+      }
+    }
 
-    this.upsertBomb(bombId, renderPayload);
+    this.upsertBomb(payload.bombId, this.toRenderPayload(payload));
   }
 
   /** 描画ペイロードで指定IDの爆弾を追加または更新する */
@@ -106,6 +118,7 @@ export class BombManager {
     this.worldContainer.removeChild(bomb.getDisplayObject());
     bomb.destroy();
     this.bombs.delete(bombId);
+    this.cleanupPendingRequestByTempBombId(bombId);
   }
 
   /** 爆弾状態を更新し終了済みを破棄する */
@@ -126,5 +139,32 @@ export class BombManager {
   public destroy(): void {
     this.bombs.forEach((bomb) => bomb.destroy());
     this.bombs.clear();
+    this.pendingOwnRequestToTempBombId.clear();
+  }
+
+  private toRenderPayload(payload: { x: number; y: number; explodeAtElapsedMs: number }): BombRenderPayload {
+    return {
+      x: payload.x,
+      y: payload.y,
+      explodeAtElapsedMs: payload.explodeAtElapsedMs,
+      radiusGrid: config.GAME_CONFIG.BOMB_RADIUS_GRID,
+    };
+  }
+
+  private createRequestId(elapsedMs: number): string {
+    this.requestSerial += 1;
+    return `${this.myId}:${elapsedMs}:${this.requestSerial}`;
+  }
+
+  private createTempBombId(requestId: string): string {
+    return `temp:${requestId}`;
+  }
+
+  private cleanupPendingRequestByTempBombId(tempBombId: string): void {
+    this.pendingOwnRequestToTempBombId.forEach((pendingTempBombId, requestId) => {
+      if (pendingTempBombId === tempBombId) {
+        this.pendingOwnRequestToTempBombId.delete(requestId);
+      }
+    });
   }
 }
