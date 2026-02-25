@@ -5,7 +5,7 @@
  */
 import { Container } from "pixi.js";
 import type {
-  BombPlacedPayload,
+  BombNetworkPayload,
   CurrentPlayersPayload,
   GameStartPayload,
   NewPlayerPayload,
@@ -27,7 +27,7 @@ type GameNetworkSyncOptions = {
   gameMap: GameMapController;
   onGameStart: (startTime: number) => void;
   onGameEnd: () => void;
-  onBombPlaced: (payload: BombPlacedPayload) => void;
+  onBombPlacedFromNetwork: (payload: BombNetworkPayload) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -38,7 +38,7 @@ export class GameNetworkSync {
   private gameMap: GameMapController;
   private onGameStart: (startTime: number) => void;
   private onGameEnd: () => void;
-  private onBombPlaced: (payload: BombPlacedPayload) => void;
+  private onBombPlacedFromNetwork: (payload: BombNetworkPayload) => void;
   private isBound = false;
 
   private debugLog = (message: string) => {
@@ -99,18 +99,26 @@ export class GameNetworkSync {
     this.onGameEnd();
   };
 
-  private handleBombPlaced = (payload: BombPlacedPayload) => {
-    this.onBombPlaced(payload);
+  private handleBombPlaced = (payload: BombNetworkPayload) => {
+    this.onBombPlacedFromNetwork(payload);
   };
 
-  constructor({ worldContainer, players, myId, gameMap, onGameStart, onGameEnd, onBombPlaced }: GameNetworkSyncOptions) {
+  constructor({
+    worldContainer,
+    players,
+    myId,
+    gameMap,
+    onGameStart,
+    onGameEnd,
+    onBombPlacedFromNetwork,
+  }: GameNetworkSyncOptions) {
     this.worldContainer = worldContainer;
     this.players = players;
     this.myId = myId;
     this.gameMap = gameMap;
     this.onGameStart = onGameStart;
     this.onGameEnd = onGameEnd;
-    this.onBombPlaced = onBombPlaced;
+    this.onBombPlacedFromNetwork = onBombPlacedFromNetwork;
   }
 
   public bind() {

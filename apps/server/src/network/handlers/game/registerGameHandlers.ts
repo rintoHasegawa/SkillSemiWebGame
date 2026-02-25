@@ -3,7 +3,7 @@
  * ゲーム関連イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { protocol } from "@repo/shared";
+import { config, createBombIdFromPayload, protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
@@ -20,6 +20,36 @@ import { isBombPlacedPayload, isMovePayload, isPingPayload } from "@server/netwo
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
+const roomBombDedupTable = new Map<string, Map<string, number>>();
+
+const cleanupExpiredBombDedup = (roomId: string, nowMs: number) => {
+  const roomTable = roomBombDedupTable.get(roomId);
+  if (!roomTable) return;
+
+  roomTable.forEach((expiresAtMs, bombId) => {
+    if (expiresAtMs <= nowMs) {
+      roomTable.delete(bombId);
+    }
+  });
+
+  if (roomTable.size === 0) {
+    roomBombDedupTable.delete(roomId);
+  }
+};
+
+const shouldBroadcastBombPlaced = (roomId: string, bombId: string, nowMs: number) => {
+  cleanupExpiredBombDedup(roomId, nowMs);
+
+  const roomTable = roomBombDedupTable.get(roomId) ?? new Map<string, number>();
+  if (roomTable.has(bombId)) {
+    return false;
+  }
+
+  const ttlMs = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+  roomTable.set(bombId, nowMs + ttlMs);
+  roomBombDedupTable.set(roomId, roomTable);
+  return true;
+};
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
 const gamePayloadValidators = {
@@ -105,6 +135,12 @@ export const registerGameHandlers = (
 
     const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
     if (!roomId) {
+      return;
+    }
+
+    const nowMs = Date.now();
+    const bombId = createBombIdFromPayload(data);
+    if (!shouldBroadcastBombPlaced(roomId, bombId, nowMs)) {
       return;
     }
 
