@@ -19,8 +19,8 @@ import { createCommonHandlerContext } from "@server/network/handlers/CommonHandl
 import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
+import { clearBombRoomState, issueServerBombId, shouldBroadcastBombPlaced } from "@server/domains/game/entities/bomb/BombRoomStateStore";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
-import { clearBombRoomState, issueServerBombId, shouldBroadcastBombPlaced } from "./bombRoomStateStore";
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
 const gamePayloadValidators = {
