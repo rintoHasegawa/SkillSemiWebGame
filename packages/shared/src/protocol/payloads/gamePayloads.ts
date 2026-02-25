@@ -6,8 +6,18 @@
 import type { TickData } from "../../domains/game/game.type";
 import type { MovePayload as PlayerMovePayload, PlayerData } from "../../domains/player/player.type";
 
-/** GAME_RESULT イベントで送受信する最終結果型を再公開する */
-export type { GameResultPayload, GameResultRanking } from "../gameResultPayload";
+/** GAME_RESULT イベントで送受信するランキング1行 */
+export type GameResultRanking = {
+  rank: number;
+  teamId: number;
+  teamName: string;
+  paintRate: number;
+};
+
+/** GAME_RESULT イベントで送受信する最終結果 */
+export type GameResultPayload = {
+  rankings: GameResultRanking[];
+};
 
 /** UPDATE_PLAYERS イベントで送受信するプレイヤー差分配列 */
 export type UpdatePlayersPayload = TickData["playerUpdates"];

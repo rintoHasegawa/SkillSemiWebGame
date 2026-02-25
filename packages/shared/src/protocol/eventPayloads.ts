@@ -1,0 +1,29 @@
+/**
+ * eventPayloads
+ * ソケットイベントで送受信するペイロード型の集約エントリ
+ * 機能別に分割した型を再公開して契約参照を一本化する
+ */
+
+/** 共通イベントのペイロード型を再公開する */
+export type { PingPayload, PongPayload } from "./payloads/commonPayloads";
+
+/** ロビーイベントのペイロード型を再公開する */
+export type {
+  JoinRoomPayload,
+  RoomJoinRejectedPayload,
+  RoomUpdatePayload,
+} from "./payloads/lobbyPayloads";
+
+/** ゲームイベントのペイロード型を再公開する */
+export type {
+  UpdatePlayersPayload,
+  CurrentPlayersPayload,
+  UpdateMapCellsPayload,
+  NewPlayerPayload,
+  RemovePlayerPayload,
+  GameStartPayload,
+  MovePayload,
+  BombPlacedPayload,
+  GameResultPayload,
+  GameResultRanking,
+} from "./payloads/gamePayloads";
