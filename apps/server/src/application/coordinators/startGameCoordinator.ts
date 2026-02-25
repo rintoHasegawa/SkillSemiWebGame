@@ -2,7 +2,6 @@
  * startGameCoordinator
  * START_GAMEイベントの調停を行い，ルーム状態更新とゲーム開始処理を橋渡しする
  */
-import { roomConsts } from "@repo/shared";
 import {
   type GameOutputPort,
   type StartGamePort,
@@ -10,6 +9,7 @@ import {
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { logEvent } from "@server/logging/logEvent";
+import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
   ownerId: string;

@@ -5,8 +5,8 @@
 import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import type { gridMapTypes, playerTypes, roomTypes } from "@repo/shared";
-import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { GameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
+import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = roomTypes.Room["roomId"];

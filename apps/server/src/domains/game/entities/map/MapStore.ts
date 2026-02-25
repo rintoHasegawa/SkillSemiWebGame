@@ -21,7 +21,7 @@ export class MapStore {
   }
 
   /**
-   * マスを塗り、色が変化した場合のみ差分キューに追加する
+    * マスを塗り，色が変化した場合のみ差分キューに追加する
    */
   public paintCell(index: number, teamId: number): void {
     paintCellIfChanged({
@@ -33,7 +33,7 @@ export class MapStore {
   }
 
   /**
-   * 溜まっている差分を取得し、キューをクリアする（ループ送信時に使用）
+    * 溜まっている差分を取得し，キューをクリアする（ループ送信時に使用）
    */
   public getAndClearUpdates(): gridMapTypes.CellUpdate[] {
     return drainPendingUpdates(this.pendingUpdates);

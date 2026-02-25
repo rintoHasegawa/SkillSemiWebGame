@@ -3,13 +3,13 @@
  * ルーム参加イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { protocol } from "@repo/shared";
+import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
-import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
-import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import { logEvent } from "@server/logging/logEvent";
+import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
+import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
+import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
 
 /** ルーム参加イベントを検証して参加ユースケースへ連携する */
 export const registerRoomHandlers = (

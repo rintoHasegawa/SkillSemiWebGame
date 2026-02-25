@@ -6,15 +6,16 @@ import {
   type DisconnectPlayerPort,
   type GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
-import { disconnectUseCase } from "@server/domains/game/application/useCases/disconnectUseCase";
 import type {
   DisconnectRoomPort,
   FindRoomByPlayerPort,
   RoomOutputPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
+import { disconnectUseCase } from "@server/domains/game/application/useCases/disconnectUseCase";
 import { roomDisconnectUseCase } from "@server/domains/room/application/useCases/roomDisconnectUseCase";
 
-type DisconnectCoordinatorParams = {
+/** 切断調停で利用する入力ポートと出力ポートの契約 */
+export type DisconnectCoordinatorParams = {
   socketId: string;
   gameManager: DisconnectPlayerPort;
   roomManager: DisconnectRoomPort & FindRoomByPlayerPort;

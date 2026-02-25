@@ -3,22 +3,22 @@
  * ゲーム関連イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
+import { protocol } from "@repo/shared";
+import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
+import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
   MovePlayerPort,
   ReadyForGamePort,
-  StartGamePort,
   ReadyForGameRoomPort,
+  StartGamePort,
   StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
-import { protocol } from "@repo/shared";
-import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
-import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { createGameOutputAdapter } from "./createGameOutputAdapter";
+import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { logEvent } from "@server/logging/logEvent";
+import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
-import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
-import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
+import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
