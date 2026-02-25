@@ -30,7 +30,7 @@ export class PlayerView {
     this.displayObject = new Sprite(Texture.WHITE);
 
     // 🌟 3. 画像の基準点を「中心」にする（ズレ防止）
-    this.displayObject.anchor.set(0.6, 0.6);
+    this.displayObject.anchor.set(0.7, 0.7);
 
     // 🌟 4. 画像サイズを当たり判定（半径×2）に合わせる
     this.displayObject.width = PLAYER_RADIUS_PX * 2;
