@@ -13,7 +13,6 @@ import type {
 } from "@server/domains/room/application/ports/roomUseCasePorts";
 import type {
   BombPlacementPort,
-  BombCleanupPort,
   MovePlayerPort,
   ReadyForGamePort,
   StartGamePort,
@@ -38,8 +37,7 @@ const gamePayloadValidators = {
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort,
-  bombState: BombPlacementPort & BombCleanupPort,
+  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort & BombPlacementPort,
   roomManager: FindRoomByOwnerPort & FindRoomByPlayerPort & RoomPhaseTransitionPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
@@ -75,7 +73,6 @@ export const registerGameHandlers = (
     startGameCoordinator({
       ownerId: socket.id,
       gameManager,
-      bombState,
       roomManager,
       output: gameOutputAdapter,
     });
@@ -112,7 +109,7 @@ export const registerGameHandlers = (
 
     placeBombUseCase({
       roomResolver: roomManager,
-      bombStore: bombState,
+      bombStore: gameManager,
       input: {
         socketId: socket.id,
         payload: data,

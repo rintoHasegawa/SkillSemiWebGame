@@ -19,7 +19,6 @@ import type {
 export const registerConnectionHandlers = ({
   io,
   gameManager,
-  bombState,
   roomManager,
 }: RegisterConnectionHandlersParams) => {
   const gameDisconnectOutputAdapter = createGameDisconnectOutputAdapter(io);
@@ -34,7 +33,7 @@ export const registerConnectionHandlers = ({
     });
 
     registerRoomHandlers(io, socket, roomManager);
-    registerGameHandlers(io, socket, gameManager, bombState, roomManager);
+    registerGameHandlers(io, socket, gameManager, roomManager);
 
     socket.on(protocol.SocketEvents.DISCONNECT, () => {
       // 切断ログ記録後にドメイン別の後処理を実行する
@@ -47,7 +46,6 @@ export const registerConnectionHandlers = ({
       disconnectCoordinator({
         socketId: socket.id,
         gameManager,
-        bombState,
         roomManager,
         gameOutput: gameDisconnectOutputAdapter,
         roomOutput: roomDisconnectOutputAdapter,

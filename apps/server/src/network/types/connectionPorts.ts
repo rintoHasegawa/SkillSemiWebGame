@@ -4,12 +4,12 @@
  */
 import type { Server } from "socket.io";
 import type {
+  BombPlacementPort,
   DisconnectPlayerPort,
   MovePlayerPort,
   ReadyForGamePort,
   StartGamePort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
-import type { BombStatePort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
   DisconnectRoomPort,
   FindRoomByOwnerPort,
@@ -24,7 +24,8 @@ import type { DisconnectCoordinatorParams } from "../../application/coordinators
 export type ConnectionGamePort =
   & StartGamePort
   & ReadyForGamePort
-  & MovePlayerPort;
+  & MovePlayerPort
+  & BombPlacementPort;
 
 /** 接続時のルーム処理で利用する入力ポート集合 */
 export type ConnectionRoomPort =
@@ -38,9 +39,6 @@ export type SocketConnectionGamePort =
   & ConnectionGamePort
   & DisconnectPlayerPort;
 
-/** ソケット接続全体で利用する爆弾状態ポート集合 */
-export type SocketConnectionBombPort = BombStatePort;
-
 /** ソケット接続全体で利用するルーム管理ポート集合 */
 export type SocketConnectionRoomPort =
   & ConnectionRoomPort
@@ -50,7 +48,6 @@ export type SocketConnectionRoomPort =
 /** ソケット接続ハンドラで受け取るマネージャ依存の束 */
 export type SocketConnectionManagerBundle = {
   gameManager: SocketConnectionGamePort;
-  bombState: SocketConnectionBombPort;
   roomManager: SocketConnectionRoomPort;
 };
 
