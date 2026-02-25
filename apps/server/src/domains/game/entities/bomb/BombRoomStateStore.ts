@@ -1,5 +1,5 @@
 /**
- * bombRoomStateStore
+ * BombRoomStateStore
  * ルーム単位の爆弾重複排除状態と採番状態を管理する
  */
 import { config } from "@repo/shared";
