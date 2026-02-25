@@ -1,46 +1,44 @@
 /**
  * PlayerView
  * プレイヤーの描画責務を担うビュー
- * Pixi Graphicsの生成と座標反映を行う
+ * Pixi Spriteの生成と座標反映を行う
  */
-import { Graphics } from 'pixi.js';
-import { config } from '@repo/shared';
+import { Sprite } from "pixi.js";
+import { config } from "@repo/shared";
 
-/** プレイヤーのPixi描画オブジェクトを管理するビュー */
 export class PlayerView {
-  public readonly displayObject: Graphics;
+  public readonly displayObject: Sprite;
 
-  /** チーム情報と種別に応じた描画オブジェクトを生成する */
   constructor(teamId: number, isLocal: boolean) {
-    const {
-      PLAYER_RADIUS_PX,
-      TEAM_COLORS,
-      PLAYER_LOCAL_STROKE_COLOR,
-      PLAYER_LOCAL_STROKE_WIDTH,
-      PLAYER_REMOTE_STROKE_COLOR,
-      PLAYER_REMOTE_STROKE_WIDTH,
-    } = config.GAME_CONFIG;
+    const { PLAYER_RADIUS_PX } = config.GAME_CONFIG;
 
-    const colorString = TEAM_COLORS[teamId] || '#FFFFFF';
-    const fillColor = parseInt(colorString.replace('#', '0x'), 16);
-    const strokeColor = isLocal ? PLAYER_LOCAL_STROKE_COLOR : PLAYER_REMOTE_STROKE_COLOR;
-    const strokeWidth = isLocal ? PLAYER_LOCAL_STROKE_WIDTH : PLAYER_REMOTE_STROKE_WIDTH;
+    // 🌟 1. チームIDと画像ファイル名の紐づけ（すべて .svg に変更しました！）
+    const characterImages = [
+      "/red.svg", // teamId: 0 のときの画像
+      "/blue.svg", // teamId: 1 のときの画像
+      "/green.svg", // teamId: 2 のときの画像
+      "/yellow.svg", // teamId: 3 のときの画像
+    ];
 
-    this.displayObject = new Graphics();
-    this.displayObject
-      .circle(0, 0, PLAYER_RADIUS_PX)
-      .fill(fillColor)
-      .stroke({ width: strokeWidth, color: strokeColor });
+    // 配列から対応する画像パスを取得（デフォルトも .svg に変更）
+    const imagePath = characterImages[teamId] || "/red.svg";
+
+    // 🌟 2. スプライト（画像）の生成
+    this.displayObject = Sprite.from(imagePath);
+
+    // 🌟 3. 画像の基準点を「中心」にする（ズレ防止）
+    this.displayObject.anchor.set(0.5);
+
+    // 🌟 4. 画像サイズを当たり判定（半径×2）に合わせる
+    this.displayObject.width = PLAYER_RADIUS_PX * 2;
+    this.displayObject.height = PLAYER_RADIUS_PX * 2;
   }
 
   /** グリッド座標を描画座標へ反映する */
   public syncPosition(gridX: number, gridY: number): void {
     const { GRID_CELL_SIZE } = config.GAME_CONFIG;
-    this.displayObject.position.set(gridX * GRID_CELL_SIZE, gridY * GRID_CELL_SIZE);
-  }
-
-  /** 描画オブジェクトを破棄する */
-  public destroy(): void {
-    this.displayObject.destroy();
+    // マスの中心に配置されるように調整
+    this.displayObject.x = gridX * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
+    this.displayObject.y = gridY * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
   }
 }
