@@ -12,6 +12,7 @@ import type { gameTypes, GameResultPayload } from "@repo/shared";
 import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
+import { BombStateStore } from "../../entities/bomb/BombStateStore";
 import { createSpawnedPlayer } from "../../entities/player/playerSpawn.js";
 import {
   isValidPosition,
@@ -24,6 +25,7 @@ import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
 export class GameRoomSession {
   private players: Map<string, Player>;
   private mapStore: MapStore;
+  private bombStateStore: BombStateStore;
   private gameLoop: GameLoop | null = null;
   private startTime: number | undefined;
 
@@ -33,6 +35,7 @@ export class GameRoomSession {
   ) {
     this.players = new Map();
     this.mapStore = new MapStore();
+    this.bombStateStore = new BombStateStore();
 
     playerIds.forEach((playerId) => {
       // 現在のプレイヤー構成から人数が最も少ないチームを算出する
@@ -112,6 +115,14 @@ export class GameRoomSession {
 
   public hasPlayer(id: string): boolean {
     return this.players.has(id);
+  }
+
+  public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
+    return this.bombStateStore.shouldBroadcastBombPlaced(dedupeKey, nowMs);
+  }
+
+  public issueServerBombId(): string {
+    return this.bombStateStore.issueServerBombId(this.roomId);
   }
 
   public dispose(): void {

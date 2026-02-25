@@ -28,6 +28,19 @@ export class GameSessionLifecycleService {
     return this.sessions.get(roomId)?.getPlayers() ?? [];
   }
 
+  public shouldBroadcastBombPlaced(roomId: string, dedupeKey: string, nowMs: number): boolean {
+    return this.sessions.get(roomId)?.shouldBroadcastBombPlaced(dedupeKey, nowMs) ?? false;
+  }
+
+  public issueServerBombId(roomId: string): string {
+    const session = this.sessions.get(roomId);
+    if (!session) {
+      throw new Error(`Game session not found for roomId: ${roomId}`);
+    }
+
+    return session.issueServerBombId();
+  }
+
   public startRoomSession(
     roomId: string,
     playerIds: string[],

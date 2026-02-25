@@ -4,6 +4,7 @@
  */
 import type { playerTypes, roomTypes, PlaceBombPayload } from "@repo/shared";
 import type { PingPayload } from "@repo/shared";
+import { isPlaceBombPayload as isValidPlaceBombPayload } from "@server/domains/game/entities/bomb/bombPayloadValidation";
 
 const isFiniteNumber = (value: unknown): value is number => {
   return typeof value === "number" && Number.isFinite(value);
@@ -30,18 +31,7 @@ export const isMovePayload = (value: unknown): value is playerTypes.MovePayload 
 
 /** PLACE_BOMBイベントのペイロードが爆弾設置要求であるか判定する */
 export const isPlaceBombPayload = (value: unknown): value is PlaceBombPayload => {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const candidate = value as Record<string, unknown>;
-  return (
-    isNonEmptyString(candidate.requestId)
-    &&
-    isFiniteNumber(candidate.x)
-    && isFiniteNumber(candidate.y)
-    && isFiniteNumber(candidate.explodeAtElapsedMs)
-  );
+  return isValidPlaceBombPayload(value);
 };
 
 /** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */
