@@ -4,6 +4,7 @@
  */
 import { protocol } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
+import { logResults } from "@server/logging/logEvents";
 
 type PayloadValidator<TPayload> = (value: unknown) => value is TPayload;
 type SocketEventName = (typeof protocol.SocketEvents)[keyof typeof protocol.SocketEvents];
@@ -24,7 +25,7 @@ export const createPayloadGuard = (socketId: string) => {
 
     logEvent("Network", {
       event,
-      result: "ignored_invalid_payload",
+      result: logResults.IGNORED_INVALID_PAYLOAD,
       socketId,
     });
 

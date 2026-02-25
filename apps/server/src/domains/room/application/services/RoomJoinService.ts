@@ -5,7 +5,7 @@
 import { config, roomConsts } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
-import { roomDomainLogEvents } from "@server/logging/logEvents";
+import { logResults, roomDomainLogEvents } from "@server/logging/logEvents";
 import type { JoinRoomResult } from "../ports/roomUseCasePorts";
 
 /** 参加要求に応じてルーム作成と参加者追加を行うサービス */
@@ -25,7 +25,7 @@ export class RoomJoinService {
       this.rooms.set(roomId, room);
       logEvent("RoomJoinService", {
         event: roomDomainLogEvents.ROOM_CREATE,
-        result: "created",
+        result: logResults.CREATED,
         roomId,
         socketId,
         ownerId: socketId,
@@ -37,7 +37,7 @@ export class RoomJoinService {
     if (alreadyJoined) {
       logEvent("RoomJoinService", {
         event: roomDomainLogEvents.PLAYER_JOIN,
-        result: "ignored_duplicate",
+        result: logResults.IGNORED_DUPLICATE,
         roomId,
         socketId,
         totalPlayers: room.players.length,
@@ -49,7 +49,7 @@ export class RoomJoinService {
     if (room.players.length >= room.maxPlayers) {
       logEvent("RoomJoinService", {
         event: roomDomainLogEvents.PLAYER_JOIN,
-        result: "ignored_room_full",
+        result: logResults.IGNORED_ROOM_FULL,
         roomId,
         socketId,
         maxPlayers: room.maxPlayers,
@@ -68,7 +68,7 @@ export class RoomJoinService {
     room.players.push(newPlayer);
     logEvent("RoomJoinService", {
       event: roomDomainLogEvents.PLAYER_JOIN,
-      result: "joined",
+      result: logResults.JOINED,
       roomId,
       socketId,
       playerName,

@@ -7,6 +7,7 @@ import { protocol } from "@repo/shared";
 import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logEvent";
+import { logResults } from "@server/logging/logEvents";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
@@ -53,7 +54,7 @@ export const registerRoomHandlers = (
       case "full":
         logEvent("Network", {
           event: protocol.SocketEvents.JOIN_ROOM,
-          result: "rejected_room_full",
+          result: logResults.REJECTED_ROOM_FULL,
           roomId,
           socketId: socket.id,
         });
@@ -62,7 +63,7 @@ export const registerRoomHandlers = (
       case "duplicate":
         logEvent("Network", {
           event: protocol.SocketEvents.JOIN_ROOM,
-          result: "rejected_duplicate",
+          result: logResults.REJECTED_DUPLICATE,
           roomId,
           socketId: socket.id,
         });
@@ -73,7 +74,7 @@ export const registerRoomHandlers = (
         roomOutputAdapter.publishRoomUpdateToRoom(roomId, joinResult.room);
         logEvent("RoomUseCase", {
           event: protocol.SocketEvents.ROOM_UPDATE,
-          result: "emitted",
+          result: logResults.EMITTED,
           roomId,
           socketId: socket.id,
           ownerId: joinResult.room.ownerId,

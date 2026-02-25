@@ -3,7 +3,7 @@
  * 1ルーム分のゲーム進行状態とゲームループ実行を管理する
  */
 import { logEvent } from "@server/logging/logEvent";
-import { gameDomainLogEvents } from "@server/logging/logEvents";
+import { gameDomainLogEvents, logResults } from "@server/logging/logEvents";
 import type { gameTypes } from "@repo/shared";
 import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
@@ -61,7 +61,7 @@ export class GameRoomSession {
     if (!player) {
       logEvent("GameRoomSession", {
         event: gameDomainLogEvents.MOVE,
-        result: "ignored_player_not_found",
+        result: logResults.IGNORED_PLAYER_NOT_FOUND,
         roomId: this.roomId,
         socketId: id,
       });
@@ -71,7 +71,7 @@ export class GameRoomSession {
     if (!isValidPosition(x, y)) {
       logEvent("GameRoomSession", {
         event: gameDomainLogEvents.MOVE,
-        result: "ignored_invalid_payload",
+        result: logResults.IGNORED_INVALID_PAYLOAD,
         roomId: this.roomId,
         socketId: id,
       });

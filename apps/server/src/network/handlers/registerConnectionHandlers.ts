@@ -6,6 +6,7 @@ import { Server, Socket } from "socket.io";
 import { protocol } from "@repo/shared";
 import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
 import { logEvent } from "@server/logging/logEvent";
+import { logResults } from "@server/logging/logEvents";
 import { registerGameHandlers } from "./GameHandler";
 import { registerRoomHandlers } from "./RoomHandler";
 import { createGameDisconnectOutputAdapter } from "./game/createGameOutputAdapter";
@@ -27,7 +28,7 @@ export const registerConnectionHandlers = ({
     // 接続ログを記録してドメイン別ハンドラを登録する
     logEvent("Network", {
       event: protocol.SocketEvents.CONNECT,
-      result: "connected",
+      result: logResults.CONNECTED,
       socketId: socket.id,
     });
 
@@ -38,7 +39,7 @@ export const registerConnectionHandlers = ({
       // 切断ログ記録後にドメイン別の後処理を実行する
       logEvent("Network", {
         event: protocol.SocketEvents.DISCONNECT,
-        result: "disconnected",
+        result: logResults.DISCONNECTED,
         socketId: socket.id,
       });
 
