@@ -7,4 +7,4 @@
 export { registerGameHandlers } from "./game/registerGameHandlers";
 
 /** ルーム終了時の爆弾状態掃除関数を外部参照向けに再公開 */
-export { clearBombRoomState } from "./game/registerGameHandlers";
+export { clearBombRoomState } from "./game/bombRoomStateStore";

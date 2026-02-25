@@ -41,7 +41,9 @@ export class BombManager {
   private myId: string;
   private getElapsedMs: ElapsedMsProvider;
   private bombs = new Map<string, BombController>();
+  private bombRenderPayloadById = new Map<string, BombRenderPayload>();
   private pendingOwnRequestToTempBombId = new Map<string, string>();
+  private pendingTempBombIdToOwnRequest = new Map<string, string>();
   private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
   private requestSerial = 0;
 
@@ -74,6 +76,7 @@ export class BombManager {
     const tempBombId = this.createTempBombId(requestId);
 
     this.pendingOwnRequestToTempBombId.set(requestId, tempBombId);
+    this.pendingTempBombIdToOwnRequest.set(tempBombId, requestId);
     this.upsertBomb(tempBombId, this.toRenderPayload(payload));
     this.lastBombPlacedElapsedMs = elapsedMs;
     return {
@@ -87,7 +90,7 @@ export class BombManager {
     if (payload.ownerId === this.myId) {
       const tempBombId = this.pendingOwnRequestToTempBombId.get(payload.requestId);
       if (tempBombId) {
-        this.pendingOwnRequestToTempBombId.delete(payload.requestId);
+        this.removePendingRequestByRequestId(payload.requestId);
         if (tempBombId !== payload.bombId) {
           this.removeBomb(tempBombId);
         }
@@ -99,6 +102,11 @@ export class BombManager {
 
   /** 描画ペイロードで指定IDの爆弾を追加または更新する */
   public upsertBomb(bombId: string, payload: BombRenderPayload): void {
+    const previousPayload = this.bombRenderPayloadById.get(bombId);
+    if (previousPayload && this.isSameRenderPayload(previousPayload, payload)) {
+      return;
+    }
+
     const current = this.bombs.get(bombId);
     if (current) {
       this.worldContainer.removeChild(current.getDisplayObject());
@@ -107,6 +115,7 @@ export class BombManager {
 
     const bomb = new BombController(payload);
     this.bombs.set(bombId, bomb);
+    this.bombRenderPayloadById.set(bombId, payload);
     this.worldContainer.addChild(bomb.getDisplayObject());
   }
 
@@ -118,7 +127,8 @@ export class BombManager {
     this.worldContainer.removeChild(bomb.getDisplayObject());
     bomb.destroy();
     this.bombs.delete(bombId);
-    this.cleanupPendingRequestByTempBombId(bombId);
+    this.bombRenderPayloadById.delete(bombId);
+    this.removePendingRequestByTempBombId(bombId);
   }
 
   /** 爆弾状態を更新し終了済みを破棄する */
@@ -139,7 +149,16 @@ export class BombManager {
   public destroy(): void {
     this.bombs.forEach((bomb) => bomb.destroy());
     this.bombs.clear();
+    this.bombRenderPayloadById.clear();
     this.pendingOwnRequestToTempBombId.clear();
+    this.pendingTempBombIdToOwnRequest.clear();
+  }
+
+  private isSameRenderPayload(a: BombRenderPayload, b: BombRenderPayload): boolean {
+    return a.x === b.x
+      && a.y === b.y
+      && a.explodeAtElapsedMs === b.explodeAtElapsedMs
+      && a.radiusGrid === b.radiusGrid;
   }
 
   private toRenderPayload(payload: { x: number; y: number; explodeAtElapsedMs: number }): BombRenderPayload {
@@ -160,11 +179,23 @@ export class BombManager {
     return `temp:${requestId}`;
   }
 
-  private cleanupPendingRequestByTempBombId(tempBombId: string): void {
-    this.pendingOwnRequestToTempBombId.forEach((pendingTempBombId, requestId) => {
-      if (pendingTempBombId === tempBombId) {
-        this.pendingOwnRequestToTempBombId.delete(requestId);
-      }
-    });
+  private removePendingRequestByRequestId(requestId: string): void {
+    const tempBombId = this.pendingOwnRequestToTempBombId.get(requestId);
+    if (!tempBombId) {
+      return;
+    }
+
+    this.pendingOwnRequestToTempBombId.delete(requestId);
+    this.pendingTempBombIdToOwnRequest.delete(tempBombId);
+  }
+
+  private removePendingRequestByTempBombId(tempBombId: string): void {
+    const requestId = this.pendingTempBombIdToOwnRequest.get(tempBombId);
+    if (!requestId) {
+      return;
+    }
+
+    this.pendingTempBombIdToOwnRequest.delete(tempBombId);
+    this.pendingOwnRequestToTempBombId.delete(requestId);
   }
 }
