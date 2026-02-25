@@ -14,7 +14,7 @@ type SocketId = playerTypes.PlayerData["id"];
 type PongPayload = { clientTime: number; serverTime: number };
 type GameStartPayload = { startTime: number };
 type CurrentPlayersPayload = playerTypes.PlayerData[];
-type UpdatePlayerPayload = playerTypes.PlayerData;
+type UpdatePlayersPayload = playerTypes.PlayerData[];
 type MapCellUpdatesPayload = gridMapTypes.CellUpdate[];
 
 /** ゲーム出力アダプターのインターフェース */
@@ -29,8 +29,8 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
     publishPongToSocket: (payload: PongPayload) => {
       common.emitToSocket(protocol.SocketEvents.PONG, payload);
     },
-    publishUpdatePlayerToRoom: (roomId: RoomId, playerData: UpdatePlayerPayload) => {
-      common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_PLAYER, playerData);
+    publishUpdatePlayersToRoom: (roomId: RoomId, players: UpdatePlayersPayload) => {
+      common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_PLAYERS, players);
     },
     publishMapCellUpdatesToRoom: (roomId: RoomId, cellUpdates: MapCellUpdatesPayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, cellUpdates);
