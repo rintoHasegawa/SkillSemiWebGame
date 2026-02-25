@@ -12,6 +12,7 @@ import type {
   GameStartPayload,
   MovePayload,
   NewPlayerPayload,
+  PlaceBombPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
@@ -40,7 +41,7 @@ export type GameHandler = {
   onBombPlaced: (callback: (payload: BombPlacedPayload) => void) => void;
   offBombPlaced: (callback: (payload: BombPlacedPayload) => void) => void;
   sendMove: (x: number, y: number) => void;
-  sendPlaceBomb: (payload: BombPlacedPayload) => void;
+  sendPlaceBomb: (payload: PlaceBombPayload) => void;
   readyForGame: () => void;
 };
 

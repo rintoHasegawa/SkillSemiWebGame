@@ -40,9 +40,16 @@ export type GameStartPayload = { startTime: number };
 /** MOVE イベントで送受信する移動入力情報 */
 export type MovePayload = PlayerMovePayload;
 
-/** PLACE_BOMB / BOMB_PLACED イベントで送受信する爆弾情報 */
-export type BombPlacedPayload = {
+/** PLACE_BOMB イベントで送受信する爆弾設置要求 */
+export type PlaceBombPayload = {
+  requestId: string;
   x: number;
   y: number;
   explodeAtElapsedMs: number;
+};
+
+/** BOMB_PLACED イベントで送受信する爆弾確定情報 */
+export type BombPlacedPayload = PlaceBombPayload & {
+  bombId: string;
+  ownerId: string;
 };

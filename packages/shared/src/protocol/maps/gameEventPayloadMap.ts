@@ -11,6 +11,7 @@ import type {
   GameStartPayload,
   MovePayload,
   NewPlayerPayload,
+  PlaceBombPayload,
   PingPayload,
   PongPayload,
   RemovePlayerPayload,
@@ -23,7 +24,7 @@ export type GameClientToServerEventPayloadMap = {
   [SocketEvents.START_GAME]: undefined;
   [SocketEvents.READY_FOR_GAME]: undefined;
   [SocketEvents.MOVE]: MovePayload;
-  [SocketEvents.PLACE_BOMB]: BombPlacedPayload;
+  [SocketEvents.PLACE_BOMB]: PlaceBombPayload;
   [SocketEvents.PING]: PingPayload;
 };
 

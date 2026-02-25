@@ -3,7 +3,7 @@
  * ゲーム関連イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { config, createBombIdFromPayload, protocol } from "@repo/shared";
+import { config, protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
@@ -16,11 +16,12 @@ import type {
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { isBombPlacedPayload, isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
+import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 const roomBombDedupTable = new Map<string, Map<string, number>>();
+const roomBombSerialTable = new Map<string, number>();
 
 const cleanupExpiredBombDedup = (roomId: string, nowMs: number) => {
   const roomTable = roomBombDedupTable.get(roomId);
@@ -37,25 +38,31 @@ const cleanupExpiredBombDedup = (roomId: string, nowMs: number) => {
   }
 };
 
-const shouldBroadcastBombPlaced = (roomId: string, bombId: string, nowMs: number) => {
+const shouldBroadcastBombPlaced = (roomId: string, dedupeKey: string, nowMs: number) => {
   cleanupExpiredBombDedup(roomId, nowMs);
 
   const roomTable = roomBombDedupTable.get(roomId) ?? new Map<string, number>();
-  if (roomTable.has(bombId)) {
+  if (roomTable.has(dedupeKey)) {
     return false;
   }
 
   const ttlMs = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
-  roomTable.set(bombId, nowMs + ttlMs);
+  roomTable.set(dedupeKey, nowMs + ttlMs);
   roomBombDedupTable.set(roomId, roomTable);
   return true;
+};
+
+const issueServerBombId = (roomId: string): string => {
+  const serial = (roomBombSerialTable.get(roomId) ?? 0) + 1;
+  roomBombSerialTable.set(roomId, serial);
+  return `${roomId}:${serial}`;
 };
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
 const gamePayloadValidators = {
   [protocol.SocketEvents.PING]: isPingPayload,
   [protocol.SocketEvents.MOVE]: isMovePayload,
-  [protocol.SocketEvents.PLACE_BOMB]: isBombPlacedPayload,
+  [protocol.SocketEvents.PLACE_BOMB]: isPlaceBombPayload,
 } as const;
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
@@ -139,11 +146,17 @@ export const registerGameHandlers = (
     }
 
     const nowMs = Date.now();
-    const bombId = createBombIdFromPayload(data);
-    if (!shouldBroadcastBombPlaced(roomId, bombId, nowMs)) {
+    const dedupeKey = `${socket.id}:${data.requestId}`;
+    if (!shouldBroadcastBombPlaced(roomId, dedupeKey, nowMs)) {
       return;
     }
 
-    common.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, data);
+    const payload = {
+      ...data,
+      bombId: issueServerBombId(roomId),
+      ownerId: socket.id,
+    };
+
+    common.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, payload);
   });
 };
