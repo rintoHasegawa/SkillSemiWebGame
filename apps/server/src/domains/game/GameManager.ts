@@ -2,7 +2,7 @@
  * GameManager
  * ゲームセッション集合の生成，更新，参照管理を統括する
  */
-import { type TickData } from "./loop/GameLoop";
+import type { gameTypes } from "@repo/shared";
 import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
@@ -13,14 +13,16 @@ import { GamePlayerOperationService } from "./application/services/GamePlayerOpe
 export class GameManager {
   private sessions: Map<string, GameRoomSession>;
   private playerToRoom: Map<string, string>;
+  private roomToPlayers: Map<string, Set<string>>;
   private lifecycleService: GameSessionLifecycleService;
   private playerOperationService: GamePlayerOperationService;
 
   constructor() {
     this.sessions = new Map();
     this.playerToRoom = new Map();
-    this.lifecycleService = new GameSessionLifecycleService(this.sessions, this.playerToRoom);
-    this.playerOperationService = new GamePlayerOperationService(this.sessions, this.playerToRoom);
+    this.roomToPlayers = new Map();
+    this.lifecycleService = new GameSessionLifecycleService(this.sessions, this.playerToRoom, this.roomToPlayers);
+    this.playerOperationService = new GamePlayerOperationService(this.sessions, this.playerToRoom, this.roomToPlayers);
   }
 
   // 外部（GameHandlerなど）から開始時刻を取得できるようにする
@@ -47,7 +49,7 @@ export class GameManager {
   startRoomSession(
     roomId: string, 
     playerIds: string[], 
-    onTick: (data: TickData) => void,
+    onTick: (data: gameTypes.TickData) => void,
     onGameEnd: () => void
   ) {
     this.lifecycleService.startRoomSession(roomId, playerIds, onTick, onGameEnd);

@@ -3,6 +3,8 @@
  * ソケット通信で利用するイベント名定数を定義する
  * クライアントとサーバー間のイベント契約を共有する
  */
+import type { TickData } from "../domains/game/game.type";
+
 /** ソケットイベント名の一覧定数 */
 export const SocketEvents = {
   // 接続・切断イベント名
@@ -31,3 +33,6 @@ export const SocketEvents = {
   PONG: "pong",           // サーバーからの現在時刻レスポンス
   GAME_END: "game-end",   // 3分経過時のゲーム終了通知
 } as const;
+
+/** UPDATE_PLAYERS イベントで送受信するプレイヤー差分配列 */
+export type UpdatePlayersPayload = TickData["playerUpdates"];

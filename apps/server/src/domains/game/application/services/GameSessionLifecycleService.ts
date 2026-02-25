@@ -3,18 +3,20 @@
  * ゲームセッションの開始，参照，終了時クリーンアップを管理する
  */
 import { config } from "@repo/shared";
-import { type TickData } from "../../loop/GameLoop";
+import type { gameTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 import { GameRoomSession } from "./GameRoomSession";
 
 type SessionStore = Map<string, GameRoomSession>;
 type PlayerRoomIndex = Map<string, string>;
+type RoomPlayersIndex = Map<string, Set<string>>;
 
 /** ゲームセッションのライフサイクル操作を提供するサービス */
 export class GameSessionLifecycleService {
   constructor(
     private sessions: SessionStore,
-    private playerToRoom: PlayerRoomIndex
+    private playerToRoom: PlayerRoomIndex,
+    private roomToPlayers: RoomPlayersIndex
   ) {}
 
   public getRoomStartTime(roomId: string): number | undefined {
@@ -28,12 +30,12 @@ export class GameSessionLifecycleService {
   public startRoomSession(
     roomId: string,
     playerIds: string[],
-    onTick: (data: TickData) => void,
+    onTick: (data: gameTypes.TickData) => void,
     onGameEnd: () => void
   ) {
     if (this.sessions.has(roomId)) {
-      logEvent("GameSessionService", {
-        event: "START_GAME_LOOP",
+      logEvent("GameSessionLifecycleService", {
+        event: "SESSION_START",
         result: "ignored_already_running",
         roomId,
       });
@@ -42,10 +44,12 @@ export class GameSessionLifecycleService {
 
     const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
     const session = new GameRoomSession(roomId, playerIds);
+    const roomPlayerSet = new Set(playerIds);
 
     playerIds.forEach((playerId) => {
       this.playerToRoom.set(playerId, roomId);
     });
+    this.roomToPlayers.set(roomId, roomPlayerSet);
 
     this.sessions.set(roomId, session);
     session.start(tickRate, onTick, () => {
@@ -54,8 +58,8 @@ export class GameSessionLifecycleService {
       onGameEnd();
     });
 
-    logEvent("GameSessionService", {
-      event: "START_GAME_LOOP",
+    logEvent("GameSessionLifecycleService", {
+      event: "SESSION_START",
       result: "started",
       roomId,
       playerCount: playerIds.length,
@@ -63,10 +67,14 @@ export class GameSessionLifecycleService {
   }
 
   private clearRoomPlayerIndex(roomId: string): void {
-    Array.from(this.playerToRoom.entries()).forEach(([playerId, mappedRoomId]) => {
-      if (mappedRoomId === roomId) {
-        this.playerToRoom.delete(playerId);
-      }
+    const roomPlayerSet = this.roomToPlayers.get(roomId);
+    if (!roomPlayerSet) {
+      return;
+    }
+
+    roomPlayerSet.forEach((playerId) => {
+      this.playerToRoom.delete(playerId);
     });
+    this.roomToPlayers.delete(roomId);
   }
 }

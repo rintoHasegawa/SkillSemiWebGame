@@ -31,7 +31,9 @@ export const startGameUseCase = ({
     roomId,
     playerIds,
     (tickData) => {
-      output.publishUpdatePlayersToRoom(roomId, tickData.players);
+      if (tickData.playerUpdates.length > 0) {
+        output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
+      }
 
       if (tickData.cellUpdates.length > 0) {
         output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);

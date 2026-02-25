@@ -4,7 +4,7 @@
  */
 import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
-import type { gridMapTypes, playerTypes, roomTypes } from "@repo/shared";
+import type { gridMapTypes, playerTypes, roomTypes, UpdatePlayersPayload } from "@repo/shared";
 import type { GameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
@@ -14,7 +14,6 @@ type SocketId = playerTypes.PlayerData["id"];
 type PongPayload = { clientTime: number; serverTime: number };
 type GameStartPayload = { startTime: number };
 type CurrentPlayersPayload = playerTypes.PlayerData[];
-type UpdatePlayersPayload = playerTypes.PlayerData[];
 type MapCellUpdatesPayload = gridMapTypes.CellUpdate[];
 
 /** ゲーム出力アダプターのインターフェース */

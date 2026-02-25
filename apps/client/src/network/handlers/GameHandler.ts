@@ -5,7 +5,7 @@
  */
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
-import type { playerTypes, gridMapTypes } from "@repo/shared";
+import type { playerTypes, gridMapTypes, UpdatePlayersPayload } from "@repo/shared";
 
 /** ゲームシーンが利用するソケット操作の契約 */
 export type GameHandler = {
@@ -13,8 +13,8 @@ export type GameHandler = {
   offCurrentPlayers: (callback: (players: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => void) => void;
   onNewPlayer: (callback: (player: playerTypes.PlayerData) => void) => void;
   offNewPlayer: (callback: (player: playerTypes.PlayerData) => void) => void;
-  onUpdatePlayers: (callback: (players: playerTypes.PlayerData[]) => void) => void;
-  offUpdatePlayers: (callback: (players: playerTypes.PlayerData[]) => void) => void;
+  onUpdatePlayers: (callback: (players: UpdatePlayersPayload) => void) => void;
+  offUpdatePlayers: (callback: (players: UpdatePlayersPayload) => void) => void;
   onRemovePlayer: (callback: (id: string) => void) => void;
   offRemovePlayer: (callback: (id: string) => void) => void;
   onUpdateMapCells: (callback: (updates: gridMapTypes.CellUpdate[]) => void) => void;
