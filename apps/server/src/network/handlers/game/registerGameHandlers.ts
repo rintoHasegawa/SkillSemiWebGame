@@ -17,13 +17,13 @@ import type {
   ReadyForGamePort,
   StartGamePort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
-import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
-import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
+import { registerMoveInputHandler } from "./input/registerMoveInputHandler";
+import { registerPlaceBombInputHandler } from "./input/registerPlaceBombInputHandler";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
@@ -88,34 +88,19 @@ export const registerGameHandlers = (
     });
   });
 
-  // 移動入力を検証しプレイヤー移動ユースケースへ連携する
-  onEvent(protocol.SocketEvents.MOVE, (data) => {
-    if (!guardMovePayload(data)) {
-      return;
-    }
-
-    movePlayerUseCase({
-      gameManager,
-      playerId: socket.id,
-      move: data,
-    });
+  registerMoveInputHandler({
+    socketId: socket.id,
+    gameManager,
+    onEvent,
+    guardMovePayload,
   });
 
-  // 爆弾設置入力を検証し，所属ルームへ同期配信する
-  onEvent(protocol.SocketEvents.PLACE_BOMB, (data) => {
-    if (!guardPlaceBombPayload(data)) {
-      return;
-    }
-
-    placeBombUseCase({
-      roomResolver: roomManager,
-      bombStore: gameManager,
-      input: {
-        socketId: socket.id,
-        payload: data,
-        nowMs: Date.now(),
-      },
-      output: gameOutputAdapter,
-    });
+  registerPlaceBombInputHandler({
+    socketId: socket.id,
+    gameManager,
+    roomManager,
+    output: gameOutputAdapter,
+    onEvent,
+    guardPlaceBombPayload,
   });
 };
