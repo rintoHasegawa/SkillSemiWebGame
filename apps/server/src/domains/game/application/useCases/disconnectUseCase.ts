@@ -3,7 +3,8 @@
  * 切断したプレイヤーをゲーム状態から除外し，必要に応じて通知を行う
  */
 import type { DisconnectPlayerPort, GameOutputPort } from "../ports/gameUseCasePorts";
-import { logEvent } from "@server/logging/logEvent";
+import { logEvent } from "@server/logging/logger";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 
 type DisconnectUseCaseParams = {
   gameManager: DisconnectPlayerPort;
@@ -25,9 +26,9 @@ export const disconnectUseCase = ({
     output.publishPlayerRemovedToRoom(roomId, playerId);
   }
 
-  logEvent("GameUseCase", {
-    event: "DISCONNECT",
-    result: "player_removed",
+  logEvent(logScopes.GAME_USE_CASE, {
+    event: gameUseCaseLogEvents.DISCONNECT,
+    result: logResults.PLAYER_REMOVED,
     socketId: playerId,
   });
 };

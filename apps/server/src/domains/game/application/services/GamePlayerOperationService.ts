@@ -2,7 +2,8 @@
  * GamePlayerOperationService
  * ゲームセッション内のプレイヤー移動と離脱操作を管理する
  */
-import { logEvent } from "@server/logging/logEvent";
+import { logEvent } from "@server/logging/logger";
+import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 import { GameRoomSession } from "./GameRoomSession";
 
 type SessionStore = Map<string, GameRoomSession>;
@@ -20,9 +21,9 @@ export class GamePlayerOperationService {
   public movePlayer(id: string, x: number, y: number): void {
     const roomId = this.playerToRoom.get(id);
     if (!roomId) {
-      logEvent("GamePlayerOperationService", {
-        event: "PLAYER_MOVE",
-        result: "ignored_player_not_in_session",
+      logEvent(logScopes.GAME_PLAYER_OPERATION_SERVICE, {
+        event: gameDomainLogEvents.PLAYER_MOVE,
+        result: logResults.IGNORED_PLAYER_NOT_IN_SESSION,
         socketId: id,
       });
       return;
@@ -34,9 +35,9 @@ export class GamePlayerOperationService {
   public removePlayer(id: string): void {
     const roomId = this.playerToRoom.get(id);
     if (!roomId) {
-      logEvent("GamePlayerOperationService", {
-        event: "PLAYER_REMOVE",
-        result: "ignored_player_not_in_session",
+      logEvent(logScopes.GAME_PLAYER_OPERATION_SERVICE, {
+        event: gameDomainLogEvents.PLAYER_REMOVE,
+        result: logResults.IGNORED_PLAYER_NOT_IN_SESSION,
         socketId: id,
       });
       return;
@@ -56,9 +57,9 @@ export class GamePlayerOperationService {
       session.dispose();
       this.sessions.delete(roomId);
       this.roomToPlayers.delete(roomId);
-      logEvent("GamePlayerOperationService", {
-        event: "PLAYER_REMOVE",
-        result: "session_disposed_empty_room",
+      logEvent(logScopes.GAME_PLAYER_OPERATION_SERVICE, {
+        event: gameDomainLogEvents.PLAYER_REMOVE,
+        result: logResults.SESSION_DISPOSED_EMPTY_ROOM,
         roomId,
         socketId: id,
       });

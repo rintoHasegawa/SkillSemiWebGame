@@ -41,5 +41,7 @@ export type {
 } from "./protocol/events";
 /** ソケットイベントブリッジ生成関数を再公開 */
 export { createSocketEventBridge } from "./protocol/socketEventBridge";
+/** ソケットイベントブリッジ生成に必要な最小インターフェースを再公開 */
+export type { SocketBridgeTarget } from "./protocol/socketEventBridge";
 /** 共有設定値を再公開 */
 export * as config from "./config";

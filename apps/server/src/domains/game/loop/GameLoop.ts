@@ -7,7 +7,8 @@ import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@repo/shared";
 import type { gameTypes } from "@repo/shared";
-import { logEvent } from "@server/logging/logEvent";
+import { logEvent } from "@server/logging/logger";
+import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -40,9 +41,9 @@ export class GameLoop {
     this.isRunning = true;
     this.scheduleNextTick();
 
-    logEvent("GameLoop", {
-      event: "GAME_LOOP",
-      result: "started",
+    logEvent(logScopes.GAME_LOOP, {
+      event: gameDomainLogEvents.GAME_LOOP,
+      result: logResults.STARTED,
       roomId: this.roomId,
       tickRate: this.tickRate,
     });
@@ -150,9 +151,9 @@ export class GameLoop {
       this.loopId = null;
     }
 
-    logEvent("GameLoop", {
-      event: "GAME_LOOP",
-      result: "stopped",
+    logEvent(logScopes.GAME_LOOP, {
+      event: gameDomainLogEvents.GAME_LOOP,
+      result: logResults.STOPPED,
       roomId: this.roomId,
       elapsedMs: Math.max(0, Math.round(performance.now() - this.startMonotonicTimeMs)),
     });

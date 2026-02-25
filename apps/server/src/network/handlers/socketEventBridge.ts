@@ -7,15 +7,36 @@ import type { Socket } from "socket.io";
 import {
   createSocketEventBridge,
   type ClientToServerEventPayloadMap,
+  type SocketBridgeTarget,
   type ServerToClientEventPayloadMap,
 } from "@repo/shared";
 
 /** サーバー向けの型付きソケットイベント bridge を生成する */
 export const createServerSocketOnBridge = (socket: Socket) => {
+  const bridgeTarget: SocketBridgeTarget = {
+    on: (event, callback) => {
+      socket.on(event, callback);
+    },
+    once: (event, callback) => {
+      socket.once(event, callback);
+    },
+    off: (event, callback) => {
+      socket.off(event, callback);
+    },
+    emit: (event, payload) => {
+      if (payload === undefined) {
+        socket.emit(event);
+        return;
+      }
+
+      socket.emit(event, payload);
+    },
+  };
+
   const { onEvent, onceEvent } = createSocketEventBridge<
     ClientToServerEventPayloadMap,
     ServerToClientEventPayloadMap
-  >(socket as any);
+  >(bridgeTarget);
 
   return {
     onEvent,

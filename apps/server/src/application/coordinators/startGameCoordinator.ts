@@ -8,7 +8,8 @@ import {
   type StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
-import { logEvent } from "@server/logging/logEvent";
+import { logEvent } from "@server/logging/logger";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
@@ -33,18 +34,18 @@ export const startGameCoordinator = ({
 }: StartGameCoordinatorParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
   if (!room) {
-    logEvent("GameUseCase", {
-      event: "START_GAME",
-      result: "ignored_no_room",
+    logEvent(logScopes.GAME_USE_CASE, {
+      event: gameUseCaseLogEvents.START_GAME,
+      result: logResults.IGNORED_NO_ROOM,
       socketId: ownerId,
     });
     return;
   }
 
   if (room.status === roomConsts.RoomPhase.PLAYING) {
-    logEvent("GameUseCase", {
-      event: "START_GAME",
-      result: "ignored_already_playing",
+    logEvent(logScopes.GAME_USE_CASE, {
+      event: gameUseCaseLogEvents.START_GAME,
+      result: logResults.IGNORED_ALREADY_PLAYING,
       roomId: room.roomId,
       socketId: ownerId,
     });
@@ -53,18 +54,18 @@ export const startGameCoordinator = ({
 
   const updatedRoom = roomManager.markRoomPlaying(room.roomId);
   if (!updatedRoom) {
-    logEvent("GameUseCase", {
-      event: "START_GAME",
-      result: "ignored_room_not_found",
+    logEvent(logScopes.GAME_USE_CASE, {
+      event: gameUseCaseLogEvents.START_GAME,
+      result: logResults.IGNORED_ROOM_NOT_FOUND,
       roomId: room.roomId,
       socketId: ownerId,
     });
     return;
   }
 
-  logEvent("GameUseCase", {
-    event: "START_GAME",
-    result: "accepted",
+  logEvent(logScopes.GAME_USE_CASE, {
+    event: gameUseCaseLogEvents.START_GAME,
+    result: logResults.ACCEPTED,
     roomId: updatedRoom.roomId,
     socketId: ownerId,
     totalPlayers: updatedRoom.players.length,

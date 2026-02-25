@@ -3,7 +3,8 @@
  * ルーム内プレイヤーでゲームセッションを開始し，進行イベントを通知する
  */
 import type { GameOutputPort, StartGamePort } from "../ports/gameUseCasePorts";
-import { logEvent } from "@server/logging/logEvent";
+import { logEvent } from "@server/logging/logger";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 
 type StartGameUseCaseParams = {
   roomId: string;
@@ -40,9 +41,9 @@ export const startGameUseCase = ({
       }
     },
     () => {
-      logEvent("GameUseCase", {
-        event: "GAME_END",
-        result: "emitted",
+      logEvent(logScopes.GAME_USE_CASE, {
+        event: gameUseCaseLogEvents.GAME_END,
+        result: logResults.EMITTED,
         roomId,
         reason: "duration_elapsed",
       });

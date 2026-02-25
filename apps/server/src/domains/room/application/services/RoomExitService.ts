@@ -3,7 +3,8 @@
  * ルーム退出処理とオーナー移譲処理を担うサービス
  */
 import type { roomTypes } from "@repo/shared";
-import { logEvent } from "@server/logging/logEvent";
+import { logEvent } from "@server/logging/logger";
+import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/index";
 
 /** 退出要求に応じてプレイヤー削除とルーム整理を行うサービス */
 export class RoomExitService {
@@ -19,9 +20,9 @@ export class RoomExitService {
       }
 
       room.players.splice(playerIndex, 1);
-      logEvent("RoomExitService", {
-        event: "PLAYER_LEAVE",
-        result: "removed",
+      logEvent(logScopes.ROOM_EXIT_SERVICE, {
+        event: roomDomainLogEvents.PLAYER_LEAVE,
+        result: logResults.REMOVED,
         roomId,
         socketId,
         totalPlayers: room.players.length,
@@ -29,9 +30,9 @@ export class RoomExitService {
 
       if (room.players.length === 0) {
         this.rooms.delete(roomId);
-        logEvent("RoomExitService", {
-          event: "ROOM_DELETE",
-          result: "deleted",
+        logEvent(logScopes.ROOM_EXIT_SERVICE, {
+          event: roomDomainLogEvents.ROOM_DELETE,
+          result: logResults.DELETED,
           roomId,
           socketId,
         });
@@ -41,9 +42,9 @@ export class RoomExitService {
       if (room.ownerId === socketId) {
         room.ownerId = room.players[0].id;
         room.players[0].isOwner = true;
-        logEvent("RoomExitService", {
-          event: "OWNER_TRANSFER",
-          result: "transferred",
+        logEvent(logScopes.ROOM_EXIT_SERVICE, {
+          event: roomDomainLogEvents.OWNER_TRANSFER,
+          result: logResults.TRANSFERRED,
           roomId,
           socketId,
           newOwnerId: room.ownerId,

@@ -4,7 +4,8 @@
  */
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
 import type { GameOutputPort } from "../ports/gameUseCasePorts";
-import { logEvent } from "@server/logging/logEvent";
+import { logEvent } from "@server/logging/logger";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 
 type ReadyForGameUseCaseParams = {
   socketId: string;
@@ -22,9 +23,9 @@ export const readyForGameUseCase = ({
 }: ReadyForGameUseCaseParams) => {
   if (!roomId) {
     output.publishCurrentPlayersToSocket([]);
-    logEvent("GameUseCase", {
-      event: "READY_FOR_GAME",
-      result: "ignored_missing_room",
+    logEvent(logScopes.GAME_USE_CASE, {
+      event: gameUseCaseLogEvents.READY_FOR_GAME,
+      result: logResults.IGNORED_MISSING_ROOM,
       socketId,
     });
     return;
@@ -33,9 +34,9 @@ export const readyForGameUseCase = ({
   const roomPlayers = gameManager.getRoomPlayers(roomId);
   output.publishCurrentPlayersToSocket(roomPlayers);
 
-  logEvent("GameUseCase", {
-    event: "READY_FOR_GAME",
-    result: "received",
+  logEvent(logScopes.GAME_USE_CASE, {
+    event: gameUseCaseLogEvents.READY_FOR_GAME,
+    result: logResults.RECEIVED,
     socketId,
     roomId,
     totalPlayers: roomPlayers.length,
@@ -47,9 +48,9 @@ export const readyForGameUseCase = ({
   }
 
   output.publishGameStartToSocket({ startTime });
-  logEvent("GameUseCase", {
-    event: "GAME_START",
-    result: "emitted",
+  logEvent(logScopes.GAME_USE_CASE, {
+    event: gameUseCaseLogEvents.GAME_START,
+    result: logResults.EMITTED,
     socketId,
     roomId,
     startTime,

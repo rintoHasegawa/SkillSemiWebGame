@@ -4,7 +4,8 @@
  */
 import { config } from "@repo/shared";
 import type { gameTypes } from "@repo/shared";
-import { logEvent } from "@server/logging/logEvent";
+import { logEvent } from "@server/logging/logger";
+import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 import { GameRoomSession } from "./GameRoomSession";
 
 type SessionStore = Map<string, GameRoomSession>;
@@ -34,9 +35,9 @@ export class GameSessionLifecycleService {
     onGameEnd: () => void
   ) {
     if (this.sessions.has(roomId)) {
-      logEvent("GameSessionLifecycleService", {
-        event: "SESSION_START",
-        result: "ignored_already_running",
+      logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
+        event: gameDomainLogEvents.SESSION_START,
+        result: logResults.IGNORED_ALREADY_RUNNING,
         roomId,
       });
       return;
@@ -58,9 +59,9 @@ export class GameSessionLifecycleService {
       onGameEnd();
     });
 
-    logEvent("GameSessionLifecycleService", {
-      event: "SESSION_START",
-      result: "started",
+    logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
+      event: gameDomainLogEvents.SESSION_START,
+      result: logResults.STARTED,
       roomId,
       playerCount: playerIds.length,
     });
