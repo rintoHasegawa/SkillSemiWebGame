@@ -3,8 +3,8 @@
  * ルーム内プレイヤーでゲームセッションを開始し，進行イベントを通知する
  */
 import type { GameOutputPort, StartGamePort } from "../ports/gameUseCasePorts";
-import { logEvent } from "@server/logging/logEvent";
-import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 
 type StartGameUseCaseParams = {
   roomId: string;

@@ -7,8 +7,8 @@ import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@repo/shared";
 import type { gameTypes } from "@repo/shared";
-import { logEvent } from "@server/logging/logEvent";
-import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {

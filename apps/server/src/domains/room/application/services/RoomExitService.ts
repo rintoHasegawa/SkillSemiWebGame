@@ -3,8 +3,8 @@
  * ルーム退出処理とオーナー移譲処理を担うサービス
  */
 import type { roomTypes } from "@repo/shared";
-import { logEvent } from "@server/logging/logEvent";
-import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/index";
 
 /** 退出要求に応じてプレイヤー削除とルーム整理を行うサービス */
 export class RoomExitService {

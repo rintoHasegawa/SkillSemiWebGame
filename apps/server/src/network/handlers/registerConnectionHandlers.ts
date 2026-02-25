@@ -5,8 +5,8 @@
 import { Server, Socket } from "socket.io";
 import { protocol } from "@repo/shared";
 import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
-import { logEvent } from "@server/logging/logEvent";
-import { logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { logResults, logScopes } from "@server/logging/index";
 import { registerGameHandlers } from "./GameHandler";
 import { registerRoomHandlers } from "./RoomHandler";
 import { createGameDisconnectOutputAdapter } from "./game/createGameOutputAdapter";

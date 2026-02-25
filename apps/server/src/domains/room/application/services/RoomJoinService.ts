@@ -4,8 +4,8 @@
  */
 import { config, roomConsts } from "@repo/shared";
 import type { roomTypes } from "@repo/shared";
-import { logEvent } from "@server/logging/logEvent";
-import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/index";
 import type { JoinRoomResult } from "../ports/roomUseCasePorts";
 
 /** 参加要求に応じてルーム作成と参加者追加を行うサービス */

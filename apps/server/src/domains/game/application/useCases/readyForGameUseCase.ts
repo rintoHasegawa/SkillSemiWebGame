@@ -4,8 +4,8 @@
  */
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
 import type { GameOutputPort } from "../ports/gameUseCasePorts";
-import { logEvent } from "@server/logging/logEvent";
-import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 
 type ReadyForGameUseCaseParams = {
   socketId: string;

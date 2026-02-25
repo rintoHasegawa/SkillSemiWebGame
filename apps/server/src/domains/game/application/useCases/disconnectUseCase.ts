@@ -3,8 +3,8 @@
  * 切断したプレイヤーをゲーム状態から除外し，必要に応じて通知を行う
  */
 import type { DisconnectPlayerPort, GameOutputPort } from "../ports/gameUseCasePorts";
-import { logEvent } from "@server/logging/logEvent";
-import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 
 type DisconnectUseCaseParams = {
   gameManager: DisconnectPlayerPort;

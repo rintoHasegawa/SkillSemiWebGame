@@ -4,8 +4,8 @@
  */
 import { config } from "@repo/shared";
 import type { gameTypes } from "@repo/shared";
-import { logEvent } from "@server/logging/logEvent";
-import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 import { GameRoomSession } from "./GameRoomSession";
 
 type SessionStore = Map<string, GameRoomSession>;

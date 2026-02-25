@@ -8,8 +8,8 @@ import type {
   JoinRoomResult,
   RoomOutputPort,
 } from "../ports/roomUseCasePorts";
-import { logEvent } from "@server/logging/logEvent";
-import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";
 
 type JoinRoomUseCaseParams = {
   roomManager: JoinRoomPort;

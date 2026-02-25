@@ -2,8 +2,8 @@
  * GamePlayerOperationService
  * ゲームセッション内のプレイヤー移動と離脱操作を管理する
  */
-import { logEvent } from "@server/logging/logEvent";
-import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 import { GameRoomSession } from "./GameRoomSession";
 
 type SessionStore = Map<string, GameRoomSession>;

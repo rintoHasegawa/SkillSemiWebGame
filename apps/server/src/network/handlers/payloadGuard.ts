@@ -3,8 +3,8 @@
  * 受信ペイロード検証と不正時ログ記録を共通化するガード生成を担う
  */
 import { protocol } from "@repo/shared";
-import { logEvent } from "@server/logging/logEvent";
-import { logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { logResults, logScopes } from "@server/logging/index";
 
 type PayloadValidator<TPayload> = (value: unknown) => value is TPayload;
 type PayloadGuardEventName =

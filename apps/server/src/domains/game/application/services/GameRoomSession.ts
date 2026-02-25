@@ -2,8 +2,8 @@
  * GameRoomSession
  * 1ルーム分のゲーム進行状態とゲームループ実行を管理する
  */
-import { logEvent } from "@server/logging/logEvent";
-import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 import type { gameTypes } from "@repo/shared";
 import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";

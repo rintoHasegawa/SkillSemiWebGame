@@ -1,10 +1,11 @@
 /**
- * logEvent
+ * logger
  * 共通ログ出力で利用するイベントログ関数を提供する
  */
-import type { LogPayloadByScope, LogScope } from "./logEvents";
+import type { LogPayloadByScope } from "./contracts/payloadByScope";
+import type { LogScope } from "./constants/scopes";
 
-type LogEventPayload = {
+type LoggerPayload = {
   socketId?: string;
   roomId?: string;
   [key: string]: unknown;
@@ -15,7 +16,7 @@ export const logEvent = <
   TScope extends LogScope,
 >(
   scope: TScope,
-  payload: LogEventPayload & LogPayloadByScope[TScope]
+  payload: LoggerPayload & LogPayloadByScope[TScope]
 ) => {
   console.log(`[${scope}]`, payload);
 };

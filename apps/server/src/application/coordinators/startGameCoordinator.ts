@@ -8,8 +8,8 @@ import {
   type StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
-import { logEvent } from "@server/logging/logEvent";
-import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/logEvents";
+import { logEvent } from "@server/logging/logger";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
