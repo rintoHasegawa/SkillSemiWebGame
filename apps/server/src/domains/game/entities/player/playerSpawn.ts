@@ -2,7 +2,7 @@
  * playerSpawn
  * プレイヤー初期生成時のスポーン座標設定を提供する
  */
-import { config } from "@repo/shared";
+import { config } from "@server/config";
 import { Player } from "./Player.js";
 
 /** プレイヤーを生成し，初期スポーン座標を設定して返す */

@@ -4,7 +4,7 @@
  * クールダウンと設置位置解決をまとめて扱う
  */
 import type { Container } from "pixi.js";
-import { config } from "@repo/shared";
+import { config } from "@client/config";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { BombController } from "@client/scenes/game/entities/bomb/BombController";
 import type { GamePlayers } from "./game.types";

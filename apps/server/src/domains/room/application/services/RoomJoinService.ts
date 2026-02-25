@@ -2,7 +2,8 @@
  * RoomJoinService
  * ルーム作成とプレイヤー参加処理を担うサービス
  */
-import { config, roomConsts } from "@repo/shared";
+import { roomConsts } from "@repo/shared";
+import { config } from "@server/config";
 import type { roomTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/index";

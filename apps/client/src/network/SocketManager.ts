@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import { config } from "@repo/shared";
+import { config } from "@client/config";
 import { createCommonHandler, type CommonHandler } from "./handlers/CommonHandler";
 import { createTitleHandler, type TitleHandler } from "./handlers/TitleHandler";
 import { createLobbyHandler, type LobbyHandler } from "./handlers/LobbyHandler";

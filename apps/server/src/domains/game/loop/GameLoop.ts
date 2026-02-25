@@ -5,7 +5,7 @@
 import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
-import { config } from "@repo/shared";
+import { config } from "@server/config";
 import type { gameTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";

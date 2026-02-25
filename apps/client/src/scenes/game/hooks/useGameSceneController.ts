@@ -4,7 +4,7 @@
  * Pixi描画領域，残り時間表示，入力橋渡しを提供する
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { config } from "@repo/shared";
+import { config } from "@client/config";
 import { GameInputManager } from "@client/scenes/game/GameInputManager";
 import { GameManager } from "@client/scenes/game/GameManager";
 

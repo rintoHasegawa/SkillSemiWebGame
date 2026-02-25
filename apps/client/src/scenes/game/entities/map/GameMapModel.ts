@@ -3,7 +3,7 @@
  * マップセルの色状態を管理する計算モデル
  * 全体更新と差分更新を適用して描画入力用の状態を保持する
  */
-import { config } from '@repo/shared';
+import { config } from '@client/config';
 import type { gridMapTypes } from '@repo/shared';
 
 /** マップセル状態の計算責務を担うモデル */

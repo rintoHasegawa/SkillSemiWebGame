@@ -5,7 +5,8 @@
  */
 import { useCallback, useReducer, useRef, useState } from "react";
 import { socketManager } from "@client/network/SocketManager";
-import { appConsts, config } from "@repo/shared";
+import { appConsts } from "@repo/shared";
+import { config } from "@client/config";
 import type { appTypes, roomTypes, GameResultPayload } from "@repo/shared";
 import { useSocketSubscriptions } from "./useSocketSubscriptions";
 

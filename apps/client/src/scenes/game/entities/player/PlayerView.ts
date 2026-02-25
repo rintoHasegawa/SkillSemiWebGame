@@ -4,7 +4,7 @@
  * Pixi Spriteの生成と座標反映を行う
  */
 import { Assets, Sprite, Texture } from "pixi.js";
-import { config } from "@repo/shared";
+import { config } from "@client/config";
 
 export class PlayerView {
   public readonly displayObject: Sprite;

@@ -4,7 +4,7 @@
  * 計算済みセル状態を受けてPixi描画へ反映する
  */
 import { Container, Graphics } from 'pixi.js';
-import { config } from '@repo/shared';
+import { config } from '@client/config';
 
 /** マップ描画責務を担うビュー */
 export class GameMapView {

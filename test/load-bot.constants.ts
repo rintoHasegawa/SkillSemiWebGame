@@ -1,6 +1,8 @@
-import { config } from "@repo/shared";
+import { config as sharedConfig } from "@repo/shared";
+import { config as clientConfig } from "../apps/client/src/config/index.ts";
 
-const { GAME_CONFIG, NETWORK_CONFIG } = config;
+const { GAME_CONFIG } = sharedConfig;
+const { NETWORK_CONFIG } = clientConfig;
 
 export const URL = NETWORK_CONFIG.PROD_SERVER_URL;
 export const DEV_URL = NETWORK_CONFIG.DEV_SERVER_URL;

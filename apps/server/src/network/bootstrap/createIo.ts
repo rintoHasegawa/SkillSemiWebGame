@@ -3,7 +3,7 @@
  * 共有設定を用いてSocket.IOサーバを生成する
  */
 import { Server } from "socket.io";
-import { config } from "@repo/shared";
+import { config } from "@server/config";
 import type { Server as HttpServer } from "http";
 
 /** CORS設定を適用したSocket.IOサーバを生成する */

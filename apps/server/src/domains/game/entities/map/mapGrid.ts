@@ -2,7 +2,7 @@
  * mapGrid
  * マップ配列の初期状態を生成する
  */
-import { config } from "@repo/shared";
+import { config } from "@server/config";
 
 /** マップ全セルを未塗り状態で初期化した配列を返す */
 export const createInitialGridColors = (): number[] => {
