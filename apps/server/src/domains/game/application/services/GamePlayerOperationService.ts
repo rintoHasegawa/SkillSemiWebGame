@@ -20,8 +20,8 @@ export class GamePlayerOperationService {
   public movePlayer(id: string, x: number, y: number): void {
     const roomId = this.playerToRoom.get(id);
     if (!roomId) {
-      logEvent("GameSessionService", {
-        event: "MOVE",
+      logEvent("GamePlayerOperationService", {
+        event: "PLAYER_MOVE",
         result: "ignored_player_not_in_session",
         socketId: id,
       });
@@ -34,8 +34,8 @@ export class GamePlayerOperationService {
   public removePlayer(id: string): void {
     const roomId = this.playerToRoom.get(id);
     if (!roomId) {
-      logEvent("GameSessionService", {
-        event: "REMOVE_PLAYER",
+      logEvent("GamePlayerOperationService", {
+        event: "PLAYER_REMOVE",
         result: "ignored_player_not_in_session",
         socketId: id,
       });
@@ -61,8 +61,8 @@ export class GamePlayerOperationService {
       session.dispose();
       this.sessions.delete(roomId);
       this.roomToPlayers.delete(roomId);
-      logEvent("GameSessionService", {
-        event: "REMOVE_PLAYER",
+      logEvent("GamePlayerOperationService", {
+        event: "PLAYER_REMOVE",
         result: "session_disposed_empty_room",
         roomId,
         socketId: id,

@@ -34,8 +34,8 @@ export class GameSessionLifecycleService {
     onGameEnd: () => void
   ) {
     if (this.sessions.has(roomId)) {
-      logEvent("GameSessionService", {
-        event: "START_GAME_LOOP",
+      logEvent("GameSessionLifecycleService", {
+        event: "SESSION_START",
         result: "ignored_already_running",
         roomId,
       });
@@ -58,8 +58,8 @@ export class GameSessionLifecycleService {
       onGameEnd();
     });
 
-    logEvent("GameSessionService", {
-      event: "START_GAME_LOOP",
+    logEvent("GameSessionLifecycleService", {
+      event: "SESSION_START",
       result: "started",
       roomId,
       playerCount: playerIds.length,

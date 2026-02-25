@@ -49,8 +49,9 @@ export class GameNetworkSync {
     }
   };
 
-  private handleUpdatePlayers = (serverPlayers: playerTypes.PlayerData[]) => {
-    serverPlayers.forEach((playerData) => {
+  private handleUpdatePlayers = (changedPlayers: playerTypes.PlayerData[]) => {
+    // UPDATE_PLAYERS は差分のみ届くため，対象IDだけ上書き更新する
+    changedPlayers.forEach((playerData) => {
       if (playerData.id === this.myId) return;
 
       const target = this.players[playerData.id];

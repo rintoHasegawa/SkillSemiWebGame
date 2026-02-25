@@ -29,6 +29,7 @@ export class GameLoop {
   private endMonotonicTimeMs: number = 0;
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
+  private lastSentPlayers: Map<string, TickData["players"][number]> = new Map();
 
   constructor(
     private roomId: string,
@@ -47,6 +48,7 @@ export class GameLoop {
     this.startMonotonicTimeMs = nowMs;
     this.endMonotonicTimeMs = nowMs + config.GAME_CONFIG.GAME_DURATION_SEC * 1000;
     this.nextTickAtMs = nowMs + this.tickRate;
+    this.lastSentPlayers.clear();
     this.isRunning = true;
     this.scheduleNextTick();
 
@@ -101,7 +103,7 @@ export class GameLoop {
   }
 
   private processSingleTick(): void {
-    const playersData: TickData["players"] = [];
+    const changedPlayers: TickData["players"] = [];
 
     // 1. 各プレイヤーの座標処理とマス塗りの判定
     this.players.forEach((player) => {
@@ -112,12 +114,31 @@ export class GameLoop {
       }
 
       // 送信用のプレイヤーデータを構築
-      playersData.push({
+      const playerData = {
         id: player.id,
         x: player.x,
         y: player.y,
         teamId: player.teamId,
-      });
+      };
+
+      const lastSentPlayer = this.lastSentPlayers.get(player.id);
+      const isChanged =
+        !lastSentPlayer ||
+        lastSentPlayer.x !== playerData.x ||
+        lastSentPlayer.y !== playerData.y ||
+        lastSentPlayer.teamId !== playerData.teamId;
+
+      if (isChanged) {
+        changedPlayers.push(playerData);
+        this.lastSentPlayers.set(player.id, playerData);
+      }
+    });
+
+    // ルームから離脱したプレイヤーの送信状態をクリーンアップする
+    Array.from(this.lastSentPlayers.keys()).forEach((playerId) => {
+      if (!this.players.has(playerId)) {
+        this.lastSentPlayers.delete(playerId);
+      }
     });
 
     // 2. マスの差分（Diff）を取得
@@ -125,7 +146,7 @@ export class GameLoop {
 
     // 3. 通信層（GameHandler）へデータを渡す
     this.onTick({
-      players: playersData,
+      players: changedPlayers,
       cellUpdates: cellUpdates,
     });
   }
@@ -134,6 +155,7 @@ export class GameLoop {
     if (!this.isRunning) return;
 
     this.isRunning = false;
+    this.lastSentPlayers.clear();
 
     if (this.loopId) {
       clearTimeout(this.loopId);
