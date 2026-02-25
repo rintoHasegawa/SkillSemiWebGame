@@ -3,7 +3,7 @@
  * ゲーム関連イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { config, protocol } from "@repo/shared";
+import { protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
@@ -20,58 +20,7 @@ import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/networ
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
-const roomBombDedupTable = new Map<string, Map<string, number>>();
-const roomBombSerialTable = new Map<string, number>();
-const isBombRoomStateDebugEnabled = process.env.NODE_ENV !== "production";
-
-const cleanupExpiredBombDedup = (roomId: string, nowMs: number) => {
-  const roomTable = roomBombDedupTable.get(roomId);
-  if (!roomTable) return;
-
-  roomTable.forEach((expiresAtMs, bombId) => {
-    if (expiresAtMs <= nowMs) {
-      roomTable.delete(bombId);
-    }
-  });
-
-  if (roomTable.size === 0) {
-    roomBombDedupTable.delete(roomId);
-  }
-};
-
-const shouldBroadcastBombPlaced = (roomId: string, dedupeKey: string, nowMs: number) => {
-  cleanupExpiredBombDedup(roomId, nowMs);
-
-  const roomTable = roomBombDedupTable.get(roomId) ?? new Map<string, number>();
-  if (roomTable.has(dedupeKey)) {
-    return false;
-  }
-
-  const ttlMs = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
-  roomTable.set(dedupeKey, nowMs + ttlMs);
-  roomBombDedupTable.set(roomId, roomTable);
-  return true;
-};
-
-const issueServerBombId = (roomId: string): string => {
-  const serial = (roomBombSerialTable.get(roomId) ?? 0) + 1;
-  roomBombSerialTable.set(roomId, serial);
-  return `${roomId}:${serial}`;
-};
-
-/** 指定ルームの爆弾採番状態と重複排除状態を破棄する */
-export const clearBombRoomState = (roomId: string, reason: "game-ended" | "room-deleted"): void => {
-  const hadDedupState = roomBombDedupTable.delete(roomId);
-  const hadSerialState = roomBombSerialTable.delete(roomId);
-
-  if (!isBombRoomStateDebugEnabled) {
-    return;
-  }
-
-  console.debug(
-    `[BombState] cleared room=${roomId} reason=${reason} dedup=${hadDedupState} serial=${hadSerialState}`
-  );
-};
+import { clearBombRoomState, issueServerBombId, shouldBroadcastBombPlaced } from "./bombRoomStateStore";
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
 const gamePayloadValidators = {
