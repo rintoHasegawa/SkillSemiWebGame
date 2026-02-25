@@ -31,6 +31,7 @@ export type {
 	ServerToClientPayloadOf,
 	CurrentPlayersPayload,
 	BombPlacedPayload,
+	BombNetworkPayload,
 	GameStartPayload,
 	GameResultPayload,
 	GameResultRanking,
@@ -44,6 +45,8 @@ export type {
 } from "./protocol/events";
 /** ソケットイベントブリッジ生成関数を再公開 */
 export { createSocketEventBridge } from "./protocol/socketEventBridge";
+/** 爆弾ペイロードから同期用IDを生成するユーティリティを再公開 */
+export { createBombIdFromPayload } from "./protocol/events";
 /** ソケットイベントブリッジ生成に必要な最小インターフェースを再公開 */
 export type { SocketBridgeTarget } from "./protocol/socketEventBridge";
 /** 共有設定値を再公開 */

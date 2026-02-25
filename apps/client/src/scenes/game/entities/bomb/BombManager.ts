@@ -5,7 +5,8 @@
  */
 import type { Container } from "pixi.js";
 import { config } from "@client/config";
-import type { BombPlacedPayload } from "@repo/shared";
+import { createBombIdFromPayload } from "@repo/shared";
+import type { BombNetworkPayload } from "@repo/shared";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { BombController } from "./BombController";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
@@ -13,20 +14,15 @@ import type { GamePlayers } from "@client/scenes/game/application/game.types";
 /** 経過時間ミリ秒を返す関数型 */
 export type ElapsedMsProvider = () => number;
 
-/** 爆弾の追加更新に使う入力データ型 */
-export type BombUpsertPayload = BombPlacedPayload & {
-  radiusGrid?: number;
+/** 爆弾の描画更新に使う入力データ型 */
+export type BombRenderPayload = BombNetworkPayload & {
+  radiusGrid: number;
 };
 
 /** 爆弾設置時に返す結果型 */
 export type BombPlacementResult = {
   bombId: string;
-  payload: BombPlacedPayload;
-};
-
-/** 爆弾ペイロードから一意キーを生成する */
-export const createBombIdFromPayload = (payload: BombPlacedPayload): string => {
-  return `${payload.x}:${payload.y}:${payload.explodeAtElapsedMs}`;
+  payload: BombNetworkPayload;
 };
 
 type BombManagerOptions = {
@@ -64,14 +60,14 @@ export class BombManager {
     }
 
     const position = me.getPosition();
-    const payload: BombPlacedPayload = {
+    const payload: BombNetworkPayload = {
       x: position.x,
       y: position.y,
       explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
     };
     const bombId = createBombIdFromPayload(payload);
 
-    this.upsertBomb(bombId, payload);
+    this.upsertBombFromNetwork(bombId, payload);
     this.lastBombPlacedElapsedMs = elapsedMs;
     return {
       bombId,
@@ -79,20 +75,25 @@ export class BombManager {
     };
   }
 
-  /** 指定IDの爆弾を追加または更新する */
-  public upsertBomb(bombId: string, payload: BombUpsertPayload): void {
+  /** 通信ペイロードから指定IDの爆弾を追加または更新する */
+  public upsertBombFromNetwork(bombId: string, payload: BombNetworkPayload): void {
+    const renderPayload: BombRenderPayload = {
+      ...payload,
+      radiusGrid: config.GAME_CONFIG.BOMB_RADIUS_GRID,
+    };
+
+    this.upsertBomb(bombId, renderPayload);
+  }
+
+  /** 描画ペイロードで指定IDの爆弾を追加または更新する */
+  public upsertBomb(bombId: string, payload: BombRenderPayload): void {
     const current = this.bombs.get(bombId);
     if (current) {
       this.worldContainer.removeChild(current.getDisplayObject());
       current.destroy();
     }
 
-    const resolvedPayload = {
-      ...payload,
-      radiusGrid: payload.radiusGrid ?? config.GAME_CONFIG.BOMB_RADIUS_GRID,
-    };
-
-    const bomb = new BombController(resolvedPayload);
+    const bomb = new BombController(payload);
     this.bombs.set(bombId, bomb);
     this.worldContainer.addChild(bomb.getDisplayObject());
   }
