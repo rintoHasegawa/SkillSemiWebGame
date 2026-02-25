@@ -29,7 +29,7 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
 
   return (
     <>
-      {/* 🌟 追加: ロビー画面と同じ、横画面専用の警告と全体設定 */}
+      {/* 🌟 ロビー画面と同じ、横画面専用の警告と全体設定 */}
       <style>{`
         * {
           box-sizing: border-box;
@@ -44,7 +44,6 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
           justify-content: center;
           align-items: center;
           flex-direction: column;
-          font-size: 1.5rem;
           text-align: center;
           padding: 20px;
         }
@@ -52,117 +51,123 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
           .portrait-blocker {
             display: flex;
           }
-          .title-container {
-            display: none !important;
-          }
         }
       `}</style>
 
-      {/* 🌟 縦画面のときに表示される警告画面 */}
+      {/* 縦画面時のブロック画面 */}
       <div className="portrait-blocker">
-        <div style={{ fontSize: "4rem", marginBottom: "20px" }}>🔄</div>
-        <p style={{ margin: 0, lineHeight: "1.5" }}>
-          このゲームは横画面専用です。
-          <br />
-          スマホを横向きにしてください。
-        </p>
+        <h2>画面を横向きにしてください</h2>
+        <p>Please rotate your device to landscape mode.</p>
       </div>
 
+      {/* 🌟 画面全体を覆う背景コンテナ */}
       <div
-        className="title-container"
         style={{
-          padding: "20px",
-          color: "white",
-          background: "#111",
-          height: "100dvh" /* 🌟 100vhから100dvhに変更（スマホURLバー対策） */,
           width: "100vw",
+          height: "100dvh",
+          // 💡 ここを修正： public/title.png を読み込むように変更
+          backgroundImage: "url('/title.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          // ドット絵をぼやけさせずにくっきり拡大するプロパティ
+          imageRendering: "pixelated",
+
+          // UIを下の方に配置するためのFlexbox設定
           display: "flex",
           flexDirection: "column",
+          justifyContent: "flex-end", // 下に寄せる
           alignItems: "center",
-          justifyContent: "center",
+          paddingBottom: "12vh", // 画像の空きスペースに合わせて調整
         }}
       >
-        <h1
-          style={{
-            fontSize:
-              "clamp(2rem, 5vw, 3rem)" /* 🌟 画面サイズに合わせて文字を可変に */,
-            marginBottom: "clamp(20px, 4vh, 40px)",
-            color: "#4ade80",
-            textAlign: "center",
-          }}
-        >
-          Pixel Paint War
-        </h1>
-
-        {/* 🌟 固定の300pxから、幅100%・最大幅350pxのレスポンシブに変更 */}
+        {/* 🌟 入力フォーム＆ボタンのコンテナ */}
         <div
           style={{
-            marginBottom: "20px",
             display: "flex",
             flexDirection: "column",
-            gap: "10px",
-            width: "100%",
-            maxWidth: "350px",
+            alignItems: "center",
+            width: "90%",
+            maxWidth: "400px",
+            // 画像と同化しないように、うっすらと黒い半透明の座布団を敷く（不要なら消してOK）
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            padding: "20px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.5)",
           }}
         >
-          <input
-            placeholder="プレイヤー名"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            style={{
-              padding: "12px",
-              fontSize: "clamp(1rem, 3vw, 1.2rem)",
-              borderRadius: "5px",
-              border: "none",
-              width: "100%",
-            }}
-          />
-          <input
-            placeholder="ルームIDを入力"
-            value={roomIdInput}
-            onChange={(e) => setRoomIdInput(e.target.value)}
-            style={{
-              padding: "12px",
-              fontSize: "clamp(1rem, 3vw, 1.2rem)",
-              borderRadius: "5px",
-              border: "none",
-              width: "100%",
-            }}
-          />
-        </div>
-
-        {/* 🌟 エラーメッセージの表示（もしあれば） */}
-        {joinErrorMessage && (
           <div
             style={{
-              color: "#ef4444",
-              marginBottom: "15px",
-              fontWeight: "bold",
-              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              width: "100%",
+              marginBottom: "20px",
             }}
           >
-            {joinErrorMessage}
+            <input
+              placeholder="プレイヤー名を入力"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              style={{
+                padding: "12px",
+                fontSize: "clamp(1rem, 3vw, 1.2rem)",
+                borderRadius: "5px",
+                border: "none",
+                width: "100%",
+                fontFamily: "monospace",
+              }}
+            />
+            <input
+              placeholder="ルームIDを入力"
+              value={roomIdInput}
+              onChange={(e) => setRoomIdInput(e.target.value)}
+              style={{
+                padding: "12px",
+                fontSize: "clamp(1rem, 3vw, 1.2rem)",
+                borderRadius: "5px",
+                border: "none",
+                width: "100%",
+                fontFamily: "monospace",
+              }}
+            />
           </div>
-        )}
 
-        <button
-          onClick={handleJoin}
-          disabled={!canJoin || isJoining}
-          style={{
-            padding: "15px 30px",
-            fontSize: "clamp(1rem, 3vw, 1.2rem)",
-            cursor: !canJoin || isJoining ? "not-allowed" : "pointer",
-            backgroundColor: !canJoin || isJoining ? "#555" : "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            width: "100%" /* 🌟 ボタンも入力欄と同じ幅に揃える */,
-            maxWidth: "350px",
-            fontWeight: "bold",
-          }}
-        >
-          {isJoining ? "入室中..." : "ルームに参加"}
-        </button>
+          {/* エラーメッセージ */}
+          {joinErrorMessage && (
+            <div
+              style={{
+                color: "#ff6b6b",
+                marginBottom: "15px",
+                fontWeight: "bold",
+                textAlign: "center",
+                textShadow: "1px 1px 2px black",
+              }}
+            >
+              {joinErrorMessage}
+            </div>
+          )}
+
+          {/* 参加ボタン */}
+          <button
+            onClick={handleJoin}
+            disabled={!canJoin || isJoining}
+            style={{
+              padding: "15px 30px",
+              fontSize: "clamp(1rem, 3vw, 1.2rem)",
+              cursor: !canJoin || isJoining ? "not-allowed" : "pointer",
+              backgroundColor: !canJoin || isJoining ? "#555" : "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: "5px",
+              width: "100%",
+              fontWeight: "bold",
+              fontFamily: "monospace",
+              transition: "background-color 0.2s",
+            }}
+          >
+            {isJoining ? "接続中..." : "GAME START"}
+          </button>
+        </div>
       </div>
     </>
   );
