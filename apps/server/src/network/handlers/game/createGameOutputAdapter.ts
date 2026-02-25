@@ -5,6 +5,7 @@
 import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import type {
+  BombPlacedPayload,
   GameStartPayload,
   GameResultPayload,
   PongPayload,
@@ -52,6 +53,9 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
     },
     publishGameStartToSocket: (payload: GameStartPayload) => {
       common.emitToSocket(protocol.SocketEvents.GAME_START, payload);
+    },
+    publishBombPlacedToRoom: (roomId: RoomId, payload: BombPlacedPayload) => {
+      common.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, payload);
     },
   };
 };

@@ -7,13 +7,16 @@ import { protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
+  BombPlacementStorePort,
   MovePlayerPort,
+  PlaceBombRoomPort,
   ReadyForGamePort,
   ReadyForGameRoomPort,
   StartGamePort,
   StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
+import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/network/validation/socketPayloadValidators";
@@ -34,7 +37,7 @@ export const registerGameHandlers = (
   io: Server,
   socket: Socket,
   gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort,
-  roomManager: StartGameRoomPort & ReadyForGameRoomPort
+  roomManager: StartGameRoomPort & ReadyForGameRoomPort & PlaceBombRoomPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -107,23 +110,20 @@ export const registerGameHandlers = (
       return;
     }
 
-    const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
-    if (!roomId) {
-      return;
-    }
-
-    const nowMs = Date.now();
-    const dedupeKey = `${socket.id}:${data.requestId}`;
-    if (!shouldBroadcastBombPlaced(roomId, dedupeKey, nowMs)) {
-      return;
-    }
-
-    const payload = {
-      ...data,
-      bombId: issueServerBombId(roomId),
-      ownerId: socket.id,
+    const bombStore: BombPlacementStorePort = {
+      shouldBroadcastBombPlaced,
+      issueServerBombId,
     };
 
-    common.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, payload);
+    placeBombUseCase({
+      roomResolver: roomManager,
+      bombStore,
+      input: {
+        socketId: socket.id,
+        payload: data,
+        nowMs: Date.now(),
+      },
+      output: gameOutputAdapter,
+    });
   });
 };

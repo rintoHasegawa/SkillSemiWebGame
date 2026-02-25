@@ -3,8 +3,10 @@
  * ゲーム系ユースケースが利用する入力ポートと出力ポートの契約を定義する
  */
 import type {
+  BombPlacedPayload,
   gameTypes,
   playerTypes,
+  PlaceBombPayload,
   roomTypes,
   CurrentPlayersPayload,
   GameResultPayload,
@@ -49,6 +51,11 @@ export interface MovePlayerPort {
   movePlayer(id: string, x: number, y: number): void;
 }
 
+/** 爆弾設置ユースケースが利用するルーム解決入力ポート */
+export interface PlaceBombRoomPort {
+  getRoomByPlayerId(playerId: string): roomTypes.Room | undefined;
+}
+
 /** 切断ユースケースが利用するプレイヤー削除入力ポート */
 export interface DisconnectPlayerPort {
   removePlayer(id: string): void;
@@ -70,5 +77,19 @@ export interface GameOutputPort {
   publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: GameStartPayload): void;
   publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
   publishGameStartToSocket(payload: GameStartPayload): void;
+  publishBombPlacedToRoom(roomId: roomTypes.Room["roomId"], payload: BombPlacedPayload): void;
   publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: RemovePlayerPayload): void;
 }
+
+/** 爆弾設置ユースケースが利用する爆弾状態管理入力ポート */
+export interface BombPlacementStorePort {
+  shouldBroadcastBombPlaced(roomId: string, dedupeKey: string, nowMs: number): boolean;
+  issueServerBombId(roomId: string): string;
+}
+
+/** 爆弾設置ユースケースの入力値 */
+export type PlaceBombInput = {
+  socketId: string;
+  payload: PlaceBombPayload;
+  nowMs: number;
+};
