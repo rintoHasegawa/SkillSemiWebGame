@@ -10,6 +10,7 @@ import { GameTimer } from "./application/GameTimer";
 import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
 import { BombManager } from "./application/BombManager";
+import type { BombUpsertPayload } from "./application/BombManager";
 import type { GamePlayers } from "./application/game.types";
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
@@ -35,8 +36,17 @@ export class GameManager {
     return this.timer.getRemainingTime();
   }
 
-  public placeBomb() {
-    this.bombManager?.placeBomb();
+  public placeBomb(): string | null {
+    if (!this.bombManager) return null;
+    return this.bombManager.placeBomb();
+  }
+
+  public upsertBomb(bombId: string, payload: BombUpsertPayload): void {
+    this.bombManager?.upsertBomb(bombId, payload);
+  }
+
+  public removeBomb(bombId: string): void {
+    this.bombManager?.removeBomb(bombId);
   }
   
   // 入力と状態管理
