@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
 import type {
   GameStartPayload,
+  PongPayload,
   roomTypes,
   CurrentPlayersPayload,
   RemovePlayerPayload,
@@ -17,7 +18,6 @@ import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = roomTypes.Room["roomId"];
-type PongPayload = { clientTime: number; serverTime: number };
 
 /** ゲーム出力アダプターのインターフェース */
 export type GameOutputAdapter = Omit<GameOutputPort, "publishPlayerRemovedToRoom">;

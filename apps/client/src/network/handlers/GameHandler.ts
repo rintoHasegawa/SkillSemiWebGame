@@ -8,6 +8,7 @@ import { protocol } from "@repo/shared";
 import type {
   CurrentPlayersPayload,
   GameStartPayload,
+  MovePayload,
   NewPlayerPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
@@ -72,7 +73,7 @@ export const createGameHandler = (socket: Socket): GameHandler => {
       socket.off(protocol.SocketEvents.GAME_START, callback);
     },
     sendMove: (x, y) => {
-      const payload = { x, y };
+      const payload: MovePayload = { x, y };
       socket.emit(protocol.SocketEvents.MOVE, payload);
     },
     readyForGame: () => {

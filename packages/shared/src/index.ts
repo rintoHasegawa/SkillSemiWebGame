@@ -11,7 +11,9 @@ export * as protocol from "./protocol/events";
 export type {
 	CurrentPlayersPayload,
 	GameStartPayload,
+	MovePayload,
 	NewPlayerPayload,
+	PongPayload,
 	RemovePlayerPayload,
 	UpdateMapCellsPayload,
 	UpdatePlayersPayload,

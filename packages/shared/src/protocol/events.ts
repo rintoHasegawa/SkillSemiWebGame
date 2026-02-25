@@ -4,7 +4,7 @@
  * クライアントとサーバー間のイベント契約を共有する
  */
 import type { TickData } from "../domains/game/game.type";
-import type { PlayerData } from "../domains/player/player.type";
+import type { MovePayload as PlayerMovePayload, PlayerData } from "../domains/player/player.type";
 
 /** ソケットイベント名の一覧定数 */
 export const SocketEvents = {
@@ -52,3 +52,12 @@ export type RemovePlayerPayload = PlayerData["id"];
 
 /** GAME_START イベントで送受信するゲーム開始情報 */
 export type GameStartPayload = { startTime: number };
+
+/** MOVE イベントで送受信する移動入力情報 */
+export type MovePayload = PlayerMovePayload;
+
+/** PONG イベントで送受信する時刻同期レスポンス */
+export type PongPayload = {
+  clientTime: number;
+  serverTime: number;
+};

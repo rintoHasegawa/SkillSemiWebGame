@@ -8,6 +8,7 @@ import type {
   roomTypes,
   CurrentPlayersPayload,
   GameStartPayload,
+  PongPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
@@ -54,7 +55,7 @@ export interface DisconnectPlayerPort {
 
 /** ゲーム系ユースケースが利用する送信出力ポート */
 export interface GameOutputPort {
-  publishPongToSocket(payload: { clientTime: number; serverTime: number }): void;
+  publishPongToSocket(payload: PongPayload): void;
   publishUpdatePlayersToRoom(
     roomId: roomTypes.Room["roomId"],
     players: UpdatePlayersPayload
