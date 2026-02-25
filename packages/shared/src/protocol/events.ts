@@ -7,6 +7,12 @@
 /** ソケットイベント名定数を再公開する */
 export { SocketEvents } from "./socketEvents";
 
+/** 爆弾同期識別子の生成ユーティリティを再公開する */
+export { createBombIdFromPayload } from "./bombIdentity";
+
+/** 爆弾通信ペイロード型を再公開する */
+export type { BombNetworkPayload } from "./bombIdentity";
+
 /** 基本ペイロード型を再公開する */
 export type {
   UpdatePlayersPayload,
