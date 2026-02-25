@@ -51,8 +51,18 @@ export class PlayerView {
       this.displayObject.texture = texture;
 
       const { PLAYER_RADIUS_PX } = config.GAME_CONFIG;
-      this.displayObject.width = PLAYER_RADIUS_PX * 2;
-      this.displayObject.height = PLAYER_RADIUS_PX * 2;
+
+      // 当たり判定の本来のサイズ
+      const targetSize = PLAYER_RADIUS_PX * 2;
+
+      // 画像の元サイズから、当たり判定のサイズに合わせるための「倍率」を計算
+      const baseScale = targetSize / Math.max(texture.width, texture.height);
+
+      // 💡 ここがポイント！余白がある分、少し大きめに表示してあげる（1.5倍〜2倍など調整してください）
+      const visualScale = 1.5;
+
+      // 縦横比を崩さずにスケール（倍率）を設定
+      this.displayObject.scale.set(baseScale * visualScale);
     } catch (error) {
       console.error(
         `[PlayerView] 画像の読み込みに失敗: ${imageFileName}`,
