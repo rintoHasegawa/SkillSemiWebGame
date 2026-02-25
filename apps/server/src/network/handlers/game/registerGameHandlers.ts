@@ -22,6 +22,7 @@ import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 const roomBombDedupTable = new Map<string, Map<string, number>>();
 const roomBombSerialTable = new Map<string, number>();
+const isBombRoomStateDebugEnabled = process.env.NODE_ENV !== "production";
 
 const cleanupExpiredBombDedup = (roomId: string, nowMs: number) => {
   const roomTable = roomBombDedupTable.get(roomId);
@@ -56,6 +57,20 @@ const issueServerBombId = (roomId: string): string => {
   const serial = (roomBombSerialTable.get(roomId) ?? 0) + 1;
   roomBombSerialTable.set(roomId, serial);
   return `${roomId}:${serial}`;
+};
+
+/** 指定ルームの爆弾採番状態と重複排除状態を破棄する */
+export const clearBombRoomState = (roomId: string, reason: "game-ended" | "room-deleted"): void => {
+  const hadDedupState = roomBombDedupTable.delete(roomId);
+  const hadSerialState = roomBombSerialTable.delete(roomId);
+
+  if (!isBombRoomStateDebugEnabled) {
+    return;
+  }
+
+  console.debug(
+    `[BombState] cleared room=${roomId} reason=${reason} dedup=${hadDedupState} serial=${hadSerialState}`
+  );
 };
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
@@ -107,6 +122,9 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
+      onRoomGameEnded: (roomId) => {
+        clearBombRoomState(roomId, "game-ended");
+      },
       output: gameOutputAdapter,
     });
   });

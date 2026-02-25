@@ -30,3 +30,8 @@ export interface DisconnectRoomPort {
 export interface FindRoomByPlayerPort {
   getRoomByPlayerId(playerId: string): roomTypes.Room | undefined;
 }
+
+/** ルームIDでの存在確認に利用する参照ポート */
+export interface FindRoomByIdPort {
+  getRoomById(roomId: string): roomTypes.Room | undefined;
+}

@@ -13,6 +13,7 @@ import type {
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
   DisconnectRoomPort,
+  FindRoomByIdPort,
   FindRoomByPlayerPort,
   JoinRoomPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
@@ -39,6 +40,7 @@ export type SocketConnectionGamePort =
 export type SocketConnectionRoomPort =
   & ConnectionRoomPort
   & DisconnectRoomPort
+  & FindRoomByIdPort
   & FindRoomByPlayerPort;
 
 /** ソケット接続ハンドラで受け取るマネージャ依存の束 */
