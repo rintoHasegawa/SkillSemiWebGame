@@ -17,6 +17,8 @@ import { LocalPlayerController, RemotePlayerController } from "@client/scenes/ga
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import type { GamePlayers } from "./game.types";
 
+const ENABLE_DEBUG_LOG = import.meta.env.DEV;
+
 type GameNetworkSyncOptions = {
   worldContainer: Container;
   players: GamePlayers;
@@ -36,6 +38,14 @@ export class GameNetworkSync {
   private onGameEnd: () => void;
   private isBound = false;
 
+  private debugLog = (message: string) => {
+    if (!ENABLE_DEBUG_LOG) {
+      return;
+    }
+
+    console.log(message);
+  };
+
   private handleCurrentPlayers = (serverPlayers: CurrentPlayersPayload) => {
     serverPlayers.forEach((p) => {
       const playerController = p.id === this.myId ? new LocalPlayerController(p) : new RemotePlayerController(p);
@@ -53,7 +63,7 @@ export class GameNetworkSync {
   private handleGameStart = (data: GameStartPayload) => {
     if (data && data.startTime) {
       this.onGameStart(data.startTime);
-      console.log(`[GameManager] ゲーム開始時刻同期完了: ${data.startTime}`);
+      this.debugLog(`[GameNetworkSync] ゲーム開始時刻同期完了: ${data.startTime}`);
     }
   };
 
