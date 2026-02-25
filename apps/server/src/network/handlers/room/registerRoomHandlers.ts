@@ -8,6 +8,7 @@ import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUs
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logEvent";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
+import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
@@ -26,15 +27,11 @@ export const registerRoomHandlers = (
   const common = createCommonHandlerContext(io, socket);
   const roomOutputAdapter = createRoomOutputAdapter(common);
   const { onEvent } = createServerSocketOnBridge(socket);
+  const payloadGuard = createPayloadGuard(socket.id);
 
   // 参加要求のペイロード検証と参加処理を実行する
   onEvent(protocol.SocketEvents.JOIN_ROOM, async (data) => {
-    if (!roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM](data)) {
-      logEvent("Network", {
-        event: "JOIN_ROOM",
-        result: "ignored_invalid_payload",
-        socketId: socket.id,
-      });
+    if (!payloadGuard(protocol.SocketEvents.JOIN_ROOM, data, roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM])) {
       return;
     }
 
@@ -51,7 +48,7 @@ export const registerRoomHandlers = (
     switch (joinResult.status) {
       case "full":
         logEvent("Network", {
-          event: "JOIN_ROOM",
+          event: protocol.SocketEvents.JOIN_ROOM,
           result: "rejected_room_full",
           roomId,
           socketId: socket.id,
@@ -60,7 +57,7 @@ export const registerRoomHandlers = (
 
       case "duplicate":
         logEvent("Network", {
-          event: "JOIN_ROOM",
+          event: protocol.SocketEvents.JOIN_ROOM,
           result: "rejected_duplicate",
           roomId,
           socketId: socket.id,
@@ -71,7 +68,7 @@ export const registerRoomHandlers = (
         await socket.join(roomId);
         roomOutputAdapter.publishRoomUpdateToRoom(roomId, joinResult.room);
         logEvent("RoomUseCase", {
-          event: "ROOM_UPDATE",
+          event: protocol.SocketEvents.ROOM_UPDATE,
           result: "emitted",
           roomId,
           socketId: socket.id,

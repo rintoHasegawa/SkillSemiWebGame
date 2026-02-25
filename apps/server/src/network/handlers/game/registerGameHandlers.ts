@@ -15,10 +15,10 @@ import type {
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
-import { logEvent } from "@server/logging/logEvent";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
+import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
@@ -37,15 +37,11 @@ export const registerGameHandlers = (
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
   const { onEvent } = createServerSocketOnBridge(socket);
+  const payloadGuard = createPayloadGuard(socket.id);
 
   // 遅延計測用のPINGを検証しPONGを返す
   onEvent(protocol.SocketEvents.PING, (clientTime) => {
-    if (!gamePayloadValidators[protocol.SocketEvents.PING](clientTime)) {
-      logEvent("Network", {
-        event: "PING",
-        result: "ignored_invalid_payload",
-        socketId: socket.id,
-      });
+    if (!payloadGuard(protocol.SocketEvents.PING, clientTime, gamePayloadValidators[protocol.SocketEvents.PING])) {
       return;
     }
 
@@ -77,12 +73,7 @@ export const registerGameHandlers = (
 
   // 移動入力を検証しプレイヤー移動ユースケースへ連携する
   onEvent(protocol.SocketEvents.MOVE, (data) => {
-    if (!gamePayloadValidators[protocol.SocketEvents.MOVE](data)) {
-      logEvent("Network", {
-        event: "MOVE",
-        result: "ignored_invalid_payload",
-        socketId: socket.id,
-      });
+    if (!payloadGuard(protocol.SocketEvents.MOVE, data, gamePayloadValidators[protocol.SocketEvents.MOVE])) {
       return;
     }
 

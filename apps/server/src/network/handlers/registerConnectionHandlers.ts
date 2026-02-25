@@ -11,11 +11,6 @@ import { registerRoomHandlers } from "./RoomHandler";
 import { createGameDisconnectOutputAdapter } from "./game/createGameOutputAdapter";
 import { createRoomDisconnectOutputAdapter } from "./room/createRoomOutputAdapter";
 import type {
-  ConnectionGamePort,
-  ConnectionRoomPort,
-  DisconnectCoordinatorPortBundle,
-  DisconnectGamePort,
-  DisconnectRoomHandlerPort,
   RegisterConnectionHandlersParams,
 } from "../types/connectionPorts";
 
@@ -27,39 +22,32 @@ export const registerConnectionHandlers = ({
 }: RegisterConnectionHandlersParams) => {
   const gameDisconnectOutputAdapter = createGameDisconnectOutputAdapter(io);
   const roomDisconnectOutputAdapter = createRoomDisconnectOutputAdapter(io);
-  const connectionGameManager: ConnectionGamePort = gameManager;
-  const disconnectGameManager: DisconnectGamePort = gameManager;
-  const connectionRoomManager: ConnectionRoomPort = roomManager;
-  const disconnectRoomManager: DisconnectRoomHandlerPort = roomManager;
-  const disconnectPorts: DisconnectCoordinatorPortBundle = {
-    gameManager: disconnectGameManager,
-    roomManager: disconnectRoomManager,
-    gameOutput: gameDisconnectOutputAdapter,
-    roomOutput: roomDisconnectOutputAdapter,
-  };
 
   io.on(protocol.SocketEvents.CONNECT, (socket: Socket) => {
     // 接続ログを記録してドメイン別ハンドラを登録する
     logEvent("Network", {
-      event: "CONNECT",
+      event: protocol.SocketEvents.CONNECT,
       result: "connected",
       socketId: socket.id,
     });
 
-    registerRoomHandlers(io, socket, connectionRoomManager);
-    registerGameHandlers(io, socket, connectionGameManager, connectionRoomManager);
+    registerRoomHandlers(io, socket, roomManager);
+    registerGameHandlers(io, socket, gameManager, roomManager);
 
     socket.on(protocol.SocketEvents.DISCONNECT, () => {
       // 切断ログ記録後にドメイン別の後処理を実行する
       logEvent("Network", {
-        event: "DISCONNECT",
+        event: protocol.SocketEvents.DISCONNECT,
         result: "disconnected",
         socketId: socket.id,
       });
 
       disconnectCoordinator({
         socketId: socket.id,
-        ...disconnectPorts,
+        gameManager,
+        roomManager,
+        gameOutput: gameDisconnectOutputAdapter,
+        roomOutput: roomDisconnectOutputAdapter,
       });
     });
   });

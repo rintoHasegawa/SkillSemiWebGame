@@ -10,12 +10,39 @@ import {
   type ServerToClientEventPayloadMap,
 } from "@repo/shared";
 
+type BridgeTarget = {
+  on: (event: string, callback: (payload: unknown) => void) => void;
+  once: (event: string, callback: (payload: unknown) => void) => void;
+  off: (event: string, callback: (payload: unknown) => void) => void;
+  emit: (event: string, payload?: unknown) => void;
+};
+
 /** サーバー向けの型付きソケットイベント bridge を生成する */
 export const createServerSocketOnBridge = (socket: Socket) => {
+  const bridgeTarget: BridgeTarget = {
+    on: (event, callback) => {
+      socket.on(event, callback);
+    },
+    once: (event, callback) => {
+      socket.once(event, callback);
+    },
+    off: (event, callback) => {
+      socket.off(event, callback);
+    },
+    emit: (event, payload) => {
+      if (payload === undefined) {
+        socket.emit(event);
+        return;
+      }
+
+      socket.emit(event, payload);
+    },
+  };
+
   const { onEvent, onceEvent } = createSocketEventBridge<
     ClientToServerEventPayloadMap,
     ServerToClientEventPayloadMap
-  >(socket as any);
+  >(bridgeTarget);
 
   return {
     onEvent,
