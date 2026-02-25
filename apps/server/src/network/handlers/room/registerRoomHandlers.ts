@@ -7,7 +7,7 @@ import { protocol } from "@repo/shared";
 import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logEvent";
-import { logResults } from "@server/logging/logEvents";
+import { logResults, logScopes } from "@server/logging/logEvents";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
@@ -52,7 +52,7 @@ export const registerRoomHandlers = (
     // 参加拒否時は理由を通知する
     switch (joinResult.status) {
       case "full":
-        logEvent("Network", {
+        logEvent(logScopes.NETWORK, {
           event: protocol.SocketEvents.JOIN_ROOM,
           result: logResults.REJECTED_ROOM_FULL,
           roomId,
@@ -61,7 +61,7 @@ export const registerRoomHandlers = (
         return;
 
       case "duplicate":
-        logEvent("Network", {
+        logEvent(logScopes.NETWORK, {
           event: protocol.SocketEvents.JOIN_ROOM,
           result: logResults.REJECTED_DUPLICATE,
           roomId,
@@ -72,7 +72,7 @@ export const registerRoomHandlers = (
       case "joined":
         await socket.join(roomId);
         roomOutputAdapter.publishRoomUpdateToRoom(roomId, joinResult.room);
-        logEvent("RoomUseCase", {
+        logEvent(logScopes.ROOM_USE_CASE, {
           event: protocol.SocketEvents.ROOM_UPDATE,
           result: logResults.EMITTED,
           roomId,

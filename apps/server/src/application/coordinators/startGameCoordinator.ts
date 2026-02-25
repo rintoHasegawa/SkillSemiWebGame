@@ -9,7 +9,7 @@ import {
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { logEvent } from "@server/logging/logEvent";
-import { gameUseCaseLogEvents, logResults } from "@server/logging/logEvents";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/logEvents";
 import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
@@ -34,7 +34,7 @@ export const startGameCoordinator = ({
 }: StartGameCoordinatorParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
   if (!room) {
-    logEvent("GameUseCase", {
+    logEvent(logScopes.GAME_USE_CASE, {
       event: gameUseCaseLogEvents.START_GAME,
       result: logResults.IGNORED_NO_ROOM,
       socketId: ownerId,
@@ -43,7 +43,7 @@ export const startGameCoordinator = ({
   }
 
   if (room.status === roomConsts.RoomPhase.PLAYING) {
-    logEvent("GameUseCase", {
+    logEvent(logScopes.GAME_USE_CASE, {
       event: gameUseCaseLogEvents.START_GAME,
       result: logResults.IGNORED_ALREADY_PLAYING,
       roomId: room.roomId,
@@ -54,7 +54,7 @@ export const startGameCoordinator = ({
 
   const updatedRoom = roomManager.markRoomPlaying(room.roomId);
   if (!updatedRoom) {
-    logEvent("GameUseCase", {
+    logEvent(logScopes.GAME_USE_CASE, {
       event: gameUseCaseLogEvents.START_GAME,
       result: logResults.IGNORED_ROOM_NOT_FOUND,
       roomId: room.roomId,
@@ -63,7 +63,7 @@ export const startGameCoordinator = ({
     return;
   }
 
-  logEvent("GameUseCase", {
+  logEvent(logScopes.GAME_USE_CASE, {
     event: gameUseCaseLogEvents.START_GAME,
     result: logResults.ACCEPTED,
     roomId: updatedRoom.roomId,

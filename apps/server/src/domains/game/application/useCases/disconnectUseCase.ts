@@ -4,7 +4,7 @@
  */
 import type { DisconnectPlayerPort, GameOutputPort } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
-import { gameUseCaseLogEvents, logResults } from "@server/logging/logEvents";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/logEvents";
 
 type DisconnectUseCaseParams = {
   gameManager: DisconnectPlayerPort;
@@ -26,7 +26,7 @@ export const disconnectUseCase = ({
     output.publishPlayerRemovedToRoom(roomId, playerId);
   }
 
-  logEvent("GameUseCase", {
+  logEvent(logScopes.GAME_USE_CASE, {
     event: gameUseCaseLogEvents.DISCONNECT,
     result: logResults.PLAYER_REMOVED,
     socketId: playerId,

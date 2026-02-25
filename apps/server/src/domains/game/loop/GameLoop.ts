@@ -8,7 +8,7 @@ import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@repo/shared";
 import type { gameTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
-import { gameDomainLogEvents, logResults } from "@server/logging/logEvents";
+import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/logEvents";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -41,7 +41,7 @@ export class GameLoop {
     this.isRunning = true;
     this.scheduleNextTick();
 
-    logEvent("GameLoop", {
+    logEvent(logScopes.GAME_LOOP, {
       event: gameDomainLogEvents.GAME_LOOP,
       result: logResults.STARTED,
       roomId: this.roomId,
@@ -151,7 +151,7 @@ export class GameLoop {
       this.loopId = null;
     }
 
-    logEvent("GameLoop", {
+    logEvent(logScopes.GAME_LOOP, {
       event: gameDomainLogEvents.GAME_LOOP,
       result: logResults.STOPPED,
       roomId: this.roomId,

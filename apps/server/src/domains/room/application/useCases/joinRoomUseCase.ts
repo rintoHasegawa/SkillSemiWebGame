@@ -9,7 +9,7 @@ import type {
   RoomOutputPort,
 } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
-import { logResults, roomUseCaseLogEvents } from "@server/logging/logEvents";
+import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/logEvents";
 
 type JoinRoomUseCaseParams = {
   roomManager: JoinRoomPort;
@@ -26,7 +26,7 @@ export const joinRoomUseCase = ({
   output,
 }: JoinRoomUseCaseParams): JoinRoomResult => {
   const { roomId, playerName } = data;
-  logEvent("RoomUseCase", {
+  logEvent(logScopes.ROOM_USE_CASE, {
     event: roomUseCaseLogEvents.JOIN_ROOM,
     result: logResults.RECEIVED,
     roomId,
@@ -41,7 +41,7 @@ export const joinRoomUseCase = ({
       reason: joinResult.status,
     });
 
-    logEvent("RoomUseCase", {
+    logEvent(logScopes.ROOM_USE_CASE, {
       event: roomUseCaseLogEvents.JOIN_ROOM,
       result: logResults.REJECTED,
       reason: joinResult.status,

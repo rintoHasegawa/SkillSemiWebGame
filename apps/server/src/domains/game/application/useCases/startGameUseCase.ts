@@ -4,7 +4,7 @@
  */
 import type { GameOutputPort, StartGamePort } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
-import { gameUseCaseLogEvents, logResults } from "@server/logging/logEvents";
+import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/logEvents";
 
 type StartGameUseCaseParams = {
   roomId: string;
@@ -41,7 +41,7 @@ export const startGameUseCase = ({
       }
     },
     () => {
-      logEvent("GameUseCase", {
+      logEvent(logScopes.GAME_USE_CASE, {
         event: gameUseCaseLogEvents.GAME_END,
         result: logResults.EMITTED,
         roomId,

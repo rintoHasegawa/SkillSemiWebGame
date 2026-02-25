@@ -2,6 +2,8 @@
  * logEvent
  * 共通ログ出力で利用するイベントログ関数を提供する
  */
+import type { LogScope } from "./logEvents";
+
 type LogEventPayload = {
   event: string;
   result: string;
@@ -11,6 +13,6 @@ type LogEventPayload = {
 };
 
 /** スコープ名とイベント情報を標準出力へ記録する */
-export const logEvent = (scope: string, payload: LogEventPayload) => {
+export const logEvent = (scope: LogScope, payload: LogEventPayload) => {
   console.log(`[${scope}]`, payload);
 };
