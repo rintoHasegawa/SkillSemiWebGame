@@ -7,8 +7,8 @@ import type { Container } from "pixi.js";
 import { config } from "@client/config";
 import type { BombPlacedPayload } from "@repo/shared";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
-import { BombController } from "@client/scenes/game/entities/bomb/BombController";
-import type { GamePlayers } from "./game.types";
+import { BombController } from "./BombController";
+import type { GamePlayers } from "@client/scenes/game/application/game.types";
 
 /** 経過時間ミリ秒を返す関数型 */
 export type ElapsedMsProvider = () => number;

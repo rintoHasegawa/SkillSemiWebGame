@@ -6,12 +6,12 @@
 import { Application, Container, Ticker } from "pixi.js";
 import { socketManager } from "@client/network/SocketManager";
 import { GameMapController } from "./entities/map/GameMapController";
+import { BombManager } from "./entities/bomb/BombManager";
+import { createBombIdFromPayload } from "./entities/bomb/BombManager";
+import type { BombUpsertPayload } from "./entities/bomb/BombManager";
 import { GameTimer } from "./application/GameTimer";
 import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
-import { BombManager } from "./application/BombManager";
-import { createBombIdFromPayload } from "./application/BombManager";
-import type { BombUpsertPayload } from "./application/BombManager";
 import type { GamePlayers } from "./application/game.types";
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
