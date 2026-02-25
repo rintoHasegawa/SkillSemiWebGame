@@ -1,3 +1,9 @@
+/**
+ * events
+ * ソケット通信で利用するイベント名定数を定義する
+ * クライアントとサーバー間のイベント契約を共有する
+ */
+/** ソケットイベント名の一覧定数 */
 export const SocketEvents = {
   // 接続・切断イベント名
   CONNECT: "connect",
@@ -14,7 +20,8 @@ export const SocketEvents = {
   // ゲームプレイ関連イベント名
   CURRENT_PLAYERS: "current_players",
   NEW_PLAYER: "new_player",
-  UPDATE_PLAYER: "update_player",
+  // 1ティック分のプレイヤー状態を配列でまとめて通知する
+  UPDATE_PLAYERS: "update_players",
   REMOVE_PLAYER: "remove_player",
   MOVE: "move",
   UPDATE_MAP_CELLS: "update_map_cells",

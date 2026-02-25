@@ -1,14 +1,20 @@
+/**
+ * GameHandler
+ * ゲーム関連のソケット購読と送信APIを提供する
+ * シーン層が利用する通信操作を集約する
+ */
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
 import type { playerTypes, gridMapTypes } from "@repo/shared";
 
-type GameHandler = {
+/** ゲームシーンが利用するソケット操作の契約 */
+export type GameHandler = {
   onCurrentPlayers: (callback: (players: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => void) => void;
   offCurrentPlayers: (callback: (players: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => void) => void;
   onNewPlayer: (callback: (player: playerTypes.PlayerData) => void) => void;
   offNewPlayer: (callback: (player: playerTypes.PlayerData) => void) => void;
-  onUpdatePlayer: (callback: (data: Partial<playerTypes.PlayerData> & { id: string }) => void) => void;
-  offUpdatePlayer: (callback: (data: Partial<playerTypes.PlayerData> & { id: string }) => void) => void;
+  onUpdatePlayers: (callback: (players: playerTypes.PlayerData[]) => void) => void;
+  offUpdatePlayers: (callback: (players: playerTypes.PlayerData[]) => void) => void;
   onRemovePlayer: (callback: (id: string) => void) => void;
   offRemovePlayer: (callback: (id: string) => void) => void;
   onUpdateMapCells: (callback: (updates: gridMapTypes.CellUpdate[]) => void) => void;
@@ -19,6 +25,7 @@ type GameHandler = {
   readyForGame: () => void;
 };
 
+/** ソケットインスタンスからゲーム向けハンドラを生成する */
 export const createGameHandler = (socket: Socket): GameHandler => {
   return {
     onCurrentPlayers: (callback) => {
@@ -33,11 +40,11 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     offNewPlayer: (callback) => {
       socket.off(protocol.SocketEvents.NEW_PLAYER, callback);
     },
-    onUpdatePlayer: (callback) => {
-      socket.on(protocol.SocketEvents.UPDATE_PLAYER, callback);
+    onUpdatePlayers: (callback) => {
+      socket.on(protocol.SocketEvents.UPDATE_PLAYERS, callback);
     },
-    offUpdatePlayer: (callback) => {
-      socket.off(protocol.SocketEvents.UPDATE_PLAYER, callback);
+    offUpdatePlayers: (callback) => {
+      socket.off(protocol.SocketEvents.UPDATE_PLAYERS, callback);
     },
     onRemovePlayer: (callback) => {
       socket.on(protocol.SocketEvents.REMOVE_PLAYER, callback);
@@ -66,5 +73,3 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     }
   };
 };
-
-export type { GameHandler };

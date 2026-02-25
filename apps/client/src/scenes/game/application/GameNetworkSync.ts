@@ -49,12 +49,15 @@ export class GameNetworkSync {
     }
   };
 
-  private handleUpdatePlayer = (data: Partial<playerTypes.PlayerData> & { id: string }) => {
-    if (data.id === this.myId) return;
-    const target = this.players[data.id];
-    if (target && target instanceof RemotePlayerController) {
-      target.applyRemoteUpdate({ x: data.x, y: data.y });
-    }
+  private handleUpdatePlayers = (serverPlayers: playerTypes.PlayerData[]) => {
+    serverPlayers.forEach((playerData) => {
+      if (playerData.id === this.myId) return;
+
+      const target = this.players[playerData.id];
+      if (target && target instanceof RemotePlayerController) {
+        target.applyRemoteUpdate({ x: playerData.x, y: playerData.y });
+      }
+    });
   };
 
   private handleRemovePlayer = (id: string) => {
@@ -84,7 +87,7 @@ export class GameNetworkSync {
     socketManager.game.onCurrentPlayers(this.handleCurrentPlayers);
     socketManager.game.onNewPlayer(this.handleNewPlayer);
     socketManager.game.onGameStart(this.handleGameStart);
-    socketManager.game.onUpdatePlayer(this.handleUpdatePlayer);
+    socketManager.game.onUpdatePlayers(this.handleUpdatePlayers);
     socketManager.game.onRemovePlayer(this.handleRemovePlayer);
     socketManager.game.onUpdateMapCells(this.handleUpdateMapCells);
 
@@ -97,7 +100,7 @@ export class GameNetworkSync {
     socketManager.game.offCurrentPlayers(this.handleCurrentPlayers);
     socketManager.game.offNewPlayer(this.handleNewPlayer);
     socketManager.game.offGameStart(this.handleGameStart);
-    socketManager.game.offUpdatePlayer(this.handleUpdatePlayer);
+    socketManager.game.offUpdatePlayers(this.handleUpdatePlayers);
     socketManager.game.offRemovePlayer(this.handleRemovePlayer);
     socketManager.game.offUpdateMapCells(this.handleUpdateMapCells);
 

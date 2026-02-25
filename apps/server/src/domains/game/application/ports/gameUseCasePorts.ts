@@ -47,7 +47,10 @@ export interface DisconnectPlayerPort {
 /** ゲーム系ユースケースが利用する送信出力ポート */
 export interface GameOutputPort {
   publishPongToSocket(payload: { clientTime: number; serverTime: number }): void;
-  publishUpdatePlayerToRoom(roomId: roomTypes.Room["roomId"], playerData: playerTypes.PlayerData): void;
+  publishUpdatePlayersToRoom(
+    roomId: roomTypes.Room["roomId"],
+    players: playerTypes.PlayerData[]
+  ): void;
   publishMapCellUpdatesToRoom(
     roomId: roomTypes.Room["roomId"],
     cellUpdates: gridMapTypes.CellUpdate[]
