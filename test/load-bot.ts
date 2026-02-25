@@ -31,6 +31,12 @@ type Bot = {
   stop: () => void;
 };
 
+type CurrentPlayer = {
+  id: string;
+  x: number;
+  y: number;
+};
+
 // 実行後の簡易サマリ用カウンタ。
 const stats: Stats = {
   connected: 0,
@@ -106,6 +112,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   let posY = BOT_RADIUS + Math.random() * (MAX_Y - BOT_RADIUS * 2);
   let dirX = 1;
   let dirY = 0;
+  let gameStarted = false;
 
   const updateDirection = () => {
     const angle = Math.random() * Math.PI * 2;
@@ -155,8 +162,19 @@ function createBot(index: number, counters: Stats, url: string): Bot {
 
   socket.on("game-start", () => {
     counters.gameStarts += 1;
-    // ゲーム開始後に定期的な移動イベントを送信。
-    if (!moveTimer && MOVE_TICK_MS > 0) {
+    gameStarted = true;
+    socket.emit("ready-for-game");
+  });
+
+  socket.on("current_players", (players: CurrentPlayer[]) => {
+    const self = players.find((player) => player.id === socket.id);
+    if (self) {
+      posX = self.x;
+      posY = self.y;
+    }
+
+    // サーバー状態と同期後に定期的な移動イベントを送信。
+    if (gameStarted && !moveTimer && MOVE_TICK_MS > 0) {
       updateDirection();
       moveTimer = setInterval(tickMove, MOVE_TICK_MS);
     }
