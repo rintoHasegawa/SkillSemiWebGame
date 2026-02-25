@@ -7,7 +7,7 @@ import { protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
-  BombPlacementStorePort,
+  BombRoomStateStorePort,
   MovePlayerPort,
   PlaceBombRoomPort,
   ReadyForGamePort,
@@ -22,7 +22,6 @@ import { createCommonHandlerContext } from "@server/network/handlers/CommonHandl
 import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
-import { clearBombRoomState, issueServerBombId, shouldBroadcastBombPlaced } from "@server/domains/game/entities/bomb/BombRoomStateStore";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
@@ -37,7 +36,8 @@ export const registerGameHandlers = (
   io: Server,
   socket: Socket,
   gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort,
-  roomManager: StartGameRoomPort & ReadyForGameRoomPort & PlaceBombRoomPort
+  roomManager: StartGameRoomPort & ReadyForGameRoomPort & PlaceBombRoomPort,
+  bombStateStore: BombRoomStateStorePort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -55,7 +55,6 @@ export const registerGameHandlers = (
     protocol.SocketEvents.PLACE_BOMB,
     gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB]
   );
-
   // 遅延計測用のPINGを検証しPONGを返す
   onEvent(protocol.SocketEvents.PING, (clientTime) => {
     if (!guardPingPayload(clientTime)) {
@@ -74,9 +73,7 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      onRoomGameEnded: (roomId) => {
-        clearBombRoomState(roomId, "game-ended");
-      },
+      bombStateStore,
       output: gameOutputAdapter,
     });
   });
@@ -110,14 +107,9 @@ export const registerGameHandlers = (
       return;
     }
 
-    const bombStore: BombPlacementStorePort = {
-      shouldBroadcastBombPlaced,
-      issueServerBombId,
-    };
-
     placeBombUseCase({
       roomResolver: roomManager,
-      bombStore,
+      bombStore: bombStateStore,
       input: {
         socketId: socket.id,
         payload: data,

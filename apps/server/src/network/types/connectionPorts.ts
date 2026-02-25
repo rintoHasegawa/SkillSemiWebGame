@@ -53,7 +53,7 @@ export type SocketConnectionManagerBundle = {
 export type DisconnectGamePort = DisconnectPlayerPort;
 
 /** 切断時のルーム処理で利用する入力ポート集合 */
-export type DisconnectRoomHandlerPort = DisconnectRoomPort & FindRoomByPlayerPort;
+export type DisconnectRoomHandlerPort = DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
 
 /** 切断調停処理へ受け渡す依存集合 */
 export type DisconnectCoordinatorPortBundle = Omit<DisconnectCoordinatorParams, "socketId">;

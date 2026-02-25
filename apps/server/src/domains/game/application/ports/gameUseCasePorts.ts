@@ -87,6 +87,17 @@ export interface BombPlacementStorePort {
   issueServerBombId(roomId: string): string;
 }
 
+/** 爆弾状態破棄理由を表す型 */
+export type BombRoomStateClearReason = "game-ended" | "room-deleted";
+
+/** 爆弾状態破棄ユースケースが利用する入力ポート */
+export interface BombRoomStateCleanupPort {
+  clearBombRoomState(roomId: string, reason: BombRoomStateClearReason): void;
+}
+
+/** 爆弾状態の参照更新と破棄を扱う統合入力ポート */
+export interface BombRoomStateStorePort extends BombPlacementStorePort, BombRoomStateCleanupPort {}
+
 /** 爆弾設置ユースケースの入力値 */
 export type PlaceBombInput = {
   socketId: string;
