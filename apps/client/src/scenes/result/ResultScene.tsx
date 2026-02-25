@@ -1,3 +1,8 @@
+/**
+ * ResultScene
+ * ゲーム終了後の順位一覧を表示する結果画面コンポーネント
+ * 順位，チーム名，塗り率の3項目をテーブル形式で描画する
+ */
 import type { GameResultPayload } from "@repo/shared";
 
 type Props = {
@@ -6,6 +11,7 @@ type Props = {
 
 const formatPaintRate = (value: number): string => `${value.toFixed(1)}%`;
 
+/** 最終結果データを受け取り，順位一覧を表示する */
 export const ResultScene = ({ result }: Props) => {
   if (!result) {
     return <div style={{ color: "white", padding: 40 }}>結果を読み込み中...</div>;

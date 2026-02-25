@@ -8,7 +8,6 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import { config } from "@repo/shared";
 import type { gameTypes, GameResultPayload } from "@repo/shared";
 import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
@@ -18,11 +17,10 @@ import {
   isValidPosition,
   setPlayerPosition,
 } from "../../entities/player/playerMovement.js";
+import { buildGameResultPayload } from "./gameResultCalculator.js";
 
 // 💡 追加: チーム割り当てサービスをインポート
 import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
-
-const TEAM_NAMES = ["赤チーム", "青チーム", "緑チーム", "黄チーム"] as const;
 
 /** ルーム単位のゲーム状態とループ進行を保持するセッションクラス */
 export class GameRoomSession {
@@ -68,7 +66,7 @@ export class GameRoomSession {
       this.mapStore,
       onTick,
       () => {
-        const resultPayload = this.buildGameResultPayload();
+        const resultPayload = buildGameResultPayload(this.mapStore.getGridColorsSnapshot());
         this.dispose();
         onGameEnd(resultPayload);
       },
@@ -124,50 +122,5 @@ export class GameRoomSession {
       this.gameLoop = null;
     }
     this.players.clear();
-  }
-
-  private buildGameResultPayload(): GameResultPayload {
-    const { TEAM_COUNT } = config.GAME_CONFIG;
-    const gridColors = this.mapStore.getGridColorsSnapshot();
-    const totalCells = gridColors.length;
-    const paintedCounts = new Array<number>(TEAM_COUNT).fill(0);
-
-    gridColors.forEach((teamId) => {
-      if (!Number.isInteger(teamId) || teamId < 0 || teamId >= TEAM_COUNT) {
-        return;
-      }
-
-      paintedCounts[teamId] += 1;
-    });
-
-    const rankings = paintedCounts
-      .map((paintedCellCount, teamId) => ({
-        rank: 0,
-        teamId,
-        teamName: TEAM_NAMES[teamId] ?? `チーム${teamId + 1}`,
-        paintRate: totalCells > 0 ? (paintedCellCount / totalCells) * 100 : 0,
-      }))
-      .sort((a, b) => {
-        if (b.paintRate !== a.paintRate) {
-          return b.paintRate - a.paintRate;
-        }
-
-        return a.teamId - b.teamId;
-      });
-
-    let currentRank = 0;
-    let previousPaintRate: number | null = null;
-    const epsilon = 1e-9;
-
-    rankings.forEach((item, index) => {
-      if (previousPaintRate === null || Math.abs(item.paintRate - previousPaintRate) > epsilon) {
-        currentRank = index + 1;
-        previousPaintRate = item.paintRate;
-      }
-
-      item.rank = currentRank;
-    });
-
-    return { rankings };
   }
 }
