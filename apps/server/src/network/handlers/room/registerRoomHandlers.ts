@@ -4,12 +4,15 @@
  */
 import { Server, Socket } from "socket.io";
 import { protocol } from "@repo/shared";
+import type { PayloadOf, SocketPayloadMap } from "@repo/shared";
 import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logEvent";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
+
+type SocketEventName = Exclude<keyof SocketPayloadMap, "connect" | "disconnect">;
 
 /** ルーム参加イベントを検証して参加ユースケースへ連携する */
 export const registerRoomHandlers = (
@@ -20,8 +23,15 @@ export const registerRoomHandlers = (
   const common = createCommonHandlerContext(io, socket);
   const roomOutputAdapter = createRoomOutputAdapter(common);
 
+  const onEvent = <TEvent extends SocketEventName>(
+    event: TEvent,
+    callback: (payload: PayloadOf<TEvent>) => void
+  ) => {
+    (socket as any).on(event, callback);
+  };
+
   // 参加要求のペイロード検証と参加処理を実行する
-  socket.on(protocol.SocketEvents.JOIN_ROOM, async (data: unknown) => {
+  onEvent(protocol.SocketEvents.JOIN_ROOM, async (data) => {
     if (!isJoinRoomPayload(data)) {
       logEvent("Network", {
         event: "JOIN_ROOM",

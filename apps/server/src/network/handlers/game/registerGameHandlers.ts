@@ -4,6 +4,7 @@
  */
 import { Server, Socket } from "socket.io";
 import { protocol } from "@repo/shared";
+import type { PayloadOf, SocketPayloadMap } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
@@ -20,6 +21,8 @@ import { createCommonHandlerContext } from "@server/network/handlers/CommonHandl
 import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
+type SocketEventName = Exclude<keyof SocketPayloadMap, "connect" | "disconnect">;
+
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
   io: Server,
@@ -30,8 +33,15 @@ export const registerGameHandlers = (
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
 
+  const onEvent = <TEvent extends SocketEventName>(
+    event: TEvent,
+    callback: (payload: PayloadOf<TEvent>) => void
+  ) => {
+    (socket as any).on(event, callback);
+  };
+
   // 遅延計測用のPINGを検証しPONGを返す
-  socket.on(protocol.SocketEvents.PING, (clientTime: unknown) => {
+  onEvent(protocol.SocketEvents.PING, (clientTime) => {
     if (!isPingPayload(clientTime)) {
       logEvent("Network", {
         event: "PING",
@@ -48,7 +58,7 @@ export const registerGameHandlers = (
   });
 
   // オーナー開始要求に応じてゲーム進行ユースケースを起動する
-  socket.on(protocol.SocketEvents.START_GAME, () => {
+  onEvent(protocol.SocketEvents.START_GAME, () => {
     startGameCoordinator({
       ownerId: socket.id,
       gameManager,
@@ -58,7 +68,7 @@ export const registerGameHandlers = (
   });
 
   // 参加者の準備完了通知を受けて現在状態を返す
-  socket.on(protocol.SocketEvents.READY_FOR_GAME, () => {
+  onEvent(protocol.SocketEvents.READY_FOR_GAME, () => {
     readyForGameCoordinator({
       socketId: socket.id,
       gameManager,
@@ -68,7 +78,7 @@ export const registerGameHandlers = (
   });
 
   // 移動入力を検証しプレイヤー移動ユースケースへ連携する
-  socket.on(protocol.SocketEvents.MOVE, (data: unknown) => {
+  onEvent(protocol.SocketEvents.MOVE, (data) => {
     if (!isMovePayload(data)) {
       logEvent("Network", {
         event: "MOVE",
