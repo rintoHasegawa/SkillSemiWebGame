@@ -1,8 +1,7 @@
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
-import type { PayloadOf, SocketPayloadMap } from "@repo/shared";
-
-type SocketEventName = Exclude<keyof SocketPayloadMap, "connect" | "disconnect">;
+import type { PayloadOf } from "@repo/shared";
+import { createClientSocketEventBridge } from "./socketEventBridge";
 
 type TitleHandler = {
   joinRoom: (payload: PayloadOf<typeof protocol.SocketEvents.JOIN_ROOM>) => void;
@@ -11,30 +10,7 @@ type TitleHandler = {
 };
 
 export const createTitleHandler = (socket: Socket): TitleHandler => {
-  const onEvent = <TEvent extends SocketEventName>(
-    event: TEvent,
-    callback: (payload: PayloadOf<TEvent>) => void
-  ) => {
-    (socket as any).on(event, callback);
-  };
-
-  const offEvent = <TEvent extends SocketEventName>(
-    event: TEvent,
-    callback: (payload: PayloadOf<TEvent>) => void
-  ) => {
-    (socket as any).off(event, callback);
-  };
-
-  function emitEvent<TEvent extends SocketEventName>(event: TEvent): void;
-  function emitEvent<TEvent extends SocketEventName>(event: TEvent, payload: PayloadOf<TEvent>): void;
-  function emitEvent<TEvent extends SocketEventName>(event: TEvent, payload?: PayloadOf<TEvent>): void {
-    if (payload === undefined) {
-      (socket as any).emit(event);
-      return;
-    }
-
-    (socket as any).emit(event, payload);
-  }
+  const { onEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
 
   return {
     joinRoom: (payload) => {

@@ -1,8 +1,7 @@
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
-import type { PayloadOf, SocketPayloadMap } from "@repo/shared";
-
-type SocketEventName = keyof SocketPayloadMap;
+import type { PayloadOf } from "@repo/shared";
+import { createClientSocketEventBridge } from "./socketEventBridge";
 
 type CommonHandler = {
   onConnect: (callback: (id: string) => void) => void;
@@ -15,19 +14,7 @@ export const createCommonHandler = (socket: Socket): CommonHandler => {
     (payload: PayloadOf<typeof protocol.SocketEvents.CONNECT>) => void
   >();
 
-  const onEvent = <TEvent extends SocketEventName>(
-    event: TEvent,
-    callback: (payload: PayloadOf<TEvent>) => void
-  ) => {
-    (socket as any).on(event, callback);
-  };
-
-  const offEvent = <TEvent extends SocketEventName>(
-    event: TEvent,
-    callback: (payload: PayloadOf<TEvent>) => void
-  ) => {
-    (socket as any).off(event, callback);
-  };
+  const { onEvent, offEvent } = createClientSocketEventBridge(socket);
 
   return {
     onConnect: (callback: (id: string) => void) => {

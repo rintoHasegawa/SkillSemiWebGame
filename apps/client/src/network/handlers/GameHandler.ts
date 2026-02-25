@@ -10,14 +10,11 @@ import type {
   GameStartPayload,
   MovePayload,
   NewPlayerPayload,
-  PayloadOf,
   RemovePlayerPayload,
-  SocketPayloadMap,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
-
-type SocketEventName = Exclude<keyof SocketPayloadMap, "connect" | "disconnect">;
+import { createClientSocketEventBridge } from "./socketEventBridge";
 
 /** ゲームシーンが利用するソケット操作の契約 */
 export type GameHandler = {
@@ -39,30 +36,7 @@ export type GameHandler = {
 
 /** ソケットインスタンスからゲーム向けハンドラを生成する */
 export const createGameHandler = (socket: Socket): GameHandler => {
-  const onEvent = <TEvent extends SocketEventName>(
-    event: TEvent,
-    callback: (payload: PayloadOf<TEvent>) => void
-  ) => {
-    (socket as any).on(event, callback);
-  };
-
-  const offEvent = <TEvent extends SocketEventName>(
-    event: TEvent,
-    callback: (payload: PayloadOf<TEvent>) => void
-  ) => {
-    (socket as any).off(event, callback);
-  };
-
-  function emitEvent<TEvent extends SocketEventName>(event: TEvent): void;
-  function emitEvent<TEvent extends SocketEventName>(event: TEvent, payload: PayloadOf<TEvent>): void;
-  function emitEvent<TEvent extends SocketEventName>(event: TEvent, payload?: PayloadOf<TEvent>): void {
-    if (payload === undefined) {
-      (socket as any).emit(event);
-      return;
-    }
-
-    (socket as any).emit(event, payload);
-  }
+  const { onEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
 
   return {
     onCurrentPlayers: (callback) => {

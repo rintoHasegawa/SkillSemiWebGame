@@ -4,7 +4,6 @@
  */
 import { Server, Socket } from "socket.io";
 import { protocol } from "@repo/shared";
-import type { PayloadOf, SocketPayloadMap } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
@@ -19,9 +18,8 @@ import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCa
 import { logEvent } from "@server/logging/logEvent";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
+import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
-
-type SocketEventName = Exclude<keyof SocketPayloadMap, "connect" | "disconnect">;
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
@@ -32,13 +30,7 @@ export const registerGameHandlers = (
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
-
-  const onEvent = <TEvent extends SocketEventName>(
-    event: TEvent,
-    callback: (payload: PayloadOf<TEvent>) => void
-  ) => {
-    (socket as any).on(event, callback);
-  };
+  const { onEvent } = createServerSocketOnBridge(socket);
 
   // 遅延計測用のPINGを検証しPONGを返す
   onEvent(protocol.SocketEvents.PING, (clientTime) => {
