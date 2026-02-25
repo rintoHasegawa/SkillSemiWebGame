@@ -10,10 +10,14 @@ import type {
   GameStartPayload,
   MovePayload,
   NewPlayerPayload,
+  PayloadOf,
   RemovePlayerPayload,
+  SocketPayloadMap,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
+
+type SocketEventName = Exclude<keyof SocketPayloadMap, "connect" | "disconnect">;
 
 /** ゲームシーンが利用するソケット操作の契約 */
 export type GameHandler = {
@@ -35,49 +39,74 @@ export type GameHandler = {
 
 /** ソケットインスタンスからゲーム向けハンドラを生成する */
 export const createGameHandler = (socket: Socket): GameHandler => {
+  const onEvent = <TEvent extends SocketEventName>(
+    event: TEvent,
+    callback: (payload: PayloadOf<TEvent>) => void
+  ) => {
+    (socket as any).on(event, callback);
+  };
+
+  const offEvent = <TEvent extends SocketEventName>(
+    event: TEvent,
+    callback: (payload: PayloadOf<TEvent>) => void
+  ) => {
+    (socket as any).off(event, callback);
+  };
+
+  function emitEvent<TEvent extends SocketEventName>(event: TEvent): void;
+  function emitEvent<TEvent extends SocketEventName>(event: TEvent, payload: PayloadOf<TEvent>): void;
+  function emitEvent<TEvent extends SocketEventName>(event: TEvent, payload?: PayloadOf<TEvent>): void {
+    if (payload === undefined) {
+      (socket as any).emit(event);
+      return;
+    }
+
+    (socket as any).emit(event, payload);
+  }
+
   return {
     onCurrentPlayers: (callback) => {
-      socket.on(protocol.SocketEvents.CURRENT_PLAYERS, callback);
+      onEvent(protocol.SocketEvents.CURRENT_PLAYERS, callback);
     },
     offCurrentPlayers: (callback) => {
-      socket.off(protocol.SocketEvents.CURRENT_PLAYERS, callback);
+      offEvent(protocol.SocketEvents.CURRENT_PLAYERS, callback);
     },
     onNewPlayer: (callback) => {
-      socket.on(protocol.SocketEvents.NEW_PLAYER, callback);
+      onEvent(protocol.SocketEvents.NEW_PLAYER, callback);
     },
     offNewPlayer: (callback) => {
-      socket.off(protocol.SocketEvents.NEW_PLAYER, callback);
+      offEvent(protocol.SocketEvents.NEW_PLAYER, callback);
     },
     onUpdatePlayers: (callback) => {
-      socket.on(protocol.SocketEvents.UPDATE_PLAYERS, callback);
+      onEvent(protocol.SocketEvents.UPDATE_PLAYERS, callback);
     },
     offUpdatePlayers: (callback) => {
-      socket.off(protocol.SocketEvents.UPDATE_PLAYERS, callback);
+      offEvent(protocol.SocketEvents.UPDATE_PLAYERS, callback);
     },
     onRemovePlayer: (callback) => {
-      socket.on(protocol.SocketEvents.REMOVE_PLAYER, callback);
+      onEvent(protocol.SocketEvents.REMOVE_PLAYER, callback);
     },
     offRemovePlayer: (callback) => {
-      socket.off(protocol.SocketEvents.REMOVE_PLAYER, callback);
+      offEvent(protocol.SocketEvents.REMOVE_PLAYER, callback);
     },
     onUpdateMapCells: (callback) => {
-      socket.on(protocol.SocketEvents.UPDATE_MAP_CELLS, callback);
+      onEvent(protocol.SocketEvents.UPDATE_MAP_CELLS, callback);
     },
     offUpdateMapCells: (callback) => {
-      socket.off(protocol.SocketEvents.UPDATE_MAP_CELLS, callback);
+      offEvent(protocol.SocketEvents.UPDATE_MAP_CELLS, callback);
     },
     onGameStart: (callback) => {
-      socket.on(protocol.SocketEvents.GAME_START, callback);
+      onEvent(protocol.SocketEvents.GAME_START, callback);
     },
     offGameStart: (callback) => {
-      socket.off(protocol.SocketEvents.GAME_START, callback);
+      offEvent(protocol.SocketEvents.GAME_START, callback);
     },
     sendMove: (x, y) => {
       const payload: MovePayload = { x, y };
-      socket.emit(protocol.SocketEvents.MOVE, payload);
+      emitEvent(protocol.SocketEvents.MOVE, payload);
     },
     readyForGame: () => {
-      socket.emit(protocol.SocketEvents.READY_FOR_GAME);
+      emitEvent(protocol.SocketEvents.READY_FOR_GAME);
     }
   };
 };
