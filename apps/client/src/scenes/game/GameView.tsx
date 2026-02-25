@@ -10,6 +10,7 @@ type Props = {
   timeLeft: string;
   pixiContainerRef: React.RefObject<HTMLDivElement>;
   onJoystickInput: (x: number, y: number) => void;
+  onPlaceBomb: () => void;
 };
 
 const ROOT_STYLE: React.CSSProperties = {
@@ -51,10 +52,27 @@ const UI_LAYER_STYLE: React.CSSProperties = {
   height: "100%",
 };
 
+const BOMB_BUTTON_STYLE: React.CSSProperties = {
+  position: "fixed",
+  right: "36px",
+  bottom: "40px",
+  width: "96px",
+  height: "96px",
+  borderRadius: "50%",
+  border: "2px solid rgba(255,255,255,0.75)",
+  background: "rgba(220, 60, 60, 0.85)",
+  color: "white",
+  fontSize: "18px",
+  fontWeight: "bold",
+  zIndex: 9999,
+  pointerEvents: "auto",
+  touchAction: "manipulation",
+};
+
 const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => <div style={TIMER_STYLE}>{timeLeft}</div>;
 
 /** 画面描画と入力UIをまとめて描画する */
-export const GameView = ({ timeLeft, pixiContainerRef, onJoystickInput }: Props) => {
+export const GameView = ({ timeLeft, pixiContainerRef, onJoystickInput, onPlaceBomb }: Props) => {
   return (
     <div style={ROOT_STYLE}>
       {/* タイマーUIの表示 */}
@@ -66,6 +84,9 @@ export const GameView = ({ timeLeft, pixiContainerRef, onJoystickInput }: Props)
       {/* UI 配置領域 */}
       <div style={UI_LAYER_STYLE}>
         <JoystickInputPresenter onInput={onJoystickInput} />
+        <button style={BOMB_BUTTON_STYLE} onClick={onPlaceBomb} type="button">
+          BOMB
+        </button>
       </div>
     </div>
   );

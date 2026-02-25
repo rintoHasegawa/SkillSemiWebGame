@@ -35,6 +35,7 @@ export const useJoystickState = ({ maxDist }: UseJoystickStateProps): UseJoystic
   const handleStart = useCallback((e: JoystickPointerEvent) => {
     const point = getClientPoint(e);
     if (!point) return;
+    if (point.x > window.innerWidth / 2) return;
 
     setCenter(point);
     setKnobOffset({ x: 0, y: 0 });

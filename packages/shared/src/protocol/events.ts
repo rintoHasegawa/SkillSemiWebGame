@@ -28,7 +28,9 @@ export const SocketEvents = {
   UPDATE_PLAYERS: "update_players",
   REMOVE_PLAYER: "remove_player",
   MOVE: "move",
+  PLACE_BOMB: "place-bomb",
   UPDATE_MAP_CELLS: "update_map_cells",
+  BOMB_PLACED: "bomb-placed",
 
   // 時間同期・ゲーム進行関連
   PING: "ping",           // クライアントからの時刻同期リクエスト（ラグ計算用）
@@ -63,6 +65,13 @@ export type GameStartPayload = { startTime: number };
 /** MOVE イベントで送受信する移動入力情報 */
 export type MovePayload = PlayerMovePayload;
 
+/** PLACE_BOMB / BOMB_PLACED イベントで送受信する爆弾情報 */
+export type BombPlacedPayload = {
+  x: number;
+  y: number;
+  explodeAtElapsedMs: number;
+};
+
 /** PING イベントで送受信する時刻同期リクエスト */
 export type PingPayload = number;
 
@@ -90,6 +99,7 @@ export type ClientToServerEventPayloadMap = {
   [SocketEvents.START_GAME]: undefined;
   [SocketEvents.READY_FOR_GAME]: undefined;
   [SocketEvents.MOVE]: MovePayload;
+  [SocketEvents.PLACE_BOMB]: BombPlacedPayload;
   [SocketEvents.PING]: PingPayload;
 };
 
@@ -103,6 +113,7 @@ export type ServerToClientEventPayloadMap = {
   [SocketEvents.UPDATE_PLAYERS]: UpdatePlayersPayload;
   [SocketEvents.REMOVE_PLAYER]: RemovePlayerPayload;
   [SocketEvents.UPDATE_MAP_CELLS]: UpdateMapCellsPayload;
+  [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
   [SocketEvents.PONG]: PongPayload;
   [SocketEvents.GAME_END]: undefined;
 };

@@ -30,9 +30,14 @@ export const useGameSceneController = (myId: string | null) => {
     manager.init();
 
     gameManagerRef.current = manager;
-    inputManagerRef.current = new GameInputManager((x, y) => {
-      manager.setJoystickInput(x, y);
-    });
+    inputManagerRef.current = new GameInputManager(
+      (x, y) => {
+        manager.setJoystickInput(x, y);
+      },
+      () => {
+        manager.placeBomb();
+      }
+    );
 
     const timerInterval = setInterval(() => {
       const nextDisplay = formatRemainingTime(manager.getRemainingTime());
@@ -51,9 +56,14 @@ export const useGameSceneController = (myId: string | null) => {
     inputManagerRef.current?.handleJoystickInput(x, y);
   }, []);
 
+  const handlePlaceBomb = useCallback(() => {
+    inputManagerRef.current?.handlePlaceBomb();
+  }, []);
+
   return {
     pixiContainerRef,
     timeLeft,
     handleInput,
+    handlePlaceBomb,
   };
 };

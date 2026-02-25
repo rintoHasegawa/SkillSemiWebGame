@@ -30,6 +30,7 @@ export type {
 	ServerToClientEventPayloadMap,
 	ServerToClientPayloadOf,
 	CurrentPlayersPayload,
+	BombPlacedPayload,
 	GameStartPayload,
 	MovePayload,
 	NewPlayerPayload,

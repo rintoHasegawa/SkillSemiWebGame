@@ -34,6 +34,11 @@ export const GAME_CONFIG = {
   get PLAYER_RADIUS_PX() { return this.PLAYER_RADIUS * this.GRID_CELL_SIZE; },
   PLAYER_SPEED: 3,        // 1秒当たりの移動量（グリッド単位）
 
+  // 爆弾設定（内部座標はグリッド単位、時間はms）
+  BOMB_RADIUS_GRID: 1.5,   // 爆風半径（グリッド単位、円形当たり判定）
+  BOMB_FUSE_MS: 1000,      // 設置から爆発までの時間（ms）
+  BOMB_COOLDOWN_MS: 1200,  // 設置後に次の爆弾を置けるまでの待機時間（ms）
+
   // チームカラー設定
   // teamId インデックス順カラー配列
   TEAM_COLORS: ['#FF4B4B', '#4B4BFF', '#4BFF4B', '#FFD700'],

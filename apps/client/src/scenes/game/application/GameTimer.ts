@@ -21,4 +21,9 @@ export class GameTimer {
 
     return Math.max(0, remainingSec);
   }
+
+  public getElapsedMs(): number {
+    if (!this.gameStartTime) return 0;
+    return Math.max(0, Date.now() - this.gameStartTime);
+  }
 }
