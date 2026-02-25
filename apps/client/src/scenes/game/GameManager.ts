@@ -101,7 +101,7 @@ export class GameManager {
       gameMap: this.gameMap,
       onGameStart: this.setGameStart.bind(this),
       onGameEnd: this.lockInput.bind(this),
-      onBombPlaced: (payload) => {
+      onBombPlacedFromNetwork: (payload) => {
         const bombId = createBombIdFromPayload(payload);
         this.upsertBombFromNetwork(bombId, payload);
       },

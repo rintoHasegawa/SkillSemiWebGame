@@ -24,6 +24,7 @@
 - `GAME_CONFIG.BOMB_RADIUS_GRID`: 爆風半径（グリッド単位）
 - `GAME_CONFIG.BOMB_FUSE_MS`: 爆弾設置から爆発までの時間（ms）
 - `GAME_CONFIG.BOMB_COOLDOWN_MS`: 次の爆弾を置けるまでの待機時間（ms）
+- `GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS`: サーバー側の爆弾重複排除で保持時間に加算する猶予（ms）
 - `GAME_CONFIG.TEAM_COUNT`: チーム総数
 - `TEAM_NAMES`: `teamId` 順の表示名配列
 - `validateTeamConfig`: チーム関連設定（件数整合性）を検証する関数
