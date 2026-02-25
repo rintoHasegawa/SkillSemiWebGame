@@ -2,17 +2,19 @@
  * logEvent
  * 共通ログ出力で利用するイベントログ関数を提供する
  */
-import type { LogScope } from "./logEvents";
+import type { LogPayloadByScope, LogScope } from "./logEvents";
+import type { LogRequiredFieldsByScope } from "./logEvents";
 
 type LogEventPayload = {
-  event: string;
-  result: string;
   socketId?: string;
   roomId?: string;
   [key: string]: unknown;
 };
 
 /** スコープ名とイベント情報を標準出力へ記録する */
-export const logEvent = (scope: LogScope, payload: LogEventPayload) => {
+export const logEvent = <TScope extends LogScope>(
+  scope: TScope,
+  payload: LogEventPayload & LogPayloadByScope[TScope] & LogRequiredFieldsByScope[TScope]
+) => {
   console.log(`[${scope}]`, payload);
 };
