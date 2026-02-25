@@ -10,7 +10,8 @@ type PayloadValidator<TPayload> = (value: unknown) => value is TPayload;
 type PayloadGuardEventName =
   | typeof protocol.SocketEvents.JOIN_ROOM
   | typeof protocol.SocketEvents.PING
-  | typeof protocol.SocketEvents.MOVE;
+  | typeof protocol.SocketEvents.MOVE
+  | typeof protocol.SocketEvents.PLACE_BOMB;
 type EventBoundPayloadGuard<TPayload> = (payload: unknown) => payload is TPayload;
 
 /**
@@ -46,6 +47,14 @@ export const createPayloadGuard = (socketId: string) => {
       case protocol.SocketEvents.MOVE:
         logEvent(logScopes.NETWORK, {
           event: protocol.SocketEvents.MOVE,
+          result: logResults.IGNORED_INVALID_PAYLOAD,
+          socketId,
+        });
+        break;
+
+      case protocol.SocketEvents.PLACE_BOMB:
+        logEvent(logScopes.NETWORK, {
+          event: protocol.SocketEvents.PLACE_BOMB,
           result: logResults.IGNORED_INVALID_PAYLOAD,
           socketId,
         });

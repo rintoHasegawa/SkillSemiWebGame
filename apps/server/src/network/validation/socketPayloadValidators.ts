@@ -2,7 +2,7 @@
  * socketPayloadValidators
  * ソケット受信ペイロードの型ガードを提供する
  */
-import type { playerTypes, roomTypes } from "@repo/shared";
+import type { playerTypes, roomTypes, BombPlacedPayload } from "@repo/shared";
 import type { PingPayload } from "@repo/shared";
 
 const isFiniteNumber = (value: unknown): value is number => {
@@ -26,6 +26,20 @@ export const isMovePayload = (value: unknown): value is playerTypes.MovePayload 
 
   const candidate = value as Record<string, unknown>;
   return isFiniteNumber(candidate.x) && isFiniteNumber(candidate.y);
+};
+
+/** PLACE_BOMBイベントのペイロードが爆弾情報であるか判定する */
+export const isBombPlacedPayload = (value: unknown): value is BombPlacedPayload => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    isFiniteNumber(candidate.x)
+    && isFiniteNumber(candidate.y)
+    && isFiniteNumber(candidate.explodeAtElapsedMs)
+  );
 };
 
 /** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */
