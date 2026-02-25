@@ -3,7 +3,11 @@
  * 1ルーム分のゲーム進行状態とゲームループ実行を管理する
  */
 import { logEvent } from "@server/logging/logger";
-import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
+import {
+  gameDomainLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 import type { gameTypes } from "@repo/shared";
 import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
@@ -14,6 +18,9 @@ import {
   setPlayerPosition,
 } from "../../entities/player/playerMovement.js";
 
+// 💡 追加: チーム割り当てサービスをインポート
+import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
+
 /** ルーム単位のゲーム状態とループ進行を保持するセッションクラス */
 export class GameRoomSession {
   private players: Map<string, Player>;
@@ -21,12 +28,22 @@ export class GameRoomSession {
   private gameLoop: GameLoop | null = null;
   private startTime: number | undefined;
 
-  constructor(private roomId: string, playerIds: string[]) {
+  constructor(
+    private roomId: string,
+    playerIds: string[],
+  ) {
     this.players = new Map();
     this.mapStore = new MapStore();
 
     playerIds.forEach((playerId) => {
-      const player = createSpawnedPlayer(playerId);
+      // 💡 追加: 現在の this.players (生成済みのプレイヤー達) を見て、一番人数の少ないチームを算出する
+      const assignedTeamId = TeamAssignmentService.getBalancedTeamId(
+        this.players,
+      );
+
+      // 💡 修正: バランス良く割り当てられたチームIDを渡してプレイヤーを生成する
+      const player = createSpawnedPlayer(playerId, assignedTeamId);
+
       this.players.set(playerId, player);
     });
   }
@@ -34,7 +51,7 @@ export class GameRoomSession {
   public start(
     tickRate: number,
     onTick: (data: gameTypes.TickData) => void,
-    onGameEnd: () => void
+    onGameEnd: () => void,
   ): void {
     if (this.gameLoop) {
       return;
@@ -50,7 +67,7 @@ export class GameRoomSession {
       () => {
         this.dispose();
         onGameEnd();
-      }
+      },
     );
 
     this.gameLoop.start();
@@ -97,17 +114,11 @@ export class GameRoomSession {
     return this.players.has(id);
   }
 
-  public getPlayerIds(): string[] {
-    return Array.from(this.players.keys());
-  }
-
-  public isEmpty(): boolean {
-    return this.players.size === 0;
-  }
-
   public dispose(): void {
-    this.gameLoop?.stop();
-    this.gameLoop = null;
-    this.startTime = undefined;
+    if (this.gameLoop) {
+      this.gameLoop.stop();
+      this.gameLoop = null;
+    }
+    this.players.clear();
   }
 }
