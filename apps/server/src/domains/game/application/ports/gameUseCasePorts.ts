@@ -29,13 +29,6 @@ export interface StartGamePort {
   getRoomStartTime(roomId: string): number | undefined;
 }
 
-/** ゲーム開始調停で利用するルーム管理入力ポート */
-export interface StartGameRoomPort {
-  getRoomByOwnerId(ownerId: string): roomTypes.Room | undefined;
-  markRoomPlaying(roomId: string): roomTypes.Room | undefined;
-  markRoomWaiting(roomId: string): roomTypes.Room | undefined;
-}
-
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
 export interface ReadyForGamePort {
   getRoomPlayers(roomId: string): playerTypes.PlayerData[];

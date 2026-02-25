@@ -31,6 +31,17 @@ export interface FindRoomByPlayerPort {
   getRoomByPlayerId(playerId: string): roomTypes.Room | undefined;
 }
 
+/** ゲーム開始調停で利用するオーナー所属ルーム参照ポート */
+export interface FindRoomByOwnerPort {
+  getRoomByOwnerId(ownerId: string): roomTypes.Room | undefined;
+}
+
+/** ゲーム開始調停で利用するルーム状態遷移ポート */
+export interface RoomPhaseTransitionPort {
+  markRoomPlaying(roomId: string): roomTypes.Room | undefined;
+  markRoomWaiting(roomId: string): roomTypes.Room | undefined;
+}
+
 /** ルームIDでの存在確認に利用する参照ポート */
 export interface FindRoomByIdPort {
   getRoomById(roomId: string): roomTypes.Room | undefined;

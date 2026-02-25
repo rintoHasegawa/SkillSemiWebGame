@@ -6,8 +6,11 @@ import {
   type BombCleanupPort,
   type GameOutputPort,
   type StartGamePort,
-  type StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
+import type {
+  FindRoomByOwnerPort,
+  RoomPhaseTransitionPort,
+} from "@server/domains/room/application/ports/roomUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { logEvent } from "@server/logging/logger";
 import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
@@ -16,7 +19,7 @@ import { roomConsts } from "@repo/shared";
 type StartGameCoordinatorParams = {
   ownerId: string;
   gameManager: StartGamePort & BombCleanupPort;
-  roomManager: StartGameRoomPort;
+  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToRoom"
