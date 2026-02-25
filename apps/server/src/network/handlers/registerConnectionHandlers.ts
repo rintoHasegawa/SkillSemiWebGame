@@ -3,18 +3,21 @@
  * 接続時にルームとゲームの各ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { GameManager } from "@server/domains/game/GameManager";
-import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
-import { registerRoomHandlers, handleRoomDisconnect } from "./RoomHandler";
-import { registerGameHandlers, handleGameDisconnect } from "./GameHandler";
+import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
 import { logEvent } from "@server/logging/logEvent";
-
-type RegisterConnectionHandlersParams = {
-  io: Server;
-  gameManager: GameManager;
-  roomManager: RoomManager;
-};
+import { registerGameHandlers } from "./GameHandler";
+import { registerRoomHandlers } from "./RoomHandler";
+import { createGameDisconnectOutputAdapter } from "./game/createGameOutputAdapter";
+import { createRoomDisconnectOutputAdapter } from "./room/createRoomOutputAdapter";
+import type {
+  ConnectionGamePort,
+  ConnectionRoomPort,
+  DisconnectCoordinatorPortBundle,
+  DisconnectGamePort,
+  DisconnectRoomHandlerPort,
+  RegisterConnectionHandlersParams,
+} from "../types/connectionPorts";
 
 /** ソケット接続と切断イベントに対する共通ハンドラを登録する */
 export const registerConnectionHandlers = ({
@@ -22,6 +25,19 @@ export const registerConnectionHandlers = ({
   gameManager,
   roomManager,
 }: RegisterConnectionHandlersParams) => {
+  const gameDisconnectOutputAdapter = createGameDisconnectOutputAdapter(io);
+  const roomDisconnectOutputAdapter = createRoomDisconnectOutputAdapter(io);
+  const connectionGameManager: ConnectionGamePort = gameManager;
+  const disconnectGameManager: DisconnectGamePort = gameManager;
+  const connectionRoomManager: ConnectionRoomPort = roomManager;
+  const disconnectRoomManager: DisconnectRoomHandlerPort = roomManager;
+  const disconnectPorts: DisconnectCoordinatorPortBundle = {
+    gameManager: disconnectGameManager,
+    roomManager: disconnectRoomManager,
+    gameOutput: gameDisconnectOutputAdapter,
+    roomOutput: roomDisconnectOutputAdapter,
+  };
+
   io.on(protocol.SocketEvents.CONNECT, (socket: Socket) => {
     // 接続ログを記録してドメイン別ハンドラを登録する
     logEvent("Network", {
@@ -30,8 +46,8 @@ export const registerConnectionHandlers = ({
       socketId: socket.id,
     });
 
-    registerRoomHandlers(io, socket, roomManager);
-    registerGameHandlers(io, socket, gameManager, roomManager);
+    registerRoomHandlers(io, socket, connectionRoomManager);
+    registerGameHandlers(io, socket, connectionGameManager, connectionRoomManager);
 
     socket.on(protocol.SocketEvents.DISCONNECT, () => {
       // 切断ログ記録後にドメイン別の後処理を実行する
@@ -41,10 +57,10 @@ export const registerConnectionHandlers = ({
         socketId: socket.id,
       });
 
-      const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
-
-      handleGameDisconnect(io, gameManager, roomId, socket.id);
-      handleRoomDisconnect(io, socket, roomManager);
+      disconnectCoordinator({
+        socketId: socket.id,
+        ...disconnectPorts,
+      });
     });
   });
 };

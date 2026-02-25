@@ -4,9 +4,9 @@
  */
 import { Server } from "socket.io";
 import { protocol } from "@repo/shared";
-import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { roomTypes } from "@repo/shared";
 import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
+import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = roomTypes.Room["roomId"];

@@ -1,9 +1,14 @@
+/**
+ * GamePlayerOperationService
+ * ゲームセッション内のプレイヤー移動と離脱操作を管理する
+ */
 import { logEvent } from "@server/logging/logEvent";
 import { GameRoomSession } from "./GameRoomSession";
 
 type SessionStore = Map<string, GameRoomSession>;
 type PlayerRoomIndex = Map<string, string>;
 
+/** プレイヤー移動とセッション離脱処理を提供するサービス */
 export class GamePlayerOperationService {
   constructor(
     private sessions: SessionStore,

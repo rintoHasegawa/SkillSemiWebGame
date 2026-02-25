@@ -1,9 +1,13 @@
-// apps/server/src/domains/game/entities/map/MapStore.ts
+/**
+ * MapStore
+ * 塗り状態グリッドと差分更新キューを保持して提供する
+ */
 import type { gridMapTypes } from "@repo/shared";
 import { createInitialGridColors } from "./mapGrid.js";
 import { paintCellIfChanged } from "./mapPainting.js";
 import { drainPendingUpdates } from "./mapUpdates.js";
 
+/** ルーム内マップの塗り状態と更新差分を管理するストア */
 export class MapStore {
   // 全マスの現在の色（teamId）を保持
   private gridColors: number[];
@@ -17,7 +21,7 @@ export class MapStore {
   }
 
   /**
-   * マスを塗り、色が変化した場合のみ差分キューに追加する
+    * マスを塗り，色が変化した場合のみ差分キューに追加する
    */
   public paintCell(index: number, teamId: number): void {
     paintCellIfChanged({
@@ -29,7 +33,7 @@ export class MapStore {
   }
 
   /**
-   * 溜まっている差分を取得し、キューをクリアする（ループ送信時に使用）
+    * 溜まっている差分を取得し，キューをクリアする（ループ送信時に使用）
    */
   public getAndClearUpdates(): gridMapTypes.CellUpdate[] {
     return drainPendingUpdates(this.pendingUpdates);

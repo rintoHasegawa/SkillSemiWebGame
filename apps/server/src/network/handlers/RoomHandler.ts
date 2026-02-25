@@ -4,5 +4,3 @@
  */
 /** ルームイベント受信ハンドラ登録関数を再公開する */
 export { registerRoomHandlers } from "./room/registerRoomHandlers";
-/** ルーム切断処理ハンドラを再公開する */
-export { handleRoomDisconnect } from "./room/handleRoomDisconnect";

@@ -1,3 +1,7 @@
+/**
+ * GameLoop
+ * ルーム単位の定周期更新を実行し，プレイヤー状態とマップ差分を集約する
+ */
 import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
@@ -6,6 +10,7 @@ import type { gridMapTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 
 // コールバックで渡すデータの型定義
+/** 1ティック分のプレイヤー情報とマップ差分を表すデータ */
 export interface TickData {
   players: {
     id: string;
@@ -16,6 +21,7 @@ export interface TickData {
   cellUpdates: gridMapTypes.CellUpdate[];
 }
 
+/** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
   private loopId: NodeJS.Timeout | null = null;
   private startTime: number = 0;

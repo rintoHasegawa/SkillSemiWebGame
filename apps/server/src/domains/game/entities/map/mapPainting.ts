@@ -1,3 +1,7 @@
+/**
+ * mapPainting
+ * マップセルの塗り更新と差分追加処理を提供する
+ */
 import type { gridMapTypes } from "@repo/shared";
 
 type PaintCellParams = {
@@ -7,6 +11,7 @@ type PaintCellParams = {
   teamId: number;
 };
 
+/** マップセルの色が変わった場合のみ差分へ追加する */
 export const paintCellIfChanged = ({
   gridColors,
   pendingUpdates,

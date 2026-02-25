@@ -1,12 +1,15 @@
-import { roomConsts } from "@repo/shared";
-import { RoomManager } from "@server/domains/room/RoomManager";
+/**
+ * startGameUseCase
+ * ルーム内プレイヤーでゲームセッションを開始し，進行イベントを通知する
+ */
 import type { GameOutputPort, StartGamePort } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logEvent";
 
 type StartGameUseCaseParams = {
-  ownerId: string;
+  roomId: string;
+  playerIds: string[];
   gameManager: StartGamePort;
-  roomManager: RoomManager;
+  onGameEnd: () => void;
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayerToRoom"
@@ -16,68 +19,38 @@ type StartGameUseCaseParams = {
   >;
 };
 
+/** ゲームセッション開始とティック通知，終了通知を実行する */
 export const startGameUseCase = ({
-  ownerId,
+  roomId,
+  playerIds,
   gameManager,
-  roomManager,
+  onGameEnd,
   output,
 }: StartGameUseCaseParams) => {
-  const room = roomManager.getRoomByOwnerId(ownerId);
-  if (!room) {
-    logEvent("GameUseCase", {
-      event: "START_GAME",
-      result: "ignored_no_room",
-      socketId: ownerId,
-    });
-    return;
-  }
-
-  if (room.status === roomConsts.RoomPhase.PLAYING) {
-    logEvent("GameUseCase", {
-      event: "START_GAME",
-      result: "ignored_already_playing",
-      roomId: room.roomId,
-      socketId: ownerId,
-    });
-    return;
-  }
-
-  logEvent("GameUseCase", {
-    event: "START_GAME",
-    result: "accepted",
-    roomId: room.roomId,
-    socketId: ownerId,
-    totalPlayers: room.players.length,
-  });
-
-  room.status = roomConsts.RoomPhase.PLAYING;
-
-  const playerIds = room.players.map((p: { id: string }) => p.id);
-
   gameManager.startRoomSession(
-    room.roomId,
+    roomId,
     playerIds,
     (tickData) => {
       tickData.players.forEach((playerData) => {
-        output.publishUpdatePlayerToRoom(room.roomId, playerData);
+        output.publishUpdatePlayerToRoom(roomId, playerData);
       });
 
       if (tickData.cellUpdates.length > 0) {
-        output.publishMapCellUpdatesToRoom(room.roomId, tickData.cellUpdates);
+        output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
       }
     },
     () => {
       logEvent("GameUseCase", {
         event: "GAME_END",
         result: "emitted",
-        roomId: room.roomId,
+        roomId,
         reason: "duration_elapsed",
       });
-      output.publishGameEndToRoom(room.roomId);
-      room.status = roomConsts.RoomPhase.WAITING;
+      output.publishGameEndToRoom(roomId);
+      onGameEnd();
     }
   );
 
-  const startTime = gameManager.getRoomStartTime(room.roomId) || Date.now();
-  output.publishGameStartToRoom(room.roomId, { startTime });
+  const startTime = gameManager.getRoomStartTime(roomId) || Date.now();
+  output.publishGameStartToRoom(roomId, { startTime });
 };

@@ -4,7 +4,7 @@ const { GAME_CONFIG, NETWORK_CONFIG } = config;
 
 export const URL = NETWORK_CONFIG.PROD_SERVER_URL;
 export const DEV_URL = NETWORK_CONFIG.DEV_SERVER_URL;
-export const BOTS = 20;
+export const BOTS = 10;
 export const DURATION_MS = Infinity;
 export const JOIN_DELAY_MS = 25;
 export const MOVE_TICK_MS = GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;

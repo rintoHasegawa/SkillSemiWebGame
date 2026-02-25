@@ -3,24 +3,29 @@
  * ゲーム関連イベントの受信ハンドラを登録する
  */
 import { Server, Socket } from "socket.io";
-import { GameManager } from "@server/domains/game/GameManager";
-import { RoomManager } from "@server/domains/room/RoomManager";
 import { protocol } from "@repo/shared";
-import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
-import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
-import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
+import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
+import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
+import type {
+  MovePlayerPort,
+  ReadyForGamePort,
+  ReadyForGameRoomPort,
+  StartGamePort,
+  StartGameRoomPort,
+} from "@server/domains/game/application/ports/gameUseCasePorts";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
-import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { createGameOutputAdapter } from "./createGameOutputAdapter";
+import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { logEvent } from "@server/logging/logEvent";
+import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isMovePayload, isPingPayload } from "@server/network/validation/socketPayloadValidators";
+import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: GameManager,
-  roomManager: RoomManager
+  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort,
+  roomManager: StartGameRoomPort & ReadyForGameRoomPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -44,7 +49,7 @@ export const registerGameHandlers = (
 
   // オーナー開始要求に応じてゲーム進行ユースケースを起動する
   socket.on(protocol.SocketEvents.START_GAME, () => {
-    startGameUseCase({
+    startGameCoordinator({
       ownerId: socket.id,
       gameManager,
       roomManager,
@@ -54,12 +59,10 @@ export const registerGameHandlers = (
 
   // 参加者の準備完了通知を受けて現在状態を返す
   socket.on(protocol.SocketEvents.READY_FOR_GAME, () => {
-    const roomId = Array.from(socket.rooms).find((room) => room !== socket.id);
-
-    readyForGameUseCase({
+    readyForGameCoordinator({
       socketId: socket.id,
-      roomId,
       gameManager,
+      roomManager,
       output: gameOutputAdapter,
     });
   });
