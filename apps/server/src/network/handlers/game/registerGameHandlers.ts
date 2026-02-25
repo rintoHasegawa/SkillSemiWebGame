@@ -7,11 +7,10 @@ import { protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
-  BombRoomStateStorePort,
+  BombStatePort,
+  GameRoomLookupPort,
   MovePlayerPort,
-  PlaceBombRoomPort,
   ReadyForGamePort,
-  ReadyForGameRoomPort,
   StartGamePort,
   StartGameRoomPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
@@ -35,8 +34,8 @@ const gamePayloadValidators = {
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort & BombRoomStateStorePort,
-  roomManager: StartGameRoomPort & ReadyForGameRoomPort & PlaceBombRoomPort
+  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort & BombStatePort,
+  roomManager: StartGameRoomPort & GameRoomLookupPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);

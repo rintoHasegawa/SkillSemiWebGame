@@ -2,6 +2,7 @@
  * gameUseCasePorts
  * ゲーム系ユースケースが利用する入力ポートと出力ポートの契約を定義する
  */
+import type { BombRoomStateClearReason } from "@server/domains/game/entities/bomb/BombRoomStateStore";
 import type {
   BombPlacedPayload,
   gameTypes,
@@ -35,8 +36,8 @@ export interface StartGameRoomPort {
   markRoomWaiting(roomId: string): roomTypes.Room | undefined;
 }
 
-/** 準備完了調停で利用するルーム解決入力ポート */
-export interface ReadyForGameRoomPort {
+/** ゲーム系調停で利用するプレイヤー所属ルーム解決入力ポート */
+export interface GameRoomLookupPort {
   getRoomByPlayerId(playerId: string): roomTypes.Room | undefined;
 }
 
@@ -49,11 +50,6 @@ export interface ReadyForGamePort {
 /** 移動入力ユースケースが利用するプレイヤー操作入力ポート */
 export interface MovePlayerPort {
   movePlayer(id: string, x: number, y: number): void;
-}
-
-/** 爆弾設置ユースケースが利用するルーム解決入力ポート */
-export interface PlaceBombRoomPort {
-  getRoomByPlayerId(playerId: string): roomTypes.Room | undefined;
 }
 
 /** 切断ユースケースが利用するプレイヤー削除入力ポート */
@@ -81,22 +77,19 @@ export interface GameOutputPort {
   publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: RemovePlayerPayload): void;
 }
 
-/** 爆弾設置ユースケースが利用する爆弾状態管理入力ポート */
-export interface BombPlacementStorePort {
+/** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
+export interface BombPlacementPort {
   shouldBroadcastBombPlaced(roomId: string, dedupeKey: string, nowMs: number): boolean;
   issueServerBombId(roomId: string): string;
 }
 
-/** 爆弾状態破棄理由を表す型 */
-export type BombRoomStateClearReason = "game-ended" | "room-deleted";
-
 /** 爆弾状態破棄ユースケースが利用する入力ポート */
-export interface BombRoomStateCleanupPort {
+export interface BombCleanupPort {
   clearBombRoomState(roomId: string, reason: BombRoomStateClearReason): void;
 }
 
 /** 爆弾状態の参照更新と破棄を扱う統合入力ポート */
-export interface BombRoomStateStorePort extends BombPlacementStorePort, BombRoomStateCleanupPort {}
+export interface BombStatePort extends BombPlacementPort, BombCleanupPort {}
 
 /** 爆弾設置ユースケースの入力値 */
 export type PlaceBombInput = {

@@ -3,15 +3,15 @@
  * 爆弾設置入力を検証済み前提で処理し，ルーム配信を実行する
  */
 import type {
-  BombPlacementStorePort,
+  BombPlacementPort,
   GameOutputPort,
+  GameRoomLookupPort,
   PlaceBombInput,
-  PlaceBombRoomPort,
 } from "../ports/gameUseCasePorts";
 
 type PlaceBombUseCaseParams = {
-  roomResolver: PlaceBombRoomPort;
-  bombStore: BombPlacementStorePort;
+  roomResolver: GameRoomLookupPort;
+  bombStore: BombPlacementPort;
   input: PlaceBombInput;
   output: Pick<GameOutputPort, "publishBombPlacedToRoom">;
 };

@@ -3,7 +3,7 @@
  * START_GAMEイベントの調停を行い，ルーム状態更新とゲーム開始処理を橋渡しする
  */
 import {
-  type BombRoomStateCleanupPort,
+  type BombCleanupPort,
   type GameOutputPort,
   type StartGamePort,
   type StartGameRoomPort,
@@ -15,7 +15,7 @@ import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
-  gameManager: StartGamePort & BombRoomStateCleanupPort;
+  gameManager: StartGamePort & BombCleanupPort;
   roomManager: StartGameRoomPort;
   output: Pick<
     GameOutputPort,
