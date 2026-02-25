@@ -24,7 +24,11 @@ export interface TickData {
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
   private loopId: NodeJS.Timeout | null = null;
-  private startTime: number = 0;
+  private isRunning: boolean = false;
+  private startMonotonicTimeMs: number = 0;
+  private endMonotonicTimeMs: number = 0;
+  private nextTickAtMs: number = 0;
+  private readonly maxCatchUpTicks: number = 3;
 
   constructor(
     private roomId: string,
@@ -37,49 +41,14 @@ export class GameLoop {
 
   start() {
     // 既にループが回っている場合は何もしない
-    if (this.loopId) return;
+    if (this.isRunning) return;
 
-    this.startTime = Date.now();
-
-    this.loopId = setInterval(() => {
-      // 時間経過のチェック
-      const elapsedTimeMs = Date.now() - this.startTime;
-      if (elapsedTimeMs >= config.GAME_CONFIG.GAME_DURATION_SEC * 1000) {
-        // ゲーム終了時にループを止めて終了処理へ
-        this.stop();
-        this.onGameEnd();
-        return; // 今回のフレームの座標更新はスキップ
-      }
-
-      const playersData: TickData["players"] = [];
-
-      // 1. 各プレイヤーの座標処理とマス塗りの判定
-      this.players.forEach((player) => {
-
-        const gridIndex = getPlayerGridIndex(player);
-        if (gridIndex !== null) {
-          this.mapStore.paintCell(gridIndex, player.teamId);
-        }
-
-        // 送信用のプレイヤーデータを構築
-        playersData.push({
-          id: player.id,
-          x: player.x,
-          y: player.y,
-          teamId: player.teamId,
-        });
-      });
-
-      // 2. マスの差分（Diff）を取得
-      const cellUpdates = this.mapStore.getAndClearUpdates();
-
-      // 3. 通信層（GameHandler）へデータを渡す
-      this.onTick({
-        players: playersData,
-        cellUpdates: cellUpdates,
-      });
-      
-    }, this.tickRate);
+    const nowMs = performance.now();
+    this.startMonotonicTimeMs = nowMs;
+    this.endMonotonicTimeMs = nowMs + config.GAME_CONFIG.GAME_DURATION_SEC * 1000;
+    this.nextTickAtMs = nowMs + this.tickRate;
+    this.isRunning = true;
+    this.scheduleNextTick();
 
     logEvent("GameLoop", {
       event: "GAME_LOOP",
@@ -89,15 +58,93 @@ export class GameLoop {
     });
   }
 
-  stop() {
-    if (this.loopId) {
-      clearInterval(this.loopId);
+  private scheduleNextTick(): void {
+    if (!this.isRunning) return;
+
+    const delayMs = Math.max(0, this.nextTickAtMs - performance.now());
+    this.loopId = setTimeout(() => {
       this.loopId = null;
-      logEvent("GameLoop", {
-        event: "GAME_LOOP",
-        result: "stopped",
-        roomId: this.roomId,
-      });
+      this.runTickCycle();
+    }, delayMs);
+  }
+
+  private runTickCycle(): void {
+    if (!this.isRunning) return;
+
+    let nowMs = performance.now();
+    if (nowMs >= this.endMonotonicTimeMs) {
+      this.stop();
+      this.onGameEnd();
+      return;
     }
+
+    let processedTicks = 0;
+
+    while (nowMs >= this.nextTickAtMs && processedTicks < this.maxCatchUpTicks) {
+      this.processSingleTick();
+      this.nextTickAtMs += this.tickRate;
+      processedTicks += 1;
+
+      nowMs = performance.now();
+      if (nowMs >= this.endMonotonicTimeMs) {
+        this.stop();
+        this.onGameEnd();
+        return;
+      }
+    }
+
+    if (processedTicks === this.maxCatchUpTicks && nowMs >= this.nextTickAtMs) {
+      this.nextTickAtMs = nowMs + this.tickRate;
+    }
+
+    this.scheduleNextTick();
+  }
+
+  private processSingleTick(): void {
+    const playersData: TickData["players"] = [];
+
+    // 1. 各プレイヤーの座標処理とマス塗りの判定
+    this.players.forEach((player) => {
+
+      const gridIndex = getPlayerGridIndex(player);
+      if (gridIndex !== null) {
+        this.mapStore.paintCell(gridIndex, player.teamId);
+      }
+
+      // 送信用のプレイヤーデータを構築
+      playersData.push({
+        id: player.id,
+        x: player.x,
+        y: player.y,
+        teamId: player.teamId,
+      });
+    });
+
+    // 2. マスの差分（Diff）を取得
+    const cellUpdates = this.mapStore.getAndClearUpdates();
+
+    // 3. 通信層（GameHandler）へデータを渡す
+    this.onTick({
+      players: playersData,
+      cellUpdates: cellUpdates,
+    });
+  }
+
+  stop() {
+    if (!this.isRunning) return;
+
+    this.isRunning = false;
+
+    if (this.loopId) {
+      clearTimeout(this.loopId);
+      this.loopId = null;
+    }
+
+    logEvent("GameLoop", {
+      event: "GAME_LOOP",
+      result: "stopped",
+      roomId: this.roomId,
+      elapsedMs: Math.max(0, Math.round(performance.now() - this.startMonotonicTimeMs)),
+    });
   }
 }
