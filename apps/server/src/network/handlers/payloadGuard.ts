@@ -7,12 +7,13 @@ import { logEvent } from "@server/logging/logEvent";
 
 type PayloadValidator<TPayload> = (value: unknown) => value is TPayload;
 type SocketEventName = (typeof protocol.SocketEvents)[keyof typeof protocol.SocketEvents];
+type EventBoundPayloadGuard<TPayload> = (payload: unknown) => payload is TPayload;
 
 /**
  * 受信ペイロードを検証し，不正時は共通ログを記録するガード関数を生成する
  */
 export const createPayloadGuard = (socketId: string) => {
-  return <TPayload>(
+  const isValidPayload = <TPayload>(
     event: SocketEventName,
     payload: unknown,
     validator: PayloadValidator<TPayload>
@@ -28,5 +29,19 @@ export const createPayloadGuard = (socketId: string) => {
     });
 
     return false;
+  };
+
+  const guardOnEvent = <TPayload>(
+    event: SocketEventName,
+    validator: PayloadValidator<TPayload>
+  ): EventBoundPayloadGuard<TPayload> => {
+    return (payload: unknown): payload is TPayload => {
+      return isValidPayload(event, payload, validator);
+    };
+  };
+
+  return {
+    isValidPayload,
+    guardOnEvent,
   };
 };

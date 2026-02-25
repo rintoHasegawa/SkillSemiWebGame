@@ -37,11 +37,19 @@ export const registerGameHandlers = (
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
   const { onEvent } = createServerSocketOnBridge(socket);
-  const payloadGuard = createPayloadGuard(socket.id);
+  const { guardOnEvent } = createPayloadGuard(socket.id);
+  const guardPingPayload = guardOnEvent(
+    protocol.SocketEvents.PING,
+    gamePayloadValidators[protocol.SocketEvents.PING]
+  );
+  const guardMovePayload = guardOnEvent(
+    protocol.SocketEvents.MOVE,
+    gamePayloadValidators[protocol.SocketEvents.MOVE]
+  );
 
   // 遅延計測用のPINGを検証しPONGを返す
   onEvent(protocol.SocketEvents.PING, (clientTime) => {
-    if (!payloadGuard(protocol.SocketEvents.PING, clientTime, gamePayloadValidators[protocol.SocketEvents.PING])) {
+    if (!guardPingPayload(clientTime)) {
       return;
     }
 
@@ -73,7 +81,7 @@ export const registerGameHandlers = (
 
   // 移動入力を検証しプレイヤー移動ユースケースへ連携する
   onEvent(protocol.SocketEvents.MOVE, (data) => {
-    if (!payloadGuard(protocol.SocketEvents.MOVE, data, gamePayloadValidators[protocol.SocketEvents.MOVE])) {
+    if (!guardMovePayload(data)) {
       return;
     }
 

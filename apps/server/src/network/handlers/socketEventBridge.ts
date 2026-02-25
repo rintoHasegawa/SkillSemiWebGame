@@ -7,19 +7,13 @@ import type { Socket } from "socket.io";
 import {
   createSocketEventBridge,
   type ClientToServerEventPayloadMap,
+  type SocketBridgeTarget,
   type ServerToClientEventPayloadMap,
 } from "@repo/shared";
 
-type BridgeTarget = {
-  on: (event: string, callback: (payload: unknown) => void) => void;
-  once: (event: string, callback: (payload: unknown) => void) => void;
-  off: (event: string, callback: (payload: unknown) => void) => void;
-  emit: (event: string, payload?: unknown) => void;
-};
-
 /** サーバー向けの型付きソケットイベント bridge を生成する */
 export const createServerSocketOnBridge = (socket: Socket) => {
-  const bridgeTarget: BridgeTarget = {
+  const bridgeTarget: SocketBridgeTarget = {
     on: (event, callback) => {
       socket.on(event, callback);
     },

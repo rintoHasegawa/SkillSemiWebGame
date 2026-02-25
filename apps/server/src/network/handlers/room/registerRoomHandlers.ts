@@ -27,11 +27,15 @@ export const registerRoomHandlers = (
   const common = createCommonHandlerContext(io, socket);
   const roomOutputAdapter = createRoomOutputAdapter(common);
   const { onEvent } = createServerSocketOnBridge(socket);
-  const payloadGuard = createPayloadGuard(socket.id);
+  const { guardOnEvent } = createPayloadGuard(socket.id);
+  const guardJoinRoomPayload = guardOnEvent(
+    protocol.SocketEvents.JOIN_ROOM,
+    roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM]
+  );
 
   // 参加要求のペイロード検証と参加処理を実行する
   onEvent(protocol.SocketEvents.JOIN_ROOM, async (data) => {
-    if (!payloadGuard(protocol.SocketEvents.JOIN_ROOM, data, roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM])) {
+    if (!guardJoinRoomPayload(data)) {
       return;
     }
 
