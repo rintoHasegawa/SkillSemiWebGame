@@ -12,6 +12,9 @@ type Props = {
 };
 
 export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
+  // 🌟 追加：「TAP TO START」が押されてフォームを表示する状態かどうか
+  const [showForm, setShowForm] = useState(false);
+
   // プレイヤー名入力値
   const [playerName, setPlayerName] = useState("");
   // ルームID入力値
@@ -29,7 +32,6 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
 
   return (
     <>
-      {/* 🌟 ロビー画面と同じ、横画面専用の警告と全体設定 */}
       <style>{`
         * {
           box-sizing: border-box;
@@ -52,6 +54,11 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
             display: flex;
           }
         }
+        /* 🌟 追加：文字を点滅させるアニメーション */
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.2; }
+        }
       `}</style>
 
       {/* 縦画面時のブロック画面 */}
@@ -60,115 +67,143 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
         <p>Please rotate your device to landscape mode.</p>
       </div>
 
-      {/* 🌟 画面全体を覆う背景コンテナ */}
+      {/* 画面全体を覆う背景コンテナ */}
       <div
         style={{
           width: "100vw",
           height: "100dvh",
-          // 💡 ここを修正： public/title.png を読み込むように変更
           backgroundImage: "url('/title.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
-          // ドット絵をぼやけさせずにくっきり拡大するプロパティ
           imageRendering: "pixelated",
-
-          // UIを下の方に配置するためのFlexbox設定
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-end", // 下に寄せる
+          justifyContent: "flex-end",
           alignItems: "center",
-          paddingBottom: "12vh", // 画像の空きスペースに合わせて調整
+          paddingBottom: "12vh",
+          // 🌟 追加：フォーム表示前なら、画面全体をタップ可能なボタンのようにする
+          cursor: showForm ? "default" : "pointer",
+        }}
+        // 🌟 追加：背景のどこかをタップしたらフォームを表示する
+        onClick={() => {
+          if (!showForm) setShowForm(true);
         }}
       >
-        {/* 🌟 入力フォーム＆ボタンのコンテナ */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            width: "90%",
-            maxWidth: "400px",
-            // 画像と同化しないように、うっすらと黒い半透明の座布団を敷く（不要なら消してOK）
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
-            padding: "20px",
-            borderRadius: "12px",
-            boxShadow: "0 4px 10px rgba(0, 0, 0, 0.5)",
-          }}
-        >
+        {/* 🌟 条件分岐：showForm が false なら「TAP TO START」、true ならフォームを表示 */}
+        {!showForm ? (
+          <div
+            style={{
+              color: "white",
+              fontSize: "clamp(1.5rem, 5vw, 2.5rem)",
+              fontFamily: "monospace",
+              fontWeight: "bold",
+              textShadow:
+                "3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000",
+              animation: "blink 1.5s infinite", // ここで点滅アニメーションを適用
+              marginBottom: "30px", // 少し上に浮かせる
+            }}
+          >
+            - TAP TO START -
+          </div>
+        ) : (
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "10px",
-              width: "100%",
-              marginBottom: "20px",
+              alignItems: "center",
+              width: "90%",
+              maxWidth: "400px",
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              padding: "20px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 10px rgba(0, 0, 0, 0.5)",
+              // 🌟 追加：フワッと表示させる簡単なアニメーション
+              animation: "fadeIn 0.3s ease-in-out",
             }}
           >
-            <input
-              placeholder="プレイヤー名を入力"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              style={{
-                padding: "12px",
-                fontSize: "clamp(1rem, 3vw, 1.2rem)",
-                borderRadius: "5px",
-                border: "none",
-                width: "100%",
-                fontFamily: "monospace",
-              }}
-            />
-            <input
-              placeholder="ルームIDを入力"
-              value={roomIdInput}
-              onChange={(e) => setRoomIdInput(e.target.value)}
-              style={{
-                padding: "12px",
-                fontSize: "clamp(1rem, 3vw, 1.2rem)",
-                borderRadius: "5px",
-                border: "none",
-                width: "100%",
-                fontFamily: "monospace",
-              }}
-            />
-          </div>
-
-          {/* エラーメッセージ */}
-          {joinErrorMessage && (
             <div
               style={{
-                color: "#ff6b6b",
-                marginBottom: "15px",
-                fontWeight: "bold",
-                textAlign: "center",
-                textShadow: "1px 1px 2px black",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                width: "100%",
+                marginBottom: "20px",
               }}
             >
-              {joinErrorMessage}
+              <input
+                placeholder="プレイヤー名を入力"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                style={{
+                  padding: "12px",
+                  fontSize: "clamp(1rem, 3vw, 1.2rem)",
+                  borderRadius: "5px",
+                  border: "none",
+                  width: "100%",
+                  fontFamily: "monospace",
+                }}
+              />
+              <input
+                placeholder="ルームIDを入力"
+                value={roomIdInput}
+                onChange={(e) => setRoomIdInput(e.target.value)}
+                style={{
+                  padding: "12px",
+                  fontSize: "clamp(1rem, 3vw, 1.2rem)",
+                  borderRadius: "5px",
+                  border: "none",
+                  width: "100%",
+                  fontFamily: "monospace",
+                }}
+              />
             </div>
-          )}
 
-          {/* 参加ボタン */}
-          <button
-            onClick={handleJoin}
-            disabled={!canJoin || isJoining}
-            style={{
-              padding: "15px 30px",
-              fontSize: "clamp(1rem, 3vw, 1.2rem)",
-              cursor: !canJoin || isJoining ? "not-allowed" : "pointer",
-              backgroundColor: !canJoin || isJoining ? "#555" : "#3b82f6",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              width: "100%",
-              fontWeight: "bold",
-              fontFamily: "monospace",
-              transition: "background-color 0.2s",
-            }}
-          >
-            {isJoining ? "接続中..." : "GAME START"}
-          </button>
-        </div>
+            {/* エラーメッセージ */}
+            {joinErrorMessage && (
+              <div
+                style={{
+                  color: "#ff6b6b",
+                  marginBottom: "15px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  textShadow: "1px 1px 2px black",
+                }}
+              >
+                {joinErrorMessage}
+              </div>
+            )}
+
+            {/* 参加ボタン */}
+            <button
+              onClick={handleJoin}
+              disabled={!canJoin || isJoining}
+              style={{
+                padding: "15px 30px",
+                fontSize: "clamp(1rem, 3vw, 1.2rem)",
+                cursor: !canJoin || isJoining ? "not-allowed" : "pointer",
+                backgroundColor: !canJoin || isJoining ? "#555" : "#3b82f6",
+                color: "white",
+                border: "none",
+                borderRadius: "5px",
+                width: "100%",
+                fontWeight: "bold",
+                fontFamily: "monospace",
+                transition: "background-color 0.2s",
+              }}
+            >
+              {isJoining ? "接続中..." : "GAME START"}
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* React内でインラインのkeyframes(fadeIn)を追加するためのハック */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </>
   );
 };
