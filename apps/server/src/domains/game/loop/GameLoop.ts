@@ -29,7 +29,6 @@ export class GameLoop {
   constructor(
     private roomId: string,
     private tickRate: number,
-    private playerIds: string[],
     private players: Map<string, Player>,
     private mapStore: MapStore,
     private onTick: (data: TickData) => void,
@@ -55,9 +54,7 @@ export class GameLoop {
       const playersData: TickData["players"] = [];
 
       // 1. 各プレイヤーの座標処理とマス塗りの判定
-      this.playerIds.forEach(id => {
-        const player = this.players.get(id);
-        if (!player) return;
+      this.players.forEach((player) => {
 
         const gridIndex = getPlayerGridIndex(player);
         if (gridIndex !== null) {

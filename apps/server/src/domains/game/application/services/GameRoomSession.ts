@@ -42,7 +42,6 @@ export class GameRoomSession {
     this.gameLoop = new GameLoop(
       this.roomId,
       tickRate,
-      this.getPlayerIds(),
       this.players,
       this.mapStore,
       onTick,
