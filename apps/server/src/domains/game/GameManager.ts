@@ -2,7 +2,7 @@
  * GameManager
  * ゲームセッション集合の生成，更新，参照管理を統括する
  */
-import { type TickData } from "./loop/GameLoop";
+import type { gameTypes } from "@repo/shared";
 import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
@@ -49,7 +49,7 @@ export class GameManager {
   startRoomSession(
     roomId: string, 
     playerIds: string[], 
-    onTick: (data: TickData) => void,
+    onTick: (data: gameTypes.TickData) => void,
     onGameEnd: () => void
   ) {
     this.lifecycleService.startRoomSession(roomId, playerIds, onTick, onGameEnd);

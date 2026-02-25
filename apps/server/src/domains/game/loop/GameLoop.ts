@@ -6,20 +6,8 @@ import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@repo/shared";
-import type { gridMapTypes } from "@repo/shared";
+import type { gameTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
-
-// コールバックで渡すデータの型定義
-/** 1ティック分のプレイヤー情報とマップ差分を表すデータ */
-export interface TickData {
-  playerUpdates: {
-    id: string;
-    x: number;
-    y: number;
-    teamId: number;
-  }[];
-  cellUpdates: gridMapTypes.CellUpdate[];
-}
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -29,14 +17,14 @@ export class GameLoop {
   private endMonotonicTimeMs: number = 0;
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
-  private lastSentPlayers: Map<string, TickData["playerUpdates"][number]> = new Map();
+  private lastSentPlayers: Map<string, gameTypes.TickData["playerUpdates"][number]> = new Map();
 
   constructor(
     private roomId: string,
     private tickRate: number,
     private players: Map<string, Player>,
     private mapStore: MapStore,
-    private onTick: (data: TickData) => void,
+    private onTick: (data: gameTypes.TickData) => void,
     private onGameEnd: () => void   // ゲーム終了時のコールバック
   ) {}
 
@@ -103,7 +91,7 @@ export class GameLoop {
   }
 
   private processSingleTick(): void {
-    const changedPlayers: TickData["playerUpdates"] = [];
+    const changedPlayers: gameTypes.TickData["playerUpdates"] = [];
 
     // 1. 各プレイヤーの座標処理とマス塗りの判定
     this.players.forEach((player) => {

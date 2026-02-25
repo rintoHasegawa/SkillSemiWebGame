@@ -3,7 +3,7 @@
  * ゲームセッションの開始，参照，終了時クリーンアップを管理する
  */
 import { config } from "@repo/shared";
-import { type TickData } from "../../loop/GameLoop";
+import type { gameTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logEvent";
 import { GameRoomSession } from "./GameRoomSession";
 
@@ -30,7 +30,7 @@ export class GameSessionLifecycleService {
   public startRoomSession(
     roomId: string,
     playerIds: string[],
-    onTick: (data: TickData) => void,
+    onTick: (data: gameTypes.TickData) => void,
     onGameEnd: () => void
   ) {
     if (this.sessions.has(roomId)) {

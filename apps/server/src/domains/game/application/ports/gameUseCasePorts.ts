@@ -2,15 +2,14 @@
  * gameUseCasePorts
  * ゲーム系ユースケースが利用する入力ポートと出力ポートの契約を定義する
  */
-import type { TickData } from "../../loop/GameLoop";
-import type { gridMapTypes, playerTypes, roomTypes } from "@repo/shared";
+import type { gameTypes, gridMapTypes, playerTypes, roomTypes, UpdatePlayersPayload } from "@repo/shared";
 
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */
 export interface StartGamePort {
   startRoomSession(
     roomId: string,
     playerIds: string[],
-    onTick: (data: TickData) => void,
+    onTick: (data: gameTypes.TickData) => void,
     onGameEnd: () => void
   ): void;
   getRoomStartTime(roomId: string): number | undefined;
@@ -49,7 +48,7 @@ export interface GameOutputPort {
   publishPongToSocket(payload: { clientTime: number; serverTime: number }): void;
   publishUpdatePlayersToRoom(
     roomId: roomTypes.Room["roomId"],
-    players: playerTypes.PlayerData[]
+    players: UpdatePlayersPayload
   ): void;
   publishMapCellUpdatesToRoom(
     roomId: roomTypes.Room["roomId"],

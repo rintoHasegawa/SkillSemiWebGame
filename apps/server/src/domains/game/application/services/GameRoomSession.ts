@@ -3,7 +3,8 @@
  * 1ルーム分のゲーム進行状態とゲームループ実行を管理する
  */
 import { logEvent } from "@server/logging/logEvent";
-import { GameLoop, type TickData } from "../../loop/GameLoop";
+import type { gameTypes } from "@repo/shared";
+import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
 import { createSpawnedPlayer } from "../../entities/player/playerSpawn.js";
@@ -31,7 +32,7 @@ export class GameRoomSession {
 
   public start(
     tickRate: number,
-    onTick: (data: TickData) => void,
+    onTick: (data: gameTypes.TickData) => void,
     onGameEnd: () => void
   ): void {
     if (this.gameLoop) {
