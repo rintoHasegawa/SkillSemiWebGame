@@ -5,13 +5,11 @@
  */
 import { Application, Container, Ticker } from "pixi.js";
 import { socketManager } from "@client/network/SocketManager";
-import { config } from "@repo/shared";
 import { GameMapController } from "./entities/map/GameMapController";
-import { BombController } from "./entities/bomb/BombController";
-import { LocalPlayerController } from "./entities/player/PlayerController";
 import { GameTimer } from "./application/GameTimer";
 import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
+import { BombManager } from "./application/BombManager";
 import type { GamePlayers } from "./application/game.types";
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
@@ -23,8 +21,7 @@ export class GameManager {
   private container: HTMLDivElement;
   private gameMap!: GameMapController;
   private timer = new GameTimer();
-  private bombs: BombController[] = [];
-  private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
+  private bombManager: BombManager | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
 
@@ -39,27 +36,7 @@ export class GameManager {
   }
 
   public placeBomb() {
-    const me = this.players[this.myId];
-    if (!me || !(me instanceof LocalPlayerController)) return;
-
-    const elapsedMs = this.timer.getElapsedMs();
-    const { BOMB_COOLDOWN_MS, BOMB_FUSE_MS, BOMB_RADIUS_GRID } = config.GAME_CONFIG;
-    if (elapsedMs - this.lastBombPlacedElapsedMs < BOMB_COOLDOWN_MS) {
-      return;
-    }
-
-    const position = me.getPosition();
-    const bomb = new BombController({
-      x: position.x,
-      y: position.y,
-      radiusGrid: BOMB_RADIUS_GRID,
-      placedAtElapsedMs: elapsedMs,
-      explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
-    });
-
-    this.bombs.push(bomb);
-    this.worldContainer.addChild(bomb.getDisplayObject());
-    this.lastBombPlacedElapsedMs = elapsedMs;
+    this.bombManager?.placeBomb();
   }
   
   // 入力と状態管理
@@ -112,6 +89,13 @@ export class GameManager {
       getJoystickInput: () => this.joystickInput,
     });
 
+    this.bombManager = new BombManager({
+      worldContainer: this.worldContainer,
+      players: this.players,
+      myId: this.myId,
+      getElapsedMs: () => this.timer.getElapsedMs(),
+    });
+
     // サーバーへゲーム準備完了を通知
     socketManager.game.readyForGame();
 
@@ -132,27 +116,8 @@ export class GameManager {
    */
   private tick = (ticker: Ticker) => {
     this.gameLoop?.tick(ticker);
-    this.updateBombs();
+    this.bombManager?.tick();
   };
-
-  private updateBombs() {
-    const elapsedMs = this.timer.getElapsedMs();
-
-    const nextBombs: BombController[] = [];
-    this.bombs.forEach((bomb) => {
-      bomb.tick(elapsedMs);
-
-      if (bomb.isFinished()) {
-        this.worldContainer.removeChild(bomb.getDisplayObject());
-        bomb.destroy();
-        return;
-      }
-
-      nextBombs.push(bomb);
-    });
-
-    this.bombs = nextBombs;
-  }
 
   /**
    * クリーンアップ処理（コンポーネントアンマウント時）
@@ -162,8 +127,8 @@ export class GameManager {
     if (this.isInitialized) {
       this.app.destroy(true, { children: true });
     }
-    this.bombs.forEach((bomb) => bomb.destroy());
-    this.bombs = [];
+    this.bombManager?.destroy();
+    this.bombManager = null;
     this.players = {};
     
     // イベント購読の解除
