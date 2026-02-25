@@ -60,8 +60,12 @@ export interface GameOutputPort {
   publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: GameStartPayload): void;
   publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
   publishGameStartToSocket(payload: GameStartPayload): void;
-  publishBombPlacedToRoom(roomId: roomTypes.Room["roomId"], payload: BombPlacedPayload): void;
   publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: RemovePlayerPayload): void;
+}
+
+/** 爆弾ユースケースが利用する送信出力ポート */
+export interface BombOutputPort {
+  publishBombPlacedToRoom(roomId: roomTypes.Room["roomId"], payload: BombPlacedPayload): void;
 }
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */

@@ -4,6 +4,7 @@
  */
 
 type IssueServerBombIdParams = {
+  // セッションに紐づく外部公開用のID名前空間
   roomId: string;
   currentSerial: number;
 };

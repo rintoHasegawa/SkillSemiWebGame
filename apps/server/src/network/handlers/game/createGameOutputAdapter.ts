@@ -15,14 +15,17 @@ import type {
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
-import type { GameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
+import type {
+  BombOutputPort,
+  GameOutputPort,
+} from "@server/domains/game/application/ports/gameUseCasePorts";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = roomTypes.Room["roomId"];
 
 /** ゲーム出力アダプターのインターフェース */
-export type GameOutputAdapter = Omit<GameOutputPort, "publishPlayerRemovedToRoom">;
+export type GameOutputAdapter = Omit<GameOutputPort, "publishPlayerRemovedToRoom"> & BombOutputPort;
 
 /** ゲーム切断時の出力アダプターのインターフェース */
 export type GameDisconnectOutputAdapter = Pick<GameOutputPort, "publishPlayerRemovedToRoom">;

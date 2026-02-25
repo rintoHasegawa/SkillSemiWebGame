@@ -4,16 +4,21 @@
  */
 import type {
   BombPlacementPort,
-  GameOutputPort,
+  BombOutputPort,
   PlaceBombInput,
 } from "../ports/gameUseCasePorts";
+import {
+  createBombDedupeKey,
+  createBombPlacedPayload,
+} from "@server/domains/game/entities/bomb/bombPlacement";
+import { resolveRoomIdBySocketId } from "./useCaseRoomResolver";
 import type { FindRoomByPlayerPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 
 type PlaceBombUseCaseParams = {
   roomResolver: FindRoomByPlayerPort;
   bombStore: BombPlacementPort;
   input: PlaceBombInput;
-  output: Pick<GameOutputPort, "publishBombPlacedToRoom">;
+  output: BombOutputPort;
 };
 
 /** 爆弾設置入力を重複排除と採番付きでルームへ配信する */
@@ -23,19 +28,22 @@ export const placeBombUseCase = ({
   input,
   output,
 }: PlaceBombUseCaseParams): void => {
-  const roomId = roomResolver.getRoomByPlayerId(input.socketId)?.roomId;
+  const roomId = resolveRoomIdBySocketId(roomResolver, input.socketId);
   if (!roomId) {
     return;
   }
 
-  const dedupeKey = `${input.socketId}:${input.payload.requestId}`;
+  const dedupeKey = createBombDedupeKey(input.socketId, input.payload.requestId);
   if (!bombStore.shouldBroadcastBombPlaced(roomId, dedupeKey, input.nowMs)) {
     return;
   }
 
-  output.publishBombPlacedToRoom(roomId, {
-    ...input.payload,
-    bombId: bombStore.issueServerBombId(roomId),
-    ownerId: input.socketId,
-  });
+  output.publishBombPlacedToRoom(
+    roomId,
+    createBombPlacedPayload({
+      payload: input.payload,
+      bombId: bombStore.issueServerBombId(roomId),
+      ownerId: input.socketId,
+    })
+  );
 };
