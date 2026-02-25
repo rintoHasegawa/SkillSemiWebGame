@@ -2,7 +2,17 @@
  * gameUseCasePorts
  * ゲーム系ユースケースが利用する入力ポートと出力ポートの契約を定義する
  */
-import type { gameTypes, gridMapTypes, playerTypes, roomTypes, UpdatePlayersPayload } from "@repo/shared";
+import type {
+  gameTypes,
+  playerTypes,
+  roomTypes,
+  CurrentPlayersPayload,
+  GameStartPayload,
+  PongPayload,
+  RemovePlayerPayload,
+  UpdateMapCellsPayload,
+  UpdatePlayersPayload,
+} from "@repo/shared";
 
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */
 export interface StartGamePort {
@@ -45,18 +55,18 @@ export interface DisconnectPlayerPort {
 
 /** ゲーム系ユースケースが利用する送信出力ポート */
 export interface GameOutputPort {
-  publishPongToSocket(payload: { clientTime: number; serverTime: number }): void;
+  publishPongToSocket(payload: PongPayload): void;
   publishUpdatePlayersToRoom(
     roomId: roomTypes.Room["roomId"],
     players: UpdatePlayersPayload
   ): void;
   publishMapCellUpdatesToRoom(
     roomId: roomTypes.Room["roomId"],
-    cellUpdates: gridMapTypes.CellUpdate[]
+    cellUpdates: UpdateMapCellsPayload
   ): void;
   publishGameEndToRoom(roomId: roomTypes.Room["roomId"]): void;
-  publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: { startTime: number }): void;
-  publishCurrentPlayersToSocket(players: playerTypes.PlayerData[]): void;
-  publishGameStartToSocket(payload: { startTime: number }): void;
-  publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: string): void;
+  publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: GameStartPayload): void;
+  publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
+  publishGameStartToSocket(payload: GameStartPayload): void;
+  publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: RemovePlayerPayload): void;
 }

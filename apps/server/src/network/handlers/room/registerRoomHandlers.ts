@@ -8,6 +8,7 @@ import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUs
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logEvent";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
+import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
 
@@ -19,9 +20,10 @@ export const registerRoomHandlers = (
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const roomOutputAdapter = createRoomOutputAdapter(common);
+  const { onEvent } = createServerSocketOnBridge(socket);
 
   // 参加要求のペイロード検証と参加処理を実行する
-  socket.on(protocol.SocketEvents.JOIN_ROOM, async (data: unknown) => {
+  onEvent(protocol.SocketEvents.JOIN_ROOM, async (data) => {
     if (!isJoinRoomPayload(data)) {
       logEvent("Network", {
         event: "JOIN_ROOM",

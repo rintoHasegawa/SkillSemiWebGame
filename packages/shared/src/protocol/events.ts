@@ -4,6 +4,8 @@
  * クライアントとサーバー間のイベント契約を共有する
  */
 import type { TickData } from "../domains/game/game.type";
+import type { MovePayload as PlayerMovePayload, PlayerData } from "../domains/player/player.type";
+import type * as roomTypes from "../domains/room/room.type";
 
 /** ソケットイベント名の一覧定数 */
 export const SocketEvents = {
@@ -36,3 +38,54 @@ export const SocketEvents = {
 
 /** UPDATE_PLAYERS イベントで送受信するプレイヤー差分配列 */
 export type UpdatePlayersPayload = TickData["playerUpdates"];
+
+/** CURRENT_PLAYERS イベントで送受信するプレイヤー一覧 */
+export type CurrentPlayersPayload = TickData["playerUpdates"];
+
+/** UPDATE_MAP_CELLS イベントで送受信するマップ差分配列 */
+export type UpdateMapCellsPayload = TickData["cellUpdates"];
+
+/** NEW_PLAYER イベントで送受信するプレイヤー情報 */
+export type NewPlayerPayload = PlayerData;
+
+/** REMOVE_PLAYER イベントで送受信するプレイヤーID */
+export type RemovePlayerPayload = PlayerData["id"];
+
+/** GAME_START イベントで送受信するゲーム開始情報 */
+export type GameStartPayload = { startTime: number };
+
+/** MOVE イベントで送受信する移動入力情報 */
+export type MovePayload = PlayerMovePayload;
+
+/** PING イベントで送受信する時刻同期リクエスト */
+export type PingPayload = number;
+
+/** PONG イベントで送受信する時刻同期レスポンス */
+export type PongPayload = {
+  clientTime: number;
+  serverTime: number;
+};
+
+/** ソケットイベントごとのペイロード対応表 */
+export type SocketPayloadMap = {
+  [SocketEvents.CONNECT]: undefined;
+  [SocketEvents.DISCONNECT]: undefined;
+  [SocketEvents.JOIN_ROOM]: roomTypes.JoinRoomPayload;
+  [SocketEvents.ROOM_JOIN_REJECTED]: roomTypes.JoinRoomRejectedPayload;
+  [SocketEvents.ROOM_UPDATE]: roomTypes.Room;
+  [SocketEvents.START_GAME]: undefined;
+  [SocketEvents.GAME_START]: GameStartPayload;
+  [SocketEvents.READY_FOR_GAME]: undefined;
+  [SocketEvents.CURRENT_PLAYERS]: CurrentPlayersPayload;
+  [SocketEvents.NEW_PLAYER]: NewPlayerPayload;
+  [SocketEvents.UPDATE_PLAYERS]: UpdatePlayersPayload;
+  [SocketEvents.REMOVE_PLAYER]: RemovePlayerPayload;
+  [SocketEvents.MOVE]: MovePayload;
+  [SocketEvents.UPDATE_MAP_CELLS]: UpdateMapCellsPayload;
+  [SocketEvents.PING]: PingPayload;
+  [SocketEvents.PONG]: PongPayload;
+  [SocketEvents.GAME_END]: undefined;
+};
+
+/** 指定イベント名に対応するペイロード型を取得するユーティリティ */
+export type PayloadOf<TEvent extends keyof SocketPayloadMap> = SocketPayloadMap[TEvent];
