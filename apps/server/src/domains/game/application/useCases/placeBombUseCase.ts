@@ -5,12 +5,12 @@
 import type {
   BombPlacementPort,
   GameOutputPort,
-  GameRoomLookupPort,
   PlaceBombInput,
 } from "../ports/gameUseCasePorts";
+import type { FindRoomByPlayerPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 
 type PlaceBombUseCaseParams = {
-  roomResolver: GameRoomLookupPort;
+  roomResolver: FindRoomByPlayerPort;
   bombStore: BombPlacementPort;
   input: PlaceBombInput;
   output: Pick<GameOutputPort, "publishBombPlacedToRoom">;

@@ -6,7 +6,6 @@ import type { Server } from "socket.io";
 import type {
   BombStatePort,
   DisconnectPlayerPort,
-  GameRoomLookupPort,
   MovePlayerPort,
   ReadyForGamePort,
   StartGamePort,
@@ -31,7 +30,7 @@ export type ConnectionGamePort =
 export type ConnectionRoomPort =
   & JoinRoomPort
   & StartGameRoomPort
-  & GameRoomLookupPort;
+  & FindRoomByPlayerPort;
 
 /** ソケット接続全体で利用するゲーム管理ポート集合 */
 export type SocketConnectionGamePort =

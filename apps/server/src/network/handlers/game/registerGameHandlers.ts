@@ -6,9 +6,9 @@ import { Server, Socket } from "socket.io";
 import { protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
+import type { FindRoomByPlayerPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import type {
   BombStatePort,
-  GameRoomLookupPort,
   MovePlayerPort,
   ReadyForGamePort,
   StartGamePort,
@@ -35,7 +35,7 @@ export const registerGameHandlers = (
   io: Server,
   socket: Socket,
   gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort & BombStatePort,
-  roomManager: StartGameRoomPort & GameRoomLookupPort
+  roomManager: StartGameRoomPort & FindRoomByPlayerPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);

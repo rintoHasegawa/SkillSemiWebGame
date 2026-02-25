@@ -36,11 +36,6 @@ export interface StartGameRoomPort {
   markRoomWaiting(roomId: string): roomTypes.Room | undefined;
 }
 
-/** ゲーム系調停で利用するプレイヤー所属ルーム解決入力ポート */
-export interface GameRoomLookupPort {
-  getRoomByPlayerId(playerId: string): roomTypes.Room | undefined;
-}
-
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
 export interface ReadyForGamePort {
   getRoomPlayers(roomId: string): playerTypes.PlayerData[];
