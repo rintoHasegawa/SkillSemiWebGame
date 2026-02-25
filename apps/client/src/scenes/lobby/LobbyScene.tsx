@@ -7,22 +7,22 @@ type Props = {
 };
 
 export const LobbyScene = ({ room, myId, onStart }: Props) => {
-  // ルーム情報到着前ローディング表示
   if (!room)
     return <div style={{ color: "white", padding: 40 }}>読み込み中...</div>;
 
-  // 自身オーナー権限判定
   const isMeOwner = room.ownerId === myId;
 
-  // ロビー画面本体
   return (
     <>
-      {/* 🌟 追加: 縦画面のときに警告を出すCSS */}
       <style>{`
+        /* 全てのエレメントの幅・高さ計算に余白(padding)を含める魔法のCSS */
+        * {
+          box-sizing: border-box;
+        }
         .portrait-blocker {
           display: none;
           position: fixed;
-          top: 0; left: 0; width: 100vw; height: 100vh;
+          top: 0; left: 0; width: 100vw; height: 100dvh;
           background: #111;
           color: white;
           z-index: 9999;
@@ -31,8 +31,8 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
           flex-direction: column;
           font-size: 1.5rem;
           text-align: center;
+          padding: 20px;
         }
-        /* 画面が縦長(portrait)の時だけ、ブロッカーを表示してロビーを隠す */
         @media screen and (orientation: portrait) {
           .portrait-blocker {
             display: flex;
@@ -41,42 +41,59 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
             display: none !important;
           }
         }
+        /* スクロールバーの見た目をスマホ・PCでスッキリさせる */
+        ::-webkit-scrollbar {
+          width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background-color: #555;
+          border-radius: 4px;
+        }
       `}</style>
 
-      {/* 🌟 追加: 縦画面のときに表示される警告画面 */}
       <div className="portrait-blocker">
         <div style={{ fontSize: "4rem", marginBottom: "20px" }}>🔄</div>
-        <p>
+        <p style={{ margin: 0, lineHeight: "1.5" }}>
           このゲームは横画面専用です。
           <br />
           スマホを横向きにしてください。
         </p>
       </div>
 
-      {/* 🌟 変更: className="lobby-container" を追加 */}
       <div
         className="lobby-container"
         style={{
-          padding: 40,
+          padding: "20px" /* 🌟 余白をスマホ向けに少しスッキリと */,
           color: "white",
           background: "#222",
-          height: "100vh",
+          height:
+            "100dvh" /* 🌟 vhではなくdvh(スマホのURLバー等を考慮した正確な高さ)を使用 */,
+          width: "100vw",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "center" /* 🌟 縦方向も中央揃えに */,
         }}
       >
-        <h2 style={{ fontSize: "2rem", marginBottom: "20px" }}>
+        <h2
+          style={{ fontSize: "clamp(1.5rem, 4vw, 2rem)", margin: "0 0 10px 0" }}
+        >
           ルーム: {room.roomId} (待機中)
         </h2>
 
         <div
           style={{
-            margin: "20px 0",
+            margin: "10px 0",
             background: "#333",
             padding: "20px",
             borderRadius: "8px",
-            width: "400px",
+            width: "100%" /* 🌟 常に親要素の100%の幅にする */,
+            maxWidth:
+              "500px" /* 🌟 ただし、最大でも500pxまでしか広がらないようにする */,
+            display: "flex",
+            flexDirection: "column",
+            maxHeight:
+              "50vh" /* 🌟 スマホ横画面では高さが厳しいので、リスト枠の高さも可変に */,
           }}
         >
           <h3
@@ -84,6 +101,7 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
               borderBottom: "1px solid #555",
               paddingBottom: "10px",
               margin: "0 0 10px 0",
+              fontSize: "clamp(1rem, 3vw, 1.2rem)",
             }}
           >
             参加プレイヤー ({room.players.length}/{room.maxPlayers})
@@ -93,17 +111,17 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
               listStyle: "none",
               padding: 0,
               margin: 0,
-              fontSize: "1.2rem",
-              maxHeight: "300px",
-              overflowY: "auto",
-              paddingRight: "10px",
+              fontSize: "1.1rem",
+              overflowY:
+                "auto" /* 🌟 maxHeightを親に任せて、ここではみ出し分をスクロール */,
+              flexGrow: 1 /* 🌟 親枠の中で余った高さを全部使う */,
             }}
           >
             {room.players.map((p: roomTypes.RoomMember) => (
               <li
                 key={p.id}
                 style={{
-                  margin: "15px 0",
+                  margin: "10px 0",
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
@@ -124,13 +142,21 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
           </ul>
         </div>
 
-        <div style={{ marginTop: "20px" }}>
+        <div
+          style={{
+            marginTop: "10px",
+            width: "100%",
+            maxWidth: "500px",
+            textAlign: "center",
+          }}
+        >
           {isMeOwner ? (
             <button
               onClick={onStart}
               style={{
-                padding: "15px 40px",
-                fontSize: "1.5rem",
+                width: "100%" /* 🌟 ボタンも押しやすいように幅広に */,
+                padding: "12px",
+                fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
                 cursor: "pointer",
                 backgroundColor: "#4ade80",
                 color: "#111",
@@ -144,8 +170,9 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
           ) : (
             <div
               style={{
-                padding: "15px 40px",
-                fontSize: "1.5rem",
+                width: "100%",
+                padding: "12px",
+                fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
                 backgroundColor: "#555",
                 color: "#ccc",
                 borderRadius: "8px",
