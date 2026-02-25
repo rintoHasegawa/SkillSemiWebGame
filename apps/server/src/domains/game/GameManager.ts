@@ -13,14 +13,16 @@ import { GamePlayerOperationService } from "./application/services/GamePlayerOpe
 export class GameManager {
   private sessions: Map<string, GameRoomSession>;
   private playerToRoom: Map<string, string>;
+  private roomToPlayers: Map<string, Set<string>>;
   private lifecycleService: GameSessionLifecycleService;
   private playerOperationService: GamePlayerOperationService;
 
   constructor() {
     this.sessions = new Map();
     this.playerToRoom = new Map();
-    this.lifecycleService = new GameSessionLifecycleService(this.sessions, this.playerToRoom);
-    this.playerOperationService = new GamePlayerOperationService(this.sessions, this.playerToRoom);
+    this.roomToPlayers = new Map();
+    this.lifecycleService = new GameSessionLifecycleService(this.sessions, this.playerToRoom, this.roomToPlayers);
+    this.playerOperationService = new GamePlayerOperationService(this.sessions, this.playerToRoom, this.roomToPlayers);
   }
 
   // 外部（GameHandlerなど）から開始時刻を取得できるようにする
