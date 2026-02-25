@@ -29,6 +29,7 @@ export type GameHandler = {
   onUpdateMapCells: (callback: (updates: UpdateMapCellsPayload) => void) => void;
   offUpdateMapCells: (callback: (updates: UpdateMapCellsPayload) => void) => void;
   onGameStart: (callback: (data: GameStartPayload) => void) => void;
+  onceGameStart: (callback: (data: GameStartPayload) => void) => void;
   offGameStart: (callback: (data: GameStartPayload) => void) => void;
   sendMove: (x: number, y: number) => void;
   readyForGame: () => void;
@@ -36,7 +37,7 @@ export type GameHandler = {
 
 /** ソケットインスタンスからゲーム向けハンドラを生成する */
 export const createGameHandler = (socket: Socket): GameHandler => {
-  const { onEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
+  const { onEvent, onceEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
 
   return {
     onCurrentPlayers: (callback) => {
@@ -71,6 +72,9 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     },
     onGameStart: (callback) => {
       onEvent(protocol.SocketEvents.GAME_START, callback);
+    },
+    onceGameStart: (callback) => {
+      onceEvent(protocol.SocketEvents.GAME_START, callback);
     },
     offGameStart: (callback) => {
       offEvent(protocol.SocketEvents.GAME_START, callback);

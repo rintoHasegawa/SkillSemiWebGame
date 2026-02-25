@@ -11,6 +11,13 @@ export const createClientSocketEventBridge = (socket: Socket) => {
     (socket as any).on(event, callback);
   };
 
+  const onceEvent = <TEvent extends SocketEventName>(
+    event: TEvent,
+    callback: (payload: PayloadOf<TEvent>) => void
+  ) => {
+    (socket as any).once(event, callback);
+  };
+
   const offEvent = <TEvent extends SocketEventName>(
     event: TEvent,
     callback: (payload: PayloadOf<TEvent>) => void
@@ -31,6 +38,7 @@ export const createClientSocketEventBridge = (socket: Socket) => {
 
   return {
     onEvent,
+    onceEvent,
     offEvent,
     emitEvent,
   };

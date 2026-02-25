@@ -6,11 +6,12 @@ import { createClientSocketEventBridge } from "./socketEventBridge";
 type TitleHandler = {
   joinRoom: (payload: PayloadOf<typeof protocol.SocketEvents.JOIN_ROOM>) => void;
   onJoinRejected: (callback: (payload: PayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
+  onceJoinRejected: (callback: (payload: PayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
   offJoinRejected: (callback: (payload: PayloadOf<typeof protocol.SocketEvents.ROOM_JOIN_REJECTED>) => void) => void;
 };
 
 export const createTitleHandler = (socket: Socket): TitleHandler => {
-  const { onEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
+  const { onEvent, onceEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
 
   return {
     joinRoom: (payload) => {
@@ -18,6 +19,9 @@ export const createTitleHandler = (socket: Socket): TitleHandler => {
     },
     onJoinRejected: (callback) => {
       onEvent(protocol.SocketEvents.ROOM_JOIN_REJECTED, callback);
+    },
+    onceJoinRejected: (callback) => {
+      onceEvent(protocol.SocketEvents.ROOM_JOIN_REJECTED, callback);
     },
     offJoinRejected: (callback) => {
       offEvent(protocol.SocketEvents.ROOM_JOIN_REJECTED, callback);

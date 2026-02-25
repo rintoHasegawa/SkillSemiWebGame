@@ -11,7 +11,15 @@ export const createServerSocketOnBridge = (socket: Socket) => {
     (socket as any).on(event, callback);
   };
 
+  const onceEvent = <TEvent extends SocketEventName>(
+    event: TEvent,
+    callback: (payload: PayloadOf<TEvent>) => void
+  ) => {
+    (socket as any).once(event, callback);
+  };
+
   return {
     onEvent,
+    onceEvent,
   };
 };
