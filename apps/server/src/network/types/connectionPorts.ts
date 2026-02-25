@@ -4,6 +4,7 @@
  */
 import type { Server } from "socket.io";
 import type {
+  BombRoomStateStorePort,
   DisconnectPlayerPort,
   MovePlayerPort,
   ReadyForGamePort,
@@ -23,7 +24,8 @@ import type { DisconnectCoordinatorParams } from "../../application/coordinators
 export type ConnectionGamePort =
   & StartGamePort
   & ReadyForGamePort
-  & MovePlayerPort;
+  & MovePlayerPort
+  & BombRoomStateStorePort;
 
 /** 接続時のルーム処理で利用する入力ポート集合 */
 export type ConnectionRoomPort =

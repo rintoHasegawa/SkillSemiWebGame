@@ -35,9 +35,8 @@ const gamePayloadValidators = {
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort,
-  roomManager: StartGameRoomPort & ReadyForGameRoomPort & PlaceBombRoomPort,
-  bombStateStore: BombRoomStateStorePort
+  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort & BombRoomStateStorePort,
+  roomManager: StartGameRoomPort & ReadyForGameRoomPort & PlaceBombRoomPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -73,7 +72,6 @@ export const registerGameHandlers = (
       ownerId: socket.id,
       gameManager,
       roomManager,
-      bombStateStore,
       output: gameOutputAdapter,
     });
   });
@@ -109,7 +107,7 @@ export const registerGameHandlers = (
 
     placeBombUseCase({
       roomResolver: roomManager,
-      bombStore: bombStateStore,
+      bombStore: gameManager,
       input: {
         socketId: socket.id,
         payload: data,

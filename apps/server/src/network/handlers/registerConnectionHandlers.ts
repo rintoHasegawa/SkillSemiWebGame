@@ -9,7 +9,6 @@ import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes } from "@server/logging/index";
 import { registerGameHandlers } from "./GameHandler";
 import { registerRoomHandlers } from "./RoomHandler";
-import { createBombRoomStateStoreAdapter } from "./game/createBombRoomStateStoreAdapter";
 import { createGameDisconnectOutputAdapter } from "./game/createGameOutputAdapter";
 import { createRoomDisconnectOutputAdapter } from "./room/createRoomOutputAdapter";
 import type {
@@ -24,7 +23,6 @@ export const registerConnectionHandlers = ({
 }: RegisterConnectionHandlersParams) => {
   const gameDisconnectOutputAdapter = createGameDisconnectOutputAdapter(io);
   const roomDisconnectOutputAdapter = createRoomDisconnectOutputAdapter(io);
-  const bombStateStoreAdapter = createBombRoomStateStoreAdapter();
 
   io.on(protocol.SocketEvents.CONNECT, (socket: Socket) => {
     // 接続ログを記録してドメイン別ハンドラを登録する
@@ -35,7 +33,7 @@ export const registerConnectionHandlers = ({
     });
 
     registerRoomHandlers(io, socket, roomManager);
-    registerGameHandlers(io, socket, gameManager, roomManager, bombStateStoreAdapter);
+    registerGameHandlers(io, socket, gameManager, roomManager);
 
     socket.on(protocol.SocketEvents.DISCONNECT, () => {
       // 切断ログ記録後にドメイン別の後処理を実行する
@@ -49,7 +47,6 @@ export const registerConnectionHandlers = ({
         socketId: socket.id,
         gameManager,
         roomManager,
-        bombStateStore: bombStateStoreAdapter,
         gameOutput: gameDisconnectOutputAdapter,
         roomOutput: roomDisconnectOutputAdapter,
       });

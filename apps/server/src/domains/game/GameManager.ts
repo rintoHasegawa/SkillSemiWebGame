@@ -3,6 +3,11 @@
  * ゲームセッション集合の生成，更新，参照管理を統括する
  */
 import type { gameTypes, GameResultPayload } from "@repo/shared";
+import {
+  clearBombRoomState,
+  issueServerBombId,
+  shouldBroadcastBombPlaced,
+} from "./entities/bomb/BombRoomStateStore";
 import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
@@ -58,5 +63,20 @@ export class GameManager {
   // 指定ルームのプレイヤーを取得
   getRoomPlayers(roomId: string): Player[] {
     return this.lifecycleService.getRoomPlayers(roomId);
+  }
+
+  // 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する
+  shouldBroadcastBombPlaced(roomId: string, dedupeKey: string, nowMs: number): boolean {
+    return shouldBroadcastBombPlaced(roomId, dedupeKey, nowMs);
+  }
+
+  // ルーム単位の連番からサーバー採番の爆弾IDを生成する
+  issueServerBombId(roomId: string): string {
+    return issueServerBombId(roomId);
+  }
+
+  // 指定ルームの爆弾採番状態と重複排除状態を破棄する
+  clearBombRoomState(roomId: string, reason: "game-ended" | "room-deleted"): void {
+    clearBombRoomState(roomId, reason);
   }
 }
