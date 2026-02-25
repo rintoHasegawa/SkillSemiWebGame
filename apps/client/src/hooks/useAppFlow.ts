@@ -1,9 +1,15 @@
+/**
+ * useAppFlow
+ * アプリ全体の画面遷移と参加フロー状態を管理するフック
+ * 参加要求の成功失敗と接続状態を統合してシーンへ渡す
+ */
 import { useCallback, useReducer, useRef, useState } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { appConsts, config } from "@repo/shared";
 import type { appTypes, roomTypes } from "@repo/shared";
 import { useSocketSubscriptions } from "./useSocketSubscriptions";
 
+/** アプリフロー管理フックの公開状態と操作を表す型 */
 type AppFlowState = {
   scenePhase: appTypes.ScenePhase;
   room: roomTypes.Room | null;
@@ -52,6 +58,7 @@ const joinReducer = (state: JoinState, action: JoinAction): JoinState => {
   return state;
 };
 
+/** アプリ全体のシーン状態と参加要求フローを管理するフック */
 export const useAppFlow = (): AppFlowState => {
   const [scenePhase, setScenePhase] = useState<appTypes.ScenePhase>(appConsts.ScenePhase.TITLE);
   const [room, setRoom] = useState<roomTypes.Room | null>(null);

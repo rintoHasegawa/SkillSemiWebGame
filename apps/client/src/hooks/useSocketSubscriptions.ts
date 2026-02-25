@@ -1,3 +1,8 @@
+/**
+ * useSocketSubscriptions
+ * アプリ共通で必要なソケット購読を登録するフック
+ * 接続，ルーム更新，ゲーム開始の購読と解除を一元化する
+ */
 import { useEffect } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { appConsts } from "@repo/shared";
@@ -10,6 +15,7 @@ type UseSocketSubscriptionsParams = {
   setScenePhase: (phase: appTypes.ScenePhase) => void;
 };
 
+/** アプリ共通のソケット購読を登録しクリーンアップするフック */
 export const useSocketSubscriptions = ({
   completeJoinRequest,
   setMyId,

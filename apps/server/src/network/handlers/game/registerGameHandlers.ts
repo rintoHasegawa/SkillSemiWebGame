@@ -21,6 +21,7 @@ import { isMovePayload, isPingPayload } from "@server/network/validation/socketP
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
 
+/** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
 const gamePayloadValidators = {
   [protocol.SocketEvents.PING]: isPingPayload,
   [protocol.SocketEvents.MOVE]: isMovePayload,

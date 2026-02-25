@@ -1,13 +1,20 @@
+/**
+ * CommonHandler
+ * 接続イベントの購読と解除を扱う共通ハンドラを提供する
+ * connect イベントをアプリ用の id 通知に変換する
+ */
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
 import type { ConnectionLifecyclePayloadOf } from "@repo/shared";
 import { createClientSocketEventBridge } from "./socketEventBridge";
 
+/** 接続イベントを購読解除する共通ハンドラ契約 */
 type CommonHandler = {
   onConnect: (callback: (id: string) => void) => void;
   offConnect: (callback: (id: string) => void) => void;
 };
 
+/** 接続イベント向けの共通ハンドラを生成する */
 export const createCommonHandler = (socket: Socket): CommonHandler => {
   const connectListenerMap = new Map<
     (id: string) => void,
@@ -39,4 +46,5 @@ export const createCommonHandler = (socket: Socket): CommonHandler => {
   };
 };
 
+/** 接続イベント向けの共通ハンドラ型を再公開 */
 export type { CommonHandler };

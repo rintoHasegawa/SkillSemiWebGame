@@ -12,6 +12,7 @@ import { createServerSocketOnBridge } from "@server/network/handlers/socketEvent
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
 
+/** ルーム受信イベントごとの入力検証関数を保持するテーブル */
 const roomPayloadValidators = {
   [protocol.SocketEvents.JOIN_ROOM]: isJoinRoomPayload,
 } as const;

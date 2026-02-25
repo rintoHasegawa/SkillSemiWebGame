@@ -36,6 +36,12 @@ export const SocketEvents = {
   GAME_END: "game-end",   // 3分経過時のゲーム終了通知
 } as const;
 
+/**
+ * ------------------------------------------------------------
+ * ペイロード型定義
+ * ------------------------------------------------------------
+ */
+
 /** UPDATE_PLAYERS イベントで送受信するプレイヤー差分配列 */
 export type UpdatePlayersPayload = TickData["playerUpdates"];
 
@@ -66,7 +72,13 @@ export type PongPayload = {
   serverTime: number;
 };
 
-/** ソケットイベントごとのペイロード対応表 */
+/**
+ * ------------------------------------------------------------
+ * イベント方向ごとのペイロード対応表
+ * ------------------------------------------------------------
+ */
+
+/** 接続ライフサイクルイベントのペイロード対応表 */
 export type ConnectionLifecycleEventPayloadMap = {
   [SocketEvents.CONNECT]: undefined;
   [SocketEvents.DISCONNECT]: undefined;
@@ -95,11 +107,15 @@ export type ServerToClientEventPayloadMap = {
   [SocketEvents.GAME_END]: undefined;
 };
 
-/** 後方互換のための統合イベントマップ */
-export type SocketPayloadMap =
-  & ConnectionLifecycleEventPayloadMap
-  & ClientToServerEventPayloadMap
-  & ServerToClientEventPayloadMap;
+/**
+ * ------------------------------------------------------------
+ * イベント名からペイロード型を引くユーティリティ
+ * ------------------------------------------------------------
+ */
+
+/** 接続ライフサイクルイベントのペイロード型を取得するユーティリティ */
+export type ConnectionLifecyclePayloadOf<TEvent extends keyof ConnectionLifecycleEventPayloadMap> =
+  ConnectionLifecycleEventPayloadMap[TEvent];
 
 /** クライアント送信イベントのペイロード型を取得するユーティリティ */
 export type ClientToServerPayloadOf<TEvent extends keyof ClientToServerEventPayloadMap> =
@@ -108,10 +124,3 @@ export type ClientToServerPayloadOf<TEvent extends keyof ClientToServerEventPayl
 /** サーバー送信イベントのペイロード型を取得するユーティリティ */
 export type ServerToClientPayloadOf<TEvent extends keyof ServerToClientEventPayloadMap> =
   ServerToClientEventPayloadMap[TEvent];
-
-/** 接続ライフサイクルイベントのペイロード型を取得するユーティリティ */
-export type ConnectionLifecyclePayloadOf<TEvent extends keyof ConnectionLifecycleEventPayloadMap> =
-  ConnectionLifecycleEventPayloadMap[TEvent];
-
-/** 指定イベント名に対応するペイロード型を取得するユーティリティ */
-export type PayloadOf<TEvent extends keyof SocketPayloadMap> = SocketPayloadMap[TEvent];

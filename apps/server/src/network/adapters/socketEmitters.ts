@@ -25,6 +25,7 @@ type EmitToAll = {
   <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
+/** ペイロード有無に応じて emit 呼び出しシグネチャを切り替える共通関数 */
 const emitWithOptionalPayload = (
   emit: (event: SocketEventName, payload?: unknown) => void,
   event: SocketEventName,
