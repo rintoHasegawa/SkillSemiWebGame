@@ -32,6 +32,8 @@ export type {
 	CurrentPlayersPayload,
 	BombPlacedPayload,
 	GameStartPayload,
+	GameResultPayload,
+	GameResultRanking,
 	MovePayload,
 	NewPlayerPayload,
 	PingPayload,

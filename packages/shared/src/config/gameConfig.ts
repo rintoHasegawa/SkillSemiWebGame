@@ -7,7 +7,7 @@
 export const GAME_CONFIG = {
   // ゲーム設定
   MAX_PLAYERS_PER_ROOM: 100,  // ルーム収容人数設定
-  GAME_DURATION_SEC: 180, // 1ゲームの制限時間（3分 = 180秒）
+  GAME_DURATION_SEC: 30, // 1ゲームの制限時間（3分 = 180秒）
 
   // UI表示更新設定
   TIMER_DISPLAY_UPDATE_MS: 250, // 残り時間表示の更新間隔（ms）
@@ -62,12 +62,21 @@ export const GAME_CONFIG = {
   MAP_BORDER_COLOR: 0xff4444, // プレイ領域外枠の色
 } as const;
 
+/** teamId インデックス順のチーム名配列 */
+export const TEAM_NAMES = ["赤チーム", "青チーム", "緑チーム", "黄チーム"] as const;
+
 /** TEAM_COUNT と TEAM_COLORS の整合性を検証する */
 export const validateTeamConfig = (): void => {
   const { TEAM_COUNT, TEAM_COLORS } = GAME_CONFIG;
   if (TEAM_COLORS.length !== TEAM_COUNT) {
     throw new Error(
       `GAME_CONFIG mismatch: TEAM_COLORS length (${TEAM_COLORS.length}) must equal TEAM_COUNT (${TEAM_COUNT})`,
+    );
+  }
+
+  if (TEAM_NAMES.length !== TEAM_COUNT) {
+    throw new Error(
+      `GAME_CONFIG mismatch: TEAM_NAMES length (${TEAM_NAMES.length}) must equal TEAM_COUNT (${TEAM_COUNT})`,
     );
   }
 };

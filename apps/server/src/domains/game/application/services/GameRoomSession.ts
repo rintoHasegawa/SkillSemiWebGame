@@ -8,7 +8,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import type { gameTypes } from "@repo/shared";
+import type { gameTypes, GameResultPayload } from "@repo/shared";
 import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
@@ -17,6 +17,7 @@ import {
   isValidPosition,
   setPlayerPosition,
 } from "../../entities/player/playerMovement.js";
+import { buildGameResultPayload } from "./gameResultCalculator.js";
 
 // 💡 追加: チーム割り当てサービスをインポート
 import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
@@ -51,7 +52,7 @@ export class GameRoomSession {
   public start(
     tickRate: number,
     onTick: (data: gameTypes.TickData) => void,
-    onGameEnd: () => void,
+    onGameEnd: (payload: GameResultPayload) => void,
   ): void {
     if (this.gameLoop) {
       return;
@@ -65,8 +66,9 @@ export class GameRoomSession {
       this.mapStore,
       onTick,
       () => {
+        const resultPayload = buildGameResultPayload(this.mapStore.getGridColorsSnapshot());
         this.dispose();
-        onGameEnd();
+        onGameEnd(resultPayload);
       },
     );
 

@@ -21,6 +21,7 @@ type StartGameCoordinatorParams = {
     | "publishUpdatePlayersToRoom"
     | "publishMapCellUpdatesToRoom"
     | "publishGameEndToRoom"
+    | "publishGameResultToRoom"
     | "publishGameStartToRoom"
   >;
 };

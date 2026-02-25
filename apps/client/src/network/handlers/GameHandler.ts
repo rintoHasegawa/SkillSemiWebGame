@@ -7,6 +7,7 @@ import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
 import type {
   CurrentPlayersPayload,
+  GameResultPayload,
   GameStartPayload,
   MovePayload,
   NewPlayerPayload,
@@ -31,6 +32,10 @@ export type GameHandler = {
   onGameStart: (callback: (data: GameStartPayload) => void) => void;
   onceGameStart: (callback: (data: GameStartPayload) => void) => void;
   offGameStart: (callback: (data: GameStartPayload) => void) => void;
+  onGameEnd: (callback: () => void) => void;
+  offGameEnd: (callback: () => void) => void;
+  onGameResult: (callback: (payload: GameResultPayload) => void) => void;
+  offGameResult: (callback: (payload: GameResultPayload) => void) => void;
   sendMove: (x: number, y: number) => void;
   readyForGame: () => void;
 };
@@ -78,6 +83,18 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     },
     offGameStart: (callback) => {
       offEvent(protocol.SocketEvents.GAME_START, callback);
+    },
+    onGameEnd: (callback) => {
+      onEvent(protocol.SocketEvents.GAME_END, callback);
+    },
+    offGameEnd: (callback) => {
+      offEvent(protocol.SocketEvents.GAME_END, callback);
+    },
+    onGameResult: (callback) => {
+      onEvent(protocol.SocketEvents.GAME_RESULT, callback);
+    },
+    offGameResult: (callback) => {
+      offEvent(protocol.SocketEvents.GAME_RESULT, callback);
     },
     sendMove: (x, y) => {
       const payload: MovePayload = { x, y };

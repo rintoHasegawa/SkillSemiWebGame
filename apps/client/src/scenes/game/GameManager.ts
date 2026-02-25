@@ -37,6 +37,7 @@ export class GameManager {
   }
 
   public placeBomb(): string | null {
+    if (this.isInputLocked) return null;
     if (!this.bombManager) return null;
     return this.bombManager.placeBomb();
   }
@@ -53,6 +54,12 @@ export class GameManager {
   private joystickInput = { x: 0, y: 0 };
   private isInitialized = false;
   private isDestroyed = false;
+  private isInputLocked = false;
+
+  public lockInput() {
+    this.isInputLocked = true;
+    this.joystickInput = { x: 0, y: 0 };
+  }
 
   constructor(container: HTMLDivElement, myId: string) {
     this.container = container; // 明示的に代入
@@ -88,6 +95,7 @@ export class GameManager {
       myId: this.myId,
       gameMap: this.gameMap,
       onGameStart: this.setGameStart.bind(this),
+      onGameEnd: this.lockInput.bind(this),
     });
     this.networkSync.bind();
 
@@ -118,6 +126,7 @@ export class GameManager {
    * React側からジョイスティックの入力を受け取る
    */
   public setJoystickInput(x: number, y: number) {
+    if (this.isInputLocked) return;
     this.joystickInput = { x, y };
   }
 
@@ -140,6 +149,7 @@ export class GameManager {
     this.bombManager?.destroy();
     this.bombManager = null;
     this.players = {};
+    this.isInputLocked = false;
     
     // イベント購読の解除
     this.networkSync?.unbind();

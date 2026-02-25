@@ -23,6 +23,7 @@ type GameNetworkSyncOptions = {
   myId: string;
   gameMap: GameMapController;
   onGameStart: (startTime: number) => void;
+  onGameEnd: () => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -32,6 +33,7 @@ export class GameNetworkSync {
   private myId: string;
   private gameMap: GameMapController;
   private onGameStart: (startTime: number) => void;
+  private onGameEnd: () => void;
   private isBound = false;
 
   private handleCurrentPlayers = (serverPlayers: CurrentPlayersPayload) => {
@@ -80,12 +82,17 @@ export class GameNetworkSync {
     this.gameMap.updateCells(updates);
   };
 
-  constructor({ worldContainer, players, myId, gameMap, onGameStart }: GameNetworkSyncOptions) {
+  private handleGameEnd = () => {
+    this.onGameEnd();
+  };
+
+  constructor({ worldContainer, players, myId, gameMap, onGameStart, onGameEnd }: GameNetworkSyncOptions) {
     this.worldContainer = worldContainer;
     this.players = players;
     this.myId = myId;
     this.gameMap = gameMap;
     this.onGameStart = onGameStart;
+    this.onGameEnd = onGameEnd;
   }
 
   public bind() {
@@ -97,6 +104,7 @@ export class GameNetworkSync {
     socketManager.game.onUpdatePlayers(this.handlePlayerUpdates);
     socketManager.game.onRemovePlayer(this.handleRemovePlayer);
     socketManager.game.onUpdateMapCells(this.handleUpdateMapCells);
+    socketManager.game.onGameEnd(this.handleGameEnd);
 
     this.isBound = true;
   }
@@ -110,6 +118,7 @@ export class GameNetworkSync {
     socketManager.game.offUpdatePlayers(this.handlePlayerUpdates);
     socketManager.game.offRemovePlayer(this.handleRemovePlayer);
     socketManager.game.offUpdateMapCells(this.handleUpdateMapCells);
+    socketManager.game.offGameEnd(this.handleGameEnd);
 
     this.isBound = false;
   }

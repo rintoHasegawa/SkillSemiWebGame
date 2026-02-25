@@ -6,7 +6,7 @@
 import { useCallback, useReducer, useRef, useState } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { appConsts, config } from "@repo/shared";
-import type { appTypes, roomTypes } from "@repo/shared";
+import type { appTypes, roomTypes, GameResultPayload } from "@repo/shared";
 import { useSocketSubscriptions } from "./useSocketSubscriptions";
 
 /** アプリフロー管理フックの公開状態と操作を表す型 */
@@ -14,6 +14,7 @@ type AppFlowState = {
   scenePhase: appTypes.ScenePhase;
   room: roomTypes.Room | null;
   myId: string | null;
+  gameResult: GameResultPayload | null;
   joinErrorMessage: string | null;
   isJoining: boolean;
   requestJoin: (payload: roomTypes.JoinRoomPayload) => void;
@@ -63,6 +64,7 @@ export const useAppFlow = (): AppFlowState => {
   const [scenePhase, setScenePhase] = useState<appTypes.ScenePhase>(appConsts.ScenePhase.TITLE);
   const [room, setRoom] = useState<roomTypes.Room | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
+  const [gameResult, setGameResult] = useState<GameResultPayload | null>(null);
   const [joinState, dispatchJoin] = useReducer(joinReducer, initialJoinState);
   const joinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinRejectedHandlerRef = useRef<((payload: roomTypes.JoinRoomRejectedPayload) => void) | null>(null);
@@ -138,6 +140,7 @@ export const useAppFlow = (): AppFlowState => {
 
   useSocketSubscriptions({
     completeJoinRequest,
+    setGameResult,
     setMyId,
     setRoom,
     setScenePhase,
@@ -147,6 +150,7 @@ export const useAppFlow = (): AppFlowState => {
     scenePhase,
     room,
     myId,
+    gameResult,
     joinErrorMessage: getJoinErrorMessage(joinState.joinFailure),
     isJoining: joinState.isJoining,
     requestJoin,
