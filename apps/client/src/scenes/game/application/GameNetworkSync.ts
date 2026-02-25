@@ -4,7 +4,7 @@
  * プレイヤー生成更新削除とマップ更新購読を管理する
  */
 import { Container } from "pixi.js";
-import type { playerTypes } from "@repo/shared";
+import type { playerTypes, CurrentPlayersPayload, UpdateMapCellsPayload } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
@@ -27,9 +27,8 @@ export class GameNetworkSync {
   private onGameStart: (startTime: number) => void;
   private isBound = false;
 
-  private handleCurrentPlayers = (serverPlayers: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => {
-    const playersArray = (Array.isArray(serverPlayers) ? serverPlayers : Object.values(serverPlayers)) as playerTypes.PlayerData[];
-    playersArray.forEach((p) => {
+  private handleCurrentPlayers = (serverPlayers: CurrentPlayersPayload) => {
+    serverPlayers.forEach((p) => {
       const playerController = p.id === this.myId ? new LocalPlayerController(p) : new RemotePlayerController(p);
       this.worldContainer.addChild(playerController.getDisplayObject());
       this.players[p.id] = playerController;
@@ -70,7 +69,7 @@ export class GameNetworkSync {
     }
   };
 
-  private handleUpdateMapCells = (updates: Parameters<GameMapController["updateCells"]>[0]) => {
+  private handleUpdateMapCells = (updates: UpdateMapCellsPayload) => {
     this.gameMap.updateCells(updates);
   };
 

@@ -36,3 +36,9 @@ export const SocketEvents = {
 
 /** UPDATE_PLAYERS イベントで送受信するプレイヤー差分配列 */
 export type UpdatePlayersPayload = TickData["playerUpdates"];
+
+/** CURRENT_PLAYERS イベントで送受信するプレイヤー一覧 */
+export type CurrentPlayersPayload = TickData["playerUpdates"];
+
+/** UPDATE_MAP_CELLS イベントで送受信するマップ差分配列 */
+export type UpdateMapCellsPayload = TickData["cellUpdates"];

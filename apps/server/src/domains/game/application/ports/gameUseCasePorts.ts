@@ -2,7 +2,14 @@
  * gameUseCasePorts
  * ゲーム系ユースケースが利用する入力ポートと出力ポートの契約を定義する
  */
-import type { gameTypes, gridMapTypes, playerTypes, roomTypes, UpdatePlayersPayload } from "@repo/shared";
+import type {
+  gameTypes,
+  playerTypes,
+  roomTypes,
+  CurrentPlayersPayload,
+  UpdateMapCellsPayload,
+  UpdatePlayersPayload,
+} from "@repo/shared";
 
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */
 export interface StartGamePort {
@@ -52,11 +59,11 @@ export interface GameOutputPort {
   ): void;
   publishMapCellUpdatesToRoom(
     roomId: roomTypes.Room["roomId"],
-    cellUpdates: gridMapTypes.CellUpdate[]
+    cellUpdates: UpdateMapCellsPayload
   ): void;
   publishGameEndToRoom(roomId: roomTypes.Room["roomId"]): void;
   publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: { startTime: number }): void;
-  publishCurrentPlayersToSocket(players: playerTypes.PlayerData[]): void;
+  publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
   publishGameStartToSocket(payload: { startTime: number }): void;
   publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: string): void;
 }

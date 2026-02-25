@@ -5,20 +5,25 @@
  */
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
-import type { playerTypes, gridMapTypes, UpdatePlayersPayload } from "@repo/shared";
+import type {
+  playerTypes,
+  CurrentPlayersPayload,
+  UpdateMapCellsPayload,
+  UpdatePlayersPayload,
+} from "@repo/shared";
 
 /** ゲームシーンが利用するソケット操作の契約 */
 export type GameHandler = {
-  onCurrentPlayers: (callback: (players: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => void) => void;
-  offCurrentPlayers: (callback: (players: playerTypes.PlayerData[] | Record<string, playerTypes.PlayerData>) => void) => void;
+  onCurrentPlayers: (callback: (players: CurrentPlayersPayload) => void) => void;
+  offCurrentPlayers: (callback: (players: CurrentPlayersPayload) => void) => void;
   onNewPlayer: (callback: (player: playerTypes.PlayerData) => void) => void;
   offNewPlayer: (callback: (player: playerTypes.PlayerData) => void) => void;
   onUpdatePlayers: (callback: (players: UpdatePlayersPayload) => void) => void;
   offUpdatePlayers: (callback: (players: UpdatePlayersPayload) => void) => void;
   onRemovePlayer: (callback: (id: string) => void) => void;
   offRemovePlayer: (callback: (id: string) => void) => void;
-  onUpdateMapCells: (callback: (updates: gridMapTypes.CellUpdate[]) => void) => void;
-  offUpdateMapCells: (callback: (updates: gridMapTypes.CellUpdate[]) => void) => void;
+  onUpdateMapCells: (callback: (updates: UpdateMapCellsPayload) => void) => void;
+  offUpdateMapCells: (callback: (updates: UpdateMapCellsPayload) => void) => void;
   onGameStart: (callback: (data: { startTime: number }) => void) => void;
   offGameStart: (callback: (data: { startTime: number }) => void) => void;
   sendMove: (x: number, y: number) => void;
