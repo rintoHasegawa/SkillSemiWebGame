@@ -12,7 +12,7 @@ import { logEvent } from "@server/logging/logEvent";
 // コールバックで渡すデータの型定義
 /** 1ティック分のプレイヤー情報とマップ差分を表すデータ */
 export interface TickData {
-  players: {
+  playerUpdates: {
     id: string;
     x: number;
     y: number;
@@ -29,7 +29,7 @@ export class GameLoop {
   private endMonotonicTimeMs: number = 0;
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
-  private lastSentPlayers: Map<string, TickData["players"][number]> = new Map();
+  private lastSentPlayers: Map<string, TickData["playerUpdates"][number]> = new Map();
 
   constructor(
     private roomId: string,
@@ -103,7 +103,7 @@ export class GameLoop {
   }
 
   private processSingleTick(): void {
-    const changedPlayers: TickData["players"] = [];
+    const changedPlayers: TickData["playerUpdates"] = [];
 
     // 1. 各プレイヤーの座標処理とマス塗りの判定
     this.players.forEach((player) => {
@@ -146,7 +146,7 @@ export class GameLoop {
 
     // 3. 通信層（GameHandler）へデータを渡す
     this.onTick({
-      players: changedPlayers,
+      playerUpdates: changedPlayers,
       cellUpdates: cellUpdates,
     });
   }

@@ -42,20 +42,15 @@ export class GamePlayerOperationService {
       return;
     }
 
+    const roomPlayerSet = this.roomToPlayers.get(roomId);
     const session = this.sessions.get(roomId);
     if (!session) {
-      this.playerToRoom.delete(id);
-      this.roomToPlayers.get(roomId)?.delete(id);
-
-      if (this.roomToPlayers.get(roomId)?.size === 0) {
-        this.roomToPlayers.delete(roomId);
-      }
+      this.removePlayerFromIndexes(roomId, id, roomPlayerSet);
       return;
     }
 
     const removed = session.removePlayer(id);
-    this.playerToRoom.delete(id);
-    this.roomToPlayers.get(roomId)?.delete(id);
+    this.removePlayerFromIndexes(roomId, id, roomPlayerSet);
 
     if (removed && session.isEmpty()) {
       session.dispose();
@@ -67,6 +62,23 @@ export class GamePlayerOperationService {
         roomId,
         socketId: id,
       });
+    }
+  }
+
+  private removePlayerFromIndexes(
+    roomId: string,
+    playerId: string,
+    roomPlayerSet: Set<string> | undefined
+  ): void {
+    this.playerToRoom.delete(playerId);
+
+    if (!roomPlayerSet) {
+      return;
+    }
+
+    roomPlayerSet.delete(playerId);
+    if (roomPlayerSet.size === 0) {
+      this.roomToPlayers.delete(roomId);
     }
   }
 }

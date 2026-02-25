@@ -49,7 +49,7 @@ export class GameNetworkSync {
     }
   };
 
-  private handleUpdatePlayers = (changedPlayers: playerTypes.PlayerData[]) => {
+  private handlePlayerUpdates = (changedPlayers: playerTypes.PlayerData[]) => {
     // UPDATE_PLAYERS は差分のみ届くため，対象IDだけ上書き更新する
     changedPlayers.forEach((playerData) => {
       if (playerData.id === this.myId) return;
@@ -88,7 +88,7 @@ export class GameNetworkSync {
     socketManager.game.onCurrentPlayers(this.handleCurrentPlayers);
     socketManager.game.onNewPlayer(this.handleNewPlayer);
     socketManager.game.onGameStart(this.handleGameStart);
-    socketManager.game.onUpdatePlayers(this.handleUpdatePlayers);
+    socketManager.game.onUpdatePlayers(this.handlePlayerUpdates);
     socketManager.game.onRemovePlayer(this.handleRemovePlayer);
     socketManager.game.onUpdateMapCells(this.handleUpdateMapCells);
 
@@ -101,7 +101,7 @@ export class GameNetworkSync {
     socketManager.game.offCurrentPlayers(this.handleCurrentPlayers);
     socketManager.game.offNewPlayer(this.handleNewPlayer);
     socketManager.game.offGameStart(this.handleGameStart);
-    socketManager.game.offUpdatePlayers(this.handleUpdatePlayers);
+    socketManager.game.offUpdatePlayers(this.handlePlayerUpdates);
     socketManager.game.offRemovePlayer(this.handleRemovePlayer);
     socketManager.game.offUpdateMapCells(this.handleUpdateMapCells);
 
