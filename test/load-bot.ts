@@ -1,6 +1,7 @@
 import { io } from "socket.io-client";
 import {
   BOTS,
+  BOT_CAN_MOVE,
   DURATION_MS,
   JOIN_DELAY_MS,
   MAX_X,
@@ -62,6 +63,7 @@ console.log("Load test starting...", {
   roomId: ROOM_ID,
   durationMs: DURATION_MS,
   joinDelayMs: JOIN_DELAY_MS,
+  botCanMove: BOT_CAN_MOVE,
   startGame: START_GAME,
   startDelayMs: START_DELAY_MS,
   moveTickMs: MOVE_TICK_MS,
@@ -121,6 +123,10 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   };
 
   const tickMove = () => {
+    if (!BOT_CAN_MOVE) {
+      return;
+    }
+
     const dtSec = MOVE_TICK_MS / 1000;
     posX += dirX * BOT_SPEED * dtSec;
     posY += dirY * BOT_SPEED * dtSec;
@@ -174,7 +180,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     }
 
     // サーバー状態と同期後に定期的な移動イベントを送信。
-    if (gameStarted && !moveTimer && MOVE_TICK_MS > 0) {
+    if (gameStarted && BOT_CAN_MOVE && !moveTimer && MOVE_TICK_MS > 0) {
       updateDirection();
       moveTimer = setInterval(tickMove, MOVE_TICK_MS);
     }

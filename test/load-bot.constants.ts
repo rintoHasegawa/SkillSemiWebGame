@@ -13,6 +13,7 @@ export const BOT_RADIUS = GAME_CONFIG.PLAYER_RADIUS;
 export const START_DELAY_MS = 800;
 export const MAX_X = GAME_CONFIG.GRID_COLS;
 export const MAX_Y = GAME_CONFIG.GRID_ROWS;
+export const BOT_CAN_MOVE = true;
 export const ROOM_ID = "03";
 export const START_GAME = true;
 export const SOCKET_PATH = NETWORK_CONFIG.SOCKET_IO_PATH;

@@ -60,6 +60,7 @@
     ・MOVE_TICK_MS: 移動送信間隔 (ms)
     ・BOT_SPEED: 移動速度
     ・BOT_RADIUS: プレイヤー半径
+    ・BOT_CAN_MOVE: ボット移動の有効化 (true/false)
     ・START_DELAY_MS: 開始遅延 (ms)
     ・MAX_X: X座標上限
     ・MAX_Y: Y座標上限
