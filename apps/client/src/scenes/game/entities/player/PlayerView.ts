@@ -20,6 +20,8 @@ export class PlayerView {
       "/yellow.svg", // teamId: 3 のときの画像
     ];
 
+    config.validateTeamConfig();
+
     if (characterImages.length !== TEAM_COUNT) {
       throw new Error(
         `GAME_CONFIG mismatch: characterImages length (${characterImages.length}) must equal TEAM_COUNT (${TEAM_COUNT})`,
