@@ -189,6 +189,9 @@ export class GameManager {
       },
       onPlayerDeadFromNetwork: (payload) => {
         this.playerDeathPolicy.applyPlayerDeadEvent(payload);
+        if (payload.playerId !== this.myId) {
+          this.playBombHitBlink(payload.playerId);
+        }
       },
     });
     this.networkSync.bind();
@@ -243,8 +246,18 @@ export class GameManager {
     }
 
     this.playerDeathPolicy.applyLocalHitStun();
+    this.playBombHitBlink(this.myId);
 
     socketManager.game.sendBombHitReport({ bombId });
+  }
+
+  private playBombHitBlink(playerId: string): void {
+    const target = this.players[playerId];
+    if (!target) {
+      return;
+    }
+
+    target.playBombHitBlink(config.GAME_CONFIG.PLAYER_HIT_STUN_MS);
   }
 
   private shouldSendBombHitReport(

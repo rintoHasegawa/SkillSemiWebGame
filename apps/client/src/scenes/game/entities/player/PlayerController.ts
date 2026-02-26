@@ -5,6 +5,7 @@
  */
 import type { playerTypes } from "@repo/shared";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
+import { BombHitBlinkRenderer } from "@client/scenes/game/entities/bomb/BombHitBlinkRenderer";
 import { PlayerModel } from "./PlayerModel";
 import { PlayerView } from "./PlayerView";
 
@@ -24,6 +25,7 @@ export type RemoteUpdate = Partial<playerTypes.MovePayload>;
 abstract class BasePlayerController {
   protected readonly model: PlayerModel;
   protected readonly view: PlayerView;
+  private readonly bombHitBlinkRenderer: BombHitBlinkRenderer;
 
   /** 共通初期化としてModelとViewを生成する */
   protected constructor(
@@ -37,6 +39,9 @@ abstract class BasePlayerController {
       data.name,
       isLocal,
     );
+    this.bombHitBlinkRenderer = new BombHitBlinkRenderer({
+      target: this.view.displayObject,
+    });
 
     const pos = this.model.getPosition();
     this.view.syncPosition(pos.x, pos.y);
@@ -57,8 +62,14 @@ abstract class BasePlayerController {
     return this.model.getSnapshot();
   }
 
+  /** 爆弾被弾時の点滅演出を再生する */
+  public playBombHitBlink(durationMs: number): void {
+    this.bombHitBlinkRenderer.play(durationMs);
+  }
+
   /** 管理中の描画リソースを破棄する */
   public destroy(): void {
+    this.bombHitBlinkRenderer.destroy();
     this.view.destroy();
   }
 }
