@@ -27,6 +27,7 @@ export const SocketEvents = {
   PLACE_BOMB: "place-bomb",
   UPDATE_MAP_CELLS: "update_map_cells",
   BOMB_PLACED: "bomb-placed",
+  BOMB_PLACED_ACK: "bomb-placed-ack",
 
   // 時間同期・ゲーム進行関連
   PING: "ping",

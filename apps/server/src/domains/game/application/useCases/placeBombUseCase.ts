@@ -8,6 +8,7 @@ import type {
   PlaceBombInput,
 } from "../ports/gameUseCasePorts";
 import {
+  createBombPlacedAckPayload,
   createBombDedupeKey,
   createBombPlacedPayload,
 } from "@server/domains/game/entities/bomb/bombPlacement";
@@ -38,12 +39,22 @@ export const placeBombUseCase = ({
     return;
   }
 
-  output.publishBombPlacedToRoom(
+  const bombId = bombStore.issueServerBombId(roomId);
+
+  output.publishBombPlacedToOthersInRoom(
     roomId,
+    input.socketId,
     createBombPlacedPayload({
       payload: input.payload,
-      bombId: bombStore.issueServerBombId(roomId),
-      ownerId: input.socketId,
+      bombId,
+    })
+  );
+
+  output.publishBombPlacedAckToSocket(
+    input.socketId,
+    createBombPlacedAckPayload({
+      requestId: input.payload.requestId,
+      bombId,
     })
   );
 };

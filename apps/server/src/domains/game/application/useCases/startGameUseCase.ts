@@ -6,6 +6,13 @@ import type { GameOutputPort, StartGamePort } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logger";
 import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 
+const excludeRecipientFromPlayerUpdates = <TPlayerUpdate extends { id: string }>(
+  playerUpdates: TPlayerUpdate[],
+  recipientId: string
+): TPlayerUpdate[] => {
+  return playerUpdates.filter((playerUpdate) => playerUpdate.id !== recipientId);
+};
+
 type StartGameUseCaseParams = {
   roomId: string;
   playerIds: string[];
@@ -36,8 +43,9 @@ export const startGameUseCase = ({
     (tickData) => {
       if (tickData.playerUpdates.length > 0) {
         playerIds.forEach((playerId) => {
-          const updatesForPlayer = tickData.playerUpdates.filter(
-            (playerUpdate) => playerUpdate.id !== playerId
+          const updatesForPlayer = excludeRecipientFromPlayerUpdates(
+            tickData.playerUpdates,
+            playerId
           );
 
           if (updatesForPlayer.length === 0) {

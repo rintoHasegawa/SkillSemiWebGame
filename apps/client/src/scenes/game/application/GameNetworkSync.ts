@@ -5,6 +5,7 @@
  */
 import { Container } from "pixi.js";
 import type {
+  BombPlacedAckPayload,
   BombPlacedPayload,
   CurrentPlayersPayload,
   GameStartPayload,
@@ -27,7 +28,8 @@ type GameNetworkSyncOptions = {
   gameMap: GameMapController;
   onGameStart: (startTime: number) => void;
   onGameEnd: () => void;
-  onBombPlacedFromNetwork: (payload: BombPlacedPayload) => void;
+  onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
+  onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -38,7 +40,8 @@ export class GameNetworkSync {
   private gameMap: GameMapController;
   private onGameStart: (startTime: number) => void;
   private onGameEnd: () => void;
-  private onBombPlacedFromNetwork: (payload: BombPlacedPayload) => void;
+  private onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
+  private onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
   private isBound = false;
 
   private debugLog = (message: string) => {
@@ -98,7 +101,11 @@ export class GameNetworkSync {
   };
 
   private handleBombPlaced = (payload: BombPlacedPayload) => {
-    this.onBombPlacedFromNetwork(payload);
+    this.onBombPlacedFromOthers(payload);
+  };
+
+  private handleBombPlacedAck = (payload: BombPlacedAckPayload) => {
+    this.onBombPlacedAckFromNetwork(payload);
   };
 
   constructor({
@@ -108,7 +115,8 @@ export class GameNetworkSync {
     gameMap,
     onGameStart,
     onGameEnd,
-    onBombPlacedFromNetwork,
+    onBombPlacedFromOthers,
+    onBombPlacedAckFromNetwork,
   }: GameNetworkSyncOptions) {
     this.worldContainer = worldContainer;
     this.players = players;
@@ -116,7 +124,8 @@ export class GameNetworkSync {
     this.gameMap = gameMap;
     this.onGameStart = onGameStart;
     this.onGameEnd = onGameEnd;
-    this.onBombPlacedFromNetwork = onBombPlacedFromNetwork;
+    this.onBombPlacedFromOthers = onBombPlacedFromOthers;
+    this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
   }
 
   public bind() {
@@ -130,6 +139,7 @@ export class GameNetworkSync {
     socketManager.game.onUpdateMapCells(this.handleUpdateMapCells);
     socketManager.game.onGameEnd(this.handleGameEnd);
     socketManager.game.onBombPlaced(this.handleBombPlaced);
+    socketManager.game.onBombPlacedAck(this.handleBombPlacedAck);
 
     this.isBound = true;
   }
@@ -145,6 +155,7 @@ export class GameNetworkSync {
     socketManager.game.offUpdateMapCells(this.handleUpdateMapCells);
     socketManager.game.offGameEnd(this.handleGameEnd);
     socketManager.game.offBombPlaced(this.handleBombPlaced);
+    socketManager.game.offBombPlacedAck(this.handleBombPlacedAck);
 
     this.isBound = false;
   }

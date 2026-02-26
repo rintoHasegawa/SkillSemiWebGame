@@ -5,6 +5,7 @@
  */
 import { SocketEvents } from "../socketEvents";
 import type {
+  BombPlacedAckPayload,
   BombPlacedPayload,
   CurrentPlayersPayload,
   GameResultPayload,
@@ -37,6 +38,7 @@ export type GameServerToClientEventPayloadMap = {
   [SocketEvents.REMOVE_PLAYER]: RemovePlayerPayload;
   [SocketEvents.UPDATE_MAP_CELLS]: UpdateMapCellsPayload;
   [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
+  [SocketEvents.BOMB_PLACED_ACK]: BombPlacedAckPayload;
   [SocketEvents.PONG]: PongPayload;
   [SocketEvents.GAME_END]: undefined;
   [SocketEvents.GAME_RESULT]: GameResultPayload;
