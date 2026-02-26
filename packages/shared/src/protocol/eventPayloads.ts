@@ -24,6 +24,7 @@ export type {
   NewPlayerPayload,
   RemovePlayerPayload,
   GameStartPayload,
+  StartGameRequestPayload,
   MovePayload,
   PlaceBombPayload,
   BombPlacedPayload,

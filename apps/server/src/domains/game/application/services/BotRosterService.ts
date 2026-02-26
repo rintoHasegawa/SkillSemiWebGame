@@ -22,18 +22,50 @@ export const isBotPlayerId = (playerId: string): playerId is BotPlayerId => {
   return playerId.startsWith(BOT_PLAYER_ID_PREFIX);
 };
 
-const getRequiredBotCount = (humanPlayerCount: number): number => {
+const getMinimumTotalPlayers = (humanPlayerCount: number): number => {
   const teamCount = config.GAME_CONFIG.TEAM_COUNT;
   if (teamCount <= 0) {
-    return 0;
+    return humanPlayerCount;
   }
 
   const remainder = humanPlayerCount % teamCount;
   if (remainder === 0) {
-    return 0;
+    return humanPlayerCount;
   }
 
-  return teamCount - remainder;
+  return humanPlayerCount + (teamCount - remainder);
+};
+
+const resolveTargetTotalPlayers = (
+  humanPlayerCount: number,
+  requestedPlayerCount: number | undefined,
+): number => {
+  const minimumTotal = getMinimumTotalPlayers(humanPlayerCount);
+  const teamCount = config.GAME_CONFIG.TEAM_COUNT;
+  const maxTotal = config.GAME_CONFIG.MAX_PLAYERS_PER_ROOM;
+
+  if (
+    requestedPlayerCount === undefined ||
+    teamCount <= 0 ||
+    requestedPlayerCount > maxTotal ||
+    requestedPlayerCount < minimumTotal ||
+    requestedPlayerCount % teamCount !== 0
+  ) {
+    return minimumTotal;
+  }
+
+  return requestedPlayerCount;
+};
+
+const getRequiredBotCount = (
+  humanPlayerCount: number,
+  requestedPlayerCount: number | undefined,
+): number => {
+  const totalPlayers = resolveTargetTotalPlayers(
+    humanPlayerCount,
+    requestedPlayerCount,
+  );
+  return Math.max(0, totalPlayers - humanPlayerCount);
 };
 
 /**
@@ -42,8 +74,12 @@ const getRequiredBotCount = (humanPlayerCount: number): number => {
 export const createBalancedSessionPlayerIds = (
   roomId: string,
   humanPlayerIds: string[],
+  requestedPlayerCount?: number,
 ): string[] => {
-  const requiredBotCount = getRequiredBotCount(humanPlayerIds.length);
+  const requiredBotCount = getRequiredBotCount(
+    humanPlayerIds.length,
+    requestedPlayerCount,
+  );
   if (requiredBotCount === 0) {
     return [...humanPlayerIds];
   }

@@ -2,7 +2,12 @@
  * socketPayloadValidators
  * ソケット受信ペイロードの型ガードを提供する
  */
-import type { playerTypes, roomTypes, PlaceBombPayload, BombHitReportPayload } from "@repo/shared";
+import type {
+  playerTypes,
+  roomTypes,
+  PlaceBombPayload,
+  BombHitReportPayload,
+} from "@repo/shared";
 import type { PingPayload } from "@repo/shared";
 import { isPlaceBombPayload as isValidPlaceBombPayload } from "@server/domains/game/entities/bomb/bombPayloadValidation";
 
@@ -20,7 +25,9 @@ export const isPingPayload = (value: unknown): value is PingPayload => {
 };
 
 /** MOVEイベントのペイロードが移動座標であるか判定する */
-export const isMovePayload = (value: unknown): value is playerTypes.MovePayload => {
+export const isMovePayload = (
+  value: unknown,
+): value is playerTypes.MovePayload => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -30,12 +37,16 @@ export const isMovePayload = (value: unknown): value is playerTypes.MovePayload 
 };
 
 /** PLACE_BOMBイベントのペイロードが爆弾設置要求であるか判定する */
-export const isPlaceBombPayload = (value: unknown): value is PlaceBombPayload => {
+export const isPlaceBombPayload = (
+  value: unknown,
+): value is PlaceBombPayload => {
   return isValidPlaceBombPayload(value);
 };
 
 /** BOMB_HIT_REPORTイベントのペイロードが被弾報告であるか判定する */
-export const isBombHitReportPayload = (value: unknown): value is BombHitReportPayload => {
+export const isBombHitReportPayload = (
+  value: unknown,
+): value is BombHitReportPayload => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -44,12 +55,37 @@ export const isBombHitReportPayload = (value: unknown): value is BombHitReportPa
   return isNonEmptyString(candidate.bombId);
 };
 
-/** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */
-export const isJoinRoomPayload = (value: unknown): value is roomTypes.JoinRoomPayload => {
+/** START_GAMEイベントのペイロードが開始要求情報であるか判定する */
+export const isStartGamePayload = (
+  value: unknown,
+): value is { targetPlayerCount?: number } => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const candidate = value as Record<string, unknown>;
-  return isNonEmptyString(candidate.roomId) && isNonEmptyString(candidate.playerName);
+  const targetPlayerCount = candidate.targetPlayerCount;
+  if (targetPlayerCount === undefined) {
+    return true;
+  }
+
+  return (
+    typeof targetPlayerCount === "number" &&
+    Number.isInteger(targetPlayerCount) &&
+    targetPlayerCount > 0
+  );
+};
+
+/** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */
+export const isJoinRoomPayload = (
+  value: unknown,
+): value is roomTypes.JoinRoomPayload => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    isNonEmptyString(candidate.roomId) && isNonEmptyString(candidate.playerName)
+  );
 };

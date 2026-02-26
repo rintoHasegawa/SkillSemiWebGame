@@ -41,7 +41,9 @@ export default function App() {
       <LobbyScene
         room={room}
         myId={myId}
-        onStart={() => socketManager.lobby.startGame()}
+        onStart={(targetPlayerCount) =>
+          socketManager.lobby.startGame(targetPlayerCount)
+        }
         onBackToTitle={() => returnToTitle({ leaveRoom: true })}
       />
     );

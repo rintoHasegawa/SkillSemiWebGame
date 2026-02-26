@@ -24,6 +24,7 @@ import {
   isMovePayload,
   isPingPayload,
   isPlaceBombPayload,
+  isStartGamePayload,
 } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
@@ -41,8 +42,10 @@ const gamePayloadValidators = {
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  roomManager: FindRoomByOwnerPort & FindRoomByPlayerPort & RoomPhaseTransitionPort,
-  runtimeRegistry: FindGameByRoomPort & FindGameByPlayerPort
+  roomManager: FindRoomByOwnerPort &
+    FindRoomByPlayerPort &
+    RoomPhaseTransitionPort,
+  runtimeRegistry: FindGameByRoomPort & FindGameByPlayerPort,
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -50,19 +53,19 @@ export const registerGameHandlers = (
   const { guardOnEvent } = createPayloadGuard(socket.id);
   const guardPingPayload = guardOnEvent(
     protocol.SocketEvents.PING,
-    gamePayloadValidators[protocol.SocketEvents.PING]
+    gamePayloadValidators[protocol.SocketEvents.PING],
   );
   const guardMovePayload = guardOnEvent(
     protocol.SocketEvents.MOVE,
-    gamePayloadValidators[protocol.SocketEvents.MOVE]
+    gamePayloadValidators[protocol.SocketEvents.MOVE],
   );
   const guardPlaceBombPayload = guardOnEvent(
     protocol.SocketEvents.PLACE_BOMB,
-    gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB]
+    gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB],
   );
   const guardBombHitReportPayload = guardOnEvent(
     protocol.SocketEvents.BOMB_HIT_REPORT,
-    gamePayloadValidators[protocol.SocketEvents.BOMB_HIT_REPORT]
+    gamePayloadValidators[protocol.SocketEvents.BOMB_HIT_REPORT],
   );
   // 遅延計測用のPINGを検証しPONGを返す
   onEvent(protocol.SocketEvents.PING, (clientTime) => {
@@ -77,9 +80,14 @@ export const registerGameHandlers = (
   });
 
   // オーナー開始要求に応じてゲーム進行ユースケースを起動する
-  onEvent(protocol.SocketEvents.START_GAME, () => {
+  onEvent(protocol.SocketEvents.START_GAME, (data) => {
+    if (!isStartGamePayload(data)) {
+      return;
+    }
+
     startGameCoordinator({
       ownerId: socket.id,
+      requestedPlayerCount: data.targetPlayerCount,
       roomManager,
       runtimeRegistry,
       output: gameOutputAdapter,
@@ -102,7 +110,11 @@ export const registerGameHandlers = (
       return;
     }
 
-    const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socket.id);
+    const runtime = resolveRuntimeByPlayerId(
+      roomManager,
+      runtimeRegistry,
+      socket.id,
+    );
     if (!runtime) {
       return;
     }
@@ -120,7 +132,11 @@ export const registerGameHandlers = (
       return;
     }
 
-    const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socket.id);
+    const runtime = resolveRuntimeByPlayerId(
+      roomManager,
+      runtimeRegistry,
+      socket.id,
+    );
     if (!runtime) {
       return;
     }
@@ -143,7 +159,11 @@ export const registerGameHandlers = (
       return;
     }
 
-    const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socket.id);
+    const runtime = resolveRuntimeByPlayerId(
+      roomManager,
+      runtimeRegistry,
+      socket.id,
+    );
     if (!runtime) {
       return;
     }
