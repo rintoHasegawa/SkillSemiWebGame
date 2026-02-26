@@ -6,19 +6,12 @@ import {
   type GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
-  FindGameByRoomPort,
-  FindRoomByOwnerPort,
-  RoomPhaseTransitionPort,
+  StartGameDeps,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { logEvent } from "@server/logging/logger";
 import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 import { roomConsts } from "@repo/shared";
-
-type StartGameDeps = {
-  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
-  runtimeRegistry: FindGameByRoomPort;
-};
 
 type StartGameCoordinatorParams = {
   ownerId: string;

@@ -6,20 +6,12 @@ import {
   type GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
-  CleanupGameRuntimePort,
-  DisconnectRoomPort,
-  FindGameByPlayerPort,
-  FindRoomByIdPort,
-  FindRoomByPlayerPort,
+  DisconnectDeps,
   RoomOutputPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
+import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import { disconnectUseCase } from "@server/domains/game/application/useCases/disconnectUseCase";
 import { roomDisconnectUseCase } from "@server/domains/room/application/useCases/roomDisconnectUseCase";
-
-type DisconnectDeps = {
-  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
-  runtimeRegistry: FindGameByPlayerPort & CleanupGameRuntimePort;
-};
 
 /** 切断調停で利用する入力ポートと出力ポートの契約 */
 export type DisconnectCoordinatorParams = {
@@ -37,13 +29,12 @@ export const disconnectCoordinator = ({
   gameOutput,
   roomOutput,
 }: DisconnectCoordinatorParams) => {
-  const roomId = roomManager.getRoomByPlayerId(socketId)?.roomId;
-  const gameManager = runtimeRegistry.getGameManagerByPlayerId(socketId);
+  const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socketId);
 
-  if (gameManager) {
+  if (runtime) {
     disconnectUseCase({
-      gameManager,
-      roomId,
+      gameManager: runtime.gameManager,
+      roomId: runtime.roomId,
       playerId: socketId,
       output: gameOutput,
     });

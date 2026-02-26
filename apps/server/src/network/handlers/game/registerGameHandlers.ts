@@ -11,12 +11,12 @@ import type {
   FindGameByPlayerPort,
   FindRoomByOwnerPort,
   FindRoomByPlayerPort,
-  RoomScopedGamePort,
   RoomPhaseTransitionPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
+import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
@@ -29,28 +29,6 @@ const gamePayloadValidators = {
   [protocol.SocketEvents.MOVE]: isMovePayload,
   [protocol.SocketEvents.PLACE_BOMB]: isPlaceBombPayload,
 } as const;
-
-type RuntimeResolution = {
-  roomId: string;
-  gameManager: RoomScopedGamePort;
-};
-
-const resolveRuntimeBySocketId = (
-  roomManager: FindRoomByPlayerPort,
-  runtimeRegistry: FindGameByPlayerPort,
-  socketId: string
-): RuntimeResolution | undefined => {
-  const roomId = roomManager.getRoomByPlayerId(socketId)?.roomId;
-  const gameManager = runtimeRegistry.getGameManagerByPlayerId(socketId);
-  if (!roomId || !gameManager) {
-    return undefined;
-  }
-
-  return {
-    roomId,
-    gameManager,
-  };
-};
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
@@ -113,7 +91,7 @@ export const registerGameHandlers = (
       return;
     }
 
-    const runtime = resolveRuntimeBySocketId(roomManager, runtimeRegistry, socket.id);
+    const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socket.id);
     if (!runtime) {
       return;
     }
@@ -131,7 +109,7 @@ export const registerGameHandlers = (
       return;
     }
 
-    const runtime = resolveRuntimeBySocketId(roomManager, runtimeRegistry, socket.id);
+    const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socket.id);
     if (!runtime) {
       return;
     }

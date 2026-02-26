@@ -40,14 +40,17 @@ export class RoomGameRuntimeRegistry
     return this.gameManagers.get(roomId);
   }
 
-  public cleanupDisposedRoomRuntimes(): void {
-    for (const [roomId, gameManager] of this.gameManagers.entries()) {
-      if (this.roomResolver.getRoomById(roomId)) {
-        continue;
-      }
-
-      gameManager.dispose();
-      this.gameManagers.delete(roomId);
+  public cleanupGameManagerForRoom(roomId: string): void {
+    if (this.roomResolver.getRoomById(roomId)) {
+      return;
     }
+
+    const gameManager = this.gameManagers.get(roomId);
+    if (!gameManager) {
+      return;
+    }
+
+    gameManager.dispose();
+    this.gameManagers.delete(roomId);
   }
 }
