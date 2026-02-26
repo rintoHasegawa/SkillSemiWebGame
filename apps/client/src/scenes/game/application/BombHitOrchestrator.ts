@@ -1,7 +1,7 @@
 /**
  * BombHitOrchestrator
  * 爆弾爆発イベントとローカルプレイヤー情報を橋渡しして当たり判定を実行する
- * 同一爆弾の重複判定を抑止し，ヒット時のみデバッグログを出力する
+ * 同一爆弾の重複判定を抑止して当たり判定を実行する
  */
 import { checkBombHit } from "@client/scenes/game/entities/bomb/BombHitDetector";
 import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
@@ -47,13 +47,6 @@ export class BombHitOrchestrator {
       return;
     }
 
-    console.log("[BombHitDebug] hit", {
-      bombId: payload.bombId,
-      distanceSquared: result.distanceSquared,
-      thresholdSquared: result.thresholdSquared,
-      bombTeamId: payload.teamId,
-      playerTeamId: localPlayer.teamId,
-    });
   }
 
   /** 判定済み状態を初期化する */

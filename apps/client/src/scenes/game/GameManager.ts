@@ -120,14 +120,6 @@ export class GameManager {
     });
     this.networkSync.bind();
 
-    this.gameLoop = new GameLoop({
-      app: this.app,
-      worldContainer: this.worldContainer,
-      players: this.players,
-      myId: this.myId,
-      getJoystickInput: () => this.joystickInput,
-    });
-
     const bombHitContextProvider = new BombHitContextProvider({
       players: this.players,
       myId: this.myId,
@@ -145,6 +137,15 @@ export class GameManager {
       onBombExploded: (payload) => {
         this.bombHitOrchestrator?.handleBombExploded(payload);
       },
+    });
+
+    this.gameLoop = new GameLoop({
+      app: this.app,
+      worldContainer: this.worldContainer,
+      players: this.players,
+      myId: this.myId,
+      getJoystickInput: () => this.joystickInput,
+      bombManager: this.bombManager,
     });
 
     // サーバーへゲーム準備完了を通知
@@ -168,7 +169,6 @@ export class GameManager {
    */
   private tick = (ticker: Ticker) => {
     this.gameLoop?.tick(ticker);
-    this.bombManager?.tick();
   };
 
   /**
