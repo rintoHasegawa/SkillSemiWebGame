@@ -55,7 +55,7 @@ export class GameManager {
   public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
     this.bombManager?.applyPlacedBombAck(payload);
   }
-  
+
   // 入力と状態管理
   private joystickInput = { x: 0, y: 0 };
   private isInitialized = false;
@@ -72,6 +72,7 @@ export class GameManager {
     this.myId = myId;
     this.app = new Application();
     this.worldContainer = new Container();
+    this.worldContainer.sortableChildren = true;
   }
 
   /**
@@ -79,12 +80,16 @@ export class GameManager {
    */
   public async init() {
     // PixiJS本体の初期化
-    await this.app.init({ resizeTo: window, backgroundColor: 0x111111, antialias: true });
+    await this.app.init({
+      resizeTo: window,
+      backgroundColor: 0x111111,
+      antialias: true,
+    });
 
     // 初期化完了前に destroy() が呼ばれていたら、ここで処理を中断して破棄する
     if (this.isDestroyed) {
-        this.app.destroy(true, { children: true });
-        return;
+      this.app.destroy(true, { children: true });
+      return;
     }
 
     this.container.appendChild(this.app.canvas);
@@ -164,7 +169,7 @@ export class GameManager {
     this.bombManager = null;
     this.players = {};
     this.isInputLocked = false;
-    
+
     // イベント購読の解除
     this.networkSync?.unbind();
   }
