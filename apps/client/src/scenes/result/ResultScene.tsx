@@ -113,6 +113,11 @@ const TABLE_STYLE: CSSProperties = {
   background: "rgba(16, 16, 16, 0.62)",
 };
 
+const RANKING_SCROLL_BODY_STYLE: CSSProperties = {
+  maxHeight: "min(52dvh, 420px)",
+  overflowY: "auto",
+};
+
 const HEADER_ROW_STYLE: CSSProperties = {
   display: "grid",
   gridTemplateColumns: ROW_GRID_TEMPLATE,
@@ -321,20 +326,25 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
             <span style={RIGHT_ALIGN_STYLE}>塗り率</span>
           </div>
 
-          {result.rankings.map((row, index) => (
-            <div key={`${row.teamId}-${index}`} style={getBodyRowStyle(index)}>
-              <span style={getRankStyle(row.rank)}>{row.rank}位</span>
-              <span style={TEAM_CELL_STYLE}>
-                <span
-                  style={getTeamColorDotStyle(
-                    config.GAME_CONFIG.TEAM_COLORS[row.teamId] ?? "#888888",
-                  )}
-                />
-                <span>{row.teamName}</span>
-              </span>
-              <span style={RATE_STYLE}>{formatPaintRate(row.paintRate)}</span>
-            </div>
-          ))}
+          <div style={RANKING_SCROLL_BODY_STYLE}>
+            {result.rankings.map((row, index) => (
+              <div
+                key={`${row.teamId}-${index}`}
+                style={getBodyRowStyle(index)}
+              >
+                <span style={getRankStyle(row.rank)}>{row.rank}位</span>
+                <span style={TEAM_CELL_STYLE}>
+                  <span
+                    style={getTeamColorDotStyle(
+                      config.GAME_CONFIG.TEAM_COLORS[row.teamId] ?? "#888888",
+                    )}
+                  />
+                  <span>{row.teamName}</span>
+                </span>
+                <span style={RATE_STYLE}>{formatPaintRate(row.paintRate)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
