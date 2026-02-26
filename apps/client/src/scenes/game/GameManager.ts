@@ -4,10 +4,6 @@
  * マップ，ネットワーク同期，ゲームループを統合する
  */
 import { Application, Container, Ticker } from "pixi.js";
-import type {
-  BombPlacedAckPayload,
-  BombPlacedPayload,
-} from "@repo/shared";
 import { AppearanceResolver } from "./application/AppearanceResolver";
 import { BombManager } from "./entities/bomb/BombManager";
 import { GameNetworkSync } from "./application/GameNetworkSync";
@@ -16,9 +12,28 @@ import { GameEventFacade } from "./application/GameEventFacade";
 import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState";
 import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
 import { CombatLifecycleFacade } from "./application/combat/CombatLifecycleFacade";
-import { GameSceneOrchestrator } from "./application/orchestrators/GameSceneOrchestrator";
-import { SocketGameActionSender } from "./application/network/GameActionSender";
+import {
+  GameSceneOrchestrator,
+  type GameSceneFactoryOptions,
+} from "./application/orchestrators/GameSceneOrchestrator";
+import {
+  SocketGameActionSender,
+  type GameActionSender,
+} from "./application/network/GameActionSender";
+import {
+  SocketPlayerMoveSender,
+  type MoveSender,
+} from "./application/network/PlayerMoveSender";
 import type { GamePlayers } from "./application/game.types";
+
+/** GameManager の依存注入オプション型 */
+export type GameManagerDependencies = {
+  sessionFacade?: GameSessionFacade;
+  lifecycleState?: SceneLifecycleState;
+  gameActionSender?: GameActionSender;
+  moveSender?: MoveSender;
+  sceneFactories?: GameSceneFactoryOptions;
+};
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
 export class GameManager {
@@ -27,20 +42,17 @@ export class GameManager {
   private players: GamePlayers = {};
   private myId: string;
   private container: HTMLDivElement;
-  private sessionFacade = new GameSessionFacade();
+  private sessionFacade: GameSessionFacade;
   private appearanceResolver = new AppearanceResolver();
   private bombManager: BombManager | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
   private gameEventFacade: GameEventFacade;
   private combatFacade: CombatLifecycleFacade;
-  private lifecycleState = new SceneLifecycleState();
-  private gameActionSender = new SocketGameActionSender();
-
-  // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
-  public setGameStart(startTime: number) {
-    this.gameEventFacade.handleGameStart(startTime);
-  }
+  private lifecycleState: SceneLifecycleState;
+  private gameActionSender: GameActionSender;
+  private moveSender: MoveSender;
+  private sceneFactories?: GameSceneFactoryOptions;
 
   public getStartCountdownSec(): number {
     return this.sessionFacade.getStartCountdownSec();
@@ -65,14 +77,6 @@ export class GameManager {
     return placed.tempBombId;
   }
 
-  public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
-    this.gameEventFacade.handleBombPlacedFromOthers(payload);
-  }
-
-  public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
-    this.gameEventFacade.handleBombPlacedAck(payload);
-  }
-
   // 入力と状態管理
   private joystickInput = { x: 0, y: 0 };
 
@@ -81,9 +85,18 @@ export class GameManager {
     return this.sessionFacade.lockInput();
   }
 
-  constructor(container: HTMLDivElement, myId: string) {
+  constructor(
+    container: HTMLDivElement,
+    myId: string,
+    dependencies: GameManagerDependencies = {},
+  ) {
     this.container = container; // 明示的に代入
     this.myId = myId;
+    this.sessionFacade = dependencies.sessionFacade ?? new GameSessionFacade();
+    this.lifecycleState = dependencies.lifecycleState ?? new SceneLifecycleState();
+    this.gameActionSender = dependencies.gameActionSender ?? new SocketGameActionSender();
+    this.moveSender = dependencies.moveSender ?? new SocketPlayerMoveSender();
+    this.sceneFactories = dependencies.sceneFactories;
     this.app = new Application();
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
@@ -156,6 +169,7 @@ export class GameManager {
       appearanceResolver: this.appearanceResolver,
       getElapsedMs: () => this.sessionFacade.getElapsedMs(),
       getJoystickInput: () => this.joystickInput,
+      moveSender: this.moveSender,
       onGameStart: this.gameEventFacade.handleGameStart.bind(this.gameEventFacade),
       onGameEnd: this.lockInput.bind(this),
       onBombPlacedFromOthers: (payload) => {
@@ -170,6 +184,7 @@ export class GameManager {
       onBombExploded: (payload) => {
         this.combatFacade.handleBombExploded(payload);
       },
+      factories: this.sceneFactories,
     });
 
     const initializedScene = orchestrator.initialize();
