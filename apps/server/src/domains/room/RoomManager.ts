@@ -3,9 +3,9 @@
  * ルーム状態の保持とルーム操作サービスへの委譲を担うマネージャ
  */
 import type { roomTypes } from "@repo/shared";
-import { roomConsts } from "@repo/shared";
 import { RoomJoinService } from "./application/services/RoomJoinService";
 import { RoomExitService } from "./application/services/RoomExitService";
+import { RoomPhaseService } from "./application/services/RoomPhaseService";
 import { RoomQueryService } from "./application/services/RoomQueryService";
 import type { JoinRoomResult } from "./application/ports/roomUseCasePorts";
 
@@ -14,11 +14,13 @@ export class RoomManager {
   private rooms: Map<string, roomTypes.Room> = new Map();
   private roomJoinService: RoomJoinService;
   private roomExitService: RoomExitService;
+  private roomPhaseService: RoomPhaseService;
   private roomQueryService: RoomQueryService;
 
   constructor() {
     this.roomJoinService = new RoomJoinService(this.rooms);
     this.roomExitService = new RoomExitService(this.rooms);
+    this.roomPhaseService = new RoomPhaseService(this.rooms);
     this.roomQueryService = new RoomQueryService(this.rooms);
   }
 
@@ -49,23 +51,11 @@ export class RoomManager {
 
   // ルーム状態をPLAYINGへ更新する
   public markRoomPlaying(roomId: string): roomTypes.Room | undefined {
-    const room = this.roomQueryService.getRoomById(roomId);
-    if (!room) {
-      return undefined;
-    }
-
-    room.status = roomConsts.RoomPhase.PLAYING;
-    return room;
+    return this.roomPhaseService.markRoomPlaying(roomId);
   }
 
   // ルーム状態をWAITINGへ更新する
   public markRoomWaiting(roomId: string): roomTypes.Room | undefined {
-    const room = this.roomQueryService.getRoomById(roomId);
-    if (!room) {
-      return undefined;
-    }
-
-    room.status = roomConsts.RoomPhase.WAITING;
-    return room;
+    return this.roomPhaseService.markRoomWaiting(roomId);
   }
 }

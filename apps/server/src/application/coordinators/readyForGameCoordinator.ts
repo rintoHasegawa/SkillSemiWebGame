@@ -8,10 +8,14 @@ import {
 import type { FindGameByPlayerPort, FindRoomByPlayerPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
 
-type ReadyForGameCoordinatorParams = {
-  socketId: string;
+type ReadyForGameDeps = {
   roomManager: FindRoomByPlayerPort;
   runtimeRegistry: FindGameByPlayerPort;
+};
+
+type ReadyForGameCoordinatorParams = {
+  socketId: string;
+} & ReadyForGameDeps & {
   output: Pick<GameOutputPort, "publishCurrentPlayersToSocket" | "publishGameStartToSocket">;
 };
 

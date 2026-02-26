@@ -15,10 +15,14 @@ import { logEvent } from "@server/logging/logger";
 import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 import { roomConsts } from "@repo/shared";
 
-type StartGameCoordinatorParams = {
-  ownerId: string;
+type StartGameDeps = {
   roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
   runtimeRegistry: FindGameByRoomPort;
+};
+
+type StartGameCoordinatorParams = {
+  ownerId: string;
+} & StartGameDeps & {
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToSocket"

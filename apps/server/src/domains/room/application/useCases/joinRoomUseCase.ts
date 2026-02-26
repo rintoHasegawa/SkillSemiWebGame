@@ -4,6 +4,7 @@
  */
 import type { roomTypes } from "@repo/shared";
 import type {
+  EnsureGameRuntimePort,
   JoinRoomPort,
   JoinRoomResult,
   RoomOutputPort,
@@ -13,6 +14,7 @@ import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/ind
 
 type JoinRoomUseCaseParams = {
   roomManager: JoinRoomPort;
+  runtimeRegistry: EnsureGameRuntimePort;
   socketId: string;
   data: roomTypes.JoinRoomPayload;
   output: Pick<RoomOutputPort, "publishJoinRejectedToSocket">;
@@ -21,6 +23,7 @@ type JoinRoomUseCaseParams = {
 /** 参加イベントを受け取り，参加可否を判定する */
 export const joinRoomUseCase = ({
   roomManager,
+  runtimeRegistry,
   socketId,
   data,
   output,
@@ -50,6 +53,8 @@ export const joinRoomUseCase = ({
     });
     return joinResult;
   }
+
+  runtimeRegistry.ensureGameManagerForRoom(roomId);
 
   return joinResult;
 };

@@ -48,6 +48,7 @@ export const registerRoomHandlers = (
 
     const joinResult = joinRoomUseCase({
       roomManager,
+      runtimeRegistry,
       socketId: socket.id,
       data,
       output: roomOutputAdapter,
@@ -74,7 +75,6 @@ export const registerRoomHandlers = (
         return;
 
       case "joined":
-        runtimeRegistry.ensureGameManagerForRoom(roomId);
         await socket.join(roomId);
         roomOutputAdapter.publishRoomUpdateToRoom(roomId, joinResult.room);
         logEvent(logScopes.ROOM_USE_CASE, {
