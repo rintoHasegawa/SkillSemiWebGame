@@ -8,24 +8,31 @@ import { JoystickView } from "./JoystickView";
 import type { UseJoystickInputPresenterProps } from "./common";
 
 /** 入力と表示状態の橋渡しを行う */
-export const JoystickInputPresenter = ({ onInput, maxDist }: UseJoystickInputPresenterProps) => {
-  const { isMoving, center, knobOffset, radius, handleStart, handleMove, handleEnd } =
-    useJoystickController({ onInput, maxDist });
+export const JoystickInputPresenter = ({
+  onInput,
+  maxDist,
+}: UseJoystickInputPresenterProps) => {
+  const {
+    isMoving,
+    center,
+    knobOffset,
+    radius,
+    handleStart,
+    handleMove,
+    handleEnd,
+  } = useJoystickController({ onInput, maxDist });
 
   return (
     <div
-      onMouseDown={handleStart}
-      onMouseMove={handleMove}
-      onMouseUp={handleEnd}
-      onMouseLeave={handleEnd}
-      onTouchStart={handleStart}
-      onTouchMove={handleMove}
-      onTouchEnd={handleEnd}
+      onPointerDown={handleStart}
+      onPointerMove={handleMove}
+      onPointerUp={handleEnd}
+      onPointerCancel={handleEnd}
       style={{
         position: "absolute",
         top: 0,
         left: 0,
-        width: "100%",
+        width: "50%",
         height: "100%",
         // キャンバス前面入力キャプチャレイヤー
         zIndex: 10,
@@ -33,7 +40,12 @@ export const JoystickInputPresenter = ({ onInput, maxDist }: UseJoystickInputPre
       }}
     >
       {/* 入力イベントをコントローラーへ渡し，描画用状態をViewへ渡す */}
-      <JoystickView isActive={isMoving} center={center} knobOffset={knobOffset} radius={radius} />
+      <JoystickView
+        isActive={isMoving}
+        center={center}
+        knobOffset={knobOffset}
+        radius={radius}
+      />
     </div>
   );
 };
