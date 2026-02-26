@@ -7,12 +7,26 @@
 /** 爆弾設置ボタンの入力プロパティ */
 type BombButtonProps = {
   onPress: () => void;
+  cooldownProgress: number;
+  isReady: boolean;
+  remainingSecText: string | null;
+};
+
+const BOMB_BUTTON_FRAME_STYLE: React.CSSProperties = {
+  position: "fixed",
+  right: "30px",
+  bottom: "34px",
+  width: "108px",
+  height: "108px",
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 9999,
+  pointerEvents: "none",
 };
 
 const BOMB_BUTTON_STYLE: React.CSSProperties = {
-  position: "fixed",
-  right: "36px",
-  bottom: "40px",
   width: "96px",
   height: "96px",
   borderRadius: "50%",
@@ -21,16 +35,43 @@ const BOMB_BUTTON_STYLE: React.CSSProperties = {
   color: "white",
   fontSize: "18px",
   fontWeight: "bold",
-  zIndex: 9999,
   pointerEvents: "auto",
   touchAction: "manipulation",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
 /** 画面右下の爆弾設置ボタンを描画する */
-export const BombButton = ({ onPress }: BombButtonProps) => {
+export const BombButton = ({
+  onPress,
+  cooldownProgress,
+  isReady,
+  remainingSecText,
+}: BombButtonProps) => {
+  const progressDeg = Math.max(0, Math.min(1, cooldownProgress)) * 360;
+  const frameStyle: React.CSSProperties = {
+    ...BOMB_BUTTON_FRAME_STYLE,
+    background: `conic-gradient(rgba(255,255,255,0.95) ${progressDeg}deg, rgba(255,255,255,0.2) ${progressDeg}deg 360deg)`,
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    ...BOMB_BUTTON_STYLE,
+    background: isReady ? "rgba(220, 60, 60, 0.85)" : "rgba(110, 40, 40, 0.85)",
+    opacity: isReady ? 1 : 0.88,
+    cursor: isReady ? "pointer" : "not-allowed",
+  };
+
   return (
-    <button style={BOMB_BUTTON_STYLE} onClick={onPress} type="button">
-      BOMB
-    </button>
+    <div style={frameStyle}>
+      <button
+        style={buttonStyle}
+        onClick={onPress}
+        type="button"
+        disabled={!isReady}
+      >
+        {isReady ? "BOMB" : `${remainingSecText}s`}
+      </button>
+    </div>
   );
 };
