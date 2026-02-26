@@ -119,6 +119,11 @@ export interface BombPlacementPort {
   issueServerBombId(): string;
 }
 
+/** 被弾報告ユースケースが利用する重複排除入力ポート */
+export interface BombHitReportValidationPort {
+  shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean;
+}
+
 /** 爆弾設置ユースケースの入力値 */
 export type PlaceBombInput = {
   socketId: string;
@@ -130,6 +135,7 @@ export type PlaceBombInput = {
 export type ReportBombHitInput = {
   socketId: string;
   payload: BombHitReportPayload;
+  nowMs: number;
 };
 
 /** 被弾報告ユースケースが利用する出力ポート */

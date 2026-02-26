@@ -36,6 +36,11 @@ type GameNetworkSyncOptions = {
   onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
 };
 
+type SocketSubscription = {
+  bind: () => void;
+  unbind: () => void;
+};
+
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
 export class GameNetworkSync {
   private worldContainer: Container;
@@ -48,6 +53,7 @@ export class GameNetworkSync {
   private onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
   private onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
   private onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
+  private socketSubscriptions: SocketSubscription[];
   private isBound = false;
 
   private debugLog = (message: string) => {
@@ -142,21 +148,56 @@ export class GameNetworkSync {
     this.onBombPlacedFromOthers = onBombPlacedFromOthers;
     this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
     this.onPlayerDeadFromNetwork = onPlayerDeadFromNetwork;
+    this.socketSubscriptions = [
+      {
+        bind: () => socketManager.game.onCurrentPlayers(this.handleCurrentPlayers),
+        unbind: () => socketManager.game.offCurrentPlayers(this.handleCurrentPlayers),
+      },
+      {
+        bind: () => socketManager.game.onNewPlayer(this.handleNewPlayer),
+        unbind: () => socketManager.game.offNewPlayer(this.handleNewPlayer),
+      },
+      {
+        bind: () => socketManager.game.onGameStart(this.handleGameStart),
+        unbind: () => socketManager.game.offGameStart(this.handleGameStart),
+      },
+      {
+        bind: () => socketManager.game.onUpdatePlayers(this.handlePlayerUpdates),
+        unbind: () => socketManager.game.offUpdatePlayers(this.handlePlayerUpdates),
+      },
+      {
+        bind: () => socketManager.game.onRemovePlayer(this.handleRemovePlayer),
+        unbind: () => socketManager.game.offRemovePlayer(this.handleRemovePlayer),
+      },
+      {
+        bind: () => socketManager.game.onUpdateMapCells(this.handleUpdateMapCells),
+        unbind: () => socketManager.game.offUpdateMapCells(this.handleUpdateMapCells),
+      },
+      {
+        bind: () => socketManager.game.onGameEnd(this.handleGameEnd),
+        unbind: () => socketManager.game.offGameEnd(this.handleGameEnd),
+      },
+      {
+        bind: () => socketManager.game.onBombPlaced(this.handleBombPlaced),
+        unbind: () => socketManager.game.offBombPlaced(this.handleBombPlaced),
+      },
+      {
+        bind: () => socketManager.game.onBombPlacedAck(this.handleBombPlacedAck),
+        unbind: () => socketManager.game.offBombPlacedAck(this.handleBombPlacedAck),
+      },
+      {
+        bind: () => socketManager.game.onPlayerDead(this.handlePlayerDead),
+        unbind: () => socketManager.game.offPlayerDead(this.handlePlayerDead),
+      },
+    ];
   }
 
   public bind() {
     if (this.isBound) return;
 
-    socketManager.game.onCurrentPlayers(this.handleCurrentPlayers);
-    socketManager.game.onNewPlayer(this.handleNewPlayer);
-    socketManager.game.onGameStart(this.handleGameStart);
-    socketManager.game.onUpdatePlayers(this.handlePlayerUpdates);
-    socketManager.game.onRemovePlayer(this.handleRemovePlayer);
-    socketManager.game.onUpdateMapCells(this.handleUpdateMapCells);
-    socketManager.game.onGameEnd(this.handleGameEnd);
-    socketManager.game.onBombPlaced(this.handleBombPlaced);
-    socketManager.game.onBombPlacedAck(this.handleBombPlacedAck);
-    socketManager.game.onPlayerDead(this.handlePlayerDead);
+    this.socketSubscriptions.forEach((subscription) => {
+      subscription.bind();
+    });
 
     this.isBound = true;
   }
@@ -164,16 +205,9 @@ export class GameNetworkSync {
   public unbind() {
     if (!this.isBound) return;
 
-    socketManager.game.offCurrentPlayers(this.handleCurrentPlayers);
-    socketManager.game.offNewPlayer(this.handleNewPlayer);
-    socketManager.game.offGameStart(this.handleGameStart);
-    socketManager.game.offUpdatePlayers(this.handlePlayerUpdates);
-    socketManager.game.offRemovePlayer(this.handleRemovePlayer);
-    socketManager.game.offUpdateMapCells(this.handleUpdateMapCells);
-    socketManager.game.offGameEnd(this.handleGameEnd);
-    socketManager.game.offBombPlaced(this.handleBombPlaced);
-    socketManager.game.offBombPlacedAck(this.handleBombPlacedAck);
-    socketManager.game.offPlayerDead(this.handlePlayerDead);
+    this.socketSubscriptions.forEach((subscription) => {
+      subscription.unbind();
+    });
 
     this.isBound = false;
   }

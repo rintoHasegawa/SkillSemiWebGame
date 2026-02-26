@@ -150,9 +150,11 @@ export const registerGameHandlers = (
 
     reportBombHitUseCase({
       roomId: runtime.roomId,
+      validation: runtime.gameManager,
       input: {
         socketId: socket.id,
         payload: data,
+        nowMs: Date.now(),
       },
       output: gameOutputAdapter,
     });

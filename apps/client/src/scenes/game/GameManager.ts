@@ -7,7 +7,6 @@ import { Application, Container, Ticker } from "pixi.js";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
-  PlayerDeadPayload,
 } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
 import { AppearanceResolver } from "./application/AppearanceResolver";
@@ -18,6 +17,7 @@ import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
 import { BombHitContextProvider } from "./application/BombHitContextProvider";
 import { BombHitOrchestrator } from "./application/BombHitOrchestrator";
+import { PlayerDeathPolicy } from "./application/PlayerDeathPolicy";
 import type { BombHitEvaluationResult } from "./application/BombHitOrchestrator";
 import type { GamePlayers } from "./application/game.types";
 
@@ -35,6 +35,7 @@ export class GameManager {
   private bombHitOrchestrator: BombHitOrchestrator | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
+  private playerDeathPolicy: PlayerDeathPolicy;
   private reportedBombHitIds = new Set<string>();
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
@@ -90,6 +91,10 @@ export class GameManager {
     this.app = new Application();
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
+    this.playerDeathPolicy = new PlayerDeathPolicy({
+      myId: this.myId,
+      lockInput: this.lockInput.bind(this),
+    });
   }
 
   /**
@@ -167,7 +172,7 @@ export class GameManager {
         this.applyPlacedBombAck(payload);
       },
       onPlayerDeadFromNetwork: (payload) => {
-        this.handlePlayerDeadFromNetwork(payload);
+        this.playerDeathPolicy.applyPlayerDeadEvent(payload);
       },
     });
     this.networkSync.bind();
@@ -238,14 +243,6 @@ export class GameManager {
 
     this.reportedBombHitIds.add(bombId);
     return true;
-  }
-
-  private handlePlayerDeadFromNetwork(payload: PlayerDeadPayload): void {
-    if (payload.playerId !== this.myId) {
-      return;
-    }
-
-    this.lockInput();
   }
 
   /**
