@@ -13,6 +13,8 @@ type BombModelOptions = {
   y: number;
   radiusGrid: number;
   explodeAtElapsedMs: number;
+  teamId: number;
+  color: number;
 };
 
 /** 爆弾の状態と寿命を管理するモデル */
@@ -21,13 +23,17 @@ export class BombModel {
   private y: number;
   private radiusGrid: number;
   private explodeAtElapsedMs: number;
+  private teamId: number;
+  private color: number;
   private state: BombState = "armed";
 
-  constructor({ x, y, radiusGrid, explodeAtElapsedMs }: BombModelOptions) {
+  constructor({ x, y, radiusGrid, explodeAtElapsedMs, teamId, color }: BombModelOptions) {
     this.x = x;
     this.y = y;
     this.radiusGrid = radiusGrid;
     this.explodeAtElapsedMs = explodeAtElapsedMs;
+    this.teamId = teamId;
+    this.color = color;
   }
 
   public getPosition() {
@@ -40,6 +46,14 @@ export class BombModel {
 
   public getExplosionRadiusGrid(): number {
     return this.radiusGrid;
+  }
+
+  public getTeamId(): number {
+    return this.teamId;
+  }
+
+  public getColor(): number {
+    return this.color;
   }
 
   public update(elapsedMs: number): void {

@@ -6,6 +6,7 @@
 import { Application, Container, Ticker } from "pixi.js";
 import type { BombPlacedAckPayload, BombPlacedPayload } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
+import { AppearanceResolver } from "./application/AppearanceResolver";
 import { GameMapController } from "./entities/map/GameMapController";
 import { BombManager } from "./entities/bomb/BombManager";
 import { GameTimer } from "./application/GameTimer";
@@ -22,6 +23,7 @@ export class GameManager {
   private container: HTMLDivElement;
   private gameMap!: GameMapController;
   private timer = new GameTimer();
+  private appearanceResolver = new AppearanceResolver();
   private bombManager: BombManager | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
@@ -88,7 +90,7 @@ export class GameManager {
     this.container.appendChild(this.app.canvas);
 
     // 背景マップの配置
-    const gameMap = new GameMapController();
+    const gameMap = new GameMapController(this.appearanceResolver);
     this.gameMap = gameMap;
     this.worldContainer.addChild(gameMap.getDisplayObject());
     this.app.stage.addChild(this.worldContainer);
@@ -98,6 +100,7 @@ export class GameManager {
       players: this.players,
       myId: this.myId,
       gameMap: this.gameMap,
+      appearanceResolver: this.appearanceResolver,
       onGameStart: this.setGameStart.bind(this),
       onGameEnd: this.lockInput.bind(this),
       onBombPlacedFromOthers: (payload) => {
@@ -122,6 +125,7 @@ export class GameManager {
       players: this.players,
       myId: this.myId,
       getElapsedMs: () => this.timer.getElapsedMs(),
+      appearanceResolver: this.appearanceResolver,
     });
 
     // サーバーへゲーム準備完了を通知

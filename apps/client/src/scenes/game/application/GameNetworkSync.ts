@@ -15,6 +15,7 @@ import type {
   UpdatePlayersPayload,
 } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
+import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import type { GamePlayers } from "./game.types";
@@ -26,6 +27,7 @@ type GameNetworkSyncOptions = {
   players: GamePlayers;
   myId: string;
   gameMap: GameMapController;
+  appearanceResolver: AppearanceResolver;
   onGameStart: (startTime: number) => void;
   onGameEnd: () => void;
   onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
@@ -38,6 +40,7 @@ export class GameNetworkSync {
   private players: GamePlayers;
   private myId: string;
   private gameMap: GameMapController;
+  private appearanceResolver: AppearanceResolver;
   private onGameStart: (startTime: number) => void;
   private onGameEnd: () => void;
   private onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
@@ -54,14 +57,16 @@ export class GameNetworkSync {
 
   private handleCurrentPlayers = (serverPlayers: CurrentPlayersPayload) => {
     serverPlayers.forEach((p) => {
-      const playerController = p.id === this.myId ? new LocalPlayerController(p) : new RemotePlayerController(p);
+      const playerController = p.id === this.myId
+        ? new LocalPlayerController(p, this.appearanceResolver)
+        : new RemotePlayerController(p, this.appearanceResolver);
       this.worldContainer.addChild(playerController.getDisplayObject());
       this.players[p.id] = playerController;
     });
   };
 
   private handleNewPlayer = (p: NewPlayerPayload) => {
-    const playerController = new RemotePlayerController(p);
+    const playerController = new RemotePlayerController(p, this.appearanceResolver);
     this.worldContainer.addChild(playerController.getDisplayObject());
     this.players[p.id] = playerController;
   };
@@ -113,6 +118,7 @@ export class GameNetworkSync {
     players,
     myId,
     gameMap,
+    appearanceResolver,
     onGameStart,
     onGameEnd,
     onBombPlacedFromOthers,
@@ -122,6 +128,7 @@ export class GameNetworkSync {
     this.players = players;
     this.myId = myId;
     this.gameMap = gameMap;
+    this.appearanceResolver = appearanceResolver;
     this.onGameStart = onGameStart;
     this.onGameEnd = onGameEnd;
     this.onBombPlacedFromOthers = onBombPlacedFromOthers;

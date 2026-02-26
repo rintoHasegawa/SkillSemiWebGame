@@ -11,30 +11,9 @@ const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 export class PlayerView {
   public readonly displayObject: Sprite;
 
-  constructor(teamId: number, isLocal: boolean) {
-    const { PLAYER_RADIUS_PX, TEAM_COUNT, PLAYER_RENDER_SCALE } =
+  constructor(imageFileName: string, isLocal: boolean) {
+    const { PLAYER_RADIUS_PX, PLAYER_RENDER_SCALE } =
       config.GAME_CONFIG;
-
-    // 🌟 1. チームIDと画像ファイル名の紐づけ（すべて .svg に変更しました！）
-    const characterImages = [
-      "/red.svg", // teamId: 0 のときの画像
-      "/blue.svg", // teamId: 1 のときの画像
-      "/green.svg", // teamId: 2 のときの画像
-      "/yellow.svg", // teamId: 3 のときの画像
-    ];
-
-    config.validateTeamConfig();
-
-    if (characterImages.length !== TEAM_COUNT) {
-      throw new Error(
-        `GAME_CONFIG mismatch: characterImages length (${characterImages.length}) must equal TEAM_COUNT (${TEAM_COUNT})`,
-      );
-    }
-
-    config.assertValidTeamId(teamId);
-
-    // 配列から対応する画像ファイル名を取得（デフォルトは red.svg）
-    const imageFileName = characterImages[teamId].replace(/^\//, "");
 
     // 🌟 2. スプライト（画像）の生成（初期は1x1テクスチャ）
     this.displayObject = new Sprite(Texture.WHITE);

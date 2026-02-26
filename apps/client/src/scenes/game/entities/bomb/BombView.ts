@@ -15,6 +15,7 @@ export class BombView {
   private explosionGraphic: Graphics;
   private lastRenderedState: BombState | null = null;
   private lastRenderedRadiusGrid: number | null = null;
+  private lastRenderedColor: number | null = null;
 
   constructor() {
     this.displayObject = new Container();
@@ -32,8 +33,12 @@ export class BombView {
     this.displayObject.y = gridY * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
   }
 
-  public renderState(state: BombState, radiusGrid: number): void {
-    if (this.lastRenderedState === state && this.lastRenderedRadiusGrid === radiusGrid) {
+  public renderState(state: BombState, radiusGrid: number, color: number): void {
+    if (
+      this.lastRenderedState === state
+      && this.lastRenderedRadiusGrid === radiusGrid
+      && this.lastRenderedColor === color
+    ) {
       return;
     }
 
@@ -43,21 +48,22 @@ export class BombView {
 
     this.lastRenderedState = state;
     this.lastRenderedRadiusGrid = radiusGrid;
+    this.lastRenderedColor = color;
 
     this.bombGraphic.clear();
     this.explosionGraphic.clear();
 
     if (state === "armed") {
       this.bombGraphic.circle(0, 0, bombRadiusPx);
-      this.bombGraphic.fill({ color: 0x111111, alpha: 0.95 });
+      this.bombGraphic.fill({ color, alpha: 0.95 });
       this.bombGraphic.stroke({ color: 0xffffff, width: 2 });
       return;
     }
 
     if (state === "exploded") {
       this.explosionGraphic.circle(0, 0, explosionRadiusPx);
-      this.explosionGraphic.fill({ color: 0xffcc00, alpha: 0.35 });
-      this.explosionGraphic.stroke({ color: 0xff9900, width: 3 });
+      this.explosionGraphic.fill({ color, alpha: 0.35 });
+      this.explosionGraphic.stroke({ color, width: 3 });
     }
   }
 

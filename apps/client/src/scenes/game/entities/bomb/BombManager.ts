@@ -10,8 +10,11 @@ import type {
   BombPlacedPayload,
   PlaceBombPayload,
 } from "@repo/shared";
+import { config as sharedConfig } from "@repo/shared";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
+import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { BombController } from "./BombController";
+import { PendingBombRequestStore } from "./PendingBombRequestStore";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
 
 /** 経過時間ミリ秒を返す関数型 */
@@ -23,6 +26,8 @@ export type BombRenderPayload = {
   y: number;
   explodeAtElapsedMs: number;
   radiusGrid: number;
+  teamId: number;
+  color: number;
 };
 
 /** 爆弾設置時に返す結果型 */
@@ -36,6 +41,7 @@ type BombManagerOptions = {
   players: GamePlayers;
   myId: string;
   getElapsedMs: ElapsedMsProvider;
+  appearanceResolver: AppearanceResolver;
 };
 
 /** 爆弾エンティティのライフサイクルを管理する */
@@ -44,18 +50,19 @@ export class BombManager {
   private players: GamePlayers;
   private myId: string;
   private getElapsedMs: ElapsedMsProvider;
+  private appearanceResolver: AppearanceResolver;
   private bombs = new Map<string, BombController>();
   private bombRenderPayloadById = new Map<string, BombRenderPayload>();
-  private pendingOwnRequestToTempBombId = new Map<string, string>();
-  private pendingTempBombIdToOwnRequest = new Map<string, string>();
+  private pendingBombRequestStore = new PendingBombRequestStore();
   private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
   private requestSerial = 0;
 
-  constructor({ worldContainer, players, myId, getElapsedMs }: BombManagerOptions) {
+  constructor({ worldContainer, players, myId, getElapsedMs, appearanceResolver }: BombManagerOptions) {
     this.worldContainer = worldContainer;
     this.players = players;
     this.myId = myId;
     this.getElapsedMs = getElapsedMs;
+    this.appearanceResolver = appearanceResolver;
   }
 
   /** 自プレイヤー位置に爆弾を仮IDで設置し，設置要求を返す */
@@ -78,10 +85,11 @@ export class BombManager {
       explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
     };
     const tempBombId = this.createTempBombId(requestId);
+    // 自分の爆弾は設置時点で teamId を確定して保持する
+    const ownTeamId = this.resolveTeamIdBySocketId(this.myId);
 
-    this.pendingOwnRequestToTempBombId.set(requestId, tempBombId);
-    this.pendingTempBombIdToOwnRequest.set(tempBombId, requestId);
-    this.upsertBomb(tempBombId, this.toRenderPayload(payload));
+    this.pendingBombRequestStore.register(requestId, tempBombId);
+    this.upsertBomb(tempBombId, this.toRenderPayload(payload, ownTeamId));
     this.lastBombPlacedElapsedMs = elapsedMs;
     return {
       tempBombId,
@@ -91,18 +99,20 @@ export class BombManager {
 
   /** 他プレイヤー向けの爆弾確定イベントを反映する */
   public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
-    this.upsertBomb(payload.bombId, this.toRenderPayload(payload));
+    // 通信では ownerSocketId を受け取り，受信時点で teamId を確定する
+    const ownerTeamId = this.resolveTeamIdBySocketId(payload.ownerSocketId);
+    this.upsertBomb(payload.bombId, this.toRenderPayload(payload, ownerTeamId));
   }
 
   /** 設置者本人向けACKを反映し，仮IDから正式IDへ置換する */
   public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
-    const tempBombId = this.pendingOwnRequestToTempBombId.get(payload.requestId);
+    const tempBombId = this.pendingBombRequestStore.getTempBombIdByRequestId(payload.requestId);
     if (!tempBombId) {
       return;
     }
 
     const tempPayload = this.bombRenderPayloadById.get(tempBombId);
-    this.removePendingRequestByRequestId(payload.requestId);
+    this.pendingBombRequestStore.removeByRequestId(payload.requestId);
     if (!tempPayload || tempBombId === payload.bombId) {
       return;
     }
@@ -139,7 +149,7 @@ export class BombManager {
     bomb.destroy();
     this.bombs.delete(bombId);
     this.bombRenderPayloadById.delete(bombId);
-    this.removePendingRequestByTempBombId(bombId);
+    this.pendingBombRequestStore.removeByTempBombId(bombId);
   }
 
   /** 爆弾状態を更新し終了済みを破棄する */
@@ -161,24 +171,40 @@ export class BombManager {
     this.bombs.forEach((bomb) => bomb.destroy());
     this.bombs.clear();
     this.bombRenderPayloadById.clear();
-    this.pendingOwnRequestToTempBombId.clear();
-    this.pendingTempBombIdToOwnRequest.clear();
+    this.pendingBombRequestStore.clear();
   }
 
   private isSameRenderPayload(a: BombRenderPayload, b: BombRenderPayload): boolean {
     return a.x === b.x
       && a.y === b.y
       && a.explodeAtElapsedMs === b.explodeAtElapsedMs
-      && a.radiusGrid === b.radiusGrid;
+      && a.radiusGrid === b.radiusGrid
+      && a.teamId === b.teamId
+      && a.color === b.color;
   }
 
-  private toRenderPayload(payload: { x: number; y: number; explodeAtElapsedMs: number }): BombRenderPayload {
+  private toRenderPayload(
+    payload: { x: number; y: number; explodeAtElapsedMs: number },
+    teamId: number
+  ): BombRenderPayload {
     return {
       x: payload.x,
       y: payload.y,
       explodeAtElapsedMs: payload.explodeAtElapsedMs,
       radiusGrid: config.GAME_CONFIG.BOMB_RADIUS_GRID,
+      teamId,
+      color: this.appearanceResolver.resolveTeamColor(teamId),
     };
+  }
+
+  private resolveTeamIdBySocketId(socketId: string): number {
+    const playerController = this.players[socketId];
+    if (!playerController) {
+      // 参照できない場合でも描画継続できるように未知チームで扱う
+      return sharedConfig.UNKNOWN_TEAM_ID;
+    }
+
+    return playerController.getSnapshot().teamId;
   }
 
   private createRequestId(_elapsedMs: number): string {
@@ -188,25 +214,5 @@ export class BombManager {
 
   private createTempBombId(requestId: string): string {
     return `temp:${requestId}`;
-  }
-
-  private removePendingRequestByRequestId(requestId: string): void {
-    const tempBombId = this.pendingOwnRequestToTempBombId.get(requestId);
-    if (!tempBombId) {
-      return;
-    }
-
-    this.pendingOwnRequestToTempBombId.delete(requestId);
-    this.pendingTempBombIdToOwnRequest.delete(tempBombId);
-  }
-
-  private removePendingRequestByTempBombId(tempBombId: string): void {
-    const requestId = this.pendingTempBombIdToOwnRequest.get(tempBombId);
-    if (!requestId) {
-      return;
-    }
-
-    this.pendingTempBombIdToOwnRequest.delete(tempBombId);
-    this.pendingOwnRequestToTempBombId.delete(requestId);
   }
 }
