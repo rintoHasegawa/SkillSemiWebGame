@@ -1,7 +1,7 @@
 /**
  * BombHitOrchestrator
  * 爆弾爆発イベントとローカルプレイヤー情報を橋渡しして当たり判定を実行する
- * 同一爆弾の重複判定を抑止して当たり判定を実行する
+ * 判定結果を呼び出し元へ返して後続処理へ接続しやすくする
  */
 import { checkBombHit } from "@client/scenes/game/entities/bomb/BombHitDetector";
 import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
@@ -12,6 +12,9 @@ type BombHitOrchestratorOptions = {
   contextProvider: BombHitContextProvider;
 };
 
+/** 爆弾爆発イベントの判定結果を表す型 */
+export type BombHitEvaluationResult = "duplicate" | "missing-local-player" | "no-hit" | "hit";
+
 /** 爆弾当たり判定の実行順序を制御する */
 export class BombHitOrchestrator {
   private contextProvider: BombHitContextProvider;
@@ -21,16 +24,16 @@ export class BombHitOrchestrator {
     this.contextProvider = contextProvider;
   }
 
-  /** 爆弾爆発イベントを受けて当たり判定を実行する */
-  public handleBombExploded(payload: BombExplodedPayload): void {
+  /** 爆弾爆発イベントを受けて当たり判定を実行し結果を返す */
+  public handleBombExploded(payload: BombExplodedPayload): BombHitEvaluationResult {
     if (this.handledBombIds.has(payload.bombId)) {
-      return;
+      return "duplicate";
     }
 
     this.handledBombIds.add(payload.bombId);
     const localPlayer = this.contextProvider.getLocalPlayerCircle();
     if (!localPlayer) {
-      return;
+      return "missing-local-player";
     }
 
     const result = checkBombHit({
@@ -44,8 +47,10 @@ export class BombHitOrchestrator {
     });
 
     if (!result.isHit) {
-      return;
+      return "no-hit";
     }
+
+    return "hit";
 
   }
 
