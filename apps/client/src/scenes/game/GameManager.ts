@@ -21,6 +21,10 @@ import {
   type MoveSender,
 } from "./application/network/PlayerMoveSender";
 import type { GamePlayers } from "./application/game.types";
+import {
+  GameUiStateSyncService,
+  type GameUiState,
+} from "./application/ui/GameUiStateSyncService";
 
 /** GameManager の依存注入オプション型 */
 export type GameManagerDependencies = {
@@ -31,12 +35,8 @@ export type GameManagerDependencies = {
   sceneFactories?: GameSceneFactoryOptions;
 };
 
-/** GameScene の UI 表示に必要な状態 */
-export type GameUiState = {
-  remainingTimeSec: number;
-  startCountdownSec: number;
-  isInputEnabled: boolean;
-};
+/** GameScene の UI 表示状態型を外部参照向けに再公開する */
+export type { GameUiState } from "./application/ui/GameUiStateSyncService";
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
 export class GameManager {
@@ -50,8 +50,7 @@ export class GameManager {
   private gameEventFacade: GameEventFacade;
   private combatFacade: CombatLifecycleFacade;
   private lifecycleState: SceneLifecycleState;
-  private uiStateListeners = new Set<(state: GameUiState) => void>();
-  private lastUiState: GameUiState | null = null;
+  private uiStateSyncService: GameUiStateSyncService;
 
   public getStartCountdownSec(): number {
     return this.sessionFacade.getStartCountdownSec();
@@ -73,8 +72,12 @@ export class GameManager {
   public lockInput(): () => void {
     this.runtime.clearJoystickInput();
     const release = this.sessionFacade.lockInput();
-    this.emitUiStateIfChanged(true);
-    return release;
+    this.uiStateSyncService.emitIfChanged();
+
+    return () => {
+      release();
+      this.uiStateSyncService.emitIfChanged();
+    };
   }
 
   constructor(
@@ -95,6 +98,7 @@ export class GameManager {
     this.gameEventFacade = new GameEventFacade({
       onGameStart: (startTime) => {
         this.sessionFacade.setGameStart(startTime);
+        this.uiStateSyncService.emitIfChanged();
       },
       getBombManager: () => this.runtime.getBombManager(),
     });
@@ -115,21 +119,26 @@ export class GameManager {
       gameActionSender,
       moveSender,
       getElapsedMs: () => this.sessionFacade.getElapsedMs(),
-      onGameStart: this.gameEventFacade.handleGameStart.bind(this.gameEventFacade),
-      onGameEnd: this.lockInput.bind(this),
-      onBombPlacedFromOthers: (payload) => {
-        this.gameEventFacade.handleBombPlacedFromOthers(payload);
-      },
-      onBombPlacedAckFromNetwork: (payload) => {
-        this.gameEventFacade.handleBombPlacedAck(payload);
-      },
-      onPlayerDeadFromNetwork: (payload) => {
-        this.combatFacade.handleNetworkPlayerDead(payload);
-      },
-      onBombExploded: (payload) => {
-        this.combatFacade.handleBombExploded(payload);
+      eventPorts: {
+        onGameStart: this.gameEventFacade.handleGameStart.bind(this.gameEventFacade),
+        onGameEnd: this.lockInput.bind(this),
+        onBombPlacedFromOthers: (payload) => {
+          this.gameEventFacade.handleBombPlacedFromOthers(payload);
+        },
+        onBombPlacedAckFromNetwork: (payload) => {
+          this.gameEventFacade.handleBombPlacedAck(payload);
+        },
+        onPlayerDeadFromNetwork: (payload) => {
+          this.combatFacade.handleNetworkPlayerDead(payload);
+        },
+        onBombExploded: (payload) => {
+          this.combatFacade.handleBombExploded(payload);
+        },
       },
       sceneFactories,
+    });
+    this.uiStateSyncService = new GameUiStateSyncService({
+      getSnapshot: () => this.getUiStateSnapshot(),
     });
   }
 
@@ -160,7 +169,8 @@ export class GameManager {
     // メインループの登録
     this.app.ticker.add(this.tick);
     this.lifecycleState.markInitialized();
-    this.emitUiStateIfChanged(true);
+    this.uiStateSyncService.startTicker();
+    this.uiStateSyncService.emitIfChanged(true);
   }
 
   /**
@@ -175,17 +185,11 @@ export class GameManager {
    */
   private tick = (ticker: Ticker) => {
     this.runtime.tick(ticker);
-    this.emitUiStateIfChanged();
   };
 
   /** UI状態購読を登録し，解除関数を返す */
   public subscribeUiState(listener: (state: GameUiState) => void): () => void {
-    this.uiStateListeners.add(listener);
-    listener(this.getUiStateSnapshot());
-
-    return () => {
-      this.uiStateListeners.delete(listener);
-    };
+    return this.uiStateSyncService.subscribe(listener);
   }
 
   private getUiStateSnapshot(): GameUiState {
@@ -196,33 +200,12 @@ export class GameManager {
     };
   }
 
-  private emitUiStateIfChanged(force = false): void {
-    if (this.uiStateListeners.size === 0 && !force) {
-      return;
-    }
-
-    const snapshot = this.getUiStateSnapshot();
-    if (
-      !force
-      && this.lastUiState
-      && this.lastUiState.remainingTimeSec === snapshot.remainingTimeSec
-      && this.lastUiState.startCountdownSec === snapshot.startCountdownSec
-      && this.lastUiState.isInputEnabled === snapshot.isInputEnabled
-    ) {
-      return;
-    }
-
-    this.lastUiState = snapshot;
-    this.uiStateListeners.forEach((listener) => {
-      listener(snapshot);
-    });
-  }
-
   /**
    * クリーンアップ処理（コンポーネントアンマウント時）
    */
   public destroy() {
     this.lifecycleState.markDestroyed();
+    this.uiStateSyncService.stopTicker();
     if (this.lifecycleState.shouldDestroyApp()) {
       this.app.destroy(true, { children: true });
     }
@@ -230,7 +213,6 @@ export class GameManager {
     this.combatFacade.dispose();
     this.sessionFacade.reset();
     this.players = {};
-    this.uiStateListeners.clear();
-    this.lastUiState = null;
+    this.uiStateSyncService.clear();
   }
 }

@@ -4,17 +4,16 @@
  * 入力状態，ネットワーク同期，ループ更新の実行責務を集約する
  */
 import { Application, Container, Ticker } from "pixi.js";
-import type {
-  BombPlacedAckPayload,
-  BombPlacedPayload,
-  PlayerDeadPayload,
-} from "@repo/shared";
 import { AppearanceResolver } from "../AppearanceResolver";
 import { GameNetworkSync } from "../GameNetworkSync";
 import { GameLoop } from "../GameLoop";
-import { GameSceneOrchestrator, type GameSceneFactoryOptions } from "../orchestrators/GameSceneOrchestrator";
+import {
+  GameSceneOrchestrator,
+  type GameSceneEventPorts,
+  type GameSceneFactoryOptions,
+} from "../orchestrators/GameSceneOrchestrator";
 import type { GamePlayers } from "../game.types";
-import type { BombExplodedPayload, BombManager } from "../../entities/bomb/BombManager";
+import type { BombManager } from "../../entities/bomb/BombManager";
 import type { MoveSender } from "../network/PlayerMoveSender";
 import type { GameActionSender } from "../network/GameActionSender";
 import type { GameSessionFacade } from "../lifecycle/GameSessionFacade";
@@ -28,12 +27,7 @@ export type GameSceneRuntimeOptions = {
   gameActionSender: GameActionSender;
   moveSender: MoveSender;
   getElapsedMs: () => number;
-  onGameStart: (startTime: number) => void;
-  onGameEnd: () => void;
-  onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
-  onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
-  onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
-  onBombExploded: (payload: BombExplodedPayload) => void;
+  eventPorts: GameSceneEventPorts;
   sceneFactories?: GameSceneFactoryOptions;
 };
 
@@ -47,12 +41,7 @@ export class GameSceneRuntime {
   private readonly gameActionSender: GameActionSender;
   private readonly moveSender: MoveSender;
   private readonly getElapsedMs: () => number;
-  private readonly onGameStart: (startTime: number) => void;
-  private readonly onGameEnd: () => void;
-  private readonly onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
-  private readonly onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
-  private readonly onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
-  private readonly onBombExploded: (payload: BombExplodedPayload) => void;
+  private readonly eventPorts: GameSceneEventPorts;
   private readonly sceneFactories?: GameSceneFactoryOptions;
 
   private readonly appearanceResolver = new AppearanceResolver();
@@ -70,12 +59,7 @@ export class GameSceneRuntime {
     gameActionSender,
     moveSender,
     getElapsedMs,
-    onGameStart,
-    onGameEnd,
-    onBombPlacedFromOthers,
-    onBombPlacedAckFromNetwork,
-    onPlayerDeadFromNetwork,
-    onBombExploded,
+    eventPorts,
     sceneFactories,
   }: GameSceneRuntimeOptions) {
     this.app = app;
@@ -86,12 +70,7 @@ export class GameSceneRuntime {
     this.gameActionSender = gameActionSender;
     this.moveSender = moveSender;
     this.getElapsedMs = getElapsedMs;
-    this.onGameStart = onGameStart;
-    this.onGameEnd = onGameEnd;
-    this.onBombPlacedFromOthers = onBombPlacedFromOthers;
-    this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
-    this.onPlayerDeadFromNetwork = onPlayerDeadFromNetwork;
-    this.onBombExploded = onBombExploded;
+    this.eventPorts = eventPorts;
     this.sceneFactories = sceneFactories;
   }
 
@@ -106,12 +85,7 @@ export class GameSceneRuntime {
       getElapsedMs: this.getElapsedMs,
       getJoystickInput: () => this.joystickInput,
       moveSender: this.moveSender,
-      onGameStart: this.onGameStart,
-      onGameEnd: this.onGameEnd,
-      onBombPlacedFromOthers: this.onBombPlacedFromOthers,
-      onBombPlacedAckFromNetwork: this.onBombPlacedAckFromNetwork,
-      onPlayerDeadFromNetwork: this.onPlayerDeadFromNetwork,
-      onBombExploded: this.onBombExploded,
+      eventPorts: this.eventPorts,
       factories: this.sceneFactories,
     });
 

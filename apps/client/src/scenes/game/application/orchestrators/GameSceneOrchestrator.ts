@@ -41,6 +41,16 @@ export type CreateBombManagerOptions = {
   onBombExploded: (payload: BombExplodedPayload) => void;
 };
 
+/** シーン層で扱うイベント通知ポート群 */
+export type GameSceneEventPorts = {
+  onGameStart: (startTime: number) => void;
+  onGameEnd: () => void;
+  onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
+  onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
+  onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
+  onBombExploded: (payload: BombExplodedPayload) => void;
+};
+
 /** GameLoop 生成入力型 */
 export type CreateGameLoopOptions = {
   app: Application;
@@ -69,12 +79,7 @@ export type GameSceneOrchestratorOptions = {
   getElapsedMs: () => number;
   getJoystickInput: () => { x: number; y: number };
   moveSender: MoveSender;
-  onGameStart: (startTime: number) => void;
-  onGameEnd: () => void;
-  onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
-  onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
-  onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
-  onBombExploded: (payload: BombExplodedPayload) => void;
+  eventPorts: GameSceneEventPorts;
   factories?: GameSceneFactoryOptions;
 };
 
@@ -96,12 +101,7 @@ export class GameSceneOrchestrator {
   private readonly getElapsedMs: () => number;
   private readonly getJoystickInput: () => { x: number; y: number };
   private readonly moveSender: MoveSender;
-  private readonly onGameStart: (startTime: number) => void;
-  private readonly onGameEnd: () => void;
-  private readonly onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
-  private readonly onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
-  private readonly onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
-  private readonly onBombExploded: (payload: BombExplodedPayload) => void;
+  private readonly eventPorts: GameSceneEventPorts;
   private readonly createNetworkSync: (options: CreateNetworkSyncOptions) => GameNetworkSync;
   private readonly createBombManager: (options: CreateBombManagerOptions) => BombManager;
   private readonly createGameLoop: (options: CreateGameLoopOptions) => GameLoop;
@@ -115,12 +115,7 @@ export class GameSceneOrchestrator {
     getElapsedMs,
     getJoystickInput,
     moveSender,
-    onGameStart,
-    onGameEnd,
-    onBombPlacedFromOthers,
-    onBombPlacedAckFromNetwork,
-    onPlayerDeadFromNetwork,
-    onBombExploded,
+    eventPorts,
     factories,
   }: GameSceneOrchestratorOptions) {
     this.app = app;
@@ -131,12 +126,7 @@ export class GameSceneOrchestrator {
     this.getElapsedMs = getElapsedMs;
     this.getJoystickInput = getJoystickInput;
     this.moveSender = moveSender;
-    this.onGameStart = onGameStart;
-    this.onGameEnd = onGameEnd;
-    this.onBombPlacedFromOthers = onBombPlacedFromOthers;
-    this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
-    this.onPlayerDeadFromNetwork = onPlayerDeadFromNetwork;
-    this.onBombExploded = onBombExploded;
+    this.eventPorts = eventPorts;
     this.createNetworkSync = factories?.createNetworkSync ?? ((options) => new GameNetworkSync(options));
     this.createBombManager = factories?.createBombManager ?? ((options) => new BombManager(options));
     this.createGameLoop = factories?.createGameLoop ?? ((options) => new GameLoop(options));
@@ -172,11 +162,11 @@ export class GameSceneOrchestrator {
       myId: this.myId,
       gameMap,
       appearanceResolver: this.appearanceResolver,
-      onGameStart: this.onGameStart,
-      onGameEnd: this.onGameEnd,
-      onBombPlacedFromOthers: this.onBombPlacedFromOthers,
-      onBombPlacedAckFromNetwork: this.onBombPlacedAckFromNetwork,
-      onPlayerDeadFromNetwork: this.onPlayerDeadFromNetwork,
+      onGameStart: this.eventPorts.onGameStart,
+      onGameEnd: this.eventPorts.onGameEnd,
+      onBombPlacedFromOthers: this.eventPorts.onBombPlacedFromOthers,
+      onBombPlacedAckFromNetwork: this.eventPorts.onBombPlacedAckFromNetwork,
+      onPlayerDeadFromNetwork: this.eventPorts.onPlayerDeadFromNetwork,
     });
     networkSync.bind();
     return networkSync;
@@ -190,7 +180,7 @@ export class GameSceneOrchestrator {
       myId: this.myId,
       getElapsedMs: this.getElapsedMs,
       appearanceResolver: this.appearanceResolver,
-      onBombExploded: this.onBombExploded,
+      onBombExploded: this.eventPorts.onBombExploded,
     });
   }
 

@@ -4,6 +4,12 @@
  * タイマー表示，PixiJSの描画領域，入力UIの配置のみを担当する
  */
 import { GameInputOverlay } from "./input/GameInputOverlay";
+import {
+  PIXI_LAYER_STYLE,
+  ROOT_STYLE,
+  START_COUNTDOWN_STYLE,
+  TIMER_STYLE,
+} from "./styles/GameView.styles";
 
 /** 表示と入力に必要なプロパティ */
 type Props = {
@@ -13,54 +19,6 @@ type Props = {
   pixiContainerRef: React.RefObject<HTMLDivElement>;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
-};
-
-const ROOT_STYLE: React.CSSProperties = {
-  width: "100vw",
-  height: "100vh",
-  overflow: "hidden",
-  position: "relative",
-  backgroundColor: "#000",
-  userSelect: "none",
-  WebkitUserSelect: "none",
-};
-
-const TIMER_STYLE: React.CSSProperties = {
-  position: "absolute",
-  top: "20px",
-  left: "50%",
-  transform: "translateX(-50%)",
-  zIndex: 10,
-  color: "white",
-  fontSize: "32px",
-  fontWeight: "bold",
-  textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
-  fontFamily: "monospace",
-  userSelect: "none",
-  WebkitUserSelect: "none",
-};
-
-const PIXI_LAYER_STYLE: React.CSSProperties = {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  zIndex: 1,
-};
-
-const START_COUNTDOWN_STYLE: React.CSSProperties = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  zIndex: 30,
-  color: "white",
-  fontSize: "clamp(3rem, 14vw, 8rem)",
-  fontWeight: 900,
-  textShadow: "0 0 16px rgba(0,0,0,0.85)",
-  fontFamily: "monospace",
-  userSelect: "none",
-  WebkitUserSelect: "none",
-  pointerEvents: "none",
 };
 
 const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => (
