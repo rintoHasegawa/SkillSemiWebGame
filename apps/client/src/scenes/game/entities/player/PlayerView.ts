@@ -12,7 +12,8 @@ export class PlayerView {
   public readonly displayObject: Sprite;
 
   constructor(teamId: number, isLocal: boolean) {
-    const { PLAYER_RADIUS_PX, TEAM_COUNT } = config.GAME_CONFIG;
+    const { PLAYER_RADIUS_PX, TEAM_COUNT, PLAYER_RENDER_SCALE } =
+      config.GAME_CONFIG;
 
     // 🌟 1. チームIDと画像ファイル名の紐づけ（すべて .svg に変更しました！）
     const characterImages = [
@@ -33,10 +34,7 @@ export class PlayerView {
     config.assertValidTeamId(teamId);
 
     // 配列から対応する画像ファイル名を取得（デフォルトは red.svg）
-    const imageFileName = characterImages[teamId].replace(
-      /^\//,
-      "",
-    );
+    const imageFileName = characterImages[teamId].replace(/^\//, "");
 
     // 🌟 2. スプライト（画像）の生成（初期は1x1テクスチャ）
     this.displayObject = new Sprite(Texture.WHITE);
@@ -45,8 +43,8 @@ export class PlayerView {
     this.displayObject.anchor.set(0.8, 0.8);
 
     // 🌟 4. 画像サイズを当たり判定（半径×2）に合わせる
-    this.displayObject.width = PLAYER_RADIUS_PX * 2;
-    this.displayObject.height = PLAYER_RADIUS_PX * 2;
+    this.displayObject.width = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
+    this.displayObject.height = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
 
     // ローカルプレイヤーだけ少し視認性を上げる（未使用引数対策を兼ねる）
     this.displayObject.alpha = isLocal ? 1 : 0.95;
@@ -62,17 +60,14 @@ export class PlayerView {
       const texture = await Assets.load(imageUrl);
       this.displayObject.texture = texture;
 
-      const { PLAYER_RADIUS_PX } = config.GAME_CONFIG;
+      const { PLAYER_RADIUS_PX, PLAYER_RENDER_SCALE } = config.GAME_CONFIG;
 
-      // 当たり判定の枠を強制的に何倍にするか（まずは 5倍 でテスト！）
-      const scaleRate = 5;
-
-      this.displayObject.width = PLAYER_RADIUS_PX * 2 * scaleRate;
-      this.displayObject.height = PLAYER_RADIUS_PX * 2 * scaleRate;
+      this.displayObject.width = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
+      this.displayObject.height = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
 
       if (ENABLE_DEBUG_LOG) {
         console.log(
-          `[PlayerView] 画像を ${scaleRate} 倍のサイズ（${this.displayObject.width}）に拡大`,
+          `[PlayerView] 画像を ${PLAYER_RENDER_SCALE} 倍のサイズ（${this.displayObject.width}）に拡大`,
         );
       }
     } catch (error) {
