@@ -22,6 +22,7 @@ export const GAME_CONFIG = {
 
   // 爆弾設定（内部座標はグリッド単位、時間はms、契約値）
   BOMB_RADIUS_GRID: 1.5, // 爆風半径（グリッド単位、円形当たり判定）
+  BOMB_RENDER_SCALE: 1.0, // 爆弾見た目サイズ倍率（1=等倍）
   BOMB_FUSE_MS: 1000, // 設置から爆発までの時間（ms）
   BOMB_COOLDOWN_MS: 3000, // 設置後に次の爆弾を置けるまでの待機時間（ms）
   BOMB_DEDUP_EXTRA_TTL_MS: 1000, // 重複排除保持時間の追加分（ms）
@@ -48,9 +49,9 @@ export const isUnknownTeamId = (teamId: number): boolean => {
 
 /** teamId が有効範囲内かを真偽値で判定する */
 export const isKnownTeamId = (teamId: number): boolean => {
-  return Number.isInteger(teamId)
-    && teamId >= 0
-    && teamId < GAME_CONFIG.TEAM_COUNT;
+  return (
+    Number.isInteger(teamId) && teamId >= 0 && teamId < GAME_CONFIG.TEAM_COUNT
+  );
 };
 
 /** TEAM_COUNT と TEAM_NAMES の整合性を検証する */

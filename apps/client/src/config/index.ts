@@ -1,5 +1,9 @@
 import { config as sharedConfig } from "@repo/shared";
 
+const sharedBombRenderScale =
+  (sharedConfig.GAME_CONFIG as { BOMB_RENDER_SCALE?: number })
+    .BOMB_RENDER_SCALE ?? 1;
+
 const CLIENT_GAME_CONFIG = {
   TIMER_DISPLAY_UPDATE_MS: 250,
   JOIN_REQUEST_TIMEOUT_MS: 8000,
@@ -27,6 +31,9 @@ const GAME_CONFIG = {
   },
   get PLAYER_RADIUS_PX(): number {
     return this.PLAYER_RADIUS * this.GRID_CELL_SIZE;
+  },
+  get BOMB_RENDER_RADIUS_PX(): number {
+    return this.GRID_CELL_SIZE * 0.2 * sharedBombRenderScale;
   },
 } as const;
 

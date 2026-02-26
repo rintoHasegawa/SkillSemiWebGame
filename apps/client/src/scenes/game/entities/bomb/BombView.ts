@@ -4,26 +4,56 @@
  * 設置中の見た目と爆風円の表示を管理する
  */
 import { Container, Graphics } from "pixi.js";
+import { Assets, Sprite, Texture } from "pixi.js";
 import { config } from "@client/config";
 import type { BombState } from "./BombModel";
+
+const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 
 /** 爆弾の描画表現を管理するビュー */
 export class BombView {
   public readonly displayObject: Container;
 
-  private bombGraphic: Graphics;
+  private bombSprite: Sprite;
+  private bombFallbackGraphic: Graphics;
   private explosionGraphic: Graphics;
   private lastRenderedState: BombState | null = null;
   private lastRenderedRadiusGrid: number | null = null;
   private lastRenderedColor: number | null = null;
+  private isBombTextureReady = false;
 
   constructor() {
     this.displayObject = new Container();
-    this.bombGraphic = new Graphics();
+    this.displayObject.zIndex = 1000;
+    this.bombSprite = new Sprite(Texture.WHITE);
+    this.bombSprite.anchor.set(0.5, 0.5);
+    this.bombSprite.visible = false;
+    this.bombFallbackGraphic = new Graphics();
+    this.bombFallbackGraphic.visible = false;
     this.explosionGraphic = new Graphics();
 
     this.displayObject.addChild(this.explosionGraphic);
-    this.displayObject.addChild(this.bombGraphic);
+    this.displayObject.addChild(this.bombFallbackGraphic);
+    this.displayObject.addChild(this.bombSprite);
+
+    void this.applyBombTexture();
+  }
+
+  private async applyBombTexture(): Promise<void> {
+    const imageUrl = `${import.meta.env.BASE_URL}Bomb.svg`;
+
+    try {
+      const texture = await Assets.load(imageUrl);
+      this.bombSprite.texture = texture;
+      this.isBombTextureReady = true;
+
+      if (ENABLE_DEBUG_LOG) {
+        console.log(`[BombView] Bomb.svg 読み込み成功: ${imageUrl}`);
+      }
+    } catch (error) {
+      this.isBombTextureReady = false;
+      console.error(`[BombView] Bomb.svg 読み込み失敗: ${imageUrl}`, error);
+    }
   }
 
   public syncPosition(gridX: number, gridY: number): void {
@@ -41,30 +71,40 @@ export class BombView {
     if (
       this.lastRenderedState === state &&
       this.lastRenderedRadiusGrid === radiusGrid &&
-      this.lastRenderedColor === color
+      this.lastRenderedColor === color &&
+      state !== "armed"
     ) {
       return;
     }
 
-    const { GRID_CELL_SIZE } = config.GAME_CONFIG;
-    const bombRadiusPx = GRID_CELL_SIZE * 0.2;
+    const { GRID_CELL_SIZE, BOMB_RENDER_RADIUS_PX } = config.GAME_CONFIG;
+    const bombRadiusPx = BOMB_RENDER_RADIUS_PX;
     const explosionRadiusPx = radiusGrid * GRID_CELL_SIZE;
 
     this.lastRenderedState = state;
     this.lastRenderedRadiusGrid = radiusGrid;
     this.lastRenderedColor = color;
 
-    this.bombGraphic.clear();
     this.explosionGraphic.clear();
+    this.bombFallbackGraphic.clear();
 
     if (state === "armed") {
-      this.bombGraphic.circle(0, 0, bombRadiusPx);
-      this.bombGraphic.fill({ color, alpha: 0.95 });
-      this.bombGraphic.stroke({ color: 0xffffff, width: 2 });
+      this.bombSprite.visible = this.isBombTextureReady;
+      this.bombSprite.tint = 0xffffff;
+      this.bombSprite.alpha = 1;
+      this.bombSprite.width = bombRadiusPx * 2;
+      this.bombSprite.height = bombRadiusPx * 2;
+
+      this.bombFallbackGraphic.visible = true;
+      this.bombFallbackGraphic.circle(0, 0, bombRadiusPx);
+      this.bombFallbackGraphic.fill({ color, alpha: 0.92 });
+      this.bombFallbackGraphic.stroke({ color: 0xffffff, width: 3 });
       return;
     }
 
     if (state === "exploded") {
+      this.bombSprite.visible = false;
+      this.bombFallbackGraphic.visible = false;
       this.explosionGraphic.circle(0, 0, explosionRadiusPx);
       this.explosionGraphic.fill({ color, alpha: 0.35 });
       this.explosionGraphic.stroke({ color, width: 3 });
