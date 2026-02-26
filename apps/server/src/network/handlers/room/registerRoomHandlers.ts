@@ -16,18 +16,20 @@ import {
   handleJoinRoomEvent,
   type JoinRoomOrchestratorDeps,
 } from "./roomEventOrchestrators";
+import {
+  registerGuardedEvents,
+  type GuardedEventDefinition,
+} from "@server/network/handlers/eventDefinitionRegistrar";
+
+type JoinRoomEventDefinition = GuardedEventDefinition<
+  typeof protocol.SocketEvents.JOIN_ROOM,
+  Parameters<typeof handleJoinRoomEvent>[1]
+>;
 
 /** ルーム受信イベントごとの入力検証関数を保持するテーブル */
 const roomPayloadValidators = {
   [protocol.SocketEvents.JOIN_ROOM]: isJoinRoomPayload,
 } as const;
-
-/** 検証付きルームイベント登録定義 */
-type GuardedRoomEventDefinition = {
-  event: keyof typeof roomPayloadValidators;
-  validator: (value: unknown) => value is unknown;
-  orchestrate: (payload: unknown) => Promise<void>;
-};
 
 /** ルームイベント調停で利用する依存束を生成する */
 const createJoinRoomOrchestratorDeps = (
@@ -64,27 +66,15 @@ export const registerRoomHandlers = (
   const { guardOnEvent } = createPayloadGuard(socket.id);
 
   // 検証が必要なイベントを宣言的に登録する
-  const guardedRoomEventDefinitions: GuardedRoomEventDefinition[] = [
+  const guardedRoomEventDefinitions: JoinRoomEventDefinition[] = [
     {
       event: protocol.SocketEvents.JOIN_ROOM,
       validator: roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM],
       orchestrate: async (payload) => {
-        await handleJoinRoomEvent(
-          orchestratorDeps,
-          payload as Parameters<typeof handleJoinRoomEvent>[1],
-        );
+        await handleJoinRoomEvent(orchestratorDeps, payload);
       },
     },
   ];
 
-  guardedRoomEventDefinitions.forEach((definition) => {
-    const guard = guardOnEvent(definition.event, definition.validator);
-    onEvent(definition.event, async (payload) => {
-      if (!guard(payload)) {
-        return;
-      }
-
-      await definition.orchestrate(payload);
-    });
-  });
+  registerGuardedEvents(onEvent, guardOnEvent, guardedRoomEventDefinitions);
 };

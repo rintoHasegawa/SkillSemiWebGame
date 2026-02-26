@@ -27,6 +27,39 @@ import {
   handleReadyForGameEvent,
   handleStartGameEvent,
 } from "./gameEventOrchestrators";
+import {
+  registerGuardedEvents,
+  registerSelfValidatedEvents,
+  registerUnguardedEvents,
+  type GuardedEventDefinition,
+  type SelfValidatedEventDefinition,
+  type UnguardedEventDefinition,
+} from "@server/network/handlers/eventDefinitionRegistrar";
+
+type PingEventDefinition = GuardedEventDefinition<
+  typeof protocol.SocketEvents.PING,
+  Parameters<typeof handlePingEvent>[1]
+>;
+
+type MoveEventDefinition = GuardedEventDefinition<
+  typeof protocol.SocketEvents.MOVE,
+  Parameters<typeof handleMoveEvent>[1]
+>;
+
+type PlaceBombEventDefinition = GuardedEventDefinition<
+  typeof protocol.SocketEvents.PLACE_BOMB,
+  Parameters<typeof handlePlaceBombEvent>[1]
+>;
+
+type BombHitReportEventDefinition = GuardedEventDefinition<
+  typeof protocol.SocketEvents.BOMB_HIT_REPORT,
+  Parameters<typeof handleBombHitReportEvent>[1]
+>;
+
+type StartGameEventDefinition = SelfValidatedEventDefinition<
+  typeof protocol.SocketEvents.START_GAME,
+  Parameters<typeof handleStartGameEvent>[1]
+>;
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
 const gamePayloadValidators = {
@@ -35,26 +68,6 @@ const gamePayloadValidators = {
   [protocol.SocketEvents.PLACE_BOMB]: isPlaceBombPayload,
   [protocol.SocketEvents.BOMB_HIT_REPORT]: isBombHitReportPayload,
 } as const;
-
-/** 検証付きゲームイベント登録定義 */
-type GuardedGameEventDefinition = {
-  event: keyof typeof gamePayloadValidators;
-  validator: (value: unknown) => value is unknown;
-  orchestrate: (payload: unknown) => void;
-};
-
-/** 自前検証付きゲームイベント登録定義 */
-type SelfValidatedGameEventDefinition = {
-  event: typeof protocol.SocketEvents.START_GAME;
-  validator: (value: unknown) => value is unknown;
-  orchestrate: (payload: unknown) => void;
-};
-
-/** 検証不要ゲームイベント登録定義 */
-type UnguardedGameEventDefinition = {
-  event: typeof protocol.SocketEvents.READY_FOR_GAME;
-  orchestrate: () => void;
-};
 
 /** ゲームイベント調停で利用する依存束を生成する */
 const createGameOrchestratorDeps = (
@@ -88,74 +101,59 @@ export const registerGameHandlers = (
   const { guardOnEvent } = createPayloadGuard(socket.id);
 
   // 検証が必要なイベントを宣言的に登録する
-  const guardedGameEventDefinitions: GuardedGameEventDefinition[] = [
+  const guardedGameEventDefinitions: Array<
+    | PingEventDefinition
+    | MoveEventDefinition
+    | PlaceBombEventDefinition
+    | BombHitReportEventDefinition
+  > = [
     {
       event: protocol.SocketEvents.PING,
       validator: gamePayloadValidators[protocol.SocketEvents.PING],
       orchestrate: (payload) => {
-        handlePingEvent(orchestratorDeps, payload as Parameters<typeof handlePingEvent>[1]);
+        handlePingEvent(orchestratorDeps, payload);
       },
     },
     {
       event: protocol.SocketEvents.MOVE,
       validator: gamePayloadValidators[protocol.SocketEvents.MOVE],
       orchestrate: (payload) => {
-        handleMoveEvent(orchestratorDeps, payload as Parameters<typeof handleMoveEvent>[1]);
+        handleMoveEvent(orchestratorDeps, payload);
       },
     },
     {
       event: protocol.SocketEvents.PLACE_BOMB,
       validator: gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB],
       orchestrate: (payload) => {
-        handlePlaceBombEvent(orchestratorDeps, payload as Parameters<typeof handlePlaceBombEvent>[1]);
+        handlePlaceBombEvent(orchestratorDeps, payload);
       },
     },
     {
       event: protocol.SocketEvents.BOMB_HIT_REPORT,
       validator: gamePayloadValidators[protocol.SocketEvents.BOMB_HIT_REPORT],
       orchestrate: (payload) => {
-        handleBombHitReportEvent(orchestratorDeps, payload as Parameters<typeof handleBombHitReportEvent>[1]);
+        handleBombHitReportEvent(orchestratorDeps, payload);
       },
     },
   ];
 
-  guardedGameEventDefinitions.forEach((definition) => {
-    const guard = guardOnEvent(definition.event, definition.validator);
-    onEvent(definition.event, (payload) => {
-      if (!guard(payload)) {
-        return;
-      }
-
-      definition.orchestrate(payload);
-    });
-  });
+  registerGuardedEvents(onEvent, guardOnEvent, guardedGameEventDefinitions);
 
   // payloadGuard対象外だが検証が必要なイベントを宣言的に登録する
-  const selfValidatedGameEventDefinitions: SelfValidatedGameEventDefinition[] = [
+  const selfValidatedGameEventDefinitions: StartGameEventDefinition[] = [
     {
       event: protocol.SocketEvents.START_GAME,
       validator: isStartGamePayload,
       orchestrate: (payload) => {
-        handleStartGameEvent(
-          orchestratorDeps,
-          payload as Parameters<typeof handleStartGameEvent>[1],
-        );
+        handleStartGameEvent(orchestratorDeps, payload);
       },
     },
   ];
 
-  selfValidatedGameEventDefinitions.forEach((definition) => {
-    onEvent(definition.event, (payload) => {
-      if (!definition.validator(payload)) {
-        return;
-      }
-
-      definition.orchestrate(payload);
-    });
-  });
+  registerSelfValidatedEvents(onEvent, selfValidatedGameEventDefinitions);
 
   // 検証不要イベントを宣言的に登録する
-  const unguardedGameEventDefinitions: UnguardedGameEventDefinition[] = [
+  const unguardedGameEventDefinitions: UnguardedEventDefinition<typeof protocol.SocketEvents.READY_FOR_GAME>[] = [
     {
       event: protocol.SocketEvents.READY_FOR_GAME,
       orchestrate: () => {
@@ -164,9 +162,5 @@ export const registerGameHandlers = (
     },
   ];
 
-  unguardedGameEventDefinitions.forEach((definition) => {
-    onEvent(definition.event, () => {
-      definition.orchestrate();
-    });
-  });
+  registerUnguardedEvents(onEvent, unguardedGameEventDefinitions);
 };
