@@ -28,11 +28,11 @@ export class GameSessionLifecycleService {
     return this.sessions.get(roomId)?.getPlayers() ?? [];
   }
 
-  public shouldBroadcastBombPlaced(roomId: string, dedupeKey: string, nowMs: number): boolean {
+  public shouldBroadcastBombPlacedForRoom(roomId: string, dedupeKey: string, nowMs: number): boolean {
     return this.sessions.get(roomId)?.shouldBroadcastBombPlaced(dedupeKey, nowMs) ?? false;
   }
 
-  public issueServerBombId(roomId: string): string {
+  public issueServerBombIdForRoom(roomId: string): string {
     const session = this.sessions.get(roomId);
     if (!session) {
       throw new Error(`Game session not found for roomId: ${roomId}`);
