@@ -238,6 +238,8 @@ export class GameManager {
       return;
     }
 
+    this.playerDeathPolicy.applyLocalHitStun();
+
     socketManager.game.sendBombHitReport({ bombId });
   }
 

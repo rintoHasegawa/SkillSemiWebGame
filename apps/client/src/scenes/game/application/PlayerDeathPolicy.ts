@@ -29,6 +29,11 @@ export class PlayerDeathPolicy {
     this.applyHitStun();
   }
 
+  /** ローカル被弾判定時に硬直を適用する */
+  public applyLocalHitStun(): void {
+    this.applyHitStun();
+  }
+
   /** ポリシーが保持するタイマーと入力ロックを解放する */
   public dispose(): void {
     if (this.unlockTimer) {
