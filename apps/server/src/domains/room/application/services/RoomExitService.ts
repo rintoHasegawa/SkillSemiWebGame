@@ -3,6 +3,7 @@
  * ルーム退出処理とオーナー移譲処理を担うサービス
  */
 import type { roomTypes } from "@repo/shared";
+import type { RoomDisconnectResult } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/index";
 
@@ -10,8 +11,9 @@ import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/inde
 export class RoomExitService {
   constructor(private rooms: Map<string, roomTypes.Room>) {}
 
-  public removePlayer(socketId: string): roomTypes.Room[] {
+  public removePlayer(socketId: string): RoomDisconnectResult {
     const updatedRooms: roomTypes.Room[] = [];
+    const deletedRoomIds: string[] = [];
 
     for (const [roomId, room] of this.rooms.entries()) {
       const playerIndex = room.players.findIndex((player) => player.id === socketId);
@@ -30,6 +32,7 @@ export class RoomExitService {
 
       if (room.players.length === 0) {
         this.rooms.delete(roomId);
+        deletedRoomIds.push(roomId);
         logEvent(logScopes.ROOM_EXIT_SERVICE, {
           event: roomDomainLogEvents.ROOM_DELETE,
           result: logResults.DELETED,
@@ -54,6 +57,9 @@ export class RoomExitService {
       updatedRooms.push(room);
     }
 
-    return updatedRooms;
+    return {
+      updatedRooms,
+      deletedRoomIds,
+    };
   }
 }

@@ -4,8 +4,10 @@
  */
 import type { Server } from "socket.io";
 import type {
+  DisconnectCoordinatorDeps,
+} from "@server/application/coordinators/coordinatorDeps";
+import type {
   CleanupGameRuntimePort,
-  DisconnectDeps,
   DisconnectRoomPort,
   EnsureGameRuntimePort,
   FindGameByRoomPort,
@@ -42,7 +44,7 @@ export type SocketConnectionRuntimePort =
   & CleanupGameRuntimePort;
 
 /** ソケット接続ハンドラで受け取るマネージャ依存の束 */
-export type SocketConnectionManagerBundle = DisconnectDeps & {
+export type SocketConnectionManagerBundle = DisconnectCoordinatorDeps & {
   roomManager: SocketConnectionRoomPort;
   runtimeRegistry: SocketConnectionRuntimePort;
 };

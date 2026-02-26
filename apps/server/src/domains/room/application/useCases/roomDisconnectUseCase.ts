@@ -5,15 +5,13 @@
 import type {
   CleanupGameRuntimePort,
   DisconnectRoomPort,
-  FindRoomByIdPort,
-  FindRoomByPlayerPort,
 } from "../ports/roomUseCasePorts";
 import type { RoomOutputPort } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";
 
 type RoomDisconnectUseCaseParams = {
-  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
+  roomManager: DisconnectRoomPort;
   runtimeRegistry: CleanupGameRuntimePort;
   socketId: string;
   output: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
@@ -26,8 +24,7 @@ export const roomDisconnectUseCase = ({
   socketId,
   output,
 }: RoomDisconnectUseCaseParams) => {
-  const beforeRoomId = roomManager.getRoomByPlayerId(socketId)?.roomId;
-  const updatedRooms = roomManager.removePlayer(socketId);
+  const { updatedRooms, deletedRoomIds } = roomManager.removePlayer(socketId);
   logEvent(logScopes.ROOM_USE_CASE, {
     event: roomUseCaseLogEvents.DISCONNECT,
     result: logResults.PROCESSED,
@@ -47,11 +44,7 @@ export const roomDisconnectUseCase = ({
     });
   });
 
-  if (!beforeRoomId) {
-    return;
-  }
-
-  if (!roomManager.getRoomById(beforeRoomId)) {
-    runtimeRegistry.cleanupGameManagerForRoom(beforeRoomId);
-  }
+  deletedRoomIds.forEach((roomId) => {
+    runtimeRegistry.cleanupGameManagerForRoom(roomId);
+  });
 };
