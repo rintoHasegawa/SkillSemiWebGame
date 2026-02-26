@@ -33,7 +33,8 @@ const gamePayloadValidators = {
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  roomManager: FindRoomByOwnerPort & FindRoomByPlayerPort & RoomPhaseTransitionPort & FindGameByRoomPort & FindGameByPlayerPort
+  roomManager: FindRoomByOwnerPort & FindRoomByPlayerPort & RoomPhaseTransitionPort,
+  runtimeRegistry: FindGameByRoomPort & FindGameByPlayerPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -68,6 +69,7 @@ export const registerGameHandlers = (
     startGameCoordinator({
       ownerId: socket.id,
       roomManager,
+      runtimeRegistry,
       output: gameOutputAdapter,
     });
   });
@@ -77,6 +79,7 @@ export const registerGameHandlers = (
     readyForGameCoordinator({
       socketId: socket.id,
       roomManager,
+      runtimeRegistry,
       output: gameOutputAdapter,
     });
   });
@@ -87,7 +90,7 @@ export const registerGameHandlers = (
       return;
     }
 
-    const gameManager = roomManager.getGameManagerByPlayerId(socket.id);
+    const gameManager = runtimeRegistry.getGameManagerByPlayerId(socket.id);
     if (!gameManager) {
       return;
     }
@@ -106,7 +109,7 @@ export const registerGameHandlers = (
     }
 
     const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
-    const gameManager = roomManager.getGameManagerByPlayerId(socket.id);
+    const gameManager = runtimeRegistry.getGameManagerByPlayerId(socket.id);
     if (!roomId || !gameManager) {
       return;
     }

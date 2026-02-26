@@ -17,7 +17,8 @@ import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
-  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort & FindGameByRoomPort;
+  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
+  runtimeRegistry: FindGameByRoomPort;
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToSocket"
@@ -32,6 +33,7 @@ type StartGameCoordinatorParams = {
 export const startGameCoordinator = ({
   ownerId,
   roomManager,
+  runtimeRegistry,
   output,
 }: StartGameCoordinatorParams) => {
   const room = roomManager.getRoomByOwnerId(ownerId);
@@ -74,7 +76,7 @@ export const startGameCoordinator = ({
   });
 
   const playerIds = updatedRoom.players.map((player) => player.id);
-  const gameManager = roomManager.getGameManagerByRoomId(updatedRoom.roomId);
+  const gameManager = runtimeRegistry.getGameManagerByRoomId(updatedRoom.roomId);
   if (!gameManager) {
     return;
   }

@@ -10,7 +10,8 @@ import { readyForGameUseCase } from "@server/domains/game/application/useCases/r
 
 type ReadyForGameCoordinatorParams = {
   socketId: string;
-  roomManager: FindRoomByPlayerPort & FindGameByPlayerPort;
+  roomManager: FindRoomByPlayerPort;
+  runtimeRegistry: FindGameByPlayerPort;
   output: Pick<GameOutputPort, "publishCurrentPlayersToSocket" | "publishGameStartToSocket">;
 };
 
@@ -18,10 +19,11 @@ type ReadyForGameCoordinatorParams = {
 export const readyForGameCoordinator = ({
   socketId,
   roomManager,
+  runtimeRegistry,
   output,
 }: ReadyForGameCoordinatorParams) => {
   const room = roomManager.getRoomByPlayerId(socketId);
-  const gameManager = roomManager.getGameManagerByPlayerId(socketId);
+  const gameManager = runtimeRegistry.getGameManagerByPlayerId(socketId);
 
   readyForGameUseCase({
     socketId,
