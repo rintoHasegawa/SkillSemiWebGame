@@ -10,12 +10,13 @@ import type {
   CurrentPlayersPayload,
   GameStartPayload,
   NewPlayerPayload,
+  PlayerDeadPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
-import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
+import { AppearanceResolver } from "./AppearanceResolver";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import type { GamePlayers } from "./game.types";
@@ -32,6 +33,7 @@ type GameNetworkSyncOptions = {
   onGameEnd: () => void;
   onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
   onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
+  onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -45,6 +47,7 @@ export class GameNetworkSync {
   private onGameEnd: () => void;
   private onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
   private onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
+  private onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
   private isBound = false;
 
   private debugLog = (message: string) => {
@@ -113,6 +116,10 @@ export class GameNetworkSync {
     this.onBombPlacedAckFromNetwork(payload);
   };
 
+  private handlePlayerDead = (payload: PlayerDeadPayload) => {
+    this.onPlayerDeadFromNetwork(payload);
+  };
+
   constructor({
     worldContainer,
     players,
@@ -123,6 +130,7 @@ export class GameNetworkSync {
     onGameEnd,
     onBombPlacedFromOthers,
     onBombPlacedAckFromNetwork,
+    onPlayerDeadFromNetwork,
   }: GameNetworkSyncOptions) {
     this.worldContainer = worldContainer;
     this.players = players;
@@ -133,6 +141,7 @@ export class GameNetworkSync {
     this.onGameEnd = onGameEnd;
     this.onBombPlacedFromOthers = onBombPlacedFromOthers;
     this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
+    this.onPlayerDeadFromNetwork = onPlayerDeadFromNetwork;
   }
 
   public bind() {
@@ -147,6 +156,7 @@ export class GameNetworkSync {
     socketManager.game.onGameEnd(this.handleGameEnd);
     socketManager.game.onBombPlaced(this.handleBombPlaced);
     socketManager.game.onBombPlacedAck(this.handleBombPlacedAck);
+    socketManager.game.onPlayerDead(this.handlePlayerDead);
 
     this.isBound = true;
   }
@@ -163,6 +173,7 @@ export class GameNetworkSync {
     socketManager.game.offGameEnd(this.handleGameEnd);
     socketManager.game.offBombPlaced(this.handleBombPlaced);
     socketManager.game.offBombPlacedAck(this.handleBombPlacedAck);
+    socketManager.game.offPlayerDead(this.handlePlayerDead);
 
     this.isBound = false;
   }

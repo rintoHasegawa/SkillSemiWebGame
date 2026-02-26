@@ -4,7 +4,11 @@
  * マップ，ネットワーク同期，ゲームループを統合する
  */
 import { Application, Container, Ticker } from "pixi.js";
-import type { BombPlacedAckPayload, BombPlacedPayload } from "@repo/shared";
+import type {
+  BombPlacedAckPayload,
+  BombPlacedPayload,
+  PlayerDeadPayload,
+} from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
 import { AppearanceResolver } from "./application/AppearanceResolver";
 import { GameMapController } from "./entities/map/GameMapController";
@@ -162,6 +166,9 @@ export class GameManager {
       onBombPlacedAckFromNetwork: (payload) => {
         this.applyPlacedBombAck(payload);
       },
+      onPlayerDeadFromNetwork: (payload) => {
+        this.handlePlayerDeadFromNetwork(payload);
+      },
     });
     this.networkSync.bind();
   }
@@ -231,6 +238,14 @@ export class GameManager {
 
     this.reportedBombHitIds.add(bombId);
     return true;
+  }
+
+  private handlePlayerDeadFromNetwork(payload: PlayerDeadPayload): void {
+    if (payload.playerId !== this.myId) {
+      return;
+    }
+
+    this.lockInput();
   }
 
   /**
