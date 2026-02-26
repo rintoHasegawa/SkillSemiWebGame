@@ -14,36 +14,7 @@ export { createBombIdFromPayload } from "./bombIdentity";
 export type { BombNetworkPayload } from "./bombIdentity";
 
 /** 基本ペイロード型を再公開する */
-export type {
-  InitialPlayerSyncPayload,
-  DeltaPlayerSyncPayload,
-  UpdatePlayersPayload,
-  CurrentPlayersPayload,
-  UpdateMapCellsPayload,
-  NewPlayerPayload,
-  RemovePlayerPayload,
-  GameStartPayload,
-  MovePayload,
-  PlaceBombPayload,
-  BombPlacedPayload,
-  BombPlacedAckPayload,
-  BombHitReportPayload,
-  PlayerDeadPayload,
-  PingPayload,
-  PongPayload,
-  JoinRoomPayload,
-  RoomJoinRejectedPayload,
-  RoomUpdatePayload,
-  GameResultPayload,
-  GameResultRanking,
-} from "./eventPayloads";
+export type * from "./eventPayloads";
 
 /** イベント方向ごとのペイロード対応表とユーティリティ型を再公開する */
-export type {
-  ConnectionLifecycleEventPayloadMap,
-  ConnectionLifecyclePayloadOf,
-  ClientToServerEventPayloadMap,
-  ClientToServerPayloadOf,
-  ServerToClientEventPayloadMap,
-  ServerToClientPayloadOf,
-} from "./eventPayloadMaps";
+export type * from "./eventPayloadMaps";

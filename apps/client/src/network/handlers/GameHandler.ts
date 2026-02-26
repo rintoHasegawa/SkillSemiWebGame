@@ -9,6 +9,8 @@ import type {
   BombHitReportPayload,
   BombPlacedAckPayload,
   BombPlacedPayload,
+  ClientToServerEventPayloadMap,
+  ServerToClientEventPayloadMap,
   CurrentPlayersPayload,
   GameResultPayload,
   GameStartPayload,
@@ -53,37 +55,96 @@ export type GameHandler = {
 /** ソケットインスタンスからゲーム向けハンドラを生成する */
 export const createGameHandler = (socket: Socket): GameHandler => {
   const { onEvent, onceEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
+  type ReceiveEventName = Extract<keyof ServerToClientEventPayloadMap, string>;
+  type SendEventName = Extract<keyof ClientToServerEventPayloadMap, string>;
+
+  const createSubscriptionPair = <TEvent extends ReceiveEventName>(event: TEvent) => {
+    return {
+      on: (callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void) => {
+        onEvent(event, callback);
+      },
+      off: (callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void) => {
+        offEvent(event, callback);
+      },
+    };
+  };
+
+  const createPayloadSender = <TEvent extends SendEventName>(event: TEvent) => {
+    return (payload: ClientToServerEventPayloadMap[TEvent]) => {
+      emitEvent(event, payload);
+    };
+  };
+
+  const createVoidSender = <TEvent extends SendEventName>(event: TEvent) => {
+    return () => {
+      emitEvent(event);
+    };
+  };
+
+  const currentPlayersSubscription = createSubscriptionPair(
+    protocol.SocketEvents.CURRENT_PLAYERS
+  );
+  const newPlayerSubscription = createSubscriptionPair(
+    protocol.SocketEvents.NEW_PLAYER
+  );
+  const updatePlayersSubscription = createSubscriptionPair(
+    protocol.SocketEvents.UPDATE_PLAYERS
+  );
+  const removePlayerSubscription = createSubscriptionPair(
+    protocol.SocketEvents.REMOVE_PLAYER
+  );
+  const updateMapCellsSubscription = createSubscriptionPair(
+    protocol.SocketEvents.UPDATE_MAP_CELLS
+  );
+  const gameEndSubscription = createSubscriptionPair(
+    protocol.SocketEvents.GAME_END
+  );
+  const gameResultSubscription = createSubscriptionPair(
+    protocol.SocketEvents.GAME_RESULT
+  );
+  const bombPlacedSubscription = createSubscriptionPair(
+    protocol.SocketEvents.BOMB_PLACED
+  );
+  const bombPlacedAckSubscription = createSubscriptionPair(
+    protocol.SocketEvents.BOMB_PLACED_ACK
+  );
+  const sendMovePayload = createPayloadSender(protocol.SocketEvents.MOVE);
+  const sendPlaceBombPayload = createPayloadSender(protocol.SocketEvents.PLACE_BOMB);
+  const sendBombHitReportPayload = createPayloadSender(
+    protocol.SocketEvents.BOMB_HIT_REPORT
+  );
+  const sendReadyForGame = createVoidSender(protocol.SocketEvents.READY_FOR_GAME);
 
   return {
     onCurrentPlayers: (callback) => {
-      onEvent(protocol.SocketEvents.CURRENT_PLAYERS, callback);
+      currentPlayersSubscription.on(callback);
     },
     offCurrentPlayers: (callback) => {
-      offEvent(protocol.SocketEvents.CURRENT_PLAYERS, callback);
+      currentPlayersSubscription.off(callback);
     },
     onNewPlayer: (callback) => {
-      onEvent(protocol.SocketEvents.NEW_PLAYER, callback);
+      newPlayerSubscription.on(callback);
     },
     offNewPlayer: (callback) => {
-      offEvent(protocol.SocketEvents.NEW_PLAYER, callback);
+      newPlayerSubscription.off(callback);
     },
     onUpdatePlayers: (callback) => {
-      onEvent(protocol.SocketEvents.UPDATE_PLAYERS, callback);
+      updatePlayersSubscription.on(callback);
     },
     offUpdatePlayers: (callback) => {
-      offEvent(protocol.SocketEvents.UPDATE_PLAYERS, callback);
+      updatePlayersSubscription.off(callback);
     },
     onRemovePlayer: (callback) => {
-      onEvent(protocol.SocketEvents.REMOVE_PLAYER, callback);
+      removePlayerSubscription.on(callback);
     },
     offRemovePlayer: (callback) => {
-      offEvent(protocol.SocketEvents.REMOVE_PLAYER, callback);
+      removePlayerSubscription.off(callback);
     },
     onUpdateMapCells: (callback) => {
-      onEvent(protocol.SocketEvents.UPDATE_MAP_CELLS, callback);
+      updateMapCellsSubscription.on(callback);
     },
     offUpdateMapCells: (callback) => {
-      offEvent(protocol.SocketEvents.UPDATE_MAP_CELLS, callback);
+      updateMapCellsSubscription.off(callback);
     },
     onGameStart: (callback) => {
       onEvent(protocol.SocketEvents.GAME_START, callback);
@@ -95,41 +156,41 @@ export const createGameHandler = (socket: Socket): GameHandler => {
       offEvent(protocol.SocketEvents.GAME_START, callback);
     },
     onGameEnd: (callback) => {
-      onEvent(protocol.SocketEvents.GAME_END, callback);
+      gameEndSubscription.on(callback);
     },
     offGameEnd: (callback) => {
-      offEvent(protocol.SocketEvents.GAME_END, callback);
+      gameEndSubscription.off(callback);
     },
     onGameResult: (callback) => {
-      onEvent(protocol.SocketEvents.GAME_RESULT, callback);
+      gameResultSubscription.on(callback);
     },
     offGameResult: (callback) => {
-      offEvent(protocol.SocketEvents.GAME_RESULT, callback);
+      gameResultSubscription.off(callback);
     },
     onBombPlaced: (callback) => {
-      onEvent(protocol.SocketEvents.BOMB_PLACED, callback);
+      bombPlacedSubscription.on(callback);
     },
     offBombPlaced: (callback) => {
-      offEvent(protocol.SocketEvents.BOMB_PLACED, callback);
+      bombPlacedSubscription.off(callback);
     },
     onBombPlacedAck: (callback) => {
-      onEvent(protocol.SocketEvents.BOMB_PLACED_ACK, callback);
+      bombPlacedAckSubscription.on(callback);
     },
     offBombPlacedAck: (callback) => {
-      offEvent(protocol.SocketEvents.BOMB_PLACED_ACK, callback);
+      bombPlacedAckSubscription.off(callback);
     },
     sendMove: (x, y) => {
       const payload: MovePayload = { x, y };
-      emitEvent(protocol.SocketEvents.MOVE, payload);
+      sendMovePayload(payload);
     },
     sendPlaceBomb: (payload) => {
-      emitEvent(protocol.SocketEvents.PLACE_BOMB, payload);
+      sendPlaceBombPayload(payload);
     },
     sendBombHitReport: (payload) => {
-      emitEvent(protocol.SocketEvents.BOMB_HIT_REPORT, payload);
+      sendBombHitReportPayload(payload);
     },
     readyForGame: () => {
-      emitEvent(protocol.SocketEvents.READY_FOR_GAME);
+      sendReadyForGame();
     }
   };
 };

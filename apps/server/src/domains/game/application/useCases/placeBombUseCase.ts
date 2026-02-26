@@ -4,7 +4,7 @@
  */
 import type {
   BombPlacementPort,
-  BombOutputPort,
+  PlaceBombOutputPort,
   PlaceBombInput,
 } from "../ports/gameUseCasePorts";
 import {
@@ -17,7 +17,7 @@ type PlaceBombUseCaseParams = {
   roomId: string;
   bombStore: BombPlacementPort;
   input: PlaceBombInput;
-  output: BombOutputPort;
+  output: PlaceBombOutputPort;
 };
 
 /** 爆弾設置入力を重複排除と採番付きでルームへ配信する */

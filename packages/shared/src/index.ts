@@ -22,33 +22,7 @@ export * as roomConsts from "./domains/room/room.const";
 /** ソケットイベント定義を再公開 */
 export * as protocol from "./protocol/events";
 /** ソケットイベント関連の共有型を再公開 */
-export type {
-	ConnectionLifecycleEventPayloadMap,
-	ConnectionLifecyclePayloadOf,
-	ClientToServerEventPayloadMap,
-	ClientToServerPayloadOf,
-	ServerToClientEventPayloadMap,
-	ServerToClientPayloadOf,
-	InitialPlayerSyncPayload,
-	DeltaPlayerSyncPayload,
-	CurrentPlayersPayload,
-	BombPlacedPayload,
-	BombPlacedAckPayload,
-	BombHitReportPayload,
-	PlayerDeadPayload,
-	PlaceBombPayload,
-	BombNetworkPayload,
-	GameStartPayload,
-	GameResultPayload,
-	GameResultRanking,
-	MovePayload,
-	NewPlayerPayload,
-	PingPayload,
-	PongPayload,
-	RemovePlayerPayload,
-	UpdateMapCellsPayload,
-	UpdatePlayersPayload,
-} from "./protocol/events";
+export type * from "./protocol/events";
 /** ソケットイベントブリッジ生成関数を再公開 */
 export { createSocketEventBridge } from "./protocol/socketEventBridge";
 /** 爆弾ペイロードから同期用IDを生成するユーティリティを再公開 */

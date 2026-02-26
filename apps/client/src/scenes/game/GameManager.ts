@@ -31,6 +31,7 @@ export class GameManager {
   private bombHitOrchestrator: BombHitOrchestrator | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
+  private reportedBombHitIds = new Set<string>();
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
   public setGameStart(startTime: number) {
@@ -209,11 +210,27 @@ export class GameManager {
     result: BombHitEvaluationResult | undefined,
     bombId: string,
   ): void {
-    if (result !== "hit") {
+    if (!this.shouldSendBombHitReport(result, bombId)) {
       return;
     }
 
     socketManager.game.sendBombHitReport({ bombId });
+  }
+
+  private shouldSendBombHitReport(
+    result: BombHitEvaluationResult | undefined,
+    bombId: string,
+  ): boolean {
+    if (result !== "hit") {
+      return false;
+    }
+
+    if (this.reportedBombHitIds.has(bombId)) {
+      return false;
+    }
+
+    this.reportedBombHitIds.add(bombId);
+    return true;
   }
 
   /**
@@ -228,6 +245,7 @@ export class GameManager {
     this.bombManager = null;
     this.bombHitOrchestrator?.clear();
     this.bombHitOrchestrator = null;
+    this.reportedBombHitIds.clear();
     this.players = {};
     this.isInputLocked = false;
 

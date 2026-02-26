@@ -16,6 +16,7 @@ import type {
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
+import { reportBombHitUseCase } from "@server/domains/game/application/useCases/reportBombHitUseCase";
 import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import {
@@ -136,7 +137,7 @@ export const registerGameHandlers = (
     });
   });
 
-  // 被弾報告を受信し，検証通過時にテストログを出力する
+  // 被弾報告を受信する
   onEvent(protocol.SocketEvents.BOMB_HIT_REPORT, (data) => {
     if (!guardBombHitReportPayload(data)) {
       return;
@@ -147,10 +148,13 @@ export const registerGameHandlers = (
       return;
     }
 
-    console.log("[ServerTest] BOMB_HIT_REPORT received", {
+    reportBombHitUseCase({
       roomId: runtime.roomId,
-      reporterSocketId: socket.id,
-      bombId: data.bombId,
+      input: {
+        socketId: socket.id,
+        payload: data,
+      },
+      output: gameOutputAdapter,
     });
   });
 };
