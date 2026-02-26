@@ -82,6 +82,11 @@ export class GameManager {
     return this.lifecycleService.shouldBroadcastBombPlaced(dedupeKey, nowMs);
   }
 
+  // 被弾報告イベントを配信すべきか判定し，配信時は重複排除状態を更新する
+  shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean {
+    return this.lifecycleService.shouldBroadcastBombHitReport(dedupeKey, nowMs);
+  }
+
   // サーバー採番の爆弾IDを生成する
   issueServerBombId(): string {
     return this.lifecycleService.issueServerBombId();

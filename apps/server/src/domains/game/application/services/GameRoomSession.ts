@@ -152,6 +152,10 @@ export class GameRoomSession {
     return this.bombStateStore.shouldBroadcastBombPlaced(dedupeKey, nowMs);
   }
 
+  public shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean {
+    return this.bombStateStore.shouldBroadcastBombHitReport(dedupeKey, nowMs);
+  }
+
   public issueServerBombId(): string {
     return this.bombStateStore.issueServerBombId();
   }

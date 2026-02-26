@@ -4,6 +4,7 @@
  */
 import type { roomTypes } from "@repo/shared";
 import type {
+  BombHitReportValidationPort,
   BombPlacementPort,
   DisconnectPlayerPort,
   MovePlayerPort,
@@ -17,6 +18,7 @@ export type RoomScopedGamePort =
   & ReadyForGamePort
   & MovePlayerPort
   & BombPlacementPort
+  & BombHitReportValidationPort
   & DisconnectPlayerPort;
 
 /** ルーム参加処理の実行結果 */

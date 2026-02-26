@@ -4,7 +4,10 @@
  * マップ，ネットワーク同期，ゲームループを統合する
  */
 import { Application, Container, Ticker } from "pixi.js";
-import type { BombPlacedAckPayload, BombPlacedPayload } from "@repo/shared";
+import type {
+  BombPlacedAckPayload,
+  BombPlacedPayload,
+} from "@repo/shared";
 import { socketManager } from "@client/network/SocketManager";
 import { AppearanceResolver } from "./application/AppearanceResolver";
 import { GameMapController } from "./entities/map/GameMapController";
@@ -14,6 +17,7 @@ import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
 import { BombHitContextProvider } from "./application/BombHitContextProvider";
 import { BombHitOrchestrator } from "./application/BombHitOrchestrator";
+import { PlayerDeathPolicy } from "./application/PlayerDeathPolicy";
 import type { BombHitEvaluationResult } from "./application/BombHitOrchestrator";
 import type { GamePlayers } from "./application/game.types";
 
@@ -31,6 +35,7 @@ export class GameManager {
   private bombHitOrchestrator: BombHitOrchestrator | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
+  private playerDeathPolicy: PlayerDeathPolicy;
   private reportedBombHitIds = new Set<string>();
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
@@ -86,6 +91,10 @@ export class GameManager {
     this.app = new Application();
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
+    this.playerDeathPolicy = new PlayerDeathPolicy({
+      myId: this.myId,
+      lockInput: this.lockInput.bind(this),
+    });
   }
 
   /**
@@ -161,6 +170,9 @@ export class GameManager {
       },
       onBombPlacedAckFromNetwork: (payload) => {
         this.applyPlacedBombAck(payload);
+      },
+      onPlayerDeadFromNetwork: (payload) => {
+        this.playerDeathPolicy.applyPlayerDeadEvent(payload);
       },
     });
     this.networkSync.bind();

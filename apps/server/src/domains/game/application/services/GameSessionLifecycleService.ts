@@ -42,6 +42,13 @@ export class GameSessionLifecycleService {
     );
   }
 
+  public shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean {
+    return (
+      this.sessionRef.current?.shouldBroadcastBombHitReport(dedupeKey, nowMs) ??
+      false
+    );
+  }
+
   public issueServerBombId(): string {
     const session = this.sessionRef.current;
     if (!session) {
