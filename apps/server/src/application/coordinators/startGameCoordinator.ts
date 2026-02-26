@@ -5,7 +5,10 @@
 import { type StartGameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { StartGameCoordinatorDeps } from "./coordinatorDeps";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
-import { createBalancedSessionPlayerIds } from "@server/domains/game/application/services/BotRosterService";
+import {
+  createBalancedSessionPlayerIds,
+  isBotPlayerId,
+} from "@server/domains/game/application/services/BotRosterService";
 import { logEvent } from "@server/logging/logger";
 import {
   gameUseCaseLogEvents,
@@ -71,10 +74,20 @@ export const startGameCoordinator = ({
   });
 
   const humanPlayerIds = updatedRoom.players.map((player) => player.id);
+  const playerNamesById = Object.fromEntries(
+    updatedRoom.players.map((player) => [player.id, player.name]),
+  );
   const sessionPlayerIds = createBalancedSessionPlayerIds(
     updatedRoom.roomId,
     humanPlayerIds,
   );
+  sessionPlayerIds.forEach((playerId) => {
+    if (!isBotPlayerId(playerId)) {
+      return;
+    }
+
+    playerNamesById[playerId] = "BOT";
+  });
   const gameManager = runtimeRegistry.getGameManagerByRoomId(
     updatedRoom.roomId,
   );
@@ -85,6 +98,7 @@ export const startGameCoordinator = ({
   startGameUseCase({
     roomId: updatedRoom.roomId,
     playerIds: sessionPlayerIds,
+    playerNamesById,
     recipientPlayerIds: humanPlayerIds,
     gameSession: gameManager,
     bombStore: gameManager,

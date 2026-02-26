@@ -7,8 +7,12 @@ import { Player } from "./Player.js";
 
 /** プレイヤーを生成し，初期スポーン座標を設定して返す */
 // 💡 引数に teamId を追加
-export const createSpawnedPlayer = (id: string, teamId: number): Player => {
-  const player = new Player(id, teamId); // ここにteamIdを渡す！
+export const createSpawnedPlayer = (
+  id: string,
+  name: string,
+  teamId: number,
+): Player => {
+  const player = new Player(id, name, teamId); // ここにteamIdを渡す！
 
   const { GRID_COLS, GRID_ROWS, TEAM_COUNT } = config.GAME_CONFIG;
 

@@ -35,6 +35,7 @@ export class GameRoomSession {
   constructor(
     private roomId: string,
     playerIds: string[],
+    playerNamesById: Record<string, string>,
   ) {
     this.players = new Map();
     this.mapStore = new MapStore();
@@ -47,7 +48,8 @@ export class GameRoomSession {
       );
 
       // 算出したチームIDを指定してプレイヤーを生成する
-      const player = createSpawnedPlayer(playerId, assignedTeamId);
+      const playerName = playerNamesById[playerId] ?? playerId;
+      const player = createSpawnedPlayer(playerId, playerName, assignedTeamId);
 
       this.players.set(playerId, player);
     });
@@ -152,7 +154,10 @@ export class GameRoomSession {
     return this.bombStateStore.shouldBroadcastBombPlaced(dedupeKey, nowMs);
   }
 
-  public shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean {
+  public shouldBroadcastBombHitReport(
+    dedupeKey: string,
+    nowMs: number,
+  ): boolean {
     return this.bombStateStore.shouldBroadcastBombHitReport(dedupeKey, nowMs);
   }
 

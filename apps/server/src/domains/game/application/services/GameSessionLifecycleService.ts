@@ -42,7 +42,10 @@ export class GameSessionLifecycleService {
     );
   }
 
-  public shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean {
+  public shouldBroadcastBombHitReport(
+    dedupeKey: string,
+    nowMs: number,
+  ): boolean {
     return (
       this.sessionRef.current?.shouldBroadcastBombHitReport(dedupeKey, nowMs) ??
       false
@@ -60,6 +63,7 @@ export class GameSessionLifecycleService {
 
   public startRoomSession(
     playerIds: string[],
+    playerNamesById: Record<string, string>,
     onTick: (data: gameTypes.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
@@ -74,7 +78,11 @@ export class GameSessionLifecycleService {
     }
 
     const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
-    const session = new GameRoomSession(this.roomId, playerIds);
+    const session = new GameRoomSession(
+      this.roomId,
+      playerIds,
+      playerNamesById,
+    );
 
     this.activePlayerIds.clear();
     playerIds.forEach((playerId) => {
