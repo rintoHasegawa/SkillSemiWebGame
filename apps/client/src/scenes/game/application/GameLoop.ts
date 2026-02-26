@@ -13,7 +13,7 @@ import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";
 import { BombStep } from "./loopSteps/BombStep";
 import { resolveFrameDelta } from "./loopSteps/frameDelta";
-import { SocketPlayerMoveSender } from "./network/PlayerMoveSender";
+import type { MoveSender } from "./network/PlayerMoveSender";
 
 type GameLoopOptions = {
   app: Application;
@@ -22,6 +22,7 @@ type GameLoopOptions = {
   myId: string;
   getJoystickInput: () => { x: number; y: number };
   bombManager: BombManager;
+  moveSender: MoveSender;
 };
 
 /** ゲームのフレーム更新順序を管理するループ制御クラス */
@@ -35,14 +36,14 @@ export class GameLoop {
   private bombStep: BombStep;
   private cameraStep: CameraStep;
 
-  constructor({ app, worldContainer, players, myId, getJoystickInput, bombManager }: GameLoopOptions) {
+  constructor({ app, worldContainer, players, myId, getJoystickInput, bombManager, moveSender }: GameLoopOptions) {
     this.app = app;
     this.worldContainer = worldContainer;
     this.players = players;
     this.myId = myId;
     this.inputStep = new InputStep({ getJoystickInput });
     this.simulationStep = new SimulationStep({
-      moveSender: new SocketPlayerMoveSender(),
+      moveSender,
     });
     this.bombStep = new BombStep({ bombManager });
     this.cameraStep = new CameraStep();

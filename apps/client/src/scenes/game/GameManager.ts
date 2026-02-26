@@ -4,20 +4,39 @@
  * マップ，ネットワーク同期，ゲームループを統合する
  */
 import { Application, Container, Ticker } from "pixi.js";
-import type {
-  BombPlacedAckPayload,
-  BombPlacedPayload,
-} from "@repo/shared";
-import { socketManager } from "@client/network/SocketManager";
-import { AppearanceResolver } from "./application/AppearanceResolver";
-import { BombManager } from "./entities/bomb/BombManager";
-import { GameNetworkSync } from "./application/GameNetworkSync";
-import { GameLoop } from "./application/GameLoop";
+import { GameEventFacade } from "./application/GameEventFacade";
 import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState";
 import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
 import { CombatLifecycleFacade } from "./application/combat/CombatLifecycleFacade";
-import { GameSceneOrchestrator } from "./application/orchestrators/GameSceneOrchestrator";
+import {
+  type GameSceneFactoryOptions,
+} from "./application/orchestrators/GameSceneOrchestrator";
+import { GameSceneRuntime } from "./application/runtime/GameSceneRuntime";
+import {
+  SocketGameActionSender,
+  type GameActionSender,
+} from "./application/network/GameActionSender";
+import {
+  SocketPlayerMoveSender,
+  type MoveSender,
+} from "./application/network/PlayerMoveSender";
 import type { GamePlayers } from "./application/game.types";
+
+/** GameManager の依存注入オプション型 */
+export type GameManagerDependencies = {
+  sessionFacade?: GameSessionFacade;
+  lifecycleState?: SceneLifecycleState;
+  gameActionSender?: GameActionSender;
+  moveSender?: MoveSender;
+  sceneFactories?: GameSceneFactoryOptions;
+};
+
+/** GameScene の UI 表示に必要な状態 */
+export type GameUiState = {
+  remainingTimeSec: number;
+  startCountdownSec: number;
+  isInputEnabled: boolean;
+};
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
 export class GameManager {
@@ -26,18 +45,13 @@ export class GameManager {
   private players: GamePlayers = {};
   private myId: string;
   private container: HTMLDivElement;
-  private sessionFacade = new GameSessionFacade();
-  private appearanceResolver = new AppearanceResolver();
-  private bombManager: BombManager | null = null;
-  private networkSync: GameNetworkSync | null = null;
-  private gameLoop: GameLoop | null = null;
+  private sessionFacade: GameSessionFacade;
+  private runtime: GameSceneRuntime;
+  private gameEventFacade: GameEventFacade;
   private combatFacade: CombatLifecycleFacade;
-  private lifecycleState = new SceneLifecycleState();
-
-  // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
-  public setGameStart(startTime: number) {
-    this.sessionFacade.setGameStart(startTime);
-  }
+  private lifecycleState: SceneLifecycleState;
+  private uiStateListeners = new Set<(state: GameUiState) => void>();
+  private lastUiState: GameUiState | null = null;
 
   public getStartCountdownSec(): number {
     return this.sessionFacade.getStartCountdownSec();
@@ -49,48 +63,73 @@ export class GameManager {
   }
 
   public isInputEnabled(): boolean {
-    return this.sessionFacade.canAcceptInput();
+    return this.runtime.isInputEnabled();
   }
 
   public placeBomb(): string | null {
-    if (!this.sessionFacade.canAcceptInput()) return null;
-    if (!this.bombManager) return null;
-    const placed = this.bombManager.placeBomb();
-    if (!placed) return null;
-
-    socketManager.game.sendPlaceBomb(placed.payload);
-    return placed.tempBombId;
+    return this.runtime.placeBomb();
   }
-
-  public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
-    this.bombManager?.applyPlacedBombFromOthers(payload);
-  }
-
-  public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
-    this.bombManager?.applyPlacedBombAck(payload);
-  }
-
-  // 入力と状態管理
-  private joystickInput = { x: 0, y: 0 };
 
   public lockInput(): () => void {
-    this.joystickInput = { x: 0, y: 0 };
-    return this.sessionFacade.lockInput();
+    this.runtime.clearJoystickInput();
+    const release = this.sessionFacade.lockInput();
+    this.emitUiStateIfChanged(true);
+    return release;
   }
 
-  constructor(container: HTMLDivElement, myId: string) {
+  constructor(
+    container: HTMLDivElement,
+    myId: string,
+    dependencies: GameManagerDependencies = {},
+  ) {
     this.container = container; // 明示的に代入
     this.myId = myId;
+    this.sessionFacade = dependencies.sessionFacade ?? new GameSessionFacade();
+    this.lifecycleState = dependencies.lifecycleState ?? new SceneLifecycleState();
+    const gameActionSender = dependencies.gameActionSender ?? new SocketGameActionSender();
+    const moveSender = dependencies.moveSender ?? new SocketPlayerMoveSender();
+    const sceneFactories = dependencies.sceneFactories;
     this.app = new Application();
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
+    this.gameEventFacade = new GameEventFacade({
+      onGameStart: (startTime) => {
+        this.sessionFacade.setGameStart(startTime);
+      },
+      getBombManager: () => this.runtime.getBombManager(),
+    });
     this.combatFacade = new CombatLifecycleFacade({
       players: this.players,
       myId: this.myId,
       acquireInputLock: this.lockInput.bind(this),
       onSendBombHitReport: (bombId) => {
-        socketManager.game.sendBombHitReport({ bombId });
+        gameActionSender.sendBombHitReport(bombId);
       },
+    });
+    this.runtime = new GameSceneRuntime({
+      app: this.app,
+      worldContainer: this.worldContainer,
+      players: this.players,
+      myId: this.myId,
+      sessionFacade: this.sessionFacade,
+      gameActionSender,
+      moveSender,
+      getElapsedMs: () => this.sessionFacade.getElapsedMs(),
+      onGameStart: this.gameEventFacade.handleGameStart.bind(this.gameEventFacade),
+      onGameEnd: this.lockInput.bind(this),
+      onBombPlacedFromOthers: (payload) => {
+        this.gameEventFacade.handleBombPlacedFromOthers(payload);
+      },
+      onBombPlacedAckFromNetwork: (payload) => {
+        this.gameEventFacade.handleBombPlacedAck(payload);
+      },
+      onPlayerDeadFromNetwork: (payload) => {
+        this.combatFacade.handleNetworkPlayerDead(payload);
+      },
+      onBombExploded: (payload) => {
+        this.combatFacade.handleBombExploded(payload);
+      },
+      sceneFactories,
     });
   }
 
@@ -113,60 +152,70 @@ export class GameManager {
 
     this.container.appendChild(this.app.canvas);
 
-    this.initializeSceneSubsystems();
+    this.runtime.initialize();
 
     // サーバーへゲーム準備完了を通知
-    socketManager.game.readyForGame();
+    this.runtime.readyForGame();
 
     // メインループの登録
     this.app.ticker.add(this.tick);
     this.lifecycleState.markInitialized();
+    this.emitUiStateIfChanged(true);
   }
 
   /**
    * React側からジョイスティックの入力を受け取る
    */
   public setJoystickInput(x: number, y: number) {
-    this.joystickInput = this.sessionFacade.sanitizeJoystickInput({ x, y });
+    this.runtime.setJoystickInput(x, y);
   }
 
   /**
    * 毎フレームの更新処理（メインゲームループ）
    */
   private tick = (ticker: Ticker) => {
-    this.gameLoop?.tick(ticker);
+    this.runtime.tick(ticker);
+    this.emitUiStateIfChanged();
   };
 
-  /** ゲームシーンのサブシステムを初期化して配線する */
-  private initializeSceneSubsystems(): void {
-    const orchestrator = new GameSceneOrchestrator({
-      app: this.app,
-      worldContainer: this.worldContainer,
-      players: this.players,
-      myId: this.myId,
-      appearanceResolver: this.appearanceResolver,
-      getElapsedMs: () => this.sessionFacade.getElapsedMs(),
-      getJoystickInput: () => this.joystickInput,
-      onGameStart: this.setGameStart.bind(this),
-      onGameEnd: this.lockInput.bind(this),
-      onBombPlacedFromOthers: (payload) => {
-        this.applyPlacedBombFromOthers(payload);
-      },
-      onBombPlacedAckFromNetwork: (payload) => {
-        this.applyPlacedBombAck(payload);
-      },
-      onPlayerDeadFromNetwork: (payload) => {
-        this.combatFacade.handleNetworkPlayerDead(payload);
-      },
-      onBombExploded: (payload) => {
-        this.combatFacade.handleBombExploded(payload);
-      },
-    });
+  /** UI状態購読を登録し，解除関数を返す */
+  public subscribeUiState(listener: (state: GameUiState) => void): () => void {
+    this.uiStateListeners.add(listener);
+    listener(this.getUiStateSnapshot());
 
-    const initializedScene = orchestrator.initialize();
-    this.networkSync = initializedScene.networkSync;
-    this.bombManager = initializedScene.bombManager;
-    this.gameLoop = initializedScene.gameLoop;
+    return () => {
+      this.uiStateListeners.delete(listener);
+    };
+  }
+
+  private getUiStateSnapshot(): GameUiState {
+    return {
+      remainingTimeSec: Math.floor(this.sessionFacade.getRemainingTime()),
+      startCountdownSec: this.sessionFacade.getStartCountdownSec(),
+      isInputEnabled: this.runtime.isInputEnabled(),
+    };
+  }
+
+  private emitUiStateIfChanged(force = false): void {
+    if (this.uiStateListeners.size === 0 && !force) {
+      return;
+    }
+
+    const snapshot = this.getUiStateSnapshot();
+    if (
+      !force
+      && this.lastUiState
+      && this.lastUiState.remainingTimeSec === snapshot.remainingTimeSec
+      && this.lastUiState.startCountdownSec === snapshot.startCountdownSec
+      && this.lastUiState.isInputEnabled === snapshot.isInputEnabled
+    ) {
+      return;
+    }
+
+    this.lastUiState = snapshot;
+    this.uiStateListeners.forEach((listener) => {
+      listener(snapshot);
+    });
   }
 
   /**
@@ -177,14 +226,11 @@ export class GameManager {
     if (this.lifecycleState.shouldDestroyApp()) {
       this.app.destroy(true, { children: true });
     }
-    this.bombManager?.destroy();
-    this.bombManager = null;
+    this.runtime.destroy();
     this.combatFacade.dispose();
     this.sessionFacade.reset();
     this.players = {};
-    this.joystickInput = { x: 0, y: 0 };
-
-    // イベント購読の解除
-    this.networkSync?.unbind();
+    this.uiStateListeners.clear();
+    this.lastUiState = null;
   }
 }

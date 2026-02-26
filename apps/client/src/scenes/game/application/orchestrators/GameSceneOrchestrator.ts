@@ -14,7 +14,50 @@ import { GameMapController } from "@client/scenes/game/entities/map/GameMapContr
 import { GameNetworkSync } from "@client/scenes/game/application/GameNetworkSync";
 import { BombManager, type BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
 import { GameLoop } from "@client/scenes/game/application/GameLoop";
+import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
+
+/** GameNetworkSync 生成入力型 */
+export type CreateNetworkSyncOptions = {
+  worldContainer: Container;
+  players: GamePlayers;
+  myId: string;
+  gameMap: GameMapController;
+  appearanceResolver: AppearanceResolver;
+  onGameStart: (startTime: number) => void;
+  onGameEnd: () => void;
+  onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
+  onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
+  onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
+};
+
+/** BombManager 生成入力型 */
+export type CreateBombManagerOptions = {
+  worldContainer: Container;
+  players: GamePlayers;
+  myId: string;
+  getElapsedMs: () => number;
+  appearanceResolver: AppearanceResolver;
+  onBombExploded: (payload: BombExplodedPayload) => void;
+};
+
+/** GameLoop 生成入力型 */
+export type CreateGameLoopOptions = {
+  app: Application;
+  worldContainer: Container;
+  players: GamePlayers;
+  myId: string;
+  getJoystickInput: () => { x: number; y: number };
+  bombManager: BombManager;
+  moveSender: MoveSender;
+};
+
+/** サブシステム生成関数群の注入型 */
+export type GameSceneFactoryOptions = {
+  createNetworkSync?: (options: CreateNetworkSyncOptions) => GameNetworkSync;
+  createBombManager?: (options: CreateBombManagerOptions) => BombManager;
+  createGameLoop?: (options: CreateGameLoopOptions) => GameLoop;
+};
 
 /** GameSceneOrchestrator の初期化入力 */
 export type GameSceneOrchestratorOptions = {
@@ -25,12 +68,14 @@ export type GameSceneOrchestratorOptions = {
   appearanceResolver: AppearanceResolver;
   getElapsedMs: () => number;
   getJoystickInput: () => { x: number; y: number };
+  moveSender: MoveSender;
   onGameStart: (startTime: number) => void;
   onGameEnd: () => void;
   onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
   onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
   onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
   onBombExploded: (payload: BombExplodedPayload) => void;
+  factories?: GameSceneFactoryOptions;
 };
 
 /** 初期化済みサブシステム参照の戻り値型 */
@@ -50,12 +95,16 @@ export class GameSceneOrchestrator {
   private readonly appearanceResolver: AppearanceResolver;
   private readonly getElapsedMs: () => number;
   private readonly getJoystickInput: () => { x: number; y: number };
+  private readonly moveSender: MoveSender;
   private readonly onGameStart: (startTime: number) => void;
   private readonly onGameEnd: () => void;
   private readonly onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
   private readonly onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
   private readonly onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
   private readonly onBombExploded: (payload: BombExplodedPayload) => void;
+  private readonly createNetworkSync: (options: CreateNetworkSyncOptions) => GameNetworkSync;
+  private readonly createBombManager: (options: CreateBombManagerOptions) => BombManager;
+  private readonly createGameLoop: (options: CreateGameLoopOptions) => GameLoop;
 
   constructor({
     app,
@@ -65,12 +114,14 @@ export class GameSceneOrchestrator {
     appearanceResolver,
     getElapsedMs,
     getJoystickInput,
+    moveSender,
     onGameStart,
     onGameEnd,
     onBombPlacedFromOthers,
     onBombPlacedAckFromNetwork,
     onPlayerDeadFromNetwork,
     onBombExploded,
+    factories,
   }: GameSceneOrchestratorOptions) {
     this.app = app;
     this.worldContainer = worldContainer;
@@ -79,12 +130,16 @@ export class GameSceneOrchestrator {
     this.appearanceResolver = appearanceResolver;
     this.getElapsedMs = getElapsedMs;
     this.getJoystickInput = getJoystickInput;
+    this.moveSender = moveSender;
     this.onGameStart = onGameStart;
     this.onGameEnd = onGameEnd;
     this.onBombPlacedFromOthers = onBombPlacedFromOthers;
     this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
     this.onPlayerDeadFromNetwork = onPlayerDeadFromNetwork;
     this.onBombExploded = onBombExploded;
+    this.createNetworkSync = factories?.createNetworkSync ?? ((options) => new GameNetworkSync(options));
+    this.createBombManager = factories?.createBombManager ?? ((options) => new BombManager(options));
+    this.createGameLoop = factories?.createGameLoop ?? ((options) => new GameLoop(options));
   }
 
   /** シーン配線を順序どおり初期化し，参照を返す */
@@ -111,7 +166,7 @@ export class GameSceneOrchestrator {
 
   /** ネットワーク購読を初期化してバインドする */
   private initializeNetworkSync(gameMap: GameMapController): GameNetworkSync {
-    const networkSync = new GameNetworkSync({
+    const networkSync = this.createNetworkSync({
       worldContainer: this.worldContainer,
       players: this.players,
       myId: this.myId,
@@ -129,7 +184,7 @@ export class GameSceneOrchestrator {
 
   /** 爆弾サブシステムを初期化する */
   private initializeBombSubsystem(): BombManager {
-    return new BombManager({
+    return this.createBombManager({
       worldContainer: this.worldContainer,
       players: this.players,
       myId: this.myId,
@@ -141,13 +196,14 @@ export class GameSceneOrchestrator {
 
   /** ゲームループを初期化する */
   private initializeGameLoop(bombManager: BombManager): GameLoop {
-    return new GameLoop({
+    return this.createGameLoop({
       app: this.app,
       worldContainer: this.worldContainer,
       players: this.players,
       myId: this.myId,
       getJoystickInput: this.getJoystickInput,
       bombManager,
+      moveSender: this.moveSender,
     });
   }
 }
