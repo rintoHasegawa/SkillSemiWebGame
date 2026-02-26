@@ -12,14 +12,13 @@ export class PlayerView {
   public readonly displayObject: Sprite;
 
   constructor(imageFileName: string, isLocal: boolean) {
-    const { PLAYER_RADIUS_PX, PLAYER_RENDER_SCALE } =
-      config.GAME_CONFIG;
+    const { PLAYER_RADIUS_PX, PLAYER_RENDER_SCALE } = config.GAME_CONFIG;
 
     // 🌟 2. スプライト（画像）の生成（初期は1x1テクスチャ）
     this.displayObject = new Sprite(Texture.WHITE);
 
     // 🌟 3. 画像の基準点を「中心」にする（ズレ防止）
-    this.displayObject.anchor.set(0.8, 0.8);
+    this.displayObject.anchor.set(0.5, 0.5);
 
     // 🌟 4. 画像サイズを当たり判定（半径×2）に合わせる
     this.displayObject.width = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
@@ -59,9 +58,8 @@ export class PlayerView {
   /** グリッド座標を描画座標へ反映する */
   public syncPosition(gridX: number, gridY: number): void {
     const { GRID_CELL_SIZE } = config.GAME_CONFIG;
-    // マスの中心に配置されるように調整
-    this.displayObject.x = gridX * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
-    this.displayObject.y = gridY * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
+    this.displayObject.x = gridX * GRID_CELL_SIZE;
+    this.displayObject.y = gridY * GRID_CELL_SIZE;
   }
 
   /** 描画リソースを破棄する */
