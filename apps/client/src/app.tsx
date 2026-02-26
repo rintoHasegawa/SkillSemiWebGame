@@ -19,6 +19,7 @@ export default function App() {
     joinErrorMessage,
     isJoining,
     requestJoin,
+    returnToTitle,
   } = useAppFlow();
 
   let scene = <GameScene myId={myId} />;
@@ -41,13 +42,19 @@ export default function App() {
         room={room}
         myId={myId}
         onStart={() => socketManager.lobby.startGame()}
+        onBackToTitle={() => returnToTitle({ leaveRoom: true })}
       />
     );
   }
 
   // 結果画面分岐
   if (scenePhase === appConsts.ScenePhase.RESULT) {
-    scene = <ResultScene result={gameResult} />;
+    scene = (
+      <ResultScene
+        result={gameResult}
+        onBackToTitle={() => returnToTitle({ leaveRoom: true })}
+      />
+    );
   }
 
   return <LandscapeOnlyGate>{scene}</LandscapeOnlyGate>;

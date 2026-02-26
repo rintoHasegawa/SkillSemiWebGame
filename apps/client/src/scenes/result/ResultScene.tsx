@@ -9,6 +9,7 @@ import { config } from "../../config";
 
 type Props = {
   result: GameResultPayload | null;
+  onBackToTitle: () => void;
 };
 
 const formatPaintRate = (value: number): string => `${value.toFixed(1)}%`;
@@ -238,7 +239,7 @@ const toRgba = (hex: string, alpha: number): string => {
 };
 
 /** 最終結果データを受け取り，順位一覧を表示する */
-export const ResultScene = ({ result }: Props) => {
+export const ResultScene = ({ result, onBackToTitle }: Props) => {
   if (!result) {
     return (
       <div style={{ color: "white", padding: 40 }}>結果を読み込み中...</div>
@@ -291,6 +292,24 @@ export const ResultScene = ({ result }: Props) => {
       <div style={getPulseLayerStyle(winnerColorRgba, "b")} />
 
       <div style={CONTENT_STYLE}>
+        <button
+          onClick={onBackToTitle}
+          style={{
+            alignSelf: "flex-start",
+            marginBottom: "10px",
+            padding: "10px 14px",
+            fontSize: "0.95rem",
+            cursor: "pointer",
+            borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.45)",
+            background: "rgba(0,0,0,0.55)",
+            color: "white",
+            fontWeight: 700,
+          }}
+        >
+          タイトルへ戻る
+        </button>
+
         <h2 style={TITLE_STYLE}>
           <span style={getTitleTextStyle(winnerColor)}>結果発表</span>
         </h2>

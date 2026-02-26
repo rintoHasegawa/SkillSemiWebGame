@@ -4,9 +4,10 @@ type Props = {
   room: roomTypes.Room | null;
   myId: string | null;
   onStart: () => void;
+  onBackToTitle: () => void;
 };
 
-export const LobbyScene = ({ room, myId, onStart }: Props) => {
+export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   if (!room)
     return <div style={{ color: "white", padding: 40 }}>読み込み中...</div>;
 
@@ -69,6 +70,24 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
         >
           ルーム: {room.roomId} (待機中)
         </h2>
+
+        <button
+          onClick={onBackToTitle}
+          style={{
+            alignSelf: "flex-start",
+            marginBottom: "14px",
+            padding: "10px 14px",
+            fontSize: "0.95rem",
+            cursor: "pointer",
+            borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.4)",
+            background: "rgba(0,0,0,0.55)",
+            color: "white",
+            fontWeight: 700,
+          }}
+        >
+          タイトルへ戻る
+        </button>
 
         <div
           style={{
