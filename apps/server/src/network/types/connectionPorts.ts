@@ -29,6 +29,24 @@ export type ConnectionRuntimePort =
   & FindGameByRoomPort
   & FindGameByPlayerPort;
 
+/** START_GAME調停で利用する依存集合 */
+export type StartGameDeps = {
+  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
+  runtimeRegistry: FindGameByRoomPort;
+};
+
+/** READY_FOR_GAME調停で利用する依存集合 */
+export type ReadyForGameDeps = {
+  roomManager: FindRoomByPlayerPort;
+  runtimeRegistry: FindGameByPlayerPort;
+};
+
+/** DISCONNECT調停で利用する依存集合 */
+export type DisconnectDeps = {
+  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
+  runtimeRegistry: FindGameByPlayerPort & CleanupGameRuntimePort;
+};
+
 /** ソケット接続全体で利用するルーム管理ポート集合 */
 export type SocketConnectionRoomPort =
   & ConnectionRoomPort
@@ -41,7 +59,7 @@ export type SocketConnectionRuntimePort =
   & CleanupGameRuntimePort;
 
 /** ソケット接続ハンドラで受け取るマネージャ依存の束 */
-export type SocketConnectionManagerBundle = {
+export type SocketConnectionManagerBundle = DisconnectDeps & {
   roomManager: SocketConnectionRoomPort;
   runtimeRegistry: SocketConnectionRuntimePort;
 };

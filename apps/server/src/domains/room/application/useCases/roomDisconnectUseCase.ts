@@ -2,13 +2,14 @@
  * roomDisconnectUseCase
  * 切断時のルーム退出処理と状態更新配信を行うユースケース
  */
-import type { DisconnectRoomPort } from "../ports/roomUseCasePorts";
+import type { CleanupGameRuntimePort, DisconnectRoomPort } from "../ports/roomUseCasePorts";
 import type { RoomOutputPort } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";
 
 type RoomDisconnectUseCaseParams = {
   roomManager: DisconnectRoomPort;
+  runtimeRegistry: CleanupGameRuntimePort;
   socketId: string;
   output: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
 };
@@ -16,6 +17,7 @@ type RoomDisconnectUseCaseParams = {
 /** 切断ソケットを各ルームから退出させ，更新ルームを配信する */
 export const roomDisconnectUseCase = ({
   roomManager,
+  runtimeRegistry,
   socketId,
   output,
 }: RoomDisconnectUseCaseParams) => {
@@ -38,4 +40,6 @@ export const roomDisconnectUseCase = ({
       totalPlayers: room.players.length,
     });
   });
+
+  runtimeRegistry.cleanupDisposedRoomRuntimes();
 };

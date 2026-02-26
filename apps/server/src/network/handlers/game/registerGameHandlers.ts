@@ -11,6 +11,7 @@ import type {
   FindGameByPlayerPort,
   FindRoomByOwnerPort,
   FindRoomByPlayerPort,
+  RoomScopedGamePort,
   RoomPhaseTransitionPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
@@ -28,6 +29,28 @@ const gamePayloadValidators = {
   [protocol.SocketEvents.MOVE]: isMovePayload,
   [protocol.SocketEvents.PLACE_BOMB]: isPlaceBombPayload,
 } as const;
+
+type RuntimeResolution = {
+  roomId: string;
+  gameManager: RoomScopedGamePort;
+};
+
+const resolveRuntimeBySocketId = (
+  roomManager: FindRoomByPlayerPort,
+  runtimeRegistry: FindGameByPlayerPort,
+  socketId: string
+): RuntimeResolution | undefined => {
+  const roomId = roomManager.getRoomByPlayerId(socketId)?.roomId;
+  const gameManager = runtimeRegistry.getGameManagerByPlayerId(socketId);
+  if (!roomId || !gameManager) {
+    return undefined;
+  }
+
+  return {
+    roomId,
+    gameManager,
+  };
+};
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
@@ -90,13 +113,13 @@ export const registerGameHandlers = (
       return;
     }
 
-    const gameManager = runtimeRegistry.getGameManagerByPlayerId(socket.id);
-    if (!gameManager) {
+    const runtime = resolveRuntimeBySocketId(roomManager, runtimeRegistry, socket.id);
+    if (!runtime) {
       return;
     }
 
     movePlayerUseCase({
-      gameManager,
+      gameManager: runtime.gameManager,
       playerId: socket.id,
       move: data,
     });
@@ -108,15 +131,14 @@ export const registerGameHandlers = (
       return;
     }
 
-    const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
-    const gameManager = runtimeRegistry.getGameManagerByPlayerId(socket.id);
-    if (!roomId || !gameManager) {
+    const runtime = resolveRuntimeBySocketId(roomManager, runtimeRegistry, socket.id);
+    if (!runtime) {
       return;
     }
 
     placeBombUseCase({
-      roomId,
-      bombStore: gameManager,
+      roomId: runtime.roomId,
+      bombStore: runtime.gameManager,
       input: {
         socketId: socket.id,
         payload: data,
