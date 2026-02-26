@@ -62,9 +62,6 @@ export const createPayloadGuard = (socketId: string) => {
         break;
 
       case protocol.SocketEvents.BOMB_HIT_REPORT:
-        console.warn("[PayloadGuard] invalid BOMB_HIT_REPORT payload", {
-          socketId,
-        });
         break;
     }
 

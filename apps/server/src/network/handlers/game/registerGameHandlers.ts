@@ -136,7 +136,7 @@ export const registerGameHandlers = (
     });
   });
 
-  // 被弾報告を受信し，検証通過時にテストログを出力する
+  // 被弾報告を受信する
   onEvent(protocol.SocketEvents.BOMB_HIT_REPORT, (data) => {
     if (!guardBombHitReportPayload(data)) {
       return;
@@ -146,11 +146,5 @@ export const registerGameHandlers = (
     if (!runtime) {
       return;
     }
-
-    console.log("[ServerTest] BOMB_HIT_REPORT received", {
-      roomId: runtime.roomId,
-      reporterSocketId: socket.id,
-      bombId: data.bombId,
-    });
   });
 };
