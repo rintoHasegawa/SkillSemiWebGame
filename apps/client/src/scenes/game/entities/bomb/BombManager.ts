@@ -1,34 +1,27 @@
 /**
  * BombManager
- * 爆弾エンティティの生成，更新，破棄を管理する
- * クールダウンと設置位置解決をまとめて扱う
+ * 爆弾サブシステムの各サービスを調停する
+ * 外部APIを維持しつつ内部責務を分離する
  */
 import type { Container } from "pixi.js";
-import { config } from "@client/config";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   PlaceBombPayload,
 } from "@repo/shared";
-import { config as sharedConfig } from "@repo/shared";
-import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
-import { BombController } from "./BombController";
 import { BombIdRegistry } from "./BombIdRegistry";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
+import { BombRepository, type BombRenderPayload } from "./runtime/BombRepository";
+import { BombPlacementService } from "./services/BombPlacementService";
+import { BombAckReconciler } from "./services/BombAckReconciler";
+import { BombRuntimeSystem } from "./runtime/BombRuntimeSystem";
 
 /** 経過時間ミリ秒を返す関数型 */
 export type ElapsedMsProvider = () => number;
 
 /** 爆弾の描画更新に使う入力データ型 */
-export type BombRenderPayload = {
-  x: number;
-  y: number;
-  explodeAtElapsedMs: number;
-  radiusGrid: number;
-  teamId: number;
-  color: number;
-};
+export type { BombRenderPayload };
 
 /** 爆弾設置時に返す結果型 */
 export type BombPlacementResult = {
@@ -56,176 +49,82 @@ type BombManagerOptions = {
 
 /** 爆弾エンティティのライフサイクルを管理する */
 export class BombManager {
-  private worldContainer: Container;
-  private players: GamePlayers;
-  private myId: string;
-  private getElapsedMs: ElapsedMsProvider;
-  private appearanceResolver: AppearanceResolver;
-  private bombs = new Map<string, BombController>();
-  private bombRenderPayloadById = new Map<string, BombRenderPayload>();
-  private bombIdRegistry = new BombIdRegistry();
-  private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
-  private onBombExploded?: (payload: BombExplodedPayload) => void;
+  private readonly getElapsedMs: ElapsedMsProvider;
+  private readonly bombIdRegistry = new BombIdRegistry();
+  private readonly bombRepository: BombRepository;
+  private readonly bombPlacementService: BombPlacementService;
+  private readonly bombAckReconciler: BombAckReconciler;
+  private readonly bombRuntimeSystem: BombRuntimeSystem;
 
   constructor({ worldContainer, players, myId, getElapsedMs, appearanceResolver, onBombExploded }: BombManagerOptions) {
-    this.worldContainer = worldContainer;
-    this.players = players;
-    this.myId = myId;
     this.getElapsedMs = getElapsedMs;
-    this.appearanceResolver = appearanceResolver;
-    this.onBombExploded = onBombExploded;
+
+    this.bombRepository = new BombRepository({
+      worldContainer,
+      bombIdRegistry: this.bombIdRegistry,
+    });
+    this.bombPlacementService = new BombPlacementService({
+      players,
+      myId,
+      getElapsedMs,
+      appearanceResolver,
+      bombIdRegistry: this.bombIdRegistry,
+    });
+    this.bombAckReconciler = new BombAckReconciler({
+      bombIdRegistry: this.bombIdRegistry,
+      bombRepository: this.bombRepository,
+    });
+    this.bombRuntimeSystem = new BombRuntimeSystem({
+      bombRepository: this.bombRepository,
+      onBombExploded,
+    });
   }
 
   /** 自プレイヤー位置に爆弾を仮IDで設置し，設置要求を返す */
   public placeBomb(): BombPlacementResult | null {
-    const me = this.players[this.myId];
-    if (!me || !(me instanceof LocalPlayerController)) return null;
-
-    const elapsedMs = this.getElapsedMs();
-    const { BOMB_COOLDOWN_MS, BOMB_FUSE_MS } = config.GAME_CONFIG;
-    if (elapsedMs - this.lastBombPlacedElapsedMs < BOMB_COOLDOWN_MS) {
+    const ownPlacement = this.bombPlacementService.placeOwnBomb();
+    if (!ownPlacement) {
       return null;
     }
 
-    const position = me.getPosition();
-    const { requestId, tempBombId } = this.bombIdRegistry.issuePendingOwnBombId();
-    const payload: PlaceBombPayload = {
-      requestId,
-      x: position.x,
-      y: position.y,
-      explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
-    };
-    // 自分の爆弾は設置時点で teamId を確定して保持する
-    const ownTeamId = this.resolveTeamIdBySocketId(this.myId);
-
-    this.upsertBomb(tempBombId, this.toRenderPayload(payload, ownTeamId));
-    this.lastBombPlacedElapsedMs = elapsedMs;
+    this.upsertBomb(ownPlacement.tempBombId, ownPlacement.renderPayload);
     return {
-      tempBombId,
-      payload,
+      tempBombId: ownPlacement.tempBombId,
+      payload: ownPlacement.payload,
     };
   }
 
   /** 他プレイヤー向けの爆弾確定イベントを反映する */
   public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
-    // 通信では ownerSocketId を受け取り，受信時点で teamId を確定する
-    const ownerTeamId = this.resolveTeamIdBySocketId(payload.ownerSocketId);
-    this.upsertBomb(payload.bombId, this.toRenderPayload(payload, ownerTeamId));
+    this.upsertBomb(
+      payload.bombId,
+      this.bombPlacementService.createRenderPayload(payload, payload.ownerSocketId),
+    );
   }
 
   /** 設置者本人向けACKを反映し，仮IDから正式IDへ置換する */
   public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
-    const tempBombId = this.bombIdRegistry.resolveTempBombIdByRequestId(payload.requestId);
-    if (!tempBombId) {
-      return;
-    }
-
-    const tempPayload = this.bombRenderPayloadById.get(tempBombId);
-    this.bombIdRegistry.removeByRequestId(payload.requestId);
-    if (!tempPayload || tempBombId === payload.bombId) {
-      return;
-    }
-
-    this.removeBomb(tempBombId);
-    this.upsertBomb(payload.bombId, tempPayload);
+    this.bombAckReconciler.applyPlacedBombAck(payload);
   }
 
   /** 描画ペイロードで指定IDの爆弾を追加または更新する */
   public upsertBomb(bombId: string, payload: BombRenderPayload): void {
-    const previousPayload = this.bombRenderPayloadById.get(bombId);
-    if (previousPayload && this.isSameRenderPayload(previousPayload, payload)) {
-      return;
-    }
-
-    const current = this.bombs.get(bombId);
-    if (current) {
-      this.worldContainer.removeChild(current.getDisplayObject());
-      current.destroy();
-    }
-
-    const bomb = new BombController(payload);
-    this.bombs.set(bombId, bomb);
-    this.bombRenderPayloadById.set(bombId, payload);
-    this.worldContainer.addChild(bomb.getDisplayObject());
+    this.bombRepository.upsertBomb(bombId, payload);
   }
 
   /** 指定IDの爆弾を削除する */
   public removeBomb(bombId: string): void {
-    const bomb = this.bombs.get(bombId);
-    if (!bomb) return;
-
-    this.worldContainer.removeChild(bomb.getDisplayObject());
-    bomb.destroy();
-    this.bombs.delete(bombId);
-    this.bombRenderPayloadById.delete(bombId);
-    this.bombIdRegistry.removeByBombId(bombId);
+    this.bombRepository.removeBomb(bombId);
   }
 
   /** 爆弾状態を更新し終了済みを破棄する */
   public tick(): void {
-    const elapsedMs = this.getElapsedMs();
-
-    this.bombs.forEach((bomb, bombId) => {
-      const previousState = bomb.getState();
-      bomb.tick(elapsedMs);
-
-      if (previousState !== "exploded" && bomb.getState() === "exploded") {
-        const position = bomb.getPosition();
-        this.onBombExploded?.({
-          bombId,
-          x: position.x,
-          y: position.y,
-          radius: bomb.getExplosionRadiusGrid(),
-          teamId: bomb.getTeamId(),
-        });
-      }
-
-      if (bomb.isFinished()) {
-        this.removeBomb(bombId);
-        return;
-      }
-    });
+    this.bombRuntimeSystem.tick(this.getElapsedMs());
   }
 
   /** 管理中の爆弾をすべて破棄する */
   public destroy(): void {
-    this.bombs.forEach((bomb) => bomb.destroy());
-    this.bombs.clear();
-    this.bombRenderPayloadById.clear();
+    this.bombRepository.clear();
     this.bombIdRegistry.clear();
   }
-
-  private isSameRenderPayload(a: BombRenderPayload, b: BombRenderPayload): boolean {
-    return a.x === b.x
-      && a.y === b.y
-      && a.explodeAtElapsedMs === b.explodeAtElapsedMs
-      && a.radiusGrid === b.radiusGrid
-      && a.teamId === b.teamId
-      && a.color === b.color;
-  }
-
-  private toRenderPayload(
-    payload: { x: number; y: number; explodeAtElapsedMs: number },
-    teamId: number
-  ): BombRenderPayload {
-    return {
-      x: payload.x,
-      y: payload.y,
-      explodeAtElapsedMs: payload.explodeAtElapsedMs,
-      radiusGrid: config.GAME_CONFIG.BOMB_RADIUS_GRID,
-      teamId,
-      color: this.appearanceResolver.resolveTeamColor(teamId),
-    };
-  }
-
-  private resolveTeamIdBySocketId(socketId: string): number {
-    const playerController = this.players[socketId];
-    if (!playerController) {
-      // 参照できない場合でも描画継続できるように未知チームで扱う
-      return sharedConfig.UNKNOWN_TEAM_ID;
-    }
-
-    return playerController.getSnapshot().teamId;
-  }
-
 }

@@ -20,6 +20,8 @@ import { BombHitContextProvider } from "./application/BombHitContextProvider";
 import { BombHitOrchestrator } from "./application/BombHitOrchestrator";
 import { PlayerDeathPolicy } from "./application/PlayerDeathPolicy";
 import { PlayerHitEffectOrchestrator } from "./application/PlayerHitEffectOrchestrator";
+import { InputGate } from "./application/lifecycle/InputGate";
+import { HitReportPolicy } from "./application/combat/HitReportPolicy";
 import type { BombHitEvaluationResult } from "./application/BombHitOrchestrator";
 import type { GamePlayers } from "./application/game.types";
 
@@ -39,7 +41,8 @@ export class GameManager {
   private gameLoop: GameLoop | null = null;
   private playerDeathPolicy!: PlayerDeathPolicy;
   private playerHitEffectOrchestrator!: PlayerHitEffectOrchestrator;
-  private reportedBombHitIds = new Set<string>();
+  private inputGate: InputGate;
+  private hitReportPolicy = new HitReportPolicy();
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
   public setGameStart(startTime: number) {
@@ -50,21 +53,17 @@ export class GameManager {
     return this.timer.getPreStartRemainingSec();
   }
 
-  private canAcceptInput(): boolean {
-    return this.inputLockCount === 0 && this.timer.isStarted();
-  }
-
   // 現在の残り秒数を取得する
   public getRemainingTime(): number {
     return this.timer.getRemainingTime();
   }
 
   public isInputEnabled(): boolean {
-    return this.canAcceptInput();
+    return this.inputGate.canAcceptInput();
   }
 
   public placeBomb(): string | null {
-    if (!this.canAcceptInput()) return null;
+    if (!this.inputGate.canAcceptInput()) return null;
     if (!this.bombManager) return null;
     const placed = this.bombManager.placeBomb();
     if (!placed) return null;
@@ -85,21 +84,10 @@ export class GameManager {
   private joystickInput = { x: 0, y: 0 };
   private isInitialized = false;
   private isDestroyed = false;
-  private inputLockCount = 0;
 
   public lockInput(): () => void {
-    this.inputLockCount += 1;
     this.joystickInput = { x: 0, y: 0 };
-
-    let released = false;
-    return () => {
-      if (released) {
-        return;
-      }
-
-      released = true;
-      this.inputLockCount = Math.max(0, this.inputLockCount - 1);
-    };
+    return this.inputGate.lockInput();
   }
 
   constructor(container: HTMLDivElement, myId: string) {
@@ -108,6 +96,9 @@ export class GameManager {
     this.app = new Application();
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
+    this.inputGate = new InputGate({
+      isStartedProvider: () => this.timer.isStarted(),
+    });
     this.initializeHitSubsystem();
   }
 
@@ -161,11 +152,7 @@ export class GameManager {
    * React側からジョイスティックの入力を受け取る
    */
   public setJoystickInput(x: number, y: number) {
-    if (!this.canAcceptInput()) {
-      this.joystickInput = { x: 0, y: 0 };
-      return;
-    }
-    this.joystickInput = { x, y };
+    this.joystickInput = this.inputGate.sanitizeJoystickInput({ x, y });
   }
 
   /**
@@ -251,7 +238,7 @@ export class GameManager {
     result: BombHitEvaluationResult | undefined,
     bombId: string,
   ): void {
-    if (!this.shouldSendBombHitReport(result, bombId)) {
+    if (!this.hitReportPolicy.shouldSendReport(result, bombId)) {
       return;
     }
 
@@ -259,22 +246,6 @@ export class GameManager {
     this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
 
     socketManager.game.sendBombHitReport({ bombId });
-  }
-
-  private shouldSendBombHitReport(
-    result: BombHitEvaluationResult | undefined,
-    bombId: string,
-  ): boolean {
-    if (result !== "hit") {
-      return false;
-    }
-
-    if (this.reportedBombHitIds.has(bombId)) {
-      return false;
-    }
-
-    this.reportedBombHitIds.add(bombId);
-    return true;
   }
 
   /**
@@ -290,9 +261,9 @@ export class GameManager {
     this.bombHitOrchestrator?.clear();
     this.bombHitOrchestrator = null;
     this.playerDeathPolicy.dispose();
-    this.reportedBombHitIds.clear();
+    this.hitReportPolicy.clear();
+    this.inputGate.reset();
     this.players = {};
-    this.inputLockCount = 0;
     this.joystickInput = { x: 0, y: 0 };
 
     // イベント購読の解除
