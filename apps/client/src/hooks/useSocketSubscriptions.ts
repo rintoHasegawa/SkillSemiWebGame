@@ -23,28 +23,43 @@ type AppSocketHandlers = {
   handleGameResult: (payload: GameResultPayload) => void;
 };
 
-const registerConnectionSubscriptions = ({ handleConnect }: AppSocketHandlers): void => {
+const registerConnectionSubscriptions = ({
+  handleConnect,
+}: AppSocketHandlers): void => {
   socketManager.common.onConnect(handleConnect);
 };
 
-const unregisterConnectionSubscriptions = ({ handleConnect }: AppSocketHandlers): void => {
+const unregisterConnectionSubscriptions = ({
+  handleConnect,
+}: AppSocketHandlers): void => {
   socketManager.common.offConnect(handleConnect);
 };
 
-const registerRoomSubscriptions = ({ handleRoomUpdate }: AppSocketHandlers): void => {
+const registerRoomSubscriptions = ({
+  handleRoomUpdate,
+}: AppSocketHandlers): void => {
   socketManager.lobby.onRoomUpdate(handleRoomUpdate);
 };
 
-const unregisterRoomSubscriptions = ({ handleRoomUpdate }: AppSocketHandlers): void => {
+const unregisterRoomSubscriptions = ({
+  handleRoomUpdate,
+}: AppSocketHandlers): void => {
   socketManager.lobby.offRoomUpdate(handleRoomUpdate);
 };
 
-const registerGameSubscriptions = ({ handleGameStart, handleGameResult }: AppSocketHandlers): void => {
-  socketManager.game.onceGameStart(handleGameStart);
+const registerGameSubscriptions = ({
+  handleGameStart,
+  handleGameResult,
+}: AppSocketHandlers): void => {
+  socketManager.game.onGameStart(handleGameStart);
   socketManager.game.onGameResult(handleGameResult);
 };
 
-const unregisterGameSubscriptions = ({ handleGameResult }: AppSocketHandlers): void => {
+const unregisterGameSubscriptions = ({
+  handleGameStart,
+  handleGameResult,
+}: AppSocketHandlers): void => {
+  socketManager.game.offGameStart(handleGameStart);
   socketManager.game.offGameResult(handleGameResult);
 };
 
@@ -59,23 +74,23 @@ export const useSocketSubscriptions = ({
   useEffect(() => {
     const handlers: AppSocketHandlers = {
       handleConnect: (id: string) => {
-      setMyId(id);
+        setMyId(id);
       },
 
       handleRoomUpdate: (updatedRoom: roomTypes.Room) => {
-      completeJoinRequest();
-      setRoom(updatedRoom);
-      setScenePhase(appConsts.ScenePhase.LOBBY);
+        completeJoinRequest();
+        setRoom(updatedRoom);
+        setScenePhase(appConsts.ScenePhase.LOBBY);
       },
 
       handleGameStart: () => {
-      setGameResult(null);
-      setScenePhase(appConsts.ScenePhase.PLAYING);
+        setGameResult(null);
+        setScenePhase(appConsts.ScenePhase.PLAYING);
       },
 
       handleGameResult: (payload: GameResultPayload) => {
-      setGameResult(payload);
-      setScenePhase(appConsts.ScenePhase.RESULT);
+        setGameResult(payload);
+        setScenePhase(appConsts.ScenePhase.RESULT);
       },
     };
 
