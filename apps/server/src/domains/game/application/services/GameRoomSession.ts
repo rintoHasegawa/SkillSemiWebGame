@@ -20,6 +20,7 @@ import {
 } from "../../entities/player/playerMovement.js";
 import { buildGameResultPayload } from "./gameResultCalculator.js";
 import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
+import type { PlaceBombPayload } from "@repo/shared";
 
 /** ルーム単位のゲーム状態とループ進行を保持するセッションクラス */
 export class GameRoomSession {
@@ -54,6 +55,7 @@ export class GameRoomSession {
     tickRate: number,
     onTick: (data: gameTypes.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
+    onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ): void {
     if (this.gameLoop) {
       return;
@@ -67,10 +69,13 @@ export class GameRoomSession {
       this.mapStore,
       onTick,
       () => {
-        const resultPayload = buildGameResultPayload(this.mapStore.getGridColorsSnapshot());
+        const resultPayload = buildGameResultPayload(
+          this.mapStore.getGridColorsSnapshot(),
+        );
         this.dispose();
         onGameEnd(resultPayload);
       },
+      onBotPlaceBomb,
     );
 
     this.gameLoop.start();

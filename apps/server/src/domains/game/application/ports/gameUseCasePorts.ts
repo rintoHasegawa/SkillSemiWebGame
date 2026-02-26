@@ -23,9 +23,12 @@ export interface StartGamePort {
   startRoomSession(
     playerIds: string[],
     onTick: (data: gameTypes.TickData) => void,
-    onGameEnd: (payload: GameResultPayload) => void
+    onGameEnd: (payload: GameResultPayload) => void,
+    onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ): void;
   getRoomStartTime(): number | undefined;
+  shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
+  issueServerBombId(): string;
 }
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
@@ -49,18 +52,27 @@ export interface GameOutputPort {
   publishPongToSocket(payload: PongPayload): void;
   publishUpdatePlayersToSocket(
     socketId: string,
-    players: UpdatePlayersPayload
+    players: UpdatePlayersPayload,
   ): void;
   publishMapCellUpdatesToRoom(
     roomId: roomTypes.Room["roomId"],
-    cellUpdates: UpdateMapCellsPayload
+    cellUpdates: UpdateMapCellsPayload,
   ): void;
   publishGameEndToRoom(roomId: roomTypes.Room["roomId"]): void;
-  publishGameResultToRoom(roomId: roomTypes.Room["roomId"], payload: GameResultPayload): void;
-  publishGameStartToRoom(roomId: roomTypes.Room["roomId"], payload: GameStartPayload): void;
+  publishGameResultToRoom(
+    roomId: roomTypes.Room["roomId"],
+    payload: GameResultPayload,
+  ): void;
+  publishGameStartToRoom(
+    roomId: roomTypes.Room["roomId"],
+    payload: GameStartPayload,
+  ): void;
   publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
   publishGameStartToSocket(payload: GameStartPayload): void;
-  publishPlayerRemovedToRoom(roomId: roomTypes.Room["roomId"], removedPlayerId: RemovePlayerPayload): void;
+  publishPlayerRemovedToRoom(
+    roomId: roomTypes.Room["roomId"],
+    removedPlayerId: RemovePlayerPayload,
+  ): void;
 }
 
 /** 爆弾ユースケースが利用する送信出力ポート */
@@ -68,9 +80,12 @@ export interface BombOutputPort {
   publishBombPlacedToOthersInRoom(
     roomId: roomTypes.Room["roomId"],
     ownerSocketId: string,
-    payload: BombPlacedPayload
+    payload: BombPlacedPayload,
   ): void;
-  publishBombPlacedAckToSocket(socketId: string, payload: BombPlacedAckPayload): void;
+  publishBombPlacedAckToSocket(
+    socketId: string,
+    payload: BombPlacedAckPayload,
+  ): void;
 }
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
