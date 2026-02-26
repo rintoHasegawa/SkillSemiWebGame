@@ -11,7 +11,6 @@ import type {
 import { config } from "@client/config";
 import { socketManager } from "@client/network/SocketManager";
 import { AppearanceResolver } from "./application/AppearanceResolver";
-import { GameMapController } from "./entities/map/GameMapController";
 import { BombManager } from "./entities/bomb/BombManager";
 import { GameTimer } from "./application/GameTimer";
 import { GameNetworkSync } from "./application/GameNetworkSync";
@@ -22,6 +21,7 @@ import { PlayerDeathPolicy } from "./application/PlayerDeathPolicy";
 import { PlayerHitEffectOrchestrator } from "./application/PlayerHitEffectOrchestrator";
 import { InputGate } from "./application/lifecycle/InputGate";
 import { HitReportPolicy } from "./application/combat/HitReportPolicy";
+import { GameSceneOrchestrator } from "./application/orchestrators/GameSceneOrchestrator";
 import type { BombHitEvaluationResult } from "./application/BombHitOrchestrator";
 import type { GamePlayers } from "./application/game.types";
 
@@ -32,7 +32,6 @@ export class GameManager {
   private players: GamePlayers = {};
   private myId: string;
   private container: HTMLDivElement;
-  private gameMap!: GameMapController;
   private timer = new GameTimer();
   private appearanceResolver = new AppearanceResolver();
   private bombManager: BombManager | null = null;
@@ -135,10 +134,7 @@ export class GameManager {
 
     this.container.appendChild(this.app.canvas);
 
-    this.initializeWorld();
-    this.initializeNetworkSync();
-    this.initializeBombSubsystem();
-    this.initializeGameLoop();
+  this.initializeSceneSubsystems();
 
     // サーバーへゲーム準備完了を通知
     socketManager.game.readyForGame();
@@ -162,22 +158,29 @@ export class GameManager {
     this.gameLoop?.tick(ticker);
   };
 
-  /** 背景マップとワールド描画コンテナを初期化する */
-  private initializeWorld(): void {
-    const gameMap = new GameMapController(this.appearanceResolver);
-    this.gameMap = gameMap;
-    this.worldContainer.addChild(gameMap.getDisplayObject());
-    this.app.stage.addChild(this.worldContainer);
+  /** 爆弾管理と当たり判定橋渡しを初期化する */
+  private initializeBombHitSubsystem(): void {
+    const bombHitContextProvider = new BombHitContextProvider({
+      players: this.players,
+      myId: this.myId,
+    });
+    this.bombHitOrchestrator = new BombHitOrchestrator({
+      contextProvider: bombHitContextProvider,
+    });
   }
 
-  /** ネットワーク購読を初期化してバインドする */
-  private initializeNetworkSync(): void {
-    this.networkSync = new GameNetworkSync({
+  /** ゲームシーンのサブシステムを初期化して配線する */
+  private initializeSceneSubsystems(): void {
+    this.initializeBombHitSubsystem();
+
+    const orchestrator = new GameSceneOrchestrator({
+      app: this.app,
       worldContainer: this.worldContainer,
       players: this.players,
       myId: this.myId,
-      gameMap: this.gameMap,
       appearanceResolver: this.appearanceResolver,
+      getElapsedMs: () => this.timer.getElapsedMs(),
+      getJoystickInput: () => this.joystickInput,
       onGameStart: this.setGameStart.bind(this),
       onGameEnd: this.lockInput.bind(this),
       onBombPlacedFromOthers: (payload) => {
@@ -190,47 +193,16 @@ export class GameManager {
         this.playerDeathPolicy.applyPlayerDeadEvent(payload);
         this.playerHitEffectOrchestrator.handleNetworkPlayerDead(payload.playerId, this.myId);
       },
-    });
-    this.networkSync.bind();
-  }
-
-  /** 爆弾管理と当たり判定橋渡しを初期化する */
-  private initializeBombSubsystem(): void {
-    const bombHitContextProvider = new BombHitContextProvider({
-      players: this.players,
-      myId: this.myId,
-    });
-    this.bombHitOrchestrator = new BombHitOrchestrator({
-      contextProvider: bombHitContextProvider,
-    });
-
-    this.bombManager = new BombManager({
-      worldContainer: this.worldContainer,
-      players: this.players,
-      myId: this.myId,
-      getElapsedMs: () => this.timer.getElapsedMs(),
-      appearanceResolver: this.appearanceResolver,
       onBombExploded: (payload) => {
         const result = this.bombHitOrchestrator?.handleBombExploded(payload);
         this.handleBombHitEvaluation(result, payload.bombId);
       },
     });
-  }
 
-  /** ゲームループを初期化する */
-  private initializeGameLoop(): void {
-    if (!this.bombManager) {
-      return;
-    }
-
-    this.gameLoop = new GameLoop({
-      app: this.app,
-      worldContainer: this.worldContainer,
-      players: this.players,
-      myId: this.myId,
-      getJoystickInput: () => this.joystickInput,
-      bombManager: this.bombManager,
-    });
+    const initializedScene = orchestrator.initialize();
+    this.networkSync = initializedScene.networkSync;
+    this.bombManager = initializedScene.bombManager;
+    this.gameLoop = initializedScene.gameLoop;
   }
 
   /** 爆弾当たり判定の評価結果を受け取り，後続処理へ接続する */
