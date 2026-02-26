@@ -2,10 +2,7 @@
  * startGameCoordinator
  * START_GAMEイベントの調停を行い，ルーム状態更新とゲーム開始処理を橋渡しする
  */
-import {
-  type GameOutputPort,
-  type BombOutputPort,
-} from "@server/domains/game/application/ports/gameUseCasePorts";
+import { type StartGameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { StartGameCoordinatorDeps } from "./coordinatorDeps";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import { createBalancedSessionPlayerIds } from "@server/domains/game/application/services/BotRosterService";
@@ -19,18 +16,7 @@ import {
 type StartGameCoordinatorParams = {
   ownerId: string;
 } & StartGameCoordinatorDeps & {
-    output: Pick<
-      GameOutputPort,
-      | "publishUpdatePlayersToSocket"
-      | "publishMapCellUpdatesToRoom"
-      | "publishGameEndToRoom"
-      | "publishGameResultToRoom"
-      | "publishGameStartToRoom"
-    > &
-      Pick<
-        BombOutputPort,
-        "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
-      >;
+    output: StartGameOutputPort;
   };
 
 /** START_GAME受信時にルーム状態遷移を判定し，ゲーム開始ユースケースを実行する */
@@ -100,7 +86,8 @@ export const startGameCoordinator = ({
     roomId: updatedRoom.roomId,
     playerIds: sessionPlayerIds,
     recipientPlayerIds: humanPlayerIds,
-    gameManager,
+    gameSession: gameManager,
+    bombStore: gameManager,
     onGameEnd: () => {
       roomManager.markRoomWaiting(updatedRoom.roomId);
     },

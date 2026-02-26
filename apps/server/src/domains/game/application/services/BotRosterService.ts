@@ -5,9 +5,20 @@
 import { config } from "@server/config";
 
 const BOT_PLAYER_ID_PREFIX = "bot:";
+declare const botPlayerIdBrand: unique symbol;
+
+export type BotPlayerId = string & { readonly [botPlayerIdBrand]: true };
+
+/** BotプレイヤーIDを生成する */
+export const createBotPlayerId = (
+  roomId: string,
+  serialNumber: number,
+): BotPlayerId => {
+  return `${BOT_PLAYER_ID_PREFIX}${roomId}:${serialNumber}` as BotPlayerId;
+};
 
 /** BotプレイヤーIDかどうかを判定する */
-export const isBotPlayerId = (playerId: string): boolean => {
+export const isBotPlayerId = (playerId: string): playerId is BotPlayerId => {
   return playerId.startsWith(BOT_PLAYER_ID_PREFIX);
 };
 
@@ -38,7 +49,7 @@ export const createBalancedSessionPlayerIds = (
   }
 
   const botIds = Array.from({ length: requiredBotCount }, (_, index) => {
-    return `${BOT_PLAYER_ID_PREFIX}${roomId}:${index + 1}`;
+    return createBotPlayerId(roomId, index + 1);
   });
 
   return [...humanPlayerIds, ...botIds];

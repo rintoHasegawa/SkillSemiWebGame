@@ -27,8 +27,6 @@ export interface StartGamePort {
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ): void;
   getRoomStartTime(): number | undefined;
-  shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
-  issueServerBombId(): string;
 }
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
@@ -87,6 +85,20 @@ export interface BombOutputPort {
     payload: BombPlacedAckPayload,
   ): void;
 }
+
+/** start-game 系フローで利用する送信出力ポート */
+export type StartGameOutputPort = Pick<
+  GameOutputPort,
+  | "publishUpdatePlayersToSocket"
+  | "publishMapCellUpdatesToRoom"
+  | "publishGameEndToRoom"
+  | "publishGameResultToRoom"
+  | "publishGameStartToRoom"
+> &
+  Pick<
+    BombOutputPort,
+    "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
+  >;
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {

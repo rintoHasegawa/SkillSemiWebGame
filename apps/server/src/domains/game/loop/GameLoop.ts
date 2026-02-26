@@ -13,10 +13,8 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import {
-  BotAiService,
-  isBotPlayerId,
-} from "../application/services/BotAiService";
+import { BotAiService } from "../application/services/BotAiService";
+import { isBotPlayerId } from "../application/services/BotRosterService";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
@@ -111,21 +109,26 @@ export class GameLoop {
   }
 
   private processSingleTick(): void {
-    const changedPlayers: gameTypes.TickData["playerUpdates"] = [];
-    const activePlayerIds = new Set<string>();
     const nowMs = performance.now();
     const elapsedMs = Math.max(
       0,
       Math.round(nowMs - this.startMonotonicTimeMs),
     );
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
+    this.updateBotPlayers(nowMs, elapsedMs, gridColorsSnapshot);
+    const tickData = this.buildTickData();
+    this.onTick(tickData);
+  }
 
-    // 1. 各プレイヤーの座標処理とマス塗りの判定
+  private updateBotPlayers(
+    nowMs: number,
+    elapsedMs: number,
+    gridColorsSnapshot: number[],
+  ): void {
     this.players.forEach((player) => {
-      activePlayerIds.add(player.id);
-
       if (isBotPlayerId(player.id)) {
         const decision = this.botAiService.decide(
+          player.id,
           player,
           gridColorsSnapshot,
           nowMs,
@@ -137,7 +140,27 @@ export class GameLoop {
           this.onBotPlaceBomb(player.id, decision.placeBombPayload);
         }
       }
+    });
+  }
 
+  private buildTickData(): gameTypes.TickData {
+    const activePlayerIds = new Set<string>();
+    const playerUpdates = this.collectChangedPlayerUpdates(activePlayerIds);
+    this.cleanupInactivePlayerSnapshots(activePlayerIds);
+
+    return {
+      playerUpdates,
+      cellUpdates: this.mapStore.getAndClearUpdates(),
+    };
+  }
+
+  private collectChangedPlayerUpdates(
+    activePlayerIds: Set<string>,
+  ): gameTypes.TickData["playerUpdates"] {
+    const changedPlayers: gameTypes.TickData["playerUpdates"] = [];
+
+    this.players.forEach((player) => {
+      activePlayerIds.add(player.id);
       const gridIndex = getPlayerGridIndex(player);
       if (gridIndex !== null) {
         this.mapStore.paintCell(gridIndex, player.teamId);
@@ -162,20 +185,14 @@ export class GameLoop {
       }
     });
 
-    // ルームから離脱したプレイヤーの送信状態をクリーンアップする
+    return changedPlayers;
+  }
+
+  private cleanupInactivePlayerSnapshots(activePlayerIds: Set<string>): void {
     Array.from(this.lastSentPlayers.keys()).forEach((playerId) => {
       if (!activePlayerIds.has(playerId)) {
         this.lastSentPlayers.delete(playerId);
       }
-    });
-
-    // 2. マスの差分（Diff）を取得
-    const cellUpdates = this.mapStore.getAndClearUpdates();
-
-    // 3. 通信層（GameHandler）へデータを渡す
-    this.onTick({
-      playerUpdates: changedPlayers,
-      cellUpdates: cellUpdates,
     });
   }
 
