@@ -31,3 +31,23 @@ export const resolveRuntimeByPlayerId = (
     gameManager,
   };
 };
+
+/** プレイヤーID起点のランタイム解決成功時のみ処理を実行する */
+export const runWithRuntimeByPlayerId = (
+  roomResolver: FindRoomByPlayerPort,
+  runtimeResolver: FindGameByPlayerPort,
+  playerId: string,
+  onResolved: (resolution: RuntimeByPlayerResolution) => void,
+): boolean => {
+  const runtime = resolveRuntimeByPlayerId(
+    roomResolver,
+    runtimeResolver,
+    playerId,
+  );
+  if (!runtime) {
+    return false;
+  }
+
+  onResolved(runtime);
+  return true;
+};

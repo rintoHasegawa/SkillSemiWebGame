@@ -32,6 +32,27 @@ export type ConnectionRuntimePort =
   & FindGameByRoomPort
   & FindGameByPlayerPort;
 
+/** ゲーム受信ハンドラで利用するルーム依存ポート */
+export type GameHandlerRoomPort = Pick<
+  ConnectionRoomPort,
+  "getRoomByOwnerId" | "getRoomByPlayerId" | "markRoomPlaying" | "markRoomWaiting"
+>;
+
+/** ゲーム受信ハンドラで利用するランタイム依存ポート */
+export type GameHandlerRuntimePort = Pick<
+  ConnectionRuntimePort,
+  "getGameManagerByRoomId" | "getGameManagerByPlayerId"
+>;
+
+/** ルーム受信ハンドラで利用するルーム依存ポート */
+export type RoomHandlerRoomPort = Pick<ConnectionRoomPort, "addPlayerToRoom">;
+
+/** ルーム受信ハンドラで利用するランタイム依存ポート */
+export type RoomHandlerRuntimePort = Pick<
+  ConnectionRuntimePort,
+  "ensureGameManagerForRoom"
+>;
+
 /** ソケット接続全体で利用するルーム管理ポート集合 */
 export type SocketConnectionRoomPort =
   & ConnectionRoomPort

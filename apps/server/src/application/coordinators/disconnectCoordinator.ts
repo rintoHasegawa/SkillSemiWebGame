@@ -7,9 +7,9 @@ import {
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import type { DisconnectCoordinatorDeps } from "./coordinatorDeps";
-import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import { disconnectUseCase } from "@server/domains/game/application/useCases/disconnectUseCase";
 import { roomDisconnectUseCase } from "@server/domains/room/application/useCases/roomDisconnectUseCase";
+import { resolveCoordinatorRuntime } from "./runtimeCoordinatorSupport";
 
 /** 切断調停で利用する入力ポートと出力ポートの契約 */
 export type DisconnectCoordinatorParams = {
@@ -27,7 +27,13 @@ export const disconnectCoordinator = ({
   gameOutput,
   roomOutput,
 }: DisconnectCoordinatorParams) => {
-  const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socketId);
+  const runtime = resolveCoordinatorRuntime(
+    {
+      roomManager,
+      runtimeRegistry,
+    },
+    socketId,
+  );
 
   if (runtime) {
     disconnectUseCase({

@@ -5,12 +5,13 @@
 import { Server, Socket } from "socket.io";
 import { protocol } from "@repo/shared";
 import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
-import { logEvent } from "@server/logging/logger";
-import { logResults, logScopes } from "@server/logging/index";
 import { registerGameHandlers } from "./GameHandler";
 import { registerRoomHandlers } from "./RoomHandler";
-import { createGameDisconnectOutputAdapter } from "./game/createGameOutputAdapter";
-import { createRoomDisconnectOutputAdapter } from "./room/createRoomOutputAdapter";
+import {
+  createDisconnectOutputAdapters,
+  createSocketOutputAdapters,
+} from "./createOutputAdapters";
+import { logConnected, logDisconnected } from "./connectionEventLogger";
 import type {
   RegisterConnectionHandlersParams,
 } from "../types/connectionPorts";
@@ -21,34 +22,37 @@ export const registerConnectionHandlers = ({
   roomManager,
   runtimeRegistry,
 }: RegisterConnectionHandlersParams) => {
-  const gameDisconnectOutputAdapter = createGameDisconnectOutputAdapter(io);
-  const roomDisconnectOutputAdapter = createRoomDisconnectOutputAdapter(io);
+  const disconnectOutputAdapters = createDisconnectOutputAdapters(io);
 
   io.on(protocol.SocketEvents.CONNECT, (socket: Socket) => {
-    // 接続ログを記録してドメイン別ハンドラを登録する
-    logEvent(logScopes.NETWORK, {
-      event: protocol.SocketEvents.CONNECT,
-      result: logResults.CONNECTED,
-      socketId: socket.id,
-    });
+    const socketOutputAdapters = createSocketOutputAdapters(io, socket);
 
-    registerRoomHandlers(io, socket, roomManager, runtimeRegistry);
-    registerGameHandlers(io, socket, roomManager, runtimeRegistry);
+    // 接続ログを記録してドメイン別ハンドラを登録する
+    logConnected(socket.id);
+
+    registerRoomHandlers(
+      socket,
+      roomManager,
+      runtimeRegistry,
+      socketOutputAdapters.room,
+    );
+    registerGameHandlers(
+      socket,
+      roomManager,
+      runtimeRegistry,
+      socketOutputAdapters.game,
+    );
 
     socket.on(protocol.SocketEvents.DISCONNECT, () => {
       // 切断ログ記録後にドメイン別の後処理を実行する
-      logEvent(logScopes.NETWORK, {
-        event: protocol.SocketEvents.DISCONNECT,
-        result: logResults.DISCONNECTED,
-        socketId: socket.id,
-      });
+      logDisconnected(socket.id);
 
       disconnectCoordinator({
         socketId: socket.id,
         roomManager,
         runtimeRegistry,
-        gameOutput: gameDisconnectOutputAdapter,
-        roomOutput: roomDisconnectOutputAdapter,
+        gameOutput: disconnectOutputAdapters.game,
+        roomOutput: disconnectOutputAdapters.room,
       });
     });
   });
