@@ -90,11 +90,30 @@ export const BombButton = ({
     handleActivate();
   };
 
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    handleActivate();
+  };
+
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    handleActivate();
+  };
+
   return (
-    <div style={hitAreaStyle} onPointerDown={handlePointerDown}>
+    <div
+      style={hitAreaStyle}
+      onPointerDown={handlePointerDown}
+      onTouchStart={handleTouchStart}
+      onMouseDown={handleMouseDown}
+    >
       <div style={frameStyle}>
         <button
           style={buttonStyle}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            handleActivate();
+          }}
           onClick={(event) => {
             event.stopPropagation();
             handleActivate();
