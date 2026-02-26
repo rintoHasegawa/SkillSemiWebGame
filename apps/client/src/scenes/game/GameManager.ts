@@ -12,6 +12,8 @@ import { BombManager } from "./entities/bomb/BombManager";
 import { GameTimer } from "./application/GameTimer";
 import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
+import { BombHitContextProvider } from "./application/BombHitContextProvider";
+import { BombHitOrchestrator } from "./application/BombHitOrchestrator";
 import type { GamePlayers } from "./application/game.types";
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
@@ -25,6 +27,7 @@ export class GameManager {
   private timer = new GameTimer();
   private appearanceResolver = new AppearanceResolver();
   private bombManager: BombManager | null = null;
+  private bombHitOrchestrator: BombHitOrchestrator | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
 
@@ -125,12 +128,23 @@ export class GameManager {
       getJoystickInput: () => this.joystickInput,
     });
 
+    const bombHitContextProvider = new BombHitContextProvider({
+      players: this.players,
+      myId: this.myId,
+    });
+    this.bombHitOrchestrator = new BombHitOrchestrator({
+      contextProvider: bombHitContextProvider,
+    });
+
     this.bombManager = new BombManager({
       worldContainer: this.worldContainer,
       players: this.players,
       myId: this.myId,
       getElapsedMs: () => this.timer.getElapsedMs(),
       appearanceResolver: this.appearanceResolver,
+      onBombExploded: (payload) => {
+        this.bombHitOrchestrator?.handleBombExploded(payload);
+      },
     });
 
     // サーバーへゲーム準備完了を通知
@@ -167,6 +181,8 @@ export class GameManager {
     }
     this.bombManager?.destroy();
     this.bombManager = null;
+    this.bombHitOrchestrator?.clear();
+    this.bombHitOrchestrator = null;
     this.players = {};
     this.isInputLocked = false;
 

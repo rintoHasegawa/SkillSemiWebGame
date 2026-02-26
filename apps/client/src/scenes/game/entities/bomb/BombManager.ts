@@ -36,12 +36,22 @@ export type BombPlacementResult = {
   payload: PlaceBombPayload;
 };
 
+/** 爆弾爆発時に外部へ通知するペイロード型 */
+export type BombExplodedPayload = {
+  bombId: string;
+  x: number;
+  y: number;
+  radius: number;
+  teamId: number;
+};
+
 type BombManagerOptions = {
   worldContainer: Container;
   players: GamePlayers;
   myId: string;
   getElapsedMs: ElapsedMsProvider;
   appearanceResolver: AppearanceResolver;
+  onBombExploded?: (payload: BombExplodedPayload) => void;
 };
 
 /** 爆弾エンティティのライフサイクルを管理する */
@@ -56,13 +66,15 @@ export class BombManager {
   private pendingBombRequestStore = new PendingBombRequestStore();
   private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
   private requestSerial = 0;
+  private onBombExploded?: (payload: BombExplodedPayload) => void;
 
-  constructor({ worldContainer, players, myId, getElapsedMs, appearanceResolver }: BombManagerOptions) {
+  constructor({ worldContainer, players, myId, getElapsedMs, appearanceResolver, onBombExploded }: BombManagerOptions) {
     this.worldContainer = worldContainer;
     this.players = players;
     this.myId = myId;
     this.getElapsedMs = getElapsedMs;
     this.appearanceResolver = appearanceResolver;
+    this.onBombExploded = onBombExploded;
   }
 
   /** 自プレイヤー位置に爆弾を仮IDで設置し，設置要求を返す */
@@ -157,7 +169,19 @@ export class BombManager {
     const elapsedMs = this.getElapsedMs();
 
     this.bombs.forEach((bomb, bombId) => {
+      const previousState = bomb.getState();
       bomb.tick(elapsedMs);
+
+      if (previousState !== "exploded" && bomb.getState() === "exploded") {
+        const position = bomb.getPosition();
+        this.onBombExploded?.({
+          bombId,
+          x: position.x,
+          y: position.y,
+          radius: bomb.getExplosionRadiusGrid(),
+          teamId: bomb.getTeamId(),
+        });
+      }
 
       if (bomb.isFinished()) {
         this.removeBomb(bombId);
