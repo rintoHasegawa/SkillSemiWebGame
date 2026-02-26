@@ -61,6 +61,16 @@ export interface FindRoomByIdPort {
   getRoomById(roomId: string): roomTypes.Room | undefined;
 }
 
+/** ルーム参加後にゲームランタイムを確保する操作ポート */
+export interface EnsureGameRuntimePort {
+  ensureGameManagerForRoom(roomId: string): void;
+}
+
+/** ルーム解散後に不要ランタイムを破棄する操作ポート */
+export interface CleanupGameRuntimePort {
+  cleanupDisposedRoomRuntimes(): void;
+}
+
 /** ルームIDでゲーム管理を解決する参照ポート */
 export interface FindGameByRoomPort {
   getGameManagerByRoomId(roomId: string): RoomScopedGamePort | undefined;

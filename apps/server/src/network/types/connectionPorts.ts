@@ -4,7 +4,9 @@
  */
 import type { Server } from "socket.io";
 import type {
+  CleanupGameRuntimePort,
   DisconnectRoomPort,
+  EnsureGameRuntimePort,
   FindGameByRoomPort,
   FindGameByPlayerPort,
   FindRoomByOwnerPort,
@@ -19,7 +21,11 @@ export type ConnectionRoomPort =
   & JoinRoomPort
   & FindRoomByOwnerPort
   & FindRoomByPlayerPort
-  & RoomPhaseTransitionPort
+  & RoomPhaseTransitionPort;
+
+/** 接続時のゲームランタイム解決で利用する入力ポート集合 */
+export type ConnectionRuntimePort =
+  & EnsureGameRuntimePort
   & FindGameByRoomPort
   & FindGameByPlayerPort;
 
@@ -29,9 +35,15 @@ export type SocketConnectionRoomPort =
   & DisconnectRoomPort
   & FindRoomByIdPort;
 
+/** ソケット接続全体で利用するランタイム管理ポート集合 */
+export type SocketConnectionRuntimePort =
+  & ConnectionRuntimePort
+  & CleanupGameRuntimePort;
+
 /** ソケット接続ハンドラで受け取るマネージャ依存の束 */
 export type SocketConnectionManagerBundle = {
   roomManager: SocketConnectionRoomPort;
+  runtimeRegistry: SocketConnectionRuntimePort;
 };
 
 /** 接続ハンドラ登録関数が受け取る入力パラメータ */

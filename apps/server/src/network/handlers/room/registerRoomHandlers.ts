@@ -4,7 +4,10 @@
  */
 import { Server, Socket } from "socket.io";
 import { protocol } from "@repo/shared";
-import type { JoinRoomPort } from "@server/domains/room/application/ports/roomUseCasePorts";
+import type {
+  EnsureGameRuntimePort,
+  JoinRoomPort,
+} from "@server/domains/room/application/ports/roomUseCasePorts";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes } from "@server/logging/index";
@@ -23,7 +26,8 @@ const roomPayloadValidators = {
 export const registerRoomHandlers = (
   io: Server,
   socket: Socket,
-  roomManager: JoinRoomPort
+  roomManager: JoinRoomPort,
+  runtimeRegistry: EnsureGameRuntimePort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const roomOutputAdapter = createRoomOutputAdapter(common);
@@ -70,6 +74,7 @@ export const registerRoomHandlers = (
         return;
 
       case "joined":
+        runtimeRegistry.ensureGameManagerForRoom(roomId);
         await socket.join(roomId);
         roomOutputAdapter.publishRoomUpdateToRoom(roomId, joinResult.room);
         logEvent(logScopes.ROOM_USE_CASE, {
