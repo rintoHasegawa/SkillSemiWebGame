@@ -9,20 +9,20 @@ export const GAME_CONFIG = {
   GAME_DURATION_SEC: 30, // 1ゲームの制限時間（3分 = 180秒）
 
   // ネットワーク同期設定（クライアント/サーバー契約）
-  PLAYER_POSITION_UPDATE_MS: 50,  // 座標送信間隔（20Hz）
+  PLAYER_POSITION_UPDATE_MS: 50, // 座標送信間隔（20Hz）
 
   // グリッド（マス）設定（クライアント/サーバー契約）
-  GRID_COLS: 20,       // 横のマス数（グリッド単位）
-  GRID_ROWS: 20,       // 縦のマス数（グリッド単位）
+  GRID_COLS: 20, // 横のマス数（グリッド単位）
+  GRID_ROWS: 20, // 縦のマス数（グリッド単位）
 
   // プレイヤー挙動設定（内部座標はグリッド単位、契約値）
-  PLAYER_RADIUS: 0.1,     // プレイヤー半径（グリッド単位、目安: 0.05〜0.2）
-  PLAYER_SPEED: 3,        // 1秒当たりの移動量（グリッド単位）
+  PLAYER_RADIUS: 0.1, // プレイヤー半径（グリッド単位、目安: 0.05〜0.2）
+  PLAYER_SPEED: 3, // 1秒当たりの移動量（グリッド単位）
 
   // 爆弾設定（内部座標はグリッド単位、時間はms、契約値）
-  BOMB_RADIUS_GRID: 1.5,   // 爆風半径（グリッド単位、円形当たり判定）
-  BOMB_FUSE_MS: 1000,      // 設置から爆発までの時間（ms）
-  BOMB_COOLDOWN_MS: 1200,  // 設置後に次の爆弾を置けるまでの待機時間（ms）
+  BOMB_RADIUS_GRID: 1.5, // 爆風半径（グリッド単位、円形当たり判定）
+  BOMB_FUSE_MS: 1000, // 設置から爆発までの時間（ms）
+  BOMB_COOLDOWN_MS: 3000, // 設置後に次の爆弾を置けるまでの待機時間（ms）
   BOMB_DEDUP_EXTRA_TTL_MS: 1000, // 重複排除保持時間の追加分（ms）
 
   // チーム設定（クライアント/サーバー契約）
@@ -30,7 +30,12 @@ export const GAME_CONFIG = {
 } as const;
 
 /** teamId インデックス順のチーム名配列 */
-export const TEAM_NAMES = ["赤チーム", "青チーム", "緑チーム", "黄チーム"] as const;
+export const TEAM_NAMES = [
+  "赤チーム",
+  "青チーム",
+  "緑チーム",
+  "黄チーム",
+] as const;
 
 /** TEAM_COUNT と TEAM_NAMES の整合性を検証する */
 export const validateTeamConfig = (): void => {
