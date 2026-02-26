@@ -27,7 +27,8 @@ type NetworkJoinRoomLogPayload = {
   result:
     | typeof logResults.REJECTED_ROOM_FULL
     | typeof logResults.REJECTED_DUPLICATE
-    | typeof logResults.IGNORED_INVALID_PAYLOAD;
+    | typeof logResults.IGNORED_INVALID_PAYLOAD
+    | typeof logResults.IGNORED_MISSING_ROOM;
   socketId: string;
   roomId?: string;
 };
@@ -42,21 +43,27 @@ type NetworkPingLogPayload = {
 /** NetworkのMOVE不正ペイロードログ契約 */
 type NetworkMoveLogPayload = {
   event: typeof protocol.SocketEvents.MOVE;
-  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  result:
+    | typeof logResults.IGNORED_INVALID_PAYLOAD
+    | typeof logResults.IGNORED_MISSING_ROOM;
   socketId: string;
 };
 
 /** NetworkのPLACE_BOMB不正ペイロードログ契約 */
 type NetworkPlaceBombLogPayload = {
   event: typeof protocol.SocketEvents.PLACE_BOMB;
-  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  result:
+    | typeof logResults.IGNORED_INVALID_PAYLOAD
+    | typeof logResults.IGNORED_MISSING_ROOM;
   socketId: string;
 };
 
 /** NetworkのBOMB_HIT_REPORT不正ペイロードログ契約 */
 type NetworkBombHitReportLogPayload = {
   event: typeof protocol.SocketEvents.BOMB_HIT_REPORT;
-  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  result:
+    | typeof logResults.IGNORED_INVALID_PAYLOAD
+    | typeof logResults.IGNORED_MISSING_ROOM;
   socketId: string;
 };
 

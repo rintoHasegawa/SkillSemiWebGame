@@ -2,25 +2,29 @@
  * roomEventOrchestrators
  * ルーム受信イベントごとの調停処理を提供する
  * 受信ハンドラからユースケース実行責務を分離する
+ * 本ファイルではランタイム未解決ログ対象イベントを扱わない
  */
 import type { roomTypes } from "@repo/shared";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";
 import type {
-  RoomHandlerRoomPort,
-  RoomHandlerRuntimePort,
+  JoinRoomEventRoomUseCasePort,
+  JoinRoomEventRuntimeUseCasePort,
 } from "@server/network/types/connectionPorts";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 
 /** JOIN_ROOMイベント調停で利用する依存集合 */
 export type JoinRoomOrchestratorDeps = {
   socketId: string;
-  roomManager: RoomHandlerRoomPort;
-  runtimeRegistry: RoomHandlerRuntimePort;
+  roomManager: JoinRoomEventRoomUseCasePort;
+  runtimeRegistry: JoinRoomEventRuntimeUseCasePort;
   output: RoomOutputAdapter;
   joinRoom: (roomId: string) => Promise<void>;
 };
+
+/** JOIN_ROOMイベントの入力ペイロード型 */
+export type JoinRoomEventPayload = Parameters<typeof handleJoinRoomEvent>[1];
 
 /** JOIN_ROOMイベントを調停して参加ユースケースを実行する */
 export const handleJoinRoomEvent = async (
