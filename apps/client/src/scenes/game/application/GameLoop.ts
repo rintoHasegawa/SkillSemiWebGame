@@ -12,7 +12,12 @@ import { InputStep } from "./loopSteps/InputStep";
 import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";
 import { BombStep } from "./loopSteps/BombStep";
-import type { LoopFrameContext, LoopFrameEffects, LoopStep } from "./loopSteps/LoopStep";
+import type {
+  LoopFrameContext,
+  LoopFrameEffects,
+  LoopMovementState,
+  LoopStep,
+} from "./loopSteps/LoopStep";
 import { resolveFrameDelta } from "./loopSteps/frameDelta";
 import type { MoveSender } from "./network/PlayerMoveSender";
 
@@ -65,8 +70,12 @@ export class GameLoop {
       ticker,
       config.GAME_CONFIG.FRAME_DELTA_MAX_MS,
     );
-    const frameState = {
-      isMoving: false,
+    const frameState: { movement: LoopMovementState } = {
+      movement: {
+        isMoving: false,
+        axisX: 0,
+        axisY: 0,
+      },
     };
 
     const frameContext: LoopFrameContext = {
@@ -75,12 +84,14 @@ export class GameLoop {
       playerRepository: this.playerRepository,
       me,
       deltaSeconds,
-      getIsMoving: () => frameState.isMoving,
     };
 
     const effects: LoopFrameEffects = {
-      setIsMoving: (isMoving) => {
-        frameState.isMoving = isMoving;
+      setMovementState: (movement) => {
+        frameState.movement = movement;
+      },
+      getMovementState: () => {
+        return frameState.movement;
       },
     };
 

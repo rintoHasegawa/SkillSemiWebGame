@@ -43,9 +43,7 @@ export class GameManagerBootstrapper {
     }
 
     this.options.container.appendChild(this.options.app.canvas);
-    this.options.runtime.initialize();
-    this.options.runtime.readyForGame();
-    this.options.app.ticker.add(this.options.tick);
+    this.options.runtime.activate(this.options.tick);
     this.options.lifecycleState.markInitialized();
 
     return { initialized: true };

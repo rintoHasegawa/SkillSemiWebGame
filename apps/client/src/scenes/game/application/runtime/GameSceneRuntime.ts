@@ -52,6 +52,7 @@ export class GameSceneRuntime {
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
   private joystickInput = { x: 0, y: 0 };
+  private tickerHandler: ((ticker: Ticker) => void) | null = null;
   private lifecycleState: RuntimeLifecycleState = "created";
 
   constructor({
@@ -122,6 +123,18 @@ export class GameSceneRuntime {
     });
   }
 
+  /** シーン実行を開始する */
+  public activate(tick: (ticker: Ticker) => void): void {
+    if (this.lifecycleState !== "created") {
+      return;
+    }
+
+    this.initialize();
+    this.readyForGame();
+    this.app.ticker.add(tick);
+    this.tickerHandler = tick;
+  }
+
   public isInputEnabled(): boolean {
     return this.sessionFacade.canAcceptInput();
   }
@@ -163,6 +176,10 @@ export class GameSceneRuntime {
     }
 
     this.lifecycleState = "destroyed";
+    if (this.tickerHandler) {
+      this.app.ticker.remove(this.tickerHandler);
+      this.tickerHandler = null;
+    }
     this.disposableRegistry.disposeAll();
   }
 }

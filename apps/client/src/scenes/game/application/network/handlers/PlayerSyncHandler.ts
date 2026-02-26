@@ -11,11 +11,11 @@ import type {
   UpdatePlayersPayload,
 } from "@repo/shared";
 import {
-  LocalPlayerController,
   RemotePlayerController,
 } from "@client/scenes/game/entities/player/PlayerController";
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
+import { PlayerControllerFactory } from "./PlayerControllerFactory";
 
 /** PlayerSyncHandler の初期化入力 */
 export type PlayerSyncHandlerOptions = {
@@ -29,14 +29,15 @@ export type PlayerSyncHandlerOptions = {
 export class PlayerSyncHandler {
   private readonly worldContainer: Container;
   private readonly playerRepository: PlayerRepository;
-  private readonly myId: string;
-  private readonly appearanceResolver: AppearanceResolver;
+  private readonly playerControllerFactory: PlayerControllerFactory;
 
   constructor({ worldContainer, playerRepository, myId, appearanceResolver }: PlayerSyncHandlerOptions) {
     this.worldContainer = worldContainer;
     this.playerRepository = playerRepository;
-    this.myId = myId;
-    this.appearanceResolver = appearanceResolver;
+    this.playerControllerFactory = new PlayerControllerFactory({
+      myId,
+      appearanceResolver,
+    });
   }
 
   /** 初期プレイヤー一覧を生成して反映する */
@@ -79,9 +80,7 @@ export class PlayerSyncHandler {
       existing.destroy();
     }
 
-    const playerController = playerId === this.myId
-      ? new LocalPlayerController(payload, this.appearanceResolver)
-      : new RemotePlayerController(payload, this.appearanceResolver);
+    const playerController = this.playerControllerFactory.create(playerId, payload);
 
     this.worldContainer.addChild(playerController.getDisplayObject());
     this.playerRepository.upsert(playerId, playerController);

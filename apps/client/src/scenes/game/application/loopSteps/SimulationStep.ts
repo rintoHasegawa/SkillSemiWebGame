@@ -7,7 +7,12 @@ import { config } from "@client/config";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
-import type { LoopFrameContext, LoopFrameEffects, LoopStep } from "./LoopStep";
+import type {
+  LoopFrameContext,
+  LoopFrameEffects,
+  LoopMovementState,
+  LoopStep,
+} from "./LoopStep";
 
 /** SimulationStep の初期化入力 */
 type SimulationStepOptions = {
@@ -19,7 +24,7 @@ type SimulationStepParams = {
   me: LocalPlayerController;
   playerRepository: PlayerRepository;
   deltaSeconds: number;
-  getIsMoving: () => boolean;
+  movementState: LoopMovementState;
 };
 
 /** シミュレーション段の更新処理を担うステップ */
@@ -37,16 +42,16 @@ export class SimulationStep implements LoopStep {
   /** ローカル更新とリモート補間更新を実行する */
   public run(
     context: Readonly<LoopFrameContext>,
-    _effects: LoopFrameEffects,
+    effects: LoopFrameEffects,
   ): void {
     const params: SimulationStepParams = {
       me: context.me,
       playerRepository: context.playerRepository,
       deltaSeconds: context.deltaSeconds,
-      getIsMoving: context.getIsMoving,
+      movementState: effects.getMovementState(),
     };
 
-    this.runLocalSimulation({ me: params.me, isMoving: params.getIsMoving() });
+    this.runLocalSimulation({ me: params.me, isMoving: params.movementState.isMoving });
     this.runRemoteSimulation({
       playerRepository: params.playerRepository,
       deltaSeconds: params.deltaSeconds,

@@ -14,12 +14,19 @@ export type LoopFrameContext = {
   playerRepository: PlayerRepository;
   me: LocalPlayerController;
   deltaSeconds: number;
-  getIsMoving: () => boolean;
+};
+
+/** 入力由来の移動状態を表す型 */
+export type LoopMovementState = {
+  isMoving: boolean;
+  axisX: number;
+  axisY: number;
 };
 
 /** 1フレーム内で許可する副作用操作の型 */
 export type LoopFrameEffects = {
-  setIsMoving: (isMoving: boolean) => void;
+  setMovementState: (movement: LoopMovementState) => void;
+  getMovementState: () => LoopMovementState;
 };
 
 /** ゲームループ内で実行されるステップ共通インターフェース */
