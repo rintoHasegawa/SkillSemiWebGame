@@ -1,7 +1,13 @@
 import { config as sharedConfig } from "@repo/shared";
 
+const sharedGameConfig =
+  sharedConfig.GAME_CONFIG as typeof sharedConfig.GAME_CONFIG & {
+    GAME_START_DELAY_MS?: number;
+  };
+
 const GAME_CONFIG = {
-  ...sharedConfig.GAME_CONFIG,
+  ...sharedGameConfig,
+  GAME_START_DELAY_MS: sharedGameConfig.GAME_START_DELAY_MS ?? 5000,
   MAX_PLAYERS_PER_ROOM: 100,
 } as const;
 

@@ -37,13 +37,21 @@ export class GameManager {
     this.timer.setGameStart(startTime);
   }
 
+  public getStartCountdownSec(): number {
+    return this.timer.getPreStartRemainingSec();
+  }
+
+  private canAcceptInput(): boolean {
+    return !this.isInputLocked && this.timer.isStarted();
+  }
+
   // 現在の残り秒数を取得する
   public getRemainingTime(): number {
     return this.timer.getRemainingTime();
   }
 
   public placeBomb(): string | null {
-    if (this.isInputLocked) return null;
+    if (!this.canAcceptInput()) return null;
     if (!this.bombManager) return null;
     const placed = this.bombManager.placeBomb();
     if (!placed) return null;
@@ -115,7 +123,10 @@ export class GameManager {
    * React側からジョイスティックの入力を受け取る
    */
   public setJoystickInput(x: number, y: number) {
-    if (this.isInputLocked) return;
+    if (!this.canAcceptInput()) {
+      this.joystickInput = { x: 0, y: 0 };
+      return;
+    }
     this.joystickInput = { x, y };
   }
 
@@ -194,7 +205,9 @@ export class GameManager {
   }
 
   /** 爆弾当たり判定の評価結果を受け取り，後続処理へ接続する */
-  private handleBombHitEvaluation(_result: BombHitEvaluationResult | undefined): void {
+  private handleBombHitEvaluation(
+    _result: BombHitEvaluationResult | undefined,
+  ): void {
     // 次フェーズでサーバー通知や被弾演出の接続に利用する
   }
 

@@ -14,7 +14,8 @@ const formatRemainingTime = (remaining: number) => {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-const getInitialTimeDisplay = () => formatRemainingTime(config.GAME_CONFIG.GAME_DURATION_SEC);
+const getInitialTimeDisplay = () =>
+  formatRemainingTime(config.GAME_CONFIG.GAME_DURATION_SEC);
 
 /** ゲーム画面の状態と入力ハンドラを提供するフック */
 export const useGameSceneController = (myId: string | null) => {
@@ -22,6 +23,9 @@ export const useGameSceneController = (myId: string | null) => {
   const gameManagerRef = useRef<GameManager | null>(null);
   const inputManagerRef = useRef<GameInputManager | null>(null);
   const [timeLeft, setTimeLeft] = useState(getInitialTimeDisplay());
+  const [startCountdownText, setStartCountdownText] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!pixiContainerRef.current || !myId) return;
@@ -36,12 +40,18 @@ export const useGameSceneController = (myId: string | null) => {
       },
       () => {
         manager.placeBomb();
-      }
+      },
     );
 
     const timerInterval = setInterval(() => {
       const nextDisplay = formatRemainingTime(manager.getRemainingTime());
       setTimeLeft((prev) => (prev === nextDisplay ? prev : nextDisplay));
+
+      const remainingSec = manager.getStartCountdownSec();
+      const nextCountdown = remainingSec > 0 ? String(remainingSec) : null;
+      setStartCountdownText((prev) =>
+        prev === nextCountdown ? prev : nextCountdown,
+      );
     }, config.GAME_CONFIG.TIMER_DISPLAY_UPDATE_MS);
 
     return () => {
@@ -49,6 +59,7 @@ export const useGameSceneController = (myId: string | null) => {
       gameManagerRef.current = null;
       inputManagerRef.current = null;
       clearInterval(timerInterval);
+      setStartCountdownText(null);
     };
   }, [myId]);
 
@@ -63,6 +74,7 @@ export const useGameSceneController = (myId: string | null) => {
   return {
     pixiContainerRef,
     timeLeft,
+    startCountdownText,
     handleInput,
     handlePlaceBomb,
   };

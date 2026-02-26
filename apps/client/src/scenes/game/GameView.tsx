@@ -8,6 +8,7 @@ import { GameInputOverlay } from "./input/GameInputOverlay";
 /** 表示と入力に必要なプロパティ */
 type Props = {
   timeLeft: string;
+  startCountdownText: string | null;
   pixiContainerRef: React.RefObject<HTMLDivElement>;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => void;
@@ -45,20 +46,51 @@ const PIXI_LAYER_STYLE: React.CSSProperties = {
   zIndex: 1,
 };
 
-const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => <div style={TIMER_STYLE}>{timeLeft}</div>;
+const START_COUNTDOWN_STYLE: React.CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  zIndex: 30,
+  color: "white",
+  fontSize: "clamp(3rem, 14vw, 8rem)",
+  fontWeight: 900,
+  textShadow: "0 0 16px rgba(0,0,0,0.85)",
+  fontFamily: "monospace",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  pointerEvents: "none",
+};
+
+const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => (
+  <div style={TIMER_STYLE}>{timeLeft}</div>
+);
 
 /** 画面描画と入力UIをまとめて描画する */
-export const GameView = ({ timeLeft, pixiContainerRef, onJoystickInput, onPlaceBomb }: Props) => {
+export const GameView = ({
+  timeLeft,
+  startCountdownText,
+  pixiContainerRef,
+  onJoystickInput,
+  onPlaceBomb,
+}: Props) => {
   return (
     <div style={ROOT_STYLE}>
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
 
+      {startCountdownText && (
+        <div style={START_COUNTDOWN_STYLE}>{startCountdownText}</div>
+      )}
+
       {/* PixiJS Canvas 配置領域 */}
       <div ref={pixiContainerRef} style={PIXI_LAYER_STYLE} />
 
       {/* 入力UI レイヤー */}
-      <GameInputOverlay onJoystickInput={onJoystickInput} onPlaceBomb={onPlaceBomb} />
+      <GameInputOverlay
+        onJoystickInput={onJoystickInput}
+        onPlaceBomb={onPlaceBomb}
+      />
     </div>
   );
 };

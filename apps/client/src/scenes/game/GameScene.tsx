@@ -13,11 +13,18 @@ interface GameSceneProps {
 
 /** メインゲーム画面を描画し入力をゲーム制御へ橋渡しする */
 export function GameScene({ myId }: GameSceneProps) {
-  const { pixiContainerRef, timeLeft, handleInput, handlePlaceBomb } = useGameSceneController(myId);
+  const {
+    pixiContainerRef,
+    timeLeft,
+    startCountdownText,
+    handleInput,
+    handlePlaceBomb,
+  } = useGameSceneController(myId);
 
   return (
     <GameView
       timeLeft={timeLeft}
+      startCountdownText={startCountdownText}
       pixiContainerRef={pixiContainerRef}
       onJoystickInput={handleInput}
       onPlaceBomb={handlePlaceBomb}
