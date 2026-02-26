@@ -3,8 +3,8 @@
  * ルーム内プレイヤーでゲームセッションを開始し，進行イベントを通知する
  */
 import type {
-  BombOutputPort,
-  GameOutputPort,
+  BombPlacementPort,
+  StartGameOutputPort,
   StartGamePort,
 } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logger";
@@ -13,7 +13,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import { placeBombUseCase } from "./placeBombUseCase";
+import { createBotBombActionHandler } from "../services/BotBombActionService";
 
 const excludeRecipientFromPlayerUpdates = <
   TPlayerUpdate extends { id: string },
@@ -30,20 +30,10 @@ type StartGameUseCaseParams = {
   roomId: string;
   playerIds: string[];
   recipientPlayerIds?: string[];
-  gameManager: StartGamePort;
+  gameSession: StartGamePort;
+  bombStore: BombPlacementPort;
   onGameEnd: () => void;
-  output: Pick<
-    GameOutputPort,
-    | "publishUpdatePlayersToSocket"
-    | "publishMapCellUpdatesToRoom"
-    | "publishGameEndToRoom"
-    | "publishGameResultToRoom"
-    | "publishGameStartToRoom"
-  > &
-    Pick<
-      BombOutputPort,
-      "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
-    >;
+  output: StartGameOutputPort;
 };
 
 /** ゲームセッション開始とティック通知，終了通知を実行する */
@@ -51,13 +41,19 @@ export const startGameUseCase = ({
   roomId,
   playerIds,
   recipientPlayerIds,
-  gameManager,
+  gameSession,
+  bombStore,
   onGameEnd,
   output,
 }: StartGameUseCaseParams) => {
   const updateRecipients = recipientPlayerIds ?? playerIds;
+  const handleBotBombAction = createBotBombActionHandler({
+    roomId,
+    bombStore,
+    output,
+  });
 
-  gameManager.startRoomSession(
+  gameSession.startRoomSession(
     playerIds,
     (tickData) => {
       if (tickData.playerUpdates.length > 0) {
@@ -90,20 +86,9 @@ export const startGameUseCase = ({
       output.publishGameResultToRoom(roomId, resultPayload);
       onGameEnd();
     },
-    (ownerId, payload) => {
-      placeBombUseCase({
-        roomId,
-        bombStore: gameManager,
-        input: {
-          socketId: ownerId,
-          payload,
-          nowMs: Date.now(),
-        },
-        output,
-      });
-    },
+    handleBotBombAction,
   );
 
-  const startTime = gameManager.getRoomStartTime() || Date.now();
+  const startTime = gameSession.getRoomStartTime() || Date.now();
   output.publishGameStartToRoom(roomId, { startTime });
 };

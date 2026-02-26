@@ -4,7 +4,7 @@
  */
 import type { PlaceBombPayload } from "@repo/shared";
 import { config } from "@server/config";
-import { isBotPlayerId } from "./BotRosterService";
+import type { BotPlayerId } from "./BotRosterService";
 import type { Player } from "../../entities/player/Player";
 
 type BotState = {
@@ -120,9 +120,10 @@ const moveTowardsTarget = (
 
 /** Botの移動・爆弾行動を管理するサービス */
 export class BotAiService {
-  private states = new Map<string, BotState>();
+  private states = new Map<BotPlayerId, BotState>();
 
   public decide(
+    botPlayerId: BotPlayerId,
     player: Player,
     gridColors: number[],
     nowMs: number,
@@ -133,7 +134,7 @@ export class BotAiService {
     const currentCol = clamp(Math.floor(player.x), 0, GRID_COLS - 1);
     const currentRow = clamp(Math.floor(player.y), 0, GRID_ROWS - 1);
 
-    const currentState = this.states.get(player.id) ?? {
+    const currentState = this.states.get(botPlayerId) ?? {
       targetCol: currentCol,
       targetRow: currentRow,
       lastBombPlacedAtMs: Number.NEGATIVE_INFINITY,
@@ -167,13 +168,13 @@ export class BotAiService {
     ) {
       const nextBombSeq = currentState.bombSeq + 1;
       placeBombPayload = {
-        requestId: `bot-${player.id}-${nextBombSeq}`,
+        requestId: `bot-${botPlayerId}-${nextBombSeq}`,
         x: moved.nextX,
         y: moved.nextY,
         explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
       };
 
-      this.states.set(player.id, {
+      this.states.set(botPlayerId, {
         targetCol: nextTarget.col,
         targetRow: nextTarget.row,
         bombSeq: nextBombSeq,
@@ -187,7 +188,7 @@ export class BotAiService {
       };
     }
 
-    this.states.set(player.id, {
+    this.states.set(botPlayerId, {
       targetCol: nextTarget.col,
       targetRow: nextTarget.row,
       bombSeq: currentState.bombSeq,
@@ -205,5 +206,3 @@ export class BotAiService {
     this.states.clear();
   }
 }
-
-export { isBotPlayerId };
