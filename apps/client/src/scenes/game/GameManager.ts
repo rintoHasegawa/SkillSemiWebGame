@@ -57,6 +57,10 @@ export class GameManager {
     return this.timer.getRemainingTime();
   }
 
+  public isInputEnabled(): boolean {
+    return this.canAcceptInput();
+  }
+
   public placeBomb(): string | null {
     if (!this.canAcceptInput()) return null;
     if (!this.bombManager) return null;

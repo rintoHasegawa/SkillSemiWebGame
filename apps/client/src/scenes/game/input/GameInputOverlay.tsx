@@ -10,6 +10,7 @@ import { BombButton } from "./bomb/BombButton";
 
 /** 入力UIレイヤーの入力プロパティ */
 type GameInputOverlayProps = {
+  isInputEnabled: boolean;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
 };
@@ -25,6 +26,7 @@ const COOLDOWN_TICK_MS = 50;
 
 /** 入力UIレイヤーを描画する */
 export const GameInputOverlay = ({
+  isInputEnabled,
   onJoystickInput,
   onPlaceBomb,
 }: GameInputOverlayProps) => {
@@ -79,7 +81,7 @@ export const GameInputOverlay = ({
   }, [bombCooldownMs, lastBombPressedAt, nowMs]);
 
   const handlePressBomb = () => {
-    if (!cooldownState.isReady) {
+    if (!isInputEnabled || !cooldownState.isReady) {
       return;
     }
 
@@ -94,11 +96,14 @@ export const GameInputOverlay = ({
 
   return (
     <div style={UI_LAYER_STYLE}>
-      <JoystickInputPresenter onInput={onJoystickInput} />
+      <JoystickInputPresenter
+        onInput={onJoystickInput}
+        isEnabled={isInputEnabled}
+      />
       <BombButton
         onPress={handlePressBomb}
         cooldownProgress={cooldownState.progress}
-        isReady={cooldownState.isReady}
+        isReady={isInputEnabled && cooldownState.isReady}
         remainingSecText={cooldownState.remainingSecText}
       />
     </div>

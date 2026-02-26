@@ -41,6 +41,75 @@ type SocketSubscription = {
   unbind: () => void;
 };
 
+type SubscriptionHandlers = {
+  handleCurrentPlayers: (serverPlayers: CurrentPlayersPayload) => void;
+  handleNewPlayer: (player: NewPlayerPayload) => void;
+  handleGameStart: (data: GameStartPayload) => void;
+  handlePlayerUpdates: (players: UpdatePlayersPayload) => void;
+  handleRemovePlayer: (id: RemovePlayerPayload) => void;
+  handleUpdateMapCells: (updates: UpdateMapCellsPayload) => void;
+  handleGameEnd: () => void;
+  handleBombPlaced: (payload: BombPlacedPayload) => void;
+  handleBombPlacedAck: (payload: BombPlacedAckPayload) => void;
+  handlePlayerDead: (payload: PlayerDeadPayload) => void;
+};
+
+const createSocketSubscriptions = ({
+  handleCurrentPlayers,
+  handleNewPlayer,
+  handleGameStart,
+  handlePlayerUpdates,
+  handleRemovePlayer,
+  handleUpdateMapCells,
+  handleGameEnd,
+  handleBombPlaced,
+  handleBombPlacedAck,
+  handlePlayerDead,
+}: SubscriptionHandlers): SocketSubscription[] => {
+  return [
+    {
+      bind: () => socketManager.game.onCurrentPlayers(handleCurrentPlayers),
+      unbind: () => socketManager.game.offCurrentPlayers(handleCurrentPlayers),
+    },
+    {
+      bind: () => socketManager.game.onNewPlayer(handleNewPlayer),
+      unbind: () => socketManager.game.offNewPlayer(handleNewPlayer),
+    },
+    {
+      bind: () => socketManager.game.onGameStart(handleGameStart),
+      unbind: () => socketManager.game.offGameStart(handleGameStart),
+    },
+    {
+      bind: () => socketManager.game.onUpdatePlayers(handlePlayerUpdates),
+      unbind: () => socketManager.game.offUpdatePlayers(handlePlayerUpdates),
+    },
+    {
+      bind: () => socketManager.game.onRemovePlayer(handleRemovePlayer),
+      unbind: () => socketManager.game.offRemovePlayer(handleRemovePlayer),
+    },
+    {
+      bind: () => socketManager.game.onUpdateMapCells(handleUpdateMapCells),
+      unbind: () => socketManager.game.offUpdateMapCells(handleUpdateMapCells),
+    },
+    {
+      bind: () => socketManager.game.onGameEnd(handleGameEnd),
+      unbind: () => socketManager.game.offGameEnd(handleGameEnd),
+    },
+    {
+      bind: () => socketManager.game.onBombPlaced(handleBombPlaced),
+      unbind: () => socketManager.game.offBombPlaced(handleBombPlaced),
+    },
+    {
+      bind: () => socketManager.game.onBombPlacedAck(handleBombPlacedAck),
+      unbind: () => socketManager.game.offBombPlacedAck(handleBombPlacedAck),
+    },
+    {
+      bind: () => socketManager.game.onPlayerDead(handlePlayerDead),
+      unbind: () => socketManager.game.offPlayerDead(handlePlayerDead),
+    },
+  ];
+};
+
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
 export class GameNetworkSync {
   private worldContainer: Container;
@@ -148,48 +217,18 @@ export class GameNetworkSync {
     this.onBombPlacedFromOthers = onBombPlacedFromOthers;
     this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
     this.onPlayerDeadFromNetwork = onPlayerDeadFromNetwork;
-    this.socketSubscriptions = [
-      {
-        bind: () => socketManager.game.onCurrentPlayers(this.handleCurrentPlayers),
-        unbind: () => socketManager.game.offCurrentPlayers(this.handleCurrentPlayers),
-      },
-      {
-        bind: () => socketManager.game.onNewPlayer(this.handleNewPlayer),
-        unbind: () => socketManager.game.offNewPlayer(this.handleNewPlayer),
-      },
-      {
-        bind: () => socketManager.game.onGameStart(this.handleGameStart),
-        unbind: () => socketManager.game.offGameStart(this.handleGameStart),
-      },
-      {
-        bind: () => socketManager.game.onUpdatePlayers(this.handlePlayerUpdates),
-        unbind: () => socketManager.game.offUpdatePlayers(this.handlePlayerUpdates),
-      },
-      {
-        bind: () => socketManager.game.onRemovePlayer(this.handleRemovePlayer),
-        unbind: () => socketManager.game.offRemovePlayer(this.handleRemovePlayer),
-      },
-      {
-        bind: () => socketManager.game.onUpdateMapCells(this.handleUpdateMapCells),
-        unbind: () => socketManager.game.offUpdateMapCells(this.handleUpdateMapCells),
-      },
-      {
-        bind: () => socketManager.game.onGameEnd(this.handleGameEnd),
-        unbind: () => socketManager.game.offGameEnd(this.handleGameEnd),
-      },
-      {
-        bind: () => socketManager.game.onBombPlaced(this.handleBombPlaced),
-        unbind: () => socketManager.game.offBombPlaced(this.handleBombPlaced),
-      },
-      {
-        bind: () => socketManager.game.onBombPlacedAck(this.handleBombPlacedAck),
-        unbind: () => socketManager.game.offBombPlacedAck(this.handleBombPlacedAck),
-      },
-      {
-        bind: () => socketManager.game.onPlayerDead(this.handlePlayerDead),
-        unbind: () => socketManager.game.offPlayerDead(this.handlePlayerDead),
-      },
-    ];
+    this.socketSubscriptions = createSocketSubscriptions({
+      handleCurrentPlayers: this.handleCurrentPlayers,
+      handleNewPlayer: this.handleNewPlayer,
+      handleGameStart: this.handleGameStart,
+      handlePlayerUpdates: this.handlePlayerUpdates,
+      handleRemovePlayer: this.handleRemovePlayer,
+      handleUpdateMapCells: this.handleUpdateMapCells,
+      handleGameEnd: this.handleGameEnd,
+      handleBombPlaced: this.handleBombPlaced,
+      handleBombPlacedAck: this.handleBombPlacedAck,
+      handlePlayerDead: this.handlePlayerDead,
+    });
   }
 
   public bind() {

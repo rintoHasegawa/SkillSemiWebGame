@@ -52,6 +52,7 @@ export type UseJoystickControllerReturn = {
 export type UseJoystickInputPresenterProps = {
   onInput: (moveX: number, moveY: number) => void;
   maxDist?: number;
+  isEnabled?: boolean;
 };
 
 /** JoystickView に渡す描画状態型 */
