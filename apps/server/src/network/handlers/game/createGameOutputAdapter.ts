@@ -37,9 +37,6 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
     publishPongToSocket: (payload: PongPayload) => {
       common.emitToSocket(protocol.SocketEvents.PONG, payload);
     },
-    publishUpdatePlayersToRoom: (roomId: RoomId, players: UpdatePlayersPayload) => {
-      common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_PLAYERS, players);
-    },
     publishUpdatePlayersToSocket: (socketId: string, players: UpdatePlayersPayload) => {
       common.emitToSocketById(socketId, protocol.SocketEvents.UPDATE_PLAYERS, players);
     },

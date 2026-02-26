@@ -20,7 +20,6 @@ type StartGameUseCaseParams = {
   onGameEnd: () => void;
   output: Pick<
     GameOutputPort,
-    | "publishUpdatePlayersToRoom"
     | "publishUpdatePlayersToSocket"
     | "publishMapCellUpdatesToRoom"
     | "publishGameEndToRoom"

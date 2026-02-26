@@ -20,7 +20,6 @@ type StartGameCoordinatorParams = {
   roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort & FindGameByRoomPort;
   output: Pick<
     GameOutputPort,
-    | "publishUpdatePlayersToRoom"
     | "publishUpdatePlayersToSocket"
     | "publishMapCellUpdatesToRoom"
     | "publishGameEndToRoom"
