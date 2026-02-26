@@ -29,6 +29,7 @@ export type UseJoystickStateReturn = {
   handleStart: (e: JoystickPointerEvent) => void;
   handleMove: (e: JoystickPointerEvent) => NormalizedInput | null;
   handleEnd: (e: JoystickPointerEvent) => void;
+  reset: () => void;
 };
 
 /** useJoystickController に渡す入力設定型 */
@@ -46,6 +47,7 @@ export type UseJoystickControllerReturn = {
   handleStart: (e: JoystickPointerEvent) => void;
   handleMove: (e: JoystickPointerEvent) => void;
   handleEnd: (e: JoystickPointerEvent) => void;
+  reset: () => void;
 };
 
 /** JoystickInputPresenter に渡す入力設定型 */
