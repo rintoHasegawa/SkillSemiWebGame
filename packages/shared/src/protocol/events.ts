@@ -15,6 +15,8 @@ export type { BombNetworkPayload } from "./bombIdentity";
 
 /** 基本ペイロード型を再公開する */
 export type {
+  InitialPlayerSyncPayload,
+  DeltaPlayerSyncPayload,
   UpdatePlayersPayload,
   CurrentPlayersPayload,
   UpdateMapCellsPayload,

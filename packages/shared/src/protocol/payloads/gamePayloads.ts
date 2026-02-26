@@ -3,7 +3,8 @@
  * ゲーム進行イベントで利用するペイロード型を定義する
  * プレイヤー差分，マップ差分，開始終了系の契約を集約する
  */
-import type { TickData } from "../../domains/game/game.type";
+import type { PlayerPositionUpdate } from "../../domains/game/game.type";
+import type { CellUpdate } from "../../domains/gridMap/gridMap.type";
 import type { MovePayload as PlayerMovePayload, PlayerData } from "../../domains/player/player.type";
 
 /** GAME_RESULT イベントで送受信するランキング1行 */
@@ -19,16 +20,31 @@ export type GameResultPayload = {
   rankings: GameResultRanking[];
 };
 
+/**
+ * 初期同期（CURRENT_PLAYERS）で利用するプレイヤー一覧
+ * 初期同期用のため teamId を含む完全な PlayerData を配信する
+ */
+export type InitialPlayerSyncPayload = PlayerData[];
+
+/**
+ * 差分同期（UPDATE_PLAYERS）で利用するプレイヤー差分配列
+ * 帯域最適化のため teamId は含めず，id/x/y のみを配信する
+ */
+export type DeltaPlayerSyncPayload = PlayerPositionUpdate[];
+
 /** UPDATE_PLAYERS イベントで送受信するプレイヤー差分配列 */
-export type UpdatePlayersPayload = TickData["playerUpdates"];
+export type UpdatePlayersPayload = DeltaPlayerSyncPayload;
 
 /** CURRENT_PLAYERS イベントで送受信するプレイヤー一覧 */
-export type CurrentPlayersPayload = TickData["playerUpdates"];
+export type CurrentPlayersPayload = InitialPlayerSyncPayload;
 
 /** UPDATE_MAP_CELLS イベントで送受信するマップ差分配列 */
-export type UpdateMapCellsPayload = TickData["cellUpdates"];
+export type UpdateMapCellsPayload = CellUpdate[];
 
-/** NEW_PLAYER イベントで送受信するプレイヤー情報 */
+/**
+ * NEW_PLAYER イベントで送受信するプレイヤー情報
+ * 初回参加通知のため teamId を含む完全な PlayerData を配信する
+ */
 export type NewPlayerPayload = PlayerData;
 
 /** REMOVE_PLAYER イベントで送受信するプレイヤーID */
