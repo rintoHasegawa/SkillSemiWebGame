@@ -5,10 +5,10 @@
  */
 import { GameInputOverlay } from "./input/GameInputOverlay";
 import {
-  PIXI_LAYER_STYLE,
-  ROOT_STYLE,
-  START_COUNTDOWN_STYLE,
-  TIMER_STYLE,
+  GAME_VIEW_PIXI_LAYER_STYLE,
+  GAME_VIEW_ROOT_STYLE,
+  GAME_VIEW_START_COUNTDOWN_STYLE,
+  GAME_VIEW_TIMER_STYLE,
 } from "./styles/GameView.styles";
 
 /** 表示と入力に必要なプロパティ */
@@ -22,7 +22,7 @@ type Props = {
 };
 
 const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => (
-  <div style={TIMER_STYLE}>{timeLeft}</div>
+  <div style={GAME_VIEW_TIMER_STYLE}>{timeLeft}</div>
 );
 
 /** 画面描画と入力UIをまとめて描画する */
@@ -35,16 +35,16 @@ export const GameView = ({
   onPlaceBomb,
 }: Props) => {
   return (
-    <div style={ROOT_STYLE}>
+    <div style={GAME_VIEW_ROOT_STYLE}>
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
 
       {startCountdownText && (
-        <div style={START_COUNTDOWN_STYLE}>{startCountdownText}</div>
+        <div style={GAME_VIEW_START_COUNTDOWN_STYLE}>{startCountdownText}</div>
       )}
 
       {/* PixiJS Canvas 配置領域 */}
-      <div ref={pixiContainerRef} style={PIXI_LAYER_STYLE} />
+      <div ref={pixiContainerRef} style={GAME_VIEW_PIXI_LAYER_STYLE} />
 
       {/* 入力UI レイヤー */}
       <GameInputOverlay
