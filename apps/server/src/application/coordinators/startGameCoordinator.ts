@@ -4,9 +4,9 @@
  */
 import {
   type GameOutputPort,
-  type StartGamePort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
+  FindGameByRoomPort,
   FindRoomByOwnerPort,
   RoomPhaseTransitionPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
@@ -17,8 +17,7 @@ import { roomConsts } from "@repo/shared";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
-  gameManager: StartGamePort;
-  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
+  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort & FindGameByRoomPort;
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToRoom"
@@ -33,7 +32,6 @@ type StartGameCoordinatorParams = {
 /** START_GAME受信時にルーム状態遷移を判定し，ゲーム開始ユースケースを実行する */
 export const startGameCoordinator = ({
   ownerId,
-  gameManager,
   roomManager,
   output,
 }: StartGameCoordinatorParams) => {
@@ -77,6 +75,10 @@ export const startGameCoordinator = ({
   });
 
   const playerIds = updatedRoom.players.map((player) => player.id);
+  const gameManager = roomManager.getGameManagerByRoomId(updatedRoom.roomId);
+  if (!gameManager) {
+    return;
+  }
 
   startGameUseCase({
     roomId: updatedRoom.roomId,

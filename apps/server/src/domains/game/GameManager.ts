@@ -8,26 +8,28 @@ import { GameRoomSession } from "./application/services/GameRoomSession";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
 import { GamePlayerOperationService } from "./application/services/GamePlayerOperationService";
 
+type GameSessionRef = {
+  current: GameRoomSession | null;
+};
+
 // プレイヤー集合の生成・更新・参照管理クラス
 /** ゲームセッションのライフサイクルとプレイヤー操作を統括するマネージャ */
 export class GameManager {
-  private sessions: Map<string, GameRoomSession>;
-  private playerToRoom: Map<string, string>;
-  private roomToPlayers: Map<string, Set<string>>;
+  private sessionRef: GameSessionRef;
+  private activePlayerIds: Set<string>;
   private lifecycleService: GameSessionLifecycleService;
   private playerOperationService: GamePlayerOperationService;
 
-  constructor() {
-    this.sessions = new Map();
-    this.playerToRoom = new Map();
-    this.roomToPlayers = new Map();
-    this.lifecycleService = new GameSessionLifecycleService(this.sessions, this.playerToRoom, this.roomToPlayers);
-    this.playerOperationService = new GamePlayerOperationService(this.sessions, this.playerToRoom, this.roomToPlayers);
+  constructor(roomId: string) {
+    this.sessionRef = { current: null };
+    this.activePlayerIds = new Set();
+    this.lifecycleService = new GameSessionLifecycleService(this.sessionRef, this.activePlayerIds, roomId);
+    this.playerOperationService = new GamePlayerOperationService(this.sessionRef, this.activePlayerIds);
   }
 
   // 外部（GameHandlerなど）から開始時刻を取得できるようにする
-  getRoomStartTime(roomId: string): number | undefined {
-    return this.lifecycleService.getRoomStartTime(roomId);
+  getRoomStartTime(): number | undefined {
+    return this.lifecycleService.getRoomStartTime();
   }
 
   // プレイヤー登録解除処理
@@ -42,31 +44,33 @@ export class GameManager {
 
   /**
    * 20Hz固定のゲームループを開始する
-   * @param roomId ルームID
    * @param playerIds このルームに参加しているプレイヤーのIDリスト
    * @param onTick 毎フレーム実行される送信用のコールバック関数
    */
   startRoomSession(
-    roomId: string, 
     playerIds: string[], 
     onTick: (data: gameTypes.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void
   ) {
-    this.lifecycleService.startRoomSession(roomId, playerIds, onTick, onGameEnd);
+    this.lifecycleService.startRoomSession(playerIds, onTick, onGameEnd);
   }
 
-  // 指定ルームのプレイヤーを取得
-  getRoomPlayers(roomId: string): Player[] {
-    return this.lifecycleService.getRoomPlayers(roomId);
+  // 現在セッションのプレイヤーを取得
+  getRoomPlayers(): Player[] {
+    return this.lifecycleService.getRoomPlayers();
   }
 
-  // roomId で対象セッションを選択し，爆弾設置イベントを配信すべきか判定する
-  shouldBroadcastBombPlacedForRoom(roomId: string, dedupeKey: string, nowMs: number): boolean {
-    return this.lifecycleService.shouldBroadcastBombPlacedForRoom(roomId, dedupeKey, nowMs);
+  // 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する
+  shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
+    return this.lifecycleService.shouldBroadcastBombPlaced(dedupeKey, nowMs);
   }
 
-  // roomId で対象セッションを選択し，サーバー採番の爆弾IDを生成する
-  issueServerBombIdForRoom(roomId: string): string {
-    return this.lifecycleService.issueServerBombIdForRoom(roomId);
+  // サーバー採番の爆弾IDを生成する
+  issueServerBombId(): string {
+    return this.lifecycleService.issueServerBombId();
+  }
+
+  dispose(): void {
+    this.lifecycleService.dispose();
   }
 }

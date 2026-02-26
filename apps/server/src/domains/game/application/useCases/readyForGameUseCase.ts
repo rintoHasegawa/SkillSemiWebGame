@@ -10,7 +10,7 @@ import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/ind
 type ReadyForGameUseCaseParams = {
   socketId: string;
   roomId?: string;
-  gameManager: ReadyForGamePort;
+  gameManager?: ReadyForGamePort;
   output: Pick<GameOutputPort, "publishCurrentPlayersToSocket" | "publishGameStartToSocket">;
 };
 
@@ -21,7 +21,7 @@ export const readyForGameUseCase = ({
   gameManager,
   output,
 }: ReadyForGameUseCaseParams) => {
-  if (!roomId) {
+  if (!roomId || !gameManager) {
     output.publishCurrentPlayersToSocket([]);
     logEvent(logScopes.GAME_USE_CASE, {
       event: gameUseCaseLogEvents.READY_FOR_GAME,
@@ -31,7 +31,7 @@ export const readyForGameUseCase = ({
     return;
   }
 
-  const roomPlayers = gameManager.getRoomPlayers(roomId);
+  const roomPlayers = gameManager.getRoomPlayers();
   output.publishCurrentPlayersToSocket(roomPlayers);
 
   logEvent(logScopes.GAME_USE_CASE, {
@@ -42,7 +42,7 @@ export const readyForGameUseCase = ({
     totalPlayers: roomPlayers.length,
   });
 
-  const startTime = gameManager.getRoomStartTime(roomId);
+  const startTime = gameManager.getRoomStartTime();
   if (!startTime) {
     return;
   }

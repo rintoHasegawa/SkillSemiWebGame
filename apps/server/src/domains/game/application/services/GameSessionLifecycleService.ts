@@ -8,87 +8,78 @@ import { logEvent } from "@server/logging/logger";
 import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
 import { GameRoomSession } from "./GameRoomSession";
 
-type SessionStore = Map<string, GameRoomSession>;
-type PlayerRoomIndex = Map<string, string>;
-type RoomPlayersIndex = Map<string, Set<string>>;
+type GameSessionRef = { current: GameRoomSession | null };
+type ActivePlayerIndex = Set<string>;
 
 /** ゲームセッションのライフサイクル操作を提供するサービス */
 export class GameSessionLifecycleService {
   constructor(
-    private sessions: SessionStore,
-    private playerToRoom: PlayerRoomIndex,
-    private roomToPlayers: RoomPlayersIndex
+    private sessionRef: GameSessionRef,
+    private activePlayerIds: ActivePlayerIndex,
+    private roomId: string
   ) {}
 
-  public getRoomStartTime(roomId: string): number | undefined {
-    return this.sessions.get(roomId)?.getStartTime();
+  public getRoomStartTime(): number | undefined {
+    return this.sessionRef.current?.getStartTime();
   }
 
-  public getRoomPlayers(roomId: string) {
-    return this.sessions.get(roomId)?.getPlayers() ?? [];
+  public getRoomPlayers() {
+    return this.sessionRef.current?.getPlayers() ?? [];
   }
 
-  public shouldBroadcastBombPlacedForRoom(roomId: string, dedupeKey: string, nowMs: number): boolean {
-    return this.sessions.get(roomId)?.shouldBroadcastBombPlaced(dedupeKey, nowMs) ?? false;
+  public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
+    return this.sessionRef.current?.shouldBroadcastBombPlaced(dedupeKey, nowMs) ?? false;
   }
 
-  public issueServerBombIdForRoom(roomId: string): string {
-    const session = this.sessions.get(roomId);
+  public issueServerBombId(): string {
+    const session = this.sessionRef.current;
     if (!session) {
-      throw new Error(`Game session not found for roomId: ${roomId}`);
+      throw new Error("Game session not found");
     }
 
     return session.issueServerBombId();
   }
 
   public startRoomSession(
-    roomId: string,
     playerIds: string[],
     onTick: (data: gameTypes.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void
   ) {
-    if (this.sessions.has(roomId)) {
+    if (this.sessionRef.current) {
       logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
         event: gameDomainLogEvents.SESSION_START,
         result: logResults.IGNORED_ALREADY_RUNNING,
-        roomId,
+        roomId: this.roomId,
       });
       return;
     }
 
     const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
-    const session = new GameRoomSession(roomId, playerIds);
-    const roomPlayerSet = new Set(playerIds);
+    const session = new GameRoomSession(this.roomId, playerIds);
 
+    this.activePlayerIds.clear();
     playerIds.forEach((playerId) => {
-      this.playerToRoom.set(playerId, roomId);
+      this.activePlayerIds.add(playerId);
     });
-    this.roomToPlayers.set(roomId, roomPlayerSet);
 
-    this.sessions.set(roomId, session);
+    this.sessionRef.current = session;
     session.start(tickRate, onTick, (payload) => {
-      this.clearRoomPlayerIndex(roomId);
-      this.sessions.delete(roomId);
+      this.activePlayerIds.clear();
+      this.sessionRef.current = null;
       onGameEnd(payload);
     });
 
     logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
       event: gameDomainLogEvents.SESSION_START,
       result: logResults.STARTED,
-      roomId,
+      roomId: this.roomId,
       playerCount: playerIds.length,
     });
   }
 
-  private clearRoomPlayerIndex(roomId: string): void {
-    const roomPlayerSet = this.roomToPlayers.get(roomId);
-    if (!roomPlayerSet) {
-      return;
-    }
-
-    roomPlayerSet.forEach((playerId) => {
-      this.playerToRoom.delete(playerId);
-    });
-    this.roomToPlayers.delete(roomId);
+  public dispose(): void {
+    this.sessionRef.current?.dispose();
+    this.sessionRef.current = null;
+    this.activePlayerIds.clear();
   }
 }

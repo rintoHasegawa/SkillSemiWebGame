@@ -5,7 +5,6 @@
 import { Server } from "socket.io";
 import type {
   SocketConnectionManagerBundle,
-  SocketConnectionGamePort,
   SocketConnectionRoomPort,
 } from "./types/connectionPorts";
 import { registerConnectionHandlers } from "./handlers/registerConnectionHandlers";
@@ -17,12 +16,10 @@ export class SocketManager {
 
   constructor(
     io: Server,
-    gameManager: SocketConnectionGamePort,
     roomManager: SocketConnectionRoomPort
   ) {
     this.io = io;
     this.managers = {
-      gameManager,
       roomManager,
     };
   }

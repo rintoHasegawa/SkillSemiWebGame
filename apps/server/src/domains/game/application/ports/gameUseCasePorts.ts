@@ -21,18 +21,17 @@ import type {
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */
 export interface StartGamePort {
   startRoomSession(
-    roomId: string,
     playerIds: string[],
     onTick: (data: gameTypes.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void
   ): void;
-  getRoomStartTime(roomId: string): number | undefined;
+  getRoomStartTime(): number | undefined;
 }
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
 export interface ReadyForGamePort {
-  getRoomPlayers(roomId: string): playerTypes.PlayerData[];
-  getRoomStartTime(roomId: string): number | undefined;
+  getRoomPlayers(): playerTypes.PlayerData[];
+  getRoomStartTime(): number | undefined;
 }
 
 /** 移動入力ユースケースが利用するプレイヤー操作入力ポート */
@@ -80,8 +79,8 @@ export interface BombOutputPort {
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {
-  shouldBroadcastBombPlacedForRoom(roomId: string, dedupeKey: string, nowMs: number): boolean;
-  issueServerBombIdForRoom(roomId: string): string;
+  shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
+  issueServerBombId(): string;
 }
 
 /** 爆弾設置ユースケースの入力値 */

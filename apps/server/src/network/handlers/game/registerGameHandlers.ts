@@ -7,16 +7,12 @@ import { protocol } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
+  FindGameByRoomPort,
+  FindGameByPlayerPort,
   FindRoomByOwnerPort,
   FindRoomByPlayerPort,
   RoomPhaseTransitionPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
-import type {
-  BombPlacementPort,
-  MovePlayerPort,
-  ReadyForGamePort,
-  StartGamePort,
-} from "@server/domains/game/application/ports/gameUseCasePorts";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
@@ -37,8 +33,7 @@ const gamePayloadValidators = {
 export const registerGameHandlers = (
   io: Server,
   socket: Socket,
-  gameManager: StartGamePort & ReadyForGamePort & MovePlayerPort & BombPlacementPort,
-  roomManager: FindRoomByOwnerPort & FindRoomByPlayerPort & RoomPhaseTransitionPort
+  roomManager: FindRoomByOwnerPort & FindRoomByPlayerPort & RoomPhaseTransitionPort & FindGameByRoomPort & FindGameByPlayerPort
 ) => {
   const common = createCommonHandlerContext(io, socket);
   const gameOutputAdapter = createGameOutputAdapter(common);
@@ -72,7 +67,6 @@ export const registerGameHandlers = (
   onEvent(protocol.SocketEvents.START_GAME, () => {
     startGameCoordinator({
       ownerId: socket.id,
-      gameManager,
       roomManager,
       output: gameOutputAdapter,
     });
@@ -82,7 +76,6 @@ export const registerGameHandlers = (
   onEvent(protocol.SocketEvents.READY_FOR_GAME, () => {
     readyForGameCoordinator({
       socketId: socket.id,
-      gameManager,
       roomManager,
       output: gameOutputAdapter,
     });
@@ -91,6 +84,11 @@ export const registerGameHandlers = (
   // 移動入力を検証しプレイヤー移動ユースケースへ連携する
   onEvent(protocol.SocketEvents.MOVE, (data) => {
     if (!guardMovePayload(data)) {
+      return;
+    }
+
+    const gameManager = roomManager.getGameManagerByPlayerId(socket.id);
+    if (!gameManager) {
       return;
     }
 
@@ -107,8 +105,14 @@ export const registerGameHandlers = (
       return;
     }
 
+    const roomId = roomManager.getRoomByPlayerId(socket.id)?.roomId;
+    const gameManager = roomManager.getGameManagerByPlayerId(socket.id);
+    if (!roomId || !gameManager) {
+      return;
+    }
+
     placeBombUseCase({
-      roomResolver: roomManager,
+      roomId,
       bombStore: gameManager,
       input: {
         socketId: socket.id,

@@ -3,6 +3,20 @@
  * ルームユースケースが依存する操作ポートを定義する
  */
 import type { roomTypes } from "@repo/shared";
+import type {
+  BombPlacementPort,
+  DisconnectPlayerPort,
+  MovePlayerPort,
+  ReadyForGamePort,
+  StartGamePort,
+} from "@server/domains/game/application/ports/gameUseCasePorts";
+
+export type RoomScopedGamePort =
+  & StartGamePort
+  & ReadyForGamePort
+  & MovePlayerPort
+  & BombPlacementPort
+  & DisconnectPlayerPort;
 
 /** ルーム参加処理の実行結果 */
 export type JoinRoomResult = {
@@ -45,4 +59,14 @@ export interface RoomPhaseTransitionPort {
 /** ルームIDでの存在確認に利用する参照ポート */
 export interface FindRoomByIdPort {
   getRoomById(roomId: string): roomTypes.Room | undefined;
+}
+
+/** ルームIDでゲーム管理を解決する参照ポート */
+export interface FindGameByRoomPort {
+  getGameManagerByRoomId(roomId: string): RoomScopedGamePort | undefined;
+}
+
+/** プレイヤーIDでゲーム管理を解決する参照ポート */
+export interface FindGameByPlayerPort {
+  getGameManagerByPlayerId(playerId: string): RoomScopedGamePort | undefined;
 }
