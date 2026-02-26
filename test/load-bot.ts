@@ -2,6 +2,7 @@ import { io } from "socket.io-client";
 import {
   BOTS,
   BOT_CAN_MOVE,
+  BOT_CAN_PLACE_BOMB,
   DURATION_MS,
   JOIN_DELAY_MS,
   MAX_X,
@@ -9,6 +10,8 @@ import {
   MOVE_TICK_MS,
   BOT_SPEED,
   BOT_RADIUS,
+  BOMB_COOLDOWN_MS,
+  BOMB_FUSE_MS,
   ROOM_ID,
   SOCKET_PATH,
   SOCKET_TRANSPORTS,
@@ -36,6 +39,10 @@ type CurrentPlayer = {
   id: string;
   x: number;
   y: number;
+};
+
+type GameStartPayload = {
+  startTime: number;
 };
 
 // 実行後の簡易サマリ用カウンタ。
@@ -69,6 +76,9 @@ console.log("Load test starting...", {
   moveTickMs: MOVE_TICK_MS,
   botSpeed: BOT_SPEED,
   botRadius: BOT_RADIUS,
+  bombCooldownMs: BOMB_COOLDOWN_MS,
+  bombFuseMs: BOMB_FUSE_MS,
+  botCanPlaceBomb: BOT_CAN_PLACE_BOMB,
   maxX: MAX_X,
   maxY: MAX_Y,
 });
@@ -115,6 +125,10 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   let dirX = 1;
   let dirY = 0;
   let gameStarted = false;
+  let readySent = false;
+  let gameStartTimeMs: number | null = null;
+  let lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
+  let bombRequestSerial = 0;
 
   const updateDirection = () => {
     const angle = Math.random() * Math.PI * 2;
@@ -149,6 +163,40 @@ function createBot(index: number, counters: Stats, url: string): Bot {
 
     socket.emit("move", { x: posX, y: posY });
     counters.moveSent += 1;
+
+    tryPlaceBomb();
+  };
+
+  const getElapsedMs = (): number | null => {
+    if (gameStartTimeMs === null) {
+      return null;
+    }
+
+    return Math.max(0, Date.now() - gameStartTimeMs);
+  };
+
+  const tryPlaceBomb = () => {
+    if (!BOT_CAN_PLACE_BOMB || !gameStarted) {
+      return;
+    }
+
+    const elapsedMs = getElapsedMs();
+    if (elapsedMs === null) {
+      return;
+    }
+
+    if (elapsedMs - lastBombPlacedElapsedMs < BOMB_COOLDOWN_MS) {
+      return;
+    }
+
+    bombRequestSerial += 1;
+    socket.emit("place-bomb", {
+      requestId: `${index}-${bombRequestSerial}`,
+      x: posX,
+      y: posY,
+      explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
+    });
+    lastBombPlacedElapsedMs = elapsedMs;
   };
 
   socket.on("connect", () => {
@@ -166,10 +214,23 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     }
   });
 
-  socket.on("game-start", () => {
+  socket.on("game-start", (payload?: GameStartPayload) => {
     counters.gameStarts += 1;
     gameStarted = true;
-    socket.emit("ready-for-game");
+    if (
+      payload &&
+      typeof payload.startTime === "number" &&
+      Number.isFinite(payload.startTime)
+    ) {
+      gameStartTimeMs = payload.startTime;
+    } else if (gameStartTimeMs === null) {
+      gameStartTimeMs = Date.now();
+    }
+
+    if (!readySent) {
+      socket.emit("ready-for-game");
+      readySent = true;
+    }
   });
 
   socket.on("current_players", (players: CurrentPlayer[]) => {
