@@ -2,23 +2,12 @@
  * registerGameHandlers
  * ゲーム関連イベントの受信ハンドラを登録する
  */
-import { Server, Socket } from "socket.io";
+import { Socket } from "socket.io";
 import { protocol } from "@repo/shared";
-import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
-import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import type {
-  FindGameByRoomPort,
-  FindGameByPlayerPort,
-  FindRoomByOwnerPort,
-  FindRoomByPlayerPort,
-  RoomPhaseTransitionPort,
-} from "@server/domains/room/application/ports/roomUseCasePorts";
-import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
-import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
-import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
-import { reportBombHitUseCase } from "@server/domains/game/application/useCases/reportBombHitUseCase";
-import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
-import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
+  GameHandlerRoomPort,
+  GameHandlerRuntimePort,
+} from "@server/network/types/connectionPorts";
 import {
   isBombHitReportPayload,
   isMovePayload,
@@ -28,7 +17,15 @@ import {
 } from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
-import { createGameOutputAdapter } from "./createGameOutputAdapter";
+import type { GameOutputAdapter } from "./createGameOutputAdapter";
+import {
+  handleBombHitReportEvent,
+  handleMoveEvent,
+  handlePingEvent,
+  handlePlaceBombEvent,
+  handleReadyForGameEvent,
+  handleStartGameEvent,
+} from "./gameEventOrchestrators";
 
 /** ゲーム受信イベントごとの入力検証関数を保持するテーブル */
 const gamePayloadValidators = {
@@ -40,15 +37,11 @@ const gamePayloadValidators = {
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (
-  io: Server,
   socket: Socket,
-  roomManager: FindRoomByOwnerPort &
-    FindRoomByPlayerPort &
-    RoomPhaseTransitionPort,
-  runtimeRegistry: FindGameByRoomPort & FindGameByPlayerPort,
+  roomManager: GameHandlerRoomPort,
+  runtimeRegistry: GameHandlerRuntimePort,
+  gameOutputAdapter: GameOutputAdapter,
 ) => {
-  const common = createCommonHandlerContext(io, socket);
-  const gameOutputAdapter = createGameOutputAdapter(common);
   const { onEvent } = createServerSocketOnBridge(socket);
   const { guardOnEvent } = createPayloadGuard(socket.id);
   const guardPingPayload = guardOnEvent(
@@ -73,10 +66,15 @@ export const registerGameHandlers = (
       return;
     }
 
-    pingUseCase({
+    handlePingEvent(
+      {
+        socketId: socket.id,
+        roomManager,
+        runtimeRegistry,
+        output: gameOutputAdapter,
+      },
       clientTime,
-      output: gameOutputAdapter,
-    });
+    );
   });
 
   // オーナー開始要求に応じてゲーム進行ユースケースを起動する
@@ -85,18 +83,20 @@ export const registerGameHandlers = (
       return;
     }
 
-    startGameCoordinator({
-      ownerId: socket.id,
-      requestedPlayerCount: data.targetPlayerCount,
-      roomManager,
-      runtimeRegistry,
-      output: gameOutputAdapter,
-    });
+    handleStartGameEvent(
+      {
+        socketId: socket.id,
+        roomManager,
+        runtimeRegistry,
+        output: gameOutputAdapter,
+      },
+      data,
+    );
   });
 
   // 参加者の準備完了通知を受けて現在状態を返す
   onEvent(protocol.SocketEvents.READY_FOR_GAME, () => {
-    readyForGameCoordinator({
+    handleReadyForGameEvent({
       socketId: socket.id,
       roomManager,
       runtimeRegistry,
@@ -110,20 +110,15 @@ export const registerGameHandlers = (
       return;
     }
 
-    const runtime = resolveRuntimeByPlayerId(
-      roomManager,
-      runtimeRegistry,
-      socket.id,
+    handleMoveEvent(
+      {
+        socketId: socket.id,
+        roomManager,
+        runtimeRegistry,
+        output: gameOutputAdapter,
+      },
+      data,
     );
-    if (!runtime) {
-      return;
-    }
-
-    movePlayerUseCase({
-      gameManager: runtime.gameManager,
-      playerId: socket.id,
-      move: data,
-    });
   });
 
   // 爆弾設置入力を検証し，所属ルームへ同期配信する
@@ -132,25 +127,15 @@ export const registerGameHandlers = (
       return;
     }
 
-    const runtime = resolveRuntimeByPlayerId(
-      roomManager,
-      runtimeRegistry,
-      socket.id,
-    );
-    if (!runtime) {
-      return;
-    }
-
-    placeBombUseCase({
-      roomId: runtime.roomId,
-      bombStore: runtime.gameManager,
-      input: {
+    handlePlaceBombEvent(
+      {
         socketId: socket.id,
-        payload: data,
-        nowMs: Date.now(),
+        roomManager,
+        runtimeRegistry,
+        output: gameOutputAdapter,
       },
-      output: gameOutputAdapter,
-    });
+      data,
+    );
   });
 
   // 被弾報告を受信する
@@ -159,24 +144,14 @@ export const registerGameHandlers = (
       return;
     }
 
-    const runtime = resolveRuntimeByPlayerId(
-      roomManager,
-      runtimeRegistry,
-      socket.id,
-    );
-    if (!runtime) {
-      return;
-    }
-
-    reportBombHitUseCase({
-      roomId: runtime.roomId,
-      validation: runtime.gameManager,
-      input: {
+    handleBombHitReportEvent(
+      {
         socketId: socket.id,
-        payload: data,
-        nowMs: Date.now(),
+        roomManager,
+        runtimeRegistry,
+        output: gameOutputAdapter,
       },
-      output: gameOutputAdapter,
-    });
+      data,
+    );
   });
 };

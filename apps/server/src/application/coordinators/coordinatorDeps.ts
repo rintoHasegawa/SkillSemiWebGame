@@ -5,13 +5,12 @@
 import type {
   CleanupGameRuntimePort,
   DisconnectRoomPort,
-  FindGameByPlayerPort,
   FindGameByRoomPort,
   FindRoomByIdPort,
   FindRoomByOwnerPort,
-  FindRoomByPlayerPort,
   RoomPhaseTransitionPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
+import type { CoordinatorRuntimeDeps } from "./runtimeCoordinatorSupport";
 
 /** START_GAME調停で利用する依存集合 */
 export type StartGameCoordinatorDeps = {
@@ -20,13 +19,10 @@ export type StartGameCoordinatorDeps = {
 };
 
 /** READY_FOR_GAME調停で利用する依存集合 */
-export type ReadyForGameCoordinatorDeps = {
-  roomManager: FindRoomByPlayerPort;
-  runtimeRegistry: FindGameByPlayerPort;
-};
+export type ReadyForGameCoordinatorDeps = CoordinatorRuntimeDeps;
 
 /** DISCONNECT調停で利用する依存集合 */
 export type DisconnectCoordinatorDeps = {
-  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
-  runtimeRegistry: FindGameByPlayerPort & CleanupGameRuntimePort;
+  roomManager: DisconnectRoomPort & CoordinatorRuntimeDeps["roomManager"] & FindRoomByIdPort;
+  runtimeRegistry: CoordinatorRuntimeDeps["runtimeRegistry"] & CleanupGameRuntimePort;
 };

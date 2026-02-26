@@ -2,20 +2,17 @@
  * registerRoomHandlers
  * ルーム参加イベントの受信ハンドラを登録する
  */
-import { Server, Socket } from "socket.io";
+import { Socket } from "socket.io";
 import { protocol } from "@repo/shared";
 import type {
-  EnsureGameRuntimePort,
-  JoinRoomPort,
-} from "@server/domains/room/application/ports/roomUseCasePorts";
-import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
-import { logEvent } from "@server/logging/logger";
-import { logResults, logScopes } from "@server/logging/index";
-import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
+  RoomHandlerRoomPort,
+  RoomHandlerRuntimePort,
+} from "@server/network/types/connectionPorts";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
-import { createRoomOutputAdapter } from "./createRoomOutputAdapter";
+import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
+import { handleJoinRoomEvent } from "./roomEventOrchestrators";
 
 /** ルーム受信イベントごとの入力検証関数を保持するテーブル */
 const roomPayloadValidators = {
@@ -24,13 +21,11 @@ const roomPayloadValidators = {
 
 /** ルーム参加イベントを検証して参加ユースケースへ連携する */
 export const registerRoomHandlers = (
-  io: Server,
   socket: Socket,
-  roomManager: JoinRoomPort,
-  runtimeRegistry: EnsureGameRuntimePort
+  roomManager: RoomHandlerRoomPort,
+  runtimeRegistry: RoomHandlerRuntimePort,
+  roomOutputAdapter: RoomOutputAdapter,
 ) => {
-  const common = createCommonHandlerContext(io, socket);
-  const roomOutputAdapter = createRoomOutputAdapter(common);
   const { onEvent } = createServerSocketOnBridge(socket);
   const { guardOnEvent } = createPayloadGuard(socket.id);
   const guardJoinRoomPayload = guardOnEvent(
@@ -44,51 +39,17 @@ export const registerRoomHandlers = (
       return;
     }
 
-    const { roomId } = data;
-
-    const joinResult = joinRoomUseCase({
-      roomManager,
-      runtimeRegistry,
-      socketId: socket.id,
+    await handleJoinRoomEvent(
+      {
+        socketId: socket.id,
+        roomManager,
+        runtimeRegistry,
+        output: roomOutputAdapter,
+        joinRoom: async (roomId) => {
+          await socket.join(roomId);
+        },
+      },
       data,
-      output: roomOutputAdapter,
-    });
-
-    // 参加拒否時は理由を通知する
-    switch (joinResult.status) {
-      case "full":
-        logEvent(logScopes.NETWORK, {
-          event: protocol.SocketEvents.JOIN_ROOM,
-          result: logResults.REJECTED_ROOM_FULL,
-          roomId,
-          socketId: socket.id,
-        });
-        return;
-
-      case "duplicate":
-        logEvent(logScopes.NETWORK, {
-          event: protocol.SocketEvents.JOIN_ROOM,
-          result: logResults.REJECTED_DUPLICATE,
-          roomId,
-          socketId: socket.id,
-        });
-        return;
-
-      case "joined":
-        await socket.join(roomId);
-        roomOutputAdapter.publishRoomUpdateToRoom(roomId, joinResult.room);
-        logEvent(logScopes.ROOM_USE_CASE, {
-          event: protocol.SocketEvents.ROOM_UPDATE,
-          result: logResults.EMITTED,
-          roomId,
-          socketId: socket.id,
-          ownerId: joinResult.room.ownerId,
-          totalPlayers: joinResult.room.players.length,
-        });
-        return;
-
-      default:
-        return;
-    }
+    );
   });
 };

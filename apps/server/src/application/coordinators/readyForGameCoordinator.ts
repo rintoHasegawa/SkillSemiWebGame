@@ -6,8 +6,8 @@ import {
   type GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { ReadyForGameCoordinatorDeps } from "./coordinatorDeps";
-import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
+import { resolveCoordinatorRuntime } from "./runtimeCoordinatorSupport";
 
 type ReadyForGameCoordinatorParams = {
   socketId: string;
@@ -22,7 +22,13 @@ export const readyForGameCoordinator = ({
   runtimeRegistry,
   output,
 }: ReadyForGameCoordinatorParams) => {
-  const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socketId);
+  const runtime = resolveCoordinatorRuntime(
+    {
+      roomManager,
+      runtimeRegistry,
+    },
+    socketId,
+  );
 
   readyForGameUseCase({
     socketId,
