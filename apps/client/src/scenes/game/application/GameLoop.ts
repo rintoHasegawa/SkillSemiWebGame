@@ -8,6 +8,7 @@ import { config } from "@client/config";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { BombManager } from "@client/scenes/game/entities/bomb/BombManager";
 import type { GamePlayers } from "./game.types";
+import { PlayerRepository } from "./player/PlayerRepository";
 import { InputStep } from "./loopSteps/InputStep";
 import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";
@@ -30,7 +31,7 @@ type GameLoopOptions = {
 export class GameLoop {
   private app: Application;
   private worldContainer: Container;
-  private players: GamePlayers;
+  private playerRepository: PlayerRepository;
   private myId: string;
   private inputStep: InputStep;
   private simulationStep: SimulationStep;
@@ -41,7 +42,7 @@ export class GameLoop {
   constructor({ app, worldContainer, players, myId, getJoystickInput, bombManager, moveSender }: GameLoopOptions) {
     this.app = app;
     this.worldContainer = worldContainer;
-    this.players = players;
+    this.playerRepository = new PlayerRepository(players);
     this.myId = myId;
     this.inputStep = new InputStep({ getJoystickInput });
     this.simulationStep = new SimulationStep({
@@ -58,7 +59,7 @@ export class GameLoop {
   }
 
   public tick = (ticker: Ticker) => {
-    const me = this.players[this.myId];
+    const me = this.playerRepository.getById(this.myId);
     if (!me || !(me instanceof LocalPlayerController)) return;
 
     const { deltaSeconds } = resolveFrameDelta(
@@ -68,7 +69,7 @@ export class GameLoop {
     const frameContext: LoopFrameContext = {
       app: this.app,
       worldContainer: this.worldContainer,
-      players: this.players,
+      playerRepository: this.playerRepository,
       me,
       deltaSeconds,
       isMoving: false,

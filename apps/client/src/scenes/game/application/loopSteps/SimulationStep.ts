@@ -6,7 +6,7 @@
 import { config } from "@client/config";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
-import type { GamePlayers } from "../game.types";
+import type { PlayerRepository } from "../player/PlayerRepository";
 import type { LoopFrameContext, LoopStep } from "./LoopStep";
 
 /** SimulationStep の初期化入力 */
@@ -17,7 +17,7 @@ type SimulationStepOptions = {
 
 type SimulationStepParams = {
   me: LocalPlayerController;
-  players: GamePlayers;
+  playerRepository: PlayerRepository;
   deltaSeconds: number;
   isMoving: boolean;
 };
@@ -38,13 +38,16 @@ export class SimulationStep implements LoopStep {
   public run(context: LoopFrameContext): void {
     const params: SimulationStepParams = {
       me: context.me,
-      players: context.players,
+      playerRepository: context.playerRepository,
       deltaSeconds: context.deltaSeconds,
       isMoving: context.isMoving,
     };
 
     this.runLocalSimulation({ me: params.me, isMoving: params.isMoving });
-    this.runRemoteSimulation({ players: params.players, deltaSeconds: params.deltaSeconds });
+    this.runRemoteSimulation({
+      playerRepository: params.playerRepository,
+      deltaSeconds: params.deltaSeconds,
+    });
   }
 
   private runLocalSimulation({ me, isMoving }: Pick<SimulationStepParams, "me" | "isMoving">) {
@@ -68,8 +71,8 @@ export class SimulationStep implements LoopStep {
     this.wasMoving = isMoving;
   }
 
-  private runRemoteSimulation({ players, deltaSeconds }: Pick<SimulationStepParams, "players" | "deltaSeconds">) {
-    Object.values(players).forEach((player) => {
+  private runRemoteSimulation({ playerRepository, deltaSeconds }: Pick<SimulationStepParams, "playerRepository" | "deltaSeconds">) {
+    playerRepository.values().forEach((player) => {
       if (player instanceof RemotePlayerController) {
         player.tick(deltaSeconds);
       }

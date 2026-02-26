@@ -5,13 +5,13 @@
  */
 import type { Application, Container } from "pixi.js";
 import type { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
-import type { GamePlayers } from "@client/scenes/game/application/game.types";
+import type { PlayerRepository } from "@client/scenes/game/application/player/PlayerRepository";
 
 /** 1フレーム分の更新文脈を表す型 */
 export type LoopFrameContext = {
   app: Application;
   worldContainer: Container;
-  players: GamePlayers;
+  playerRepository: PlayerRepository;
   me: LocalPlayerController;
   deltaSeconds: number;
   isMoving: boolean;

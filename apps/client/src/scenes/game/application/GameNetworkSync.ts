@@ -22,6 +22,7 @@ import {
   toRemoteBombPlacedPayload,
   toRemotePlayerDeadPayload,
 } from "./network/adapters/GameNetworkEventAdapter";
+import { PlayerRepository } from "./player/PlayerRepository";
 import { PlayerSyncHandler } from "./network/handlers/PlayerSyncHandler";
 import { MapSyncHandler } from "./network/handlers/MapSyncHandler";
 import { CombatSyncHandler } from "./network/handlers/CombatSyncHandler";
@@ -44,6 +45,7 @@ type GameNetworkSyncOptions = {
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
 export class GameNetworkSync {
+  private readonly playerRepository: PlayerRepository;
   private playerSyncHandler: PlayerSyncHandler;
   private mapSyncHandler: MapSyncHandler;
   private combatSyncHandler: CombatSyncHandler;
@@ -84,9 +86,10 @@ export class GameNetworkSync {
     onBombPlacementAcknowledged,
     onRemotePlayerDead,
   }: GameNetworkSyncOptions) {
+    this.playerRepository = new PlayerRepository(players);
     this.playerSyncHandler = new PlayerSyncHandler({
       worldContainer,
-      players,
+      playerRepository: this.playerRepository,
       myId,
       appearanceResolver,
     });
