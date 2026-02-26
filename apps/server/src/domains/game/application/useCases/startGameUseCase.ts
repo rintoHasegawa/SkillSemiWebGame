@@ -14,6 +14,7 @@ type StartGameUseCaseParams = {
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToRoom"
+    | "publishUpdatePlayersToSocket"
     | "publishMapCellUpdatesToRoom"
     | "publishGameEndToRoom"
     | "publishGameResultToRoom"
@@ -34,7 +35,17 @@ export const startGameUseCase = ({
     playerIds,
     (tickData) => {
       if (tickData.playerUpdates.length > 0) {
-        output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
+        playerIds.forEach((playerId) => {
+          const updatesForPlayer = tickData.playerUpdates.filter(
+            (playerUpdate) => playerUpdate.id !== playerId
+          );
+
+          if (updatesForPlayer.length === 0) {
+            return;
+          }
+
+          output.publishUpdatePlayersToSocket(playerId, updatesForPlayer);
+        });
       }
 
       if (tickData.cellUpdates.length > 0) {

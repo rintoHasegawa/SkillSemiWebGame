@@ -22,6 +22,7 @@ type StartGameCoordinatorParams = {
   output: Pick<
     GameOutputPort,
     | "publishUpdatePlayersToRoom"
+    | "publishUpdatePlayersToSocket"
     | "publishMapCellUpdatesToRoom"
     | "publishGameEndToRoom"
     | "publishGameResultToRoom"
