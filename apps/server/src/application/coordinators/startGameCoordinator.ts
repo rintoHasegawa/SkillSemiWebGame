@@ -4,24 +4,34 @@
  */
 import {
   type GameOutputPort,
+  type BombOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { StartGameCoordinatorDeps } from "./coordinatorDeps";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
+import { createBalancedSessionPlayerIds } from "@server/domains/game/application/services/BotRosterService";
 import { logEvent } from "@server/logging/logger";
-import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
+import {
+  gameUseCaseLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
 } & StartGameCoordinatorDeps & {
-  output: Pick<
-    GameOutputPort,
-    | "publishUpdatePlayersToSocket"
-    | "publishMapCellUpdatesToRoom"
-    | "publishGameEndToRoom"
-    | "publishGameResultToRoom"
-    | "publishGameStartToRoom"
-  >;
-};
+    output: Pick<
+      GameOutputPort,
+      | "publishUpdatePlayersToSocket"
+      | "publishMapCellUpdatesToRoom"
+      | "publishGameEndToRoom"
+      | "publishGameResultToRoom"
+      | "publishGameStartToRoom"
+    > &
+      Pick<
+        BombOutputPort,
+        "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
+      >;
+  };
 
 /** START_GAME受信時にルーム状態遷移を判定し，ゲーム開始ユースケースを実行する */
 export const startGameCoordinator = ({
@@ -74,15 +84,22 @@ export const startGameCoordinator = ({
     totalPlayers: updatedRoom.players.length,
   });
 
-  const playerIds = updatedRoom.players.map((player) => player.id);
-  const gameManager = runtimeRegistry.getGameManagerByRoomId(updatedRoom.roomId);
+  const humanPlayerIds = updatedRoom.players.map((player) => player.id);
+  const sessionPlayerIds = createBalancedSessionPlayerIds(
+    updatedRoom.roomId,
+    humanPlayerIds,
+  );
+  const gameManager = runtimeRegistry.getGameManagerByRoomId(
+    updatedRoom.roomId,
+  );
   if (!gameManager) {
     return;
   }
 
   startGameUseCase({
     roomId: updatedRoom.roomId,
-    playerIds,
+    playerIds: sessionPlayerIds,
+    recipientPlayerIds: humanPlayerIds,
     gameManager,
     onGameEnd: () => {
       roomManager.markRoomWaiting(updatedRoom.roomId);

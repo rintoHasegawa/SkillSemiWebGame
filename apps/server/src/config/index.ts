@@ -11,8 +11,16 @@ const NETWORK_CONFIG = {
   CORS_METHODS: ["GET", "POST"],
 } as const;
 
+const BOT_AI_CONFIG = {
+  BOMB_PLACE_PROBABILITY_PER_TICK: 0.06,
+  UNPAINTED_PRIORITY_STRENGTH: 1,
+  MOVE_SMOOTHNESS: 1,
+  TARGET_REACHED_EPSILON: 0.15,
+} as const;
+
 export const config = {
   ...sharedConfig,
   GAME_CONFIG,
   NETWORK_CONFIG,
+  BOT_AI_CONFIG,
 } as const;

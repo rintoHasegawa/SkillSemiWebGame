@@ -23,9 +23,12 @@ export interface StartGamePort {
   startRoomSession(
     playerIds: string[],
     onTick: (data: gameTypes.TickData) => void,
-    onGameEnd: (payload: GameResultPayload) => void
+    onGameEnd: (payload: GameResultPayload) => void,
+    onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ): void;
   getRoomStartTime(): number | undefined;
+  shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
+  issueServerBombId(): string;
 }
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */

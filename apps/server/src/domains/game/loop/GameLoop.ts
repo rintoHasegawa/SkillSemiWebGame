@@ -6,9 +6,11 @@ import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@server/config";
-import type { gameTypes } from "@repo/shared";
+import type { gameTypes, PlaceBombPayload } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
+import { BotAiService, isBotPlayerId } from "../application/services/BotAiService";
+import { setPlayerPosition } from "../entities/player/playerMovement.js";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -19,6 +21,7 @@ export class GameLoop {
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
   private lastSentPlayers: Map<string, gameTypes.PlayerPositionUpdate> = new Map();
+  private botAiService: BotAiService = new BotAiService();
 
   constructor(
     private roomId: string,
@@ -26,7 +29,8 @@ export class GameLoop {
     private players: Map<string, Player>,
     private mapStore: MapStore,
     private onTick: (data: gameTypes.TickData) => void,
-    private onGameEnd: () => void   // ゲーム終了時のコールバック
+    private onGameEnd: () => void,
+    private onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ) {}
 
   start() {
@@ -94,10 +98,27 @@ export class GameLoop {
   private processSingleTick(): void {
     const changedPlayers: gameTypes.TickData["playerUpdates"] = [];
     const activePlayerIds = new Set<string>();
+    const nowMs = performance.now();
+    const elapsedMs = Math.max(0, Math.round(nowMs - this.startMonotonicTimeMs));
+    const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
 
     // 1. 各プレイヤーの座標処理とマス塗りの判定
     this.players.forEach((player) => {
       activePlayerIds.add(player.id);
+
+      if (isBotPlayerId(player.id)) {
+        const decision = this.botAiService.decide(
+          player,
+          gridColorsSnapshot,
+          nowMs,
+          elapsedMs,
+        );
+        setPlayerPosition(player, decision.nextX, decision.nextY);
+
+        if (decision.placeBombPayload && this.onBotPlaceBomb) {
+          this.onBotPlaceBomb(player.id, decision.placeBombPayload);
+        }
+      }
 
       const gridIndex = getPlayerGridIndex(player);
       if (gridIndex !== null) {
@@ -144,6 +165,7 @@ export class GameLoop {
     if (!this.isRunning) return;
 
     this.isRunning = false;
+    this.botAiService.clear();
     this.lastSentPlayers.clear();
 
     if (this.loopId) {
