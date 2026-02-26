@@ -14,7 +14,7 @@ import { config as sharedConfig } from "@repo/shared";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { BombController } from "./BombController";
-import { PendingBombRequestStore } from "./PendingBombRequestStore";
+import { BombIdRegistry } from "./BombIdRegistry";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
 
 /** 経過時間ミリ秒を返す関数型 */
@@ -63,9 +63,8 @@ export class BombManager {
   private appearanceResolver: AppearanceResolver;
   private bombs = new Map<string, BombController>();
   private bombRenderPayloadById = new Map<string, BombRenderPayload>();
-  private pendingBombRequestStore = new PendingBombRequestStore();
+  private bombIdRegistry = new BombIdRegistry();
   private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
-  private requestSerial = 0;
   private onBombExploded?: (payload: BombExplodedPayload) => void;
 
   constructor({ worldContainer, players, myId, getElapsedMs, appearanceResolver, onBombExploded }: BombManagerOptions) {
@@ -89,18 +88,16 @@ export class BombManager {
     }
 
     const position = me.getPosition();
-    const requestId = this.createRequestId(elapsedMs);
+    const { requestId, tempBombId } = this.bombIdRegistry.issuePendingOwnBombId();
     const payload: PlaceBombPayload = {
       requestId,
       x: position.x,
       y: position.y,
       explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
     };
-    const tempBombId = this.createTempBombId(requestId);
     // 自分の爆弾は設置時点で teamId を確定して保持する
     const ownTeamId = this.resolveTeamIdBySocketId(this.myId);
 
-    this.pendingBombRequestStore.register(requestId, tempBombId);
     this.upsertBomb(tempBombId, this.toRenderPayload(payload, ownTeamId));
     this.lastBombPlacedElapsedMs = elapsedMs;
     return {
@@ -118,13 +115,13 @@ export class BombManager {
 
   /** 設置者本人向けACKを反映し，仮IDから正式IDへ置換する */
   public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
-    const tempBombId = this.pendingBombRequestStore.getTempBombIdByRequestId(payload.requestId);
+    const tempBombId = this.bombIdRegistry.resolveTempBombIdByRequestId(payload.requestId);
     if (!tempBombId) {
       return;
     }
 
     const tempPayload = this.bombRenderPayloadById.get(tempBombId);
-    this.pendingBombRequestStore.removeByRequestId(payload.requestId);
+    this.bombIdRegistry.removeByRequestId(payload.requestId);
     if (!tempPayload || tempBombId === payload.bombId) {
       return;
     }
@@ -161,7 +158,7 @@ export class BombManager {
     bomb.destroy();
     this.bombs.delete(bombId);
     this.bombRenderPayloadById.delete(bombId);
-    this.pendingBombRequestStore.removeByTempBombId(bombId);
+    this.bombIdRegistry.removeByBombId(bombId);
   }
 
   /** 爆弾状態を更新し終了済みを破棄する */
@@ -195,7 +192,7 @@ export class BombManager {
     this.bombs.forEach((bomb) => bomb.destroy());
     this.bombs.clear();
     this.bombRenderPayloadById.clear();
-    this.pendingBombRequestStore.clear();
+    this.bombIdRegistry.clear();
   }
 
   private isSameRenderPayload(a: BombRenderPayload, b: BombRenderPayload): boolean {
@@ -231,12 +228,4 @@ export class BombManager {
     return playerController.getSnapshot().teamId;
   }
 
-  private createRequestId(_elapsedMs: number): string {
-    this.requestSerial += 1;
-    return `${this.requestSerial}`;
-  }
-
-  private createTempBombId(requestId: string): string {
-    return `temp:${requestId}`;
-  }
 }

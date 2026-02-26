@@ -4,6 +4,7 @@
  * ローカル入力適用，リモート更新適用，描画同期を分離して扱う
  */
 import type { playerTypes } from "@repo/shared";
+import { config } from "@client/config";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { BombHitBlinkRenderer } from "@client/scenes/game/entities/bomb/BombHitBlinkRenderer";
 import { PlayerModel } from "./PlayerModel";
@@ -41,6 +42,9 @@ abstract class BasePlayerController {
     );
     this.bombHitBlinkRenderer = new BombHitBlinkRenderer({
       target: this.view.displayObject,
+      blinkIntervalMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_INTERVAL_MS,
+      hiddenAlpha: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_HIDDEN_ALPHA,
+      maxDeltaMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_MAX_DELTA_MS,
     });
 
     const pos = this.model.getPosition();

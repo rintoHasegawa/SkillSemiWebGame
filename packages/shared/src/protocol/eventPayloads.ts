@@ -34,3 +34,12 @@ export type {
   GameResultPayload,
   GameResultRanking,
 } from "./payloads/gamePayloads";
+
+/** 被弾演出イベントのペイロード型を再公開する */
+export type {
+  LocalBombHitEffectPayload,
+  NetworkPlayerDeadEffectPayload,
+  PlayerHitEffectEventPayloadMap,
+  PlayerHitEffectEventName,
+  PlayerHitEffectPayloadOf,
+} from "./payloads/playerHitEffectPayloads";
