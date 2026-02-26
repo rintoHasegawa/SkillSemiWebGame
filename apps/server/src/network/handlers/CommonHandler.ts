@@ -6,6 +6,7 @@ import { Server, Socket } from "socket.io";
 import {
   createEmitToAll,
   createEmitToRoom,
+  createEmitToRoomExceptSocket,
   createEmitToSocket,
   createEmitToSocketById,
 } from "@server/network/adapters/socketEmitters";
@@ -14,6 +15,7 @@ import {
 export type CommonHandlerContext = {
   emitToAll: ReturnType<typeof createEmitToAll>;
   emitToRoom: ReturnType<typeof createEmitToRoom>;
+  emitToRoomExceptSocket: ReturnType<typeof createEmitToRoomExceptSocket>;
   emitToSocket: ReturnType<typeof createEmitToSocket>;
   emitToSocketById: ReturnType<typeof createEmitToSocketById>;
 };
@@ -26,6 +28,7 @@ export const createCommonHandlerContext = (
   return {
     emitToAll: createEmitToAll(io),
     emitToRoom: createEmitToRoom(io),
+    emitToRoomExceptSocket: createEmitToRoomExceptSocket(io),
     emitToSocket: createEmitToSocket(socket),
     emitToSocketById: createEmitToSocketById(io),
   };

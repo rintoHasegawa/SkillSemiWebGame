@@ -5,7 +5,11 @@
  */
 import type { Container } from "pixi.js";
 import { config } from "@client/config";
-import type { BombPlacedPayload, PlaceBombPayload } from "@repo/shared";
+import type {
+  BombPlacedAckPayload,
+  BombPlacedPayload,
+  PlaceBombPayload,
+} from "@repo/shared";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { BombController } from "./BombController";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
@@ -85,19 +89,26 @@ export class BombManager {
     };
   }
 
-  /** サーバー確定イベントを反映し，必要なら仮IDから正式IDへ置換する */
-  public applyPlacedBomb(payload: BombPlacedPayload): void {
-    if (payload.ownerId === this.myId) {
-      const tempBombId = this.pendingOwnRequestToTempBombId.get(payload.requestId);
-      if (tempBombId) {
-        this.removePendingRequestByRequestId(payload.requestId);
-        if (tempBombId !== payload.bombId) {
-          this.removeBomb(tempBombId);
-        }
-      }
+  /** 他プレイヤー向けの爆弾確定イベントを反映する */
+  public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
+    this.upsertBomb(payload.bombId, this.toRenderPayload(payload));
+  }
+
+  /** 設置者本人向けACKを反映し，仮IDから正式IDへ置換する */
+  public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
+    const tempBombId = this.pendingOwnRequestToTempBombId.get(payload.requestId);
+    if (!tempBombId) {
+      return;
     }
 
-    this.upsertBomb(payload.bombId, this.toRenderPayload(payload));
+    const tempPayload = this.bombRenderPayloadById.get(tempBombId);
+    this.removePendingRequestByRequestId(payload.requestId);
+    if (!tempPayload || tempBombId === payload.bombId) {
+      return;
+    }
+
+    this.removeBomb(tempBombId);
+    this.upsertBomb(payload.bombId, tempPayload);
   }
 
   /** 描画ペイロードで指定IDの爆弾を追加または更新する */
@@ -170,9 +181,9 @@ export class BombManager {
     };
   }
 
-  private createRequestId(elapsedMs: number): string {
+  private createRequestId(_elapsedMs: number): string {
     this.requestSerial += 1;
-    return `${this.myId}:${elapsedMs}:${this.requestSerial}`;
+    return `${this.requestSerial}`;
   }
 
   private createTempBombId(requestId: string): string {

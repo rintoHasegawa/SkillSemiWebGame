@@ -31,6 +31,7 @@ export type {
 	ServerToClientPayloadOf,
 	CurrentPlayersPayload,
 	BombPlacedPayload,
+	BombPlacedAckPayload,
 	PlaceBombPayload,
 	BombNetworkPayload,
 	GameStartPayload,

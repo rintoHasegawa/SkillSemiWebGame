@@ -15,6 +15,11 @@ type EmitToRoom = {
   <TEvent extends SocketEventName>(roomId: string, event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
+type EmitToRoomExceptSocket = {
+  <TEvent extends SocketEventName>(roomId: string, excludedSocketId: string, event: TEvent): void;
+  <TEvent extends SocketEventName>(roomId: string, excludedSocketId: string, event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
+};
+
 type EmitToSocket = {
   <TEvent extends SocketEventName>(event: TEvent): void;
   <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
@@ -48,6 +53,17 @@ const emitWithOptionalPayload = (
 export const createEmitToRoom = (io: Server): EmitToRoom => {
   return (roomId: string, event: SocketEventName, payload?: unknown) => {
     emitWithOptionalPayload((eventName, body) => io.to(roomId).emit(eventName, body), event, payload);
+  };
+};
+
+/** ルーム送信時に特定ソケットを除外する送信関数を生成する */
+export const createEmitToRoomExceptSocket = (io: Server): EmitToRoomExceptSocket => {
+  return (roomId: string, excludedSocketId: string, event: SocketEventName, payload?: unknown) => {
+    emitWithOptionalPayload(
+      (eventName, body) => io.to(roomId).except(excludedSocketId).emit(eventName, body),
+      event,
+      payload
+    );
   };
 };
 

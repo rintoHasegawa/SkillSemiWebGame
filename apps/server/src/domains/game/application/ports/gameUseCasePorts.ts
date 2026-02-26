@@ -3,6 +3,7 @@
  * ゲーム系ユースケースが利用する入力ポートと出力ポートの契約を定義する
  */
 import type {
+  BombPlacedAckPayload,
   BombPlacedPayload,
   gameTypes,
   playerTypes,
@@ -69,7 +70,12 @@ export interface GameOutputPort {
 
 /** 爆弾ユースケースが利用する送信出力ポート */
 export interface BombOutputPort {
-  publishBombPlacedToRoom(roomId: roomTypes.Room["roomId"], payload: BombPlacedPayload): void;
+  publishBombPlacedToOthersInRoom(
+    roomId: roomTypes.Room["roomId"],
+    ownerSocketId: string,
+    payload: BombPlacedPayload
+  ): void;
+  publishBombPlacedAckToSocket(socketId: string, payload: BombPlacedAckPayload): void;
 }
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */

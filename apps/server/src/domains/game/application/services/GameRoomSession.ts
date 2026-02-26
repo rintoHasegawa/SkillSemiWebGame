@@ -122,7 +122,7 @@ export class GameRoomSession {
   }
 
   public issueServerBombId(): string {
-    return this.bombStateStore.issueServerBombId(this.roomId);
+    return this.bombStateStore.issueServerBombId();
   }
 
   public dispose(): void {

@@ -48,8 +48,16 @@ export type PlaceBombPayload = {
   explodeAtElapsedMs: number;
 };
 
-/** BOMB_PLACED イベントで送受信する爆弾確定情報 */
-export type BombPlacedPayload = PlaceBombPayload & {
+/** BOMB_PLACED イベントで送受信する他プレイヤー向け爆弾確定情報 */
+export type BombPlacedPayload = {
   bombId: string;
-  ownerId: string;
+  x: number;
+  y: number;
+  explodeAtElapsedMs: number;
+};
+
+/** BOMB_PLACED_ACK イベントで送受信する設置者向け確定情報 */
+export type BombPlacedAckPayload = {
+  bombId: string;
+  requestId: string;
 };

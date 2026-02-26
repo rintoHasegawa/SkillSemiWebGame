@@ -20,10 +20,8 @@ export class BombStateStore {
   }
 
   /** セッション単位の連番からサーバー採番の爆弾IDを生成する */
-  public issueServerBombId(roomId: string): string {
-    // roomId はセッションを外部参照するためのID名前空間として利用する
+  public issueServerBombId(): string {
     const { bombId, nextSerial } = issueServerBombId({
-      roomId,
       currentSerial: this.bombSerial,
     });
     this.bombSerial = nextSerial;
