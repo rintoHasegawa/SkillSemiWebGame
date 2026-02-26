@@ -15,6 +15,9 @@ import type { GameActionSender } from "../network/GameActionSender";
 import type { GameSessionFacade } from "../lifecycle/GameSessionFacade";
 import { DisposableRegistry } from "../lifecycle/DisposableRegistry";
 import { GameSceneRuntimeWiring } from "./GameSceneRuntimeWiring";
+import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
+
+type RuntimeLifecycleState = "created" | "initialized" | "destroyed";
 
 export type GameSceneRuntimeOptions = {
   app: Application;
@@ -41,6 +44,7 @@ export class GameSceneRuntime {
   private readonly getElapsedMs: () => number;
   private readonly eventPorts: GameSceneEventPorts;
   private readonly sceneFactories?: GameSceneFactoryOptions;
+  private readonly playerRepository: PlayerRepository;
   private readonly disposableRegistry = new DisposableRegistry();
 
   private readonly appearanceResolver = new AppearanceResolver();
@@ -48,6 +52,7 @@ export class GameSceneRuntime {
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
   private joystickInput = { x: 0, y: 0 };
+  private lifecycleState: RuntimeLifecycleState = "created";
 
   constructor({
     app,
@@ -71,6 +76,7 @@ export class GameSceneRuntime {
     this.getElapsedMs = getElapsedMs;
     this.eventPorts = eventPorts;
     this.sceneFactories = sceneFactories;
+    this.playerRepository = new PlayerRepository(this.players);
 
     this.disposableRegistry.add(() => {
       this.clearJoystickInput();
@@ -82,10 +88,15 @@ export class GameSceneRuntime {
 
   /** シーン実行に必要なサブシステムを初期化する */
   public initialize(): void {
+    if (this.lifecycleState !== "created") {
+      return;
+    }
+
     const runtimeWiring = new GameSceneRuntimeWiring({
       app: this.app,
       worldContainer: this.worldContainer,
       players: this.players,
+      playerRepository: this.playerRepository,
       myId: this.myId,
       appearanceResolver: this.appearanceResolver,
       getElapsedMs: this.getElapsedMs,
@@ -99,6 +110,7 @@ export class GameSceneRuntime {
     this.networkSync = initializedScene.networkSync;
     this.bombManager = initializedScene.bombManager;
     this.gameLoop = initializedScene.gameLoop;
+    this.lifecycleState = "initialized";
 
     this.disposableRegistry.add(() => {
       this.networkSync?.unbind();
@@ -146,6 +158,11 @@ export class GameSceneRuntime {
 
   /** 実行系サブシステムを破棄する */
   public destroy(): void {
+    if (this.lifecycleState === "destroyed") {
+      return;
+    }
+
+    this.lifecycleState = "destroyed";
     this.disposableRegistry.disposeAll();
   }
 }

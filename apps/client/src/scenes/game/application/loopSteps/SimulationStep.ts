@@ -19,7 +19,7 @@ type SimulationStepParams = {
   me: LocalPlayerController;
   playerRepository: PlayerRepository;
   deltaSeconds: number;
-  isMoving: boolean;
+  getIsMoving: () => boolean;
 };
 
 /** シミュレーション段の更新処理を担うステップ */
@@ -43,17 +43,17 @@ export class SimulationStep implements LoopStep {
       me: context.me,
       playerRepository: context.playerRepository,
       deltaSeconds: context.deltaSeconds,
-      isMoving: context.isMoving,
+      getIsMoving: context.getIsMoving,
     };
 
-    this.runLocalSimulation({ me: params.me, isMoving: params.isMoving });
+    this.runLocalSimulation({ me: params.me, isMoving: params.getIsMoving() });
     this.runRemoteSimulation({
       playerRepository: params.playerRepository,
       deltaSeconds: params.deltaSeconds,
     });
   }
 
-  private runLocalSimulation({ me, isMoving }: Pick<SimulationStepParams, "me" | "isMoving">) {
+  private runLocalSimulation({ me, isMoving }: { me: LocalPlayerController; isMoving: boolean }) {
     if (isMoving) {
       me.tick();
 

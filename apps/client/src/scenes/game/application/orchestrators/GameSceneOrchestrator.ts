@@ -16,11 +16,12 @@ import { BombManager, type BombExplodedPayload } from "@client/scenes/game/entit
 import { GameLoop } from "@client/scenes/game/application/GameLoop";
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
+import type { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 
 /** GameNetworkSync 生成入力型 */
 export type CreateNetworkSyncOptions = {
   worldContainer: Container;
-  players: GamePlayers;
+  playerRepository: PlayerRepository;
   myId: string;
   gameMap: GameMapController;
   appearanceResolver: AppearanceResolver;
@@ -55,7 +56,7 @@ export type GameSceneEventPorts = {
 export type CreateGameLoopOptions = {
   app: Application;
   worldContainer: Container;
-  players: GamePlayers;
+  playerRepository: PlayerRepository;
   myId: string;
   getJoystickInput: () => { x: number; y: number };
   bombManager: BombManager;
@@ -74,6 +75,7 @@ export type GameSceneOrchestratorOptions = {
   app: Application;
   worldContainer: Container;
   players: GamePlayers;
+  playerRepository: PlayerRepository;
   myId: string;
   appearanceResolver: AppearanceResolver;
   getElapsedMs: () => number;
@@ -96,6 +98,7 @@ export class GameSceneOrchestrator {
   private readonly app: Application;
   private readonly worldContainer: Container;
   private readonly players: GamePlayers;
+  private readonly playerRepository: PlayerRepository;
   private readonly myId: string;
   private readonly appearanceResolver: AppearanceResolver;
   private readonly getElapsedMs: () => number;
@@ -110,6 +113,7 @@ export class GameSceneOrchestrator {
     app,
     worldContainer,
     players,
+    playerRepository,
     myId,
     appearanceResolver,
     getElapsedMs,
@@ -121,6 +125,7 @@ export class GameSceneOrchestrator {
     this.app = app;
     this.worldContainer = worldContainer;
     this.players = players;
+    this.playerRepository = playerRepository;
     this.myId = myId;
     this.appearanceResolver = appearanceResolver;
     this.getElapsedMs = getElapsedMs;
@@ -158,7 +163,7 @@ export class GameSceneOrchestrator {
   private initializeNetworkSync(gameMap: GameMapController): GameNetworkSync {
     const networkSync = this.createNetworkSync({
       worldContainer: this.worldContainer,
-      players: this.players,
+      playerRepository: this.playerRepository,
       myId: this.myId,
       gameMap,
       appearanceResolver: this.appearanceResolver,
@@ -189,7 +194,7 @@ export class GameSceneOrchestrator {
     return this.createGameLoop({
       app: this.app,
       worldContainer: this.worldContainer,
-      players: this.players,
+      playerRepository: this.playerRepository,
       myId: this.myId,
       getJoystickInput: this.getJoystickInput,
       bombManager,

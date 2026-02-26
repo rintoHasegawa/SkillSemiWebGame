@@ -7,13 +7,7 @@ import { Container } from "pixi.js";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
-  CurrentPlayersPayload,
-  GameStartPayload,
-  NewPlayerPayload,
   PlayerDeadPayload,
-  RemovePlayerPayload,
-  UpdateMapCellsPayload,
-  UpdatePlayersPayload,
 } from "@repo/shared";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
@@ -27,6 +21,7 @@ import {
 import { CombatSyncHandler } from "./CombatSyncHandler";
 import { MapSyncHandler } from "./MapSyncHandler";
 import { PlayerSyncHandler } from "./PlayerSyncHandler";
+import type { ReceivedGameEventHandlers } from "../receivers/GameNetworkEventReceiver";
 
 /** 状態反映処理の初期化入力 */
 export type GameNetworkStateApplierOptions = {
@@ -51,6 +46,7 @@ export class GameNetworkStateApplier {
   private readonly onGameStarted: (startTime: number) => void;
   private readonly onGameEnded: () => void;
   private readonly onDebugLog: (message: string) => void;
+  private readonly receivedEventHandlers: ReceivedGameEventHandlers;
 
   constructor({
     worldContainer,
@@ -86,61 +82,48 @@ export class GameNetworkStateApplier {
     this.onGameStarted = onGameStarted;
     this.onGameEnded = onGameEnded;
     this.onDebugLog = onDebugLog ?? (() => undefined);
+    this.receivedEventHandlers = {
+      onReceivedCurrentPlayers: (payload) => {
+        this.playerSyncHandler.handleCurrentPlayers(payload);
+      },
+      onReceivedNewPlayer: (payload) => {
+        this.playerSyncHandler.handleNewPlayer(payload);
+      },
+      onReceivedGameStart: (payload) => {
+        const startTime = toGameStartedAt(payload);
+        if (startTime === null) {
+          return;
+        }
+
+        this.onGameStarted(startTime);
+        this.onDebugLog(`[GameNetworkSync] ゲーム開始時刻同期完了: ${startTime}`);
+      },
+      onReceivedUpdatePlayers: (payload) => {
+        this.playerSyncHandler.handlePlayerUpdates(payload);
+      },
+      onReceivedRemovePlayer: (payload) => {
+        this.playerSyncHandler.handleRemovePlayer(payload);
+      },
+      onReceivedUpdateMapCells: (payload) => {
+        this.mapSyncHandler.handleUpdateMapCells(payload);
+      },
+      onReceivedGameEnd: () => {
+        this.onGameEnded();
+      },
+      onReceivedBombPlaced: (payload) => {
+        this.combatSyncHandler.handleReceivedBombPlaced(payload);
+      },
+      onReceivedBombPlacedAck: (payload) => {
+        this.combatSyncHandler.handleReceivedBombPlacedAck(payload);
+      },
+      onReceivedPlayerDead: (payload) => {
+        this.combatSyncHandler.handleReceivedPlayerDead(payload);
+      },
+    };
   }
 
-  /** 初期プレイヤー一覧の受信イベントを適用する */
-  public applyReceivedCurrentPlayers(payload: CurrentPlayersPayload): void {
-    this.playerSyncHandler.handleCurrentPlayers(payload);
-  }
-
-  /** 新規参加プレイヤー受信イベントを適用する */
-  public applyReceivedNewPlayer(payload: NewPlayerPayload): void {
-    this.playerSyncHandler.handleNewPlayer(payload);
-  }
-
-  /** ゲーム開始受信イベントを適用する */
-  public applyReceivedGameStart(payload: GameStartPayload): void {
-    const startTime = toGameStartedAt(payload);
-    if (startTime === null) {
-      return;
-    }
-
-    this.onGameStarted(startTime);
-    this.onDebugLog(`[GameNetworkSync] ゲーム開始時刻同期完了: ${startTime}`);
-  }
-
-  /** プレイヤー更新受信イベントを適用する */
-  public applyReceivedUpdatePlayers(payload: UpdatePlayersPayload): void {
-    this.playerSyncHandler.handlePlayerUpdates(payload);
-  }
-
-  /** プレイヤー退出受信イベントを適用する */
-  public applyReceivedRemovePlayer(payload: RemovePlayerPayload): void {
-    this.playerSyncHandler.handleRemovePlayer(payload);
-  }
-
-  /** マップセル更新受信イベントを適用する */
-  public applyReceivedUpdateMapCells(payload: UpdateMapCellsPayload): void {
-    this.mapSyncHandler.handleUpdateMapCells(payload);
-  }
-
-  /** ゲーム終了受信イベントを適用する */
-  public applyReceivedGameEnd(): void {
-    this.onGameEnded();
-  }
-
-  /** 爆弾設置受信イベントを適用する */
-  public applyReceivedBombPlaced(payload: BombPlacedPayload): void {
-    this.combatSyncHandler.handleReceivedBombPlaced(payload);
-  }
-
-  /** 爆弾設置ACK受信イベントを適用する */
-  public applyReceivedBombPlacedAck(payload: BombPlacedAckPayload): void {
-    this.combatSyncHandler.handleReceivedBombPlacedAck(payload);
-  }
-
-  /** プレイヤー死亡受信イベントを適用する */
-  public applyReceivedPlayerDead(payload: PlayerDeadPayload): void {
-    this.combatSyncHandler.handleReceivedPlayerDead(payload);
+  /** 受信イベント配信先ハンドラ群を返す */
+  public getReceivedEventHandlers(): ReceivedGameEventHandlers {
+    return this.receivedEventHandlers;
   }
 }

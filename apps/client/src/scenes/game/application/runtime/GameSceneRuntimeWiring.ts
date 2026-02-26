@@ -13,12 +13,14 @@ import {
 } from "../orchestrators/GameSceneOrchestrator";
 import type { GamePlayers } from "../game.types";
 import type { MoveSender } from "../network/PlayerMoveSender";
+import type { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 
 /** Runtime配線処理の入力型 */
 export type GameSceneRuntimeWiringOptions = {
   app: Application;
   worldContainer: Container;
   players: GamePlayers;
+  playerRepository: PlayerRepository;
   myId: string;
   appearanceResolver: AppearanceResolver;
   getElapsedMs: () => number;
@@ -42,6 +44,7 @@ export class GameSceneRuntimeWiring {
       app: this.options.app,
       worldContainer: this.options.worldContainer,
       players: this.options.players,
+      playerRepository: this.options.playerRepository,
       myId: this.options.myId,
       appearanceResolver: this.options.appearanceResolver,
       getElapsedMs: this.options.getElapsedMs,

@@ -14,13 +14,12 @@ import { GameMapController } from "@client/scenes/game/entities/map/GameMapContr
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { GameNetworkEventReceiver } from "./network/receivers/GameNetworkEventReceiver";
 import { GameNetworkStateApplier } from "./network/handlers/GameNetworkStateApplier";
-import type { GamePlayers } from "./game.types";
 
 const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 
 type GameNetworkSyncOptions = {
   worldContainer: Container;
-  players: GamePlayers;
+  playerRepository: PlayerRepository;
   myId: string;
   gameMap: GameMapController;
   appearanceResolver: AppearanceResolver;
@@ -46,7 +45,7 @@ export class GameNetworkSync {
 
   constructor({
     worldContainer,
-    players,
+    playerRepository,
     myId,
     gameMap,
     appearanceResolver,
@@ -56,8 +55,6 @@ export class GameNetworkSync {
     onBombPlacementAcknowledged,
     onRemotePlayerDead,
   }: GameNetworkSyncOptions) {
-    const playerRepository = new PlayerRepository(players);
-
     this.stateApplier = new GameNetworkStateApplier({
       worldContainer,
       playerRepository,
@@ -72,18 +69,9 @@ export class GameNetworkSync {
       onDebugLog: this.debugLog,
     });
 
-    this.eventReceiver = new GameNetworkEventReceiver({
-      onReceivedCurrentPlayers: this.stateApplier.applyReceivedCurrentPlayers.bind(this.stateApplier),
-      onReceivedNewPlayer: this.stateApplier.applyReceivedNewPlayer.bind(this.stateApplier),
-      onReceivedGameStart: this.stateApplier.applyReceivedGameStart.bind(this.stateApplier),
-      onReceivedUpdatePlayers: this.stateApplier.applyReceivedUpdatePlayers.bind(this.stateApplier),
-      onReceivedRemovePlayer: this.stateApplier.applyReceivedRemovePlayer.bind(this.stateApplier),
-      onReceivedUpdateMapCells: this.stateApplier.applyReceivedUpdateMapCells.bind(this.stateApplier),
-      onReceivedGameEnd: this.stateApplier.applyReceivedGameEnd.bind(this.stateApplier),
-      onReceivedBombPlaced: this.stateApplier.applyReceivedBombPlaced.bind(this.stateApplier),
-      onReceivedBombPlacedAck: this.stateApplier.applyReceivedBombPlacedAck.bind(this.stateApplier),
-      onReceivedPlayerDead: this.stateApplier.applyReceivedPlayerDead.bind(this.stateApplier),
-    });
+    this.eventReceiver = new GameNetworkEventReceiver(
+      this.stateApplier.getReceivedEventHandlers(),
+    );
   }
 
   public bind() {

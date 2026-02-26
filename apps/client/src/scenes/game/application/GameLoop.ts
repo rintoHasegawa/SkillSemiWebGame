@@ -8,7 +8,6 @@ import { config } from "@client/config";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { BombManager } from "@client/scenes/game/entities/bomb/BombManager";
-import type { GamePlayers } from "./game.types";
 import { InputStep } from "./loopSteps/InputStep";
 import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";
@@ -20,7 +19,7 @@ import type { MoveSender } from "./network/PlayerMoveSender";
 type GameLoopOptions = {
   app: Application;
   worldContainer: Container;
-  players: GamePlayers;
+  playerRepository: PlayerRepository;
   myId: string;
   getJoystickInput: () => { x: number; y: number };
   bombManager: BombManager;
@@ -29,20 +28,20 @@ type GameLoopOptions = {
 
 /** ゲームのフレーム更新順序を管理するループ制御クラス */
 export class GameLoop {
-  private app: Application;
-  private worldContainer: Container;
-  private playerRepository: PlayerRepository;
-  private myId: string;
-  private inputStep: InputStep;
-  private simulationStep: SimulationStep;
-  private bombStep: BombStep;
-  private cameraStep: CameraStep;
-  private steps: LoopStep[];
+  private readonly app: Application;
+  private readonly worldContainer: Container;
+  private readonly playerRepository: PlayerRepository;
+  private readonly myId: string;
+  private readonly inputStep: InputStep;
+  private readonly simulationStep: SimulationStep;
+  private readonly bombStep: BombStep;
+  private readonly cameraStep: CameraStep;
+  private readonly steps: LoopStep[];
 
-  constructor({ app, worldContainer, players, myId, getJoystickInput, bombManager, moveSender }: GameLoopOptions) {
+  constructor({ app, worldContainer, playerRepository, myId, getJoystickInput, bombManager, moveSender }: GameLoopOptions) {
     this.app = app;
     this.worldContainer = worldContainer;
-    this.playerRepository = new PlayerRepository(players);
+    this.playerRepository = playerRepository;
     this.myId = myId;
     this.inputStep = new InputStep({ getJoystickInput });
     this.simulationStep = new SimulationStep({
@@ -70,6 +69,15 @@ export class GameLoop {
       isMoving: false,
     };
 
+    const frameContext: LoopFrameContext = {
+      app: this.app,
+      worldContainer: this.worldContainer,
+      playerRepository: this.playerRepository,
+      me,
+      deltaSeconds,
+      getIsMoving: () => frameState.isMoving,
+    };
+
     const effects: LoopFrameEffects = {
       setIsMoving: (isMoving) => {
         frameState.isMoving = isMoving;
@@ -77,14 +85,6 @@ export class GameLoop {
     };
 
     this.steps.forEach((step) => {
-      const frameContext: LoopFrameContext = {
-        app: this.app,
-        worldContainer: this.worldContainer,
-        playerRepository: this.playerRepository,
-        me,
-        deltaSeconds,
-        isMoving: frameState.isMoving,
-      };
       step.run(frameContext, effects);
     });
   };
