@@ -8,8 +8,6 @@ import { Assets, Sprite, Texture } from "pixi.js";
 import { config } from "@client/config";
 import type { BombState } from "./BombModel";
 
-const ENABLE_DEBUG_LOG = import.meta.env.DEV;
-
 /** 爆弾の描画表現を管理するビュー */
 export class BombView {
   public readonly displayObject: Container;
@@ -21,6 +19,7 @@ export class BombView {
   private lastRenderedRadiusGrid: number | null = null;
   private lastRenderedColor: number | null = null;
   private isBombTextureReady = false;
+  private isDestroyed = false;
 
   constructor() {
     this.displayObject = new Container();
@@ -44,13 +43,17 @@ export class BombView {
 
     try {
       const texture = await Assets.load(imageUrl);
+      if (this.isDestroyed || this.bombSprite.destroyed) {
+        return;
+      }
+
       this.bombSprite.texture = texture;
       this.isBombTextureReady = true;
-
-      if (ENABLE_DEBUG_LOG) {
-        console.log(`[BombView] Bomb.svg 読み込み成功: ${imageUrl}`);
-      }
     } catch (error) {
+      if (this.isDestroyed) {
+        return;
+      }
+
       this.isBombTextureReady = false;
       console.error(`[BombView] Bomb.svg 読み込み失敗: ${imageUrl}`, error);
     }
@@ -112,6 +115,7 @@ export class BombView {
   }
 
   public destroy(): void {
+    this.isDestroyed = true;
     this.displayObject.destroy({ children: true });
   }
 }

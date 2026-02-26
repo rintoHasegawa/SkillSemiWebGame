@@ -5,10 +5,12 @@
  */
 import { Application, Container, Ticker } from "pixi.js";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
+import { BombManager } from "@client/scenes/game/entities/bomb/BombManager";
 import type { GamePlayers } from "./game.types";
 import { InputStep } from "./loopSteps/InputStep";
 import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";
+import { BombStep } from "./loopSteps/BombStep";
 
 type GameLoopOptions = {
   app: Application;
@@ -16,6 +18,7 @@ type GameLoopOptions = {
   players: GamePlayers;
   myId: string;
   getJoystickInput: () => { x: number; y: number };
+  bombManager: BombManager;
 };
 
 /** ゲームのフレーム更新順序を管理するループ制御クラス */
@@ -26,15 +29,17 @@ export class GameLoop {
   private myId: string;
   private inputStep: InputStep;
   private simulationStep: SimulationStep;
+  private bombStep: BombStep;
   private cameraStep: CameraStep;
 
-  constructor({ app, worldContainer, players, myId, getJoystickInput }: GameLoopOptions) {
+  constructor({ app, worldContainer, players, myId, getJoystickInput, bombManager }: GameLoopOptions) {
     this.app = app;
     this.worldContainer = worldContainer;
     this.players = players;
     this.myId = myId;
     this.inputStep = new InputStep({ getJoystickInput });
     this.simulationStep = new SimulationStep();
+    this.bombStep = new BombStep({ bombManager });
     this.cameraStep = new CameraStep();
   }
 
@@ -51,6 +56,8 @@ export class GameLoop {
       deltaSeconds,
       isMoving,
     });
+
+    this.bombStep.run();
 
     this.cameraStep.run({
       app: this.app,
