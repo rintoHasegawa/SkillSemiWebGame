@@ -13,6 +13,7 @@ import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";
 import { BombStep } from "./loopSteps/BombStep";
 import { resolveFrameDelta } from "./loopSteps/frameDelta";
+import { SocketPlayerMoveSender } from "./network/PlayerMoveSender";
 
 type GameLoopOptions = {
   app: Application;
@@ -40,7 +41,9 @@ export class GameLoop {
     this.players = players;
     this.myId = myId;
     this.inputStep = new InputStep({ getJoystickInput });
-    this.simulationStep = new SimulationStep();
+    this.simulationStep = new SimulationStep({
+      moveSender: new SocketPlayerMoveSender(),
+    });
     this.bombStep = new BombStep({ bombManager });
     this.cameraStep = new CameraStep();
   }
