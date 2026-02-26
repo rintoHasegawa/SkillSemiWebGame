@@ -7,13 +7,33 @@ import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes } from "@server/logging/index";
 
 type PayloadValidator<TPayload> = (value: unknown) => value is TPayload;
-type PayloadGuardEventName =
-  | typeof protocol.SocketEvents.JOIN_ROOM
-  | typeof protocol.SocketEvents.PING
-  | typeof protocol.SocketEvents.MOVE
-  | typeof protocol.SocketEvents.PLACE_BOMB
-  | typeof protocol.SocketEvents.BOMB_HIT_REPORT;
 type EventBoundPayloadGuard<TPayload> = (payload: unknown) => payload is TPayload;
+
+/** 不正ペイロード時に記録するログ契約をイベント単位で一元管理する */
+const invalidPayloadLogByEvent = {
+  [protocol.SocketEvents.JOIN_ROOM]: {
+    event: protocol.SocketEvents.JOIN_ROOM,
+    result: logResults.IGNORED_INVALID_PAYLOAD,
+  },
+  [protocol.SocketEvents.PING]: {
+    event: protocol.SocketEvents.PING,
+    result: logResults.IGNORED_INVALID_PAYLOAD,
+  },
+  [protocol.SocketEvents.MOVE]: {
+    event: protocol.SocketEvents.MOVE,
+    result: logResults.IGNORED_INVALID_PAYLOAD,
+  },
+  [protocol.SocketEvents.PLACE_BOMB]: {
+    event: protocol.SocketEvents.PLACE_BOMB,
+    result: logResults.IGNORED_INVALID_PAYLOAD,
+  },
+  [protocol.SocketEvents.BOMB_HIT_REPORT]: {
+    event: protocol.SocketEvents.BOMB_HIT_REPORT,
+    result: logResults.IGNORED_INVALID_PAYLOAD,
+  },
+} as const;
+
+type PayloadGuardEventName = keyof typeof invalidPayloadLogByEvent;
 
 /**
  * 受信ペイロードを検証し，不正時は共通ログを記録するガード関数を生成する
@@ -28,42 +48,11 @@ export const createPayloadGuard = (socketId: string) => {
       return true;
     }
 
-    switch (event) {
-      case protocol.SocketEvents.JOIN_ROOM:
-        logEvent(logScopes.NETWORK, {
-          event: protocol.SocketEvents.JOIN_ROOM,
-          result: logResults.IGNORED_INVALID_PAYLOAD,
-          socketId,
-        });
-        break;
-
-      case protocol.SocketEvents.PING:
-        logEvent(logScopes.NETWORK, {
-          event: protocol.SocketEvents.PING,
-          result: logResults.IGNORED_INVALID_PAYLOAD,
-          socketId,
-        });
-        break;
-
-      case protocol.SocketEvents.MOVE:
-        logEvent(logScopes.NETWORK, {
-          event: protocol.SocketEvents.MOVE,
-          result: logResults.IGNORED_INVALID_PAYLOAD,
-          socketId,
-        });
-        break;
-
-      case protocol.SocketEvents.PLACE_BOMB:
-        logEvent(logScopes.NETWORK, {
-          event: protocol.SocketEvents.PLACE_BOMB,
-          result: logResults.IGNORED_INVALID_PAYLOAD,
-          socketId,
-        });
-        break;
-
-      case protocol.SocketEvents.BOMB_HIT_REPORT:
-        break;
-    }
+    const logContract = invalidPayloadLogByEvent[event];
+    logEvent(logScopes.NETWORK, {
+      ...logContract,
+      socketId,
+    });
 
     return false;
   };

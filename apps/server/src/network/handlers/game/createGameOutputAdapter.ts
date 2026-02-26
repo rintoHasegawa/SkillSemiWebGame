@@ -9,6 +9,7 @@ import type {
   BombPlacedPayload,
   GameStartPayload,
   GameResultPayload,
+  PlayerDeadPayload,
   PongPayload,
   roomTypes,
   CurrentPlayersPayload,
@@ -65,6 +66,9 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
     },
     publishBombPlacedAckToSocket: (socketId: string, payload: BombPlacedAckPayload) => {
       common.emitToSocketById(socketId, protocol.SocketEvents.BOMB_PLACED_ACK, payload);
+    },
+    publishPlayerDeadToOthersInRoom: (roomId: RoomId, deadPlayerId: string, payload: PlayerDeadPayload) => {
+      common.emitToRoomExceptSocket(roomId, deadPlayerId, protocol.SocketEvents.PLAYER_DEAD, payload);
     },
   };
 };

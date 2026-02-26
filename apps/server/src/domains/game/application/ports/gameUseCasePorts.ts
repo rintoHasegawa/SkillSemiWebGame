@@ -3,8 +3,10 @@
  * ゲーム系ユースケースが利用する入力ポートと出力ポートの契約を定義する
  */
 import type {
+  BombHitReportPayload,
   BombPlacedAckPayload,
   BombPlacedPayload,
+  PlayerDeadPayload,
   gameTypes,
   playerTypes,
   PlaceBombPayload,
@@ -84,7 +86,18 @@ export interface BombOutputPort {
     socketId: string,
     payload: BombPlacedAckPayload,
   ): void;
+  publishPlayerDeadToOthersInRoom(
+    roomId: roomTypes.Room["roomId"],
+    deadPlayerId: string,
+    payload: PlayerDeadPayload,
+  ): void;
 }
+
+/** 爆弾設置ユースケースが利用する出力ポート */
+export type PlaceBombOutputPort = Pick<
+  BombOutputPort,
+  "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
+>;
 
 /** start-game 系フローで利用する送信出力ポート */
 export type StartGameOutputPort = Pick<
@@ -112,3 +125,12 @@ export type PlaceBombInput = {
   payload: PlaceBombPayload;
   nowMs: number;
 };
+
+/** 被弾報告ユースケースの入力値 */
+export type ReportBombHitInput = {
+  socketId: string;
+  payload: BombHitReportPayload;
+};
+
+/** 被弾報告ユースケースが利用する出力ポート */
+export type BombHitOutputPort = Pick<BombOutputPort, "publishPlayerDeadToOthersInRoom">;

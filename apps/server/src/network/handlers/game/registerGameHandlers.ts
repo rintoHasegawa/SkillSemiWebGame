@@ -16,6 +16,7 @@ import type {
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
 import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
+import { reportBombHitUseCase } from "@server/domains/game/application/useCases/reportBombHitUseCase";
 import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
 import {
@@ -146,5 +147,14 @@ export const registerGameHandlers = (
     if (!runtime) {
       return;
     }
+
+    reportBombHitUseCase({
+      roomId: runtime.roomId,
+      input: {
+        socketId: socket.id,
+        payload: data,
+      },
+      output: gameOutputAdapter,
+    });
   });
 };
