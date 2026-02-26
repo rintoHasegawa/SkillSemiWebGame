@@ -60,13 +60,13 @@ export class GameManager {
     return this.lifecycleService.getRoomPlayers(roomId);
   }
 
-  // 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する
-  shouldBroadcastBombPlaced(roomId: string, dedupeKey: string, nowMs: number): boolean {
-    return this.lifecycleService.shouldBroadcastBombPlaced(roomId, dedupeKey, nowMs);
+  // roomId で対象セッションを選択し，爆弾設置イベントを配信すべきか判定する
+  shouldBroadcastBombPlacedForRoom(roomId: string, dedupeKey: string, nowMs: number): boolean {
+    return this.lifecycleService.shouldBroadcastBombPlacedForRoom(roomId, dedupeKey, nowMs);
   }
 
-  // ルーム単位の連番からサーバー採番の爆弾IDを生成する
-  issueServerBombId(roomId: string): string {
-    return this.lifecycleService.issueServerBombId(roomId);
+  // roomId で対象セッションを選択し，サーバー採番の爆弾IDを生成する
+  issueServerBombIdForRoom(roomId: string): string {
+    return this.lifecycleService.issueServerBombIdForRoom(roomId);
   }
 }
