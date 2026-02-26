@@ -12,15 +12,18 @@ export const createBombDedupeKey = (ownerId: string, requestId: string): string 
 type CreateBombPlacedPayloadParams = {
   payload: PlaceBombPayload;
   bombId: string;
+  ownerSocketId: string;
 };
 
 /** 爆弾確定通知で他プレイヤーへ配信するペイロードを生成する */
 export const createBombPlacedPayload = ({
   payload,
   bombId,
+  ownerSocketId,
 }: CreateBombPlacedPayloadParams): BombPlacedPayload => {
   return {
     bombId,
+    ownerSocketId,
     x: payload.x,
     y: payload.y,
     explodeAtElapsedMs: payload.explodeAtElapsedMs,

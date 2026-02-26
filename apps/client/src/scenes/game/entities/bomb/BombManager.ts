@@ -23,6 +23,7 @@ export type BombRenderPayload = {
   y: number;
   explodeAtElapsedMs: number;
   radiusGrid: number;
+  teamId: number;
 };
 
 /** 爆弾設置時に返す結果型 */
@@ -40,6 +41,8 @@ type BombManagerOptions = {
 
 /** 爆弾エンティティのライフサイクルを管理する */
 export class BombManager {
+  private static readonly UNKNOWN_TEAM_ID = -1;
+
   private worldContainer: Container;
   private players: GamePlayers;
   private myId: string;
@@ -78,10 +81,11 @@ export class BombManager {
       explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
     };
     const tempBombId = this.createTempBombId(requestId);
+    const ownTeamId = this.resolveTeamIdBySocketId(this.myId);
 
     this.pendingOwnRequestToTempBombId.set(requestId, tempBombId);
     this.pendingTempBombIdToOwnRequest.set(tempBombId, requestId);
-    this.upsertBomb(tempBombId, this.toRenderPayload(payload));
+    this.upsertBomb(tempBombId, this.toRenderPayload(payload, ownTeamId));
     this.lastBombPlacedElapsedMs = elapsedMs;
     return {
       tempBombId,
@@ -91,7 +95,8 @@ export class BombManager {
 
   /** 他プレイヤー向けの爆弾確定イベントを反映する */
   public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
-    this.upsertBomb(payload.bombId, this.toRenderPayload(payload));
+    const ownerTeamId = this.resolveTeamIdBySocketId(payload.ownerSocketId);
+    this.upsertBomb(payload.bombId, this.toRenderPayload(payload, ownerTeamId));
   }
 
   /** 設置者本人向けACKを反映し，仮IDから正式IDへ置換する */
@@ -169,16 +174,30 @@ export class BombManager {
     return a.x === b.x
       && a.y === b.y
       && a.explodeAtElapsedMs === b.explodeAtElapsedMs
-      && a.radiusGrid === b.radiusGrid;
+      && a.radiusGrid === b.radiusGrid
+      && a.teamId === b.teamId;
   }
 
-  private toRenderPayload(payload: { x: number; y: number; explodeAtElapsedMs: number }): BombRenderPayload {
+  private toRenderPayload(
+    payload: { x: number; y: number; explodeAtElapsedMs: number },
+    teamId: number
+  ): BombRenderPayload {
     return {
       x: payload.x,
       y: payload.y,
       explodeAtElapsedMs: payload.explodeAtElapsedMs,
       radiusGrid: config.GAME_CONFIG.BOMB_RADIUS_GRID,
+      teamId,
     };
+  }
+
+  private resolveTeamIdBySocketId(socketId: string): number {
+    const playerController = this.players[socketId];
+    if (!playerController) {
+      return BombManager.UNKNOWN_TEAM_ID;
+    }
+
+    return playerController.getSnapshot().teamId;
   }
 
   private createRequestId(_elapsedMs: number): string {

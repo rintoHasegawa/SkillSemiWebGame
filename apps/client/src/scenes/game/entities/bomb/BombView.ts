@@ -15,6 +15,7 @@ export class BombView {
   private explosionGraphic: Graphics;
   private lastRenderedState: BombState | null = null;
   private lastRenderedRadiusGrid: number | null = null;
+  private lastRenderedTeamId: number | null = null;
 
   constructor() {
     this.displayObject = new Container();
@@ -32,8 +33,12 @@ export class BombView {
     this.displayObject.y = gridY * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
   }
 
-  public renderState(state: BombState, radiusGrid: number): void {
-    if (this.lastRenderedState === state && this.lastRenderedRadiusGrid === radiusGrid) {
+  public renderState(state: BombState, radiusGrid: number, teamId: number): void {
+    if (
+      this.lastRenderedState === state
+      && this.lastRenderedRadiusGrid === radiusGrid
+      && this.lastRenderedTeamId === teamId
+    ) {
       return;
     }
 
@@ -43,22 +48,43 @@ export class BombView {
 
     this.lastRenderedState = state;
     this.lastRenderedRadiusGrid = radiusGrid;
+    this.lastRenderedTeamId = teamId;
+
+    const teamColor = this.resolveTeamColor(teamId);
 
     this.bombGraphic.clear();
     this.explosionGraphic.clear();
 
     if (state === "armed") {
       this.bombGraphic.circle(0, 0, bombRadiusPx);
-      this.bombGraphic.fill({ color: 0x111111, alpha: 0.95 });
+      this.bombGraphic.fill({ color: teamColor, alpha: 0.95 });
       this.bombGraphic.stroke({ color: 0xffffff, width: 2 });
       return;
     }
 
     if (state === "exploded") {
       this.explosionGraphic.circle(0, 0, explosionRadiusPx);
-      this.explosionGraphic.fill({ color: 0xffcc00, alpha: 0.35 });
-      this.explosionGraphic.stroke({ color: 0xff9900, width: 3 });
+      this.explosionGraphic.fill({ color: teamColor, alpha: 0.35 });
+      this.explosionGraphic.stroke({ color: teamColor, width: 3 });
     }
+  }
+
+  private resolveTeamColor(teamId: number): number {
+    const teamColorCode = config.GAME_CONFIG.TEAM_COLORS[teamId];
+    if (typeof teamColorCode !== "string") {
+      return config.GAME_CONFIG.MAP_GRID_COLOR;
+    }
+
+    const normalizedColorCode = teamColorCode.startsWith("#")
+      ? teamColorCode.slice(1)
+      : teamColorCode;
+
+    const parsedColor = Number.parseInt(normalizedColorCode, 16);
+    if (Number.isNaN(parsedColor)) {
+      return config.GAME_CONFIG.MAP_GRID_COLOR;
+    }
+
+    return parsedColor;
   }
 
   public destroy(): void {

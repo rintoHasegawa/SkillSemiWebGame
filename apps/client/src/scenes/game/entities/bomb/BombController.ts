@@ -11,6 +11,7 @@ type BombControllerOptions = {
   y: number;
   radiusGrid: number;
   explodeAtElapsedMs: number;
+  teamId: number;
 };
 
 /** 爆弾1つ分の状態と描画同期を管理するコントローラー */
@@ -18,13 +19,13 @@ export class BombController {
   private readonly model: BombModel;
   private readonly view: BombView;
 
-  constructor({ x, y, radiusGrid, explodeAtElapsedMs }: BombControllerOptions) {
-    this.model = new BombModel({ x, y, radiusGrid, explodeAtElapsedMs });
+  constructor({ x, y, radiusGrid, explodeAtElapsedMs, teamId }: BombControllerOptions) {
+    this.model = new BombModel({ x, y, radiusGrid, explodeAtElapsedMs, teamId });
     this.view = new BombView();
 
     const pos = this.model.getPosition();
     this.view.syncPosition(pos.x, pos.y);
-    this.view.renderState(this.model.getState(), this.model.getExplosionRadiusGrid());
+    this.view.renderState(this.model.getState(), this.model.getExplosionRadiusGrid(), this.model.getTeamId());
   }
 
   public getDisplayObject() {
@@ -33,7 +34,7 @@ export class BombController {
 
   public tick(elapsedMs: number): void {
     this.model.update(elapsedMs);
-    this.view.renderState(this.model.getState(), this.model.getExplosionRadiusGrid());
+    this.view.renderState(this.model.getState(), this.model.getExplosionRadiusGrid(), this.model.getTeamId());
   }
 
   public isFinished(): boolean {
