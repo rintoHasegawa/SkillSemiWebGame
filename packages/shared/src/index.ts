@@ -29,6 +29,8 @@ export type {
 	ClientToServerPayloadOf,
 	ServerToClientEventPayloadMap,
 	ServerToClientPayloadOf,
+	InitialPlayerSyncPayload,
+	DeltaPlayerSyncPayload,
 	CurrentPlayersPayload,
 	BombPlacedPayload,
 	BombPlacedAckPayload,

@@ -18,7 +18,7 @@ export class GameLoop {
   private endMonotonicTimeMs: number = 0;
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
-  private lastSentPlayers: Map<string, gameTypes.TickData["playerUpdates"][number]> = new Map();
+  private lastSentPlayers: Map<string, gameTypes.PlayerPositionUpdate> = new Map();
 
   constructor(
     private roomId: string,
@@ -93,9 +93,11 @@ export class GameLoop {
 
   private processSingleTick(): void {
     const changedPlayers: gameTypes.TickData["playerUpdates"] = [];
+    const activePlayerIds = new Set<string>();
 
     // 1. 各プレイヤーの座標処理とマス塗りの判定
     this.players.forEach((player) => {
+      activePlayerIds.add(player.id);
 
       const gridIndex = getPlayerGridIndex(player);
       if (gridIndex !== null) {
@@ -103,19 +105,17 @@ export class GameLoop {
       }
 
       // 送信用のプレイヤーデータを構築
-      const playerData = {
+      const playerData: gameTypes.PlayerPositionUpdate = {
         id: player.id,
         x: player.x,
         y: player.y,
-        teamId: player.teamId,
       };
 
       const lastSentPlayer = this.lastSentPlayers.get(player.id);
       const isChanged =
         !lastSentPlayer ||
         lastSentPlayer.x !== playerData.x ||
-        lastSentPlayer.y !== playerData.y ||
-        lastSentPlayer.teamId !== playerData.teamId;
+        lastSentPlayer.y !== playerData.y;
 
       if (isChanged) {
         changedPlayers.push(playerData);
@@ -125,7 +125,7 @@ export class GameLoop {
 
     // ルームから離脱したプレイヤーの送信状態をクリーンアップする
     Array.from(this.lastSentPlayers.keys()).forEach((playerId) => {
-      if (!this.players.has(playerId)) {
+      if (!activePlayerIds.has(playerId)) {
         this.lastSentPlayers.delete(playerId);
       }
     });

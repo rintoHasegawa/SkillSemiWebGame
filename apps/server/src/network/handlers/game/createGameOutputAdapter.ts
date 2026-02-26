@@ -20,6 +20,7 @@ import type {
   BombOutputPort,
   GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
+import { sanitizeUpdatePlayersPayload } from "@server/network/adapters/gamePayloadSanitizers";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
@@ -38,7 +39,8 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
       common.emitToSocket(protocol.SocketEvents.PONG, payload);
     },
     publishUpdatePlayersToSocket: (socketId: string, players: UpdatePlayersPayload) => {
-      common.emitToSocketById(socketId, protocol.SocketEvents.UPDATE_PLAYERS, players);
+      const sanitizedPlayers = sanitizeUpdatePlayersPayload(players);
+      common.emitToSocketById(socketId, protocol.SocketEvents.UPDATE_PLAYERS, sanitizedPlayers);
     },
     publishMapCellUpdatesToRoom: (roomId: RoomId, cellUpdates: UpdateMapCellsPayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, cellUpdates);

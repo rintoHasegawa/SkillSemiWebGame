@@ -16,6 +16,8 @@ export type {
 
 /** ゲームイベントのペイロード型を再公開する */
 export type {
+  InitialPlayerSyncPayload,
+  DeltaPlayerSyncPayload,
   UpdatePlayersPayload,
   CurrentPlayersPayload,
   UpdateMapCellsPayload,

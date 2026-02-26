@@ -73,6 +73,8 @@
 ・events.ts 再公開が過不足ないか
 ・client/server で型エラーがないか
 ・既存イベントの型互換を壊していないか
+・player 座標差分イベント（UPDATE_PLAYERS）に teamId を含めていないか
+・初期同期イベント（CURRENT_PLAYERS / NEW_PLAYER）に teamId を含めているか
 
 
 6. 典型ミスと対策 (Common Pitfalls)
