@@ -25,9 +25,11 @@ export const SocketEvents = {
   REMOVE_PLAYER: "remove_player",
   MOVE: "move",
   PLACE_BOMB: "place-bomb",
+  BOMB_HIT_REPORT: "bomb-hit-report",
   UPDATE_MAP_CELLS: "update_map_cells",
   BOMB_PLACED: "bomb-placed",
   BOMB_PLACED_ACK: "bomb-placed-ack",
+  PLAYER_DEAD: "player-dead",
 
   // 時間同期・ゲーム進行関連
   PING: "ping",

@@ -27,6 +27,8 @@ export type {
   PlaceBombPayload,
   BombPlacedPayload,
   BombPlacedAckPayload,
+  BombHitReportPayload,
+  PlayerDeadPayload,
   PingPayload,
   PongPayload,
   JoinRoomPayload,

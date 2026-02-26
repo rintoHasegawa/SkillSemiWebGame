@@ -78,3 +78,13 @@ export type BombPlacedAckPayload = {
   bombId: string;
   requestId: string;
 };
+
+/** BOMB_HIT_REPORT イベントで送受信する被弾報告 */
+export type BombHitReportPayload = {
+  bombId: string;
+};
+
+/** PLAYER_DEAD イベントで送受信する死亡プレイヤー情報 */
+export type PlayerDeadPayload = {
+  playerId: string;
+};
