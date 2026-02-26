@@ -46,8 +46,11 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
       {/* 画面全体を覆う背景コンテナ */}
       <div
         style={{
+          position: "fixed",
+          inset: 0,
           width: "100vw",
-          height: "100dvh",
+          height: "100lvh",
+          overflow: "hidden",
           backgroundImage: "url('/title.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
