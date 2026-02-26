@@ -15,12 +15,12 @@ import {
   RemotePlayerController,
 } from "@client/scenes/game/entities/player/PlayerController";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
-import type { GamePlayers } from "@client/scenes/game/application/game.types";
+import { PlayerRepository } from "@client/scenes/game/application/player/PlayerRepository";
 
 /** PlayerSyncHandler の初期化入力 */
 export type PlayerSyncHandlerOptions = {
   worldContainer: Container;
-  players: GamePlayers;
+  playerRepository: PlayerRepository;
   myId: string;
   appearanceResolver: AppearanceResolver;
 };
@@ -28,13 +28,13 @@ export type PlayerSyncHandlerOptions = {
 /** プレイヤー関連の同期イベント適用を担当する */
 export class PlayerSyncHandler {
   private readonly worldContainer: Container;
-  private readonly players: GamePlayers;
+  private readonly playerRepository: PlayerRepository;
   private readonly myId: string;
   private readonly appearanceResolver: AppearanceResolver;
 
-  constructor({ worldContainer, players, myId, appearanceResolver }: PlayerSyncHandlerOptions) {
+  constructor({ worldContainer, playerRepository, myId, appearanceResolver }: PlayerSyncHandlerOptions) {
     this.worldContainer = worldContainer;
-    this.players = players;
+    this.playerRepository = playerRepository;
     this.myId = myId;
     this.appearanceResolver = appearanceResolver;
   }
@@ -46,7 +46,7 @@ export class PlayerSyncHandler {
         ? new LocalPlayerController(player, this.appearanceResolver)
         : new RemotePlayerController(player, this.appearanceResolver);
       this.worldContainer.addChild(playerController.getDisplayObject());
-      this.players[player.id] = playerController;
+      this.playerRepository.upsert(player.id, playerController);
     });
   };
 
@@ -54,13 +54,13 @@ export class PlayerSyncHandler {
   public handleNewPlayer = (payload: NewPlayerPayload): void => {
     const playerController = new RemotePlayerController(payload, this.appearanceResolver);
     this.worldContainer.addChild(playerController.getDisplayObject());
-    this.players[payload.id] = playerController;
+    this.playerRepository.upsert(payload.id, playerController);
   };
 
   /** プレイヤー差分更新を反映する */
   public handlePlayerUpdates = (changedPlayers: UpdatePlayersPayload): void => {
     changedPlayers.forEach((playerData) => {
-      const target = this.players[playerData.id];
+      const target = this.playerRepository.getById(playerData.id);
       if (target && target instanceof RemotePlayerController) {
         target.applyRemoteUpdate({ x: playerData.x, y: playerData.y });
       }
@@ -69,13 +69,12 @@ export class PlayerSyncHandler {
 
   /** 退出プレイヤーを削除する */
   public handleRemovePlayer = (id: RemovePlayerPayload): void => {
-    const target = this.players[id];
+    const target = this.playerRepository.remove(id);
     if (!target) {
       return;
     }
 
     this.worldContainer.removeChild(target.getDisplayObject());
     target.destroy();
-    delete this.players[id];
   };
 }

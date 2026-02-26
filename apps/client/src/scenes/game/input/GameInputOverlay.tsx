@@ -4,7 +4,7 @@
  * ジョイスティック層と爆弾ボタン層を分離して配置する
  */
 import { config } from "@client/config";
-import { JoystickInputPresenter } from "./joystick/JoystickInputPresenter";
+import { JoystickInputPresenter } from "./joystick/presentation/JoystickInputPresenter";
 import { BombButton } from "./bomb/BombButton";
 import { useCooldownClock } from "./hooks/useCooldownClock";
 
