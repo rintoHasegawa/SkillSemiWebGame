@@ -7,25 +7,13 @@ import type {
   BombHitReportValidationPort,
   ReportBombHitInput,
 } from "../ports/gameUseCasePorts";
-import { createBombHitReportDedupeKey } from "@server/domains/game/entities/bomb/bombHitReport";
+import { shouldPublishPlayerDeadFromBombHit } from "./reportBombHitValidation";
 
 type ReportBombHitUseCaseParams = {
   roomId: string;
   validation: BombHitReportValidationPort;
   input: ReportBombHitInput;
   output: BombHitOutputPort;
-};
-
-/** 受信した被弾報告を処理対象にすべきか判定する */
-const shouldPublishPlayerDeadFromBombHit = (
-  validation: BombHitReportValidationPort,
-  input: ReportBombHitInput,
-): boolean => {
-  const dedupeKey = createBombHitReportDedupeKey(
-    input.socketId,
-    input.payload.bombId,
-  );
-  return validation.shouldBroadcastBombHitReport(dedupeKey, input.nowMs);
 };
 
 /** 被弾報告を死亡通知へ変換して配信する */

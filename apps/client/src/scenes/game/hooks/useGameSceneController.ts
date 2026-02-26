@@ -26,6 +26,7 @@ export const useGameSceneController = (myId: string | null) => {
   const [startCountdownText, setStartCountdownText] = useState<string | null>(
     null,
   );
+  const [isInputEnabled, setIsInputEnabled] = useState(false);
 
   useEffect(() => {
     if (!pixiContainerRef.current || !myId) return;
@@ -52,6 +53,11 @@ export const useGameSceneController = (myId: string | null) => {
       setStartCountdownText((prev) =>
         prev === nextCountdown ? prev : nextCountdown,
       );
+
+      const nextInputEnabled = manager.isInputEnabled();
+      setIsInputEnabled((prev) =>
+        prev === nextInputEnabled ? prev : nextInputEnabled,
+      );
     }, config.GAME_CONFIG.TIMER_DISPLAY_UPDATE_MS);
 
     return () => {
@@ -60,6 +66,7 @@ export const useGameSceneController = (myId: string | null) => {
       inputManagerRef.current = null;
       clearInterval(timerInterval);
       setStartCountdownText(null);
+      setIsInputEnabled(false);
     };
   }, [myId]);
 
@@ -75,6 +82,7 @@ export const useGameSceneController = (myId: string | null) => {
     pixiContainerRef,
     timeLeft,
     startCountdownText,
+    isInputEnabled,
     handleInput,
     handlePlaceBomb,
   };

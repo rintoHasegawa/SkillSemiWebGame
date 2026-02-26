@@ -11,6 +11,7 @@ import type { UseJoystickInputPresenterProps } from "./common";
 export const JoystickInputPresenter = ({
   onInput,
   maxDist,
+  isEnabled = true,
 }: UseJoystickInputPresenterProps) => {
   const {
     isMoving,
@@ -24,11 +25,11 @@ export const JoystickInputPresenter = ({
 
   return (
     <div
-      onPointerDown={handleStart}
-      onPointerMove={handleMove}
-      onPointerUp={handleEnd}
-      onPointerCancel={handleEnd}
-      onLostPointerCapture={handleEnd}
+      onPointerDown={isEnabled ? handleStart : undefined}
+      onPointerMove={isEnabled ? handleMove : undefined}
+      onPointerUp={isEnabled ? handleEnd : undefined}
+      onPointerCancel={isEnabled ? handleEnd : undefined}
+      onLostPointerCapture={isEnabled ? handleEnd : undefined}
       style={{
         position: "absolute",
         top: 0,
@@ -38,6 +39,7 @@ export const JoystickInputPresenter = ({
         // キャンバス前面入力キャプチャレイヤー
         zIndex: 10,
         touchAction: "none",
+        pointerEvents: isEnabled ? "auto" : "none",
       }}
     >
       {/* 入力イベントをコントローラーへ渡し，描画用状態をViewへ渡す */}

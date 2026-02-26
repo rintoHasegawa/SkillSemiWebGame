@@ -9,6 +9,7 @@ import { GameInputOverlay } from "./input/GameInputOverlay";
 type Props = {
   timeLeft: string;
   startCountdownText: string | null;
+  isInputEnabled: boolean;
   pixiContainerRef: React.RefObject<HTMLDivElement>;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
@@ -70,6 +71,7 @@ const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => (
 export const GameView = ({
   timeLeft,
   startCountdownText,
+  isInputEnabled,
   pixiContainerRef,
   onJoystickInput,
   onPlaceBomb,
@@ -88,6 +90,7 @@ export const GameView = ({
 
       {/* 入力UI レイヤー */}
       <GameInputOverlay
+        isInputEnabled={isInputEnabled}
         onJoystickInput={onJoystickInput}
         onPlaceBomb={onPlaceBomb}
       />
