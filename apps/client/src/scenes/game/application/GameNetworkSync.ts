@@ -15,10 +15,13 @@ import type {
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
-import { socketManager } from "@client/network/SocketManager";
 import { AppearanceResolver } from "./AppearanceResolver";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
+import {
+  createNetworkSubscriptions,
+  type SocketSubscriptionDictionary,
+} from "./network/NetworkSubscriptions";
 import type { GamePlayers } from "./game.types";
 
 const ENABLE_DEBUG_LOG = import.meta.env.DEV;
@@ -36,24 +39,6 @@ type GameNetworkSyncOptions = {
   onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
 };
 
-type SocketSubscription = {
-  bind: () => void;
-  unbind: () => void;
-};
-
-type SocketSubscriptionDictionary = {
-  currentPlayers: SocketSubscription;
-  newPlayer: SocketSubscription;
-  gameStart: SocketSubscription;
-  updatePlayers: SocketSubscription;
-  removePlayer: SocketSubscription;
-  updateMapCells: SocketSubscription;
-  gameEnd: SocketSubscription;
-  bombPlaced: SocketSubscription;
-  bombPlacedAck: SocketSubscription;
-  playerDead: SocketSubscription;
-};
-
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
 export class GameNetworkSync {
   private worldContainer: Container;
@@ -68,52 +53,6 @@ export class GameNetworkSync {
   private onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
   private socketSubscriptions: SocketSubscriptionDictionary;
   private isBound = false;
-  /** ソケット購読の bind/unbind を辞書形式で構築する */
-  private createSocketSubscriptions(): SocketSubscriptionDictionary {
-    return {
-      currentPlayers: {
-        bind: () => socketManager.game.onCurrentPlayers(this.handleCurrentPlayers),
-        unbind: () => socketManager.game.offCurrentPlayers(this.handleCurrentPlayers),
-      },
-      newPlayer: {
-        bind: () => socketManager.game.onNewPlayer(this.handleNewPlayer),
-        unbind: () => socketManager.game.offNewPlayer(this.handleNewPlayer),
-      },
-      gameStart: {
-        bind: () => socketManager.game.onGameStart(this.handleGameStart),
-        unbind: () => socketManager.game.offGameStart(this.handleGameStart),
-      },
-      updatePlayers: {
-        bind: () => socketManager.game.onUpdatePlayers(this.handlePlayerUpdates),
-        unbind: () => socketManager.game.offUpdatePlayers(this.handlePlayerUpdates),
-      },
-      removePlayer: {
-        bind: () => socketManager.game.onRemovePlayer(this.handleRemovePlayer),
-        unbind: () => socketManager.game.offRemovePlayer(this.handleRemovePlayer),
-      },
-      updateMapCells: {
-        bind: () => socketManager.game.onUpdateMapCells(this.handleUpdateMapCells),
-        unbind: () => socketManager.game.offUpdateMapCells(this.handleUpdateMapCells),
-      },
-      gameEnd: {
-        bind: () => socketManager.game.onGameEnd(this.handleGameEnd),
-        unbind: () => socketManager.game.offGameEnd(this.handleGameEnd),
-      },
-      bombPlaced: {
-        bind: () => socketManager.game.onBombPlaced(this.handleBombPlaced),
-        unbind: () => socketManager.game.offBombPlaced(this.handleBombPlaced),
-      },
-      bombPlacedAck: {
-        bind: () => socketManager.game.onBombPlacedAck(this.handleBombPlacedAck),
-        unbind: () => socketManager.game.offBombPlacedAck(this.handleBombPlacedAck),
-      },
-      playerDead: {
-        bind: () => socketManager.game.onPlayerDead(this.handlePlayerDead),
-        unbind: () => socketManager.game.offPlayerDead(this.handlePlayerDead),
-      },
-    };
-  }
-
 
   private debugLog = (message: string) => {
     if (!ENABLE_DEBUG_LOG) {
@@ -207,7 +146,18 @@ export class GameNetworkSync {
     this.onBombPlacedFromOthers = onBombPlacedFromOthers;
     this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
     this.onPlayerDeadFromNetwork = onPlayerDeadFromNetwork;
-    this.socketSubscriptions = this.createSocketSubscriptions();
+    this.socketSubscriptions = createNetworkSubscriptions({
+      onCurrentPlayers: this.handleCurrentPlayers,
+      onNewPlayer: this.handleNewPlayer,
+      onGameStart: this.handleGameStart,
+      onUpdatePlayers: this.handlePlayerUpdates,
+      onRemovePlayer: this.handleRemovePlayer,
+      onUpdateMapCells: this.handleUpdateMapCells,
+      onGameEnd: this.handleGameEnd,
+      onBombPlaced: this.handleBombPlaced,
+      onBombPlacedAck: this.handleBombPlacedAck,
+      onPlayerDead: this.handlePlayerDead,
+    });
   }
 
   public bind() {
