@@ -18,6 +18,7 @@ import {
 
 type StartGameCoordinatorParams = {
   ownerId: string;
+  requestedPlayerCount?: number;
 } & StartGameCoordinatorDeps & {
     output: StartGameOutputPort;
   };
@@ -25,6 +26,7 @@ type StartGameCoordinatorParams = {
 /** START_GAME受信時にルーム状態遷移を判定し，ゲーム開始ユースケースを実行する */
 export const startGameCoordinator = ({
   ownerId,
+  requestedPlayerCount,
   roomManager,
   runtimeRegistry,
   output,
@@ -80,6 +82,7 @@ export const startGameCoordinator = ({
   const sessionPlayerIds = createBalancedSessionPlayerIds(
     updatedRoom.roomId,
     humanPlayerIds,
+    requestedPlayerCount,
   );
   sessionPlayerIds.forEach((playerId) => {
     if (!isBotPlayerId(playerId)) {

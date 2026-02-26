@@ -10,15 +10,28 @@ import { createClientSocketEventBridge } from "./socketEventBridge";
 
 /** ロビー画面で利用する通信操作の契約 */
 type LobbyHandler = {
-  onRoomUpdate: (callback: (room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
-  onceRoomUpdate: (callback: (room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
-  offRoomUpdate: (callback: (room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>) => void) => void;
-  startGame: () => void;
+  onRoomUpdate: (
+    callback: (
+      room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>,
+    ) => void,
+  ) => void;
+  onceRoomUpdate: (
+    callback: (
+      room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>,
+    ) => void,
+  ) => void;
+  offRoomUpdate: (
+    callback: (
+      room: ServerToClientPayloadOf<typeof protocol.SocketEvents.ROOM_UPDATE>,
+    ) => void,
+  ) => void;
+  startGame: (targetPlayerCount?: number) => void;
 };
 
 /** ロビー画面向けのソケットハンドラを生成する */
 export const createLobbyHandler = (socket: Socket): LobbyHandler => {
-  const { onEvent, onceEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
+  const { onEvent, onceEvent, offEvent, emitEvent } =
+    createClientSocketEventBridge(socket);
 
   return {
     onRoomUpdate: (callback) => {
@@ -30,9 +43,11 @@ export const createLobbyHandler = (socket: Socket): LobbyHandler => {
     offRoomUpdate: (callback) => {
       offEvent(protocol.SocketEvents.ROOM_UPDATE, callback);
     },
-    startGame: () => {
-      emitEvent(protocol.SocketEvents.START_GAME);
-    }
+    startGame: (targetPlayerCount) => {
+      emitEvent(protocol.SocketEvents.START_GAME, {
+        targetPlayerCount,
+      });
+    },
   };
 };
 

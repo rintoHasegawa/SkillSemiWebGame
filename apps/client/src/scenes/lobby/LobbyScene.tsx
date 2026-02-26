@@ -1,9 +1,10 @@
+import { useEffect, useMemo, useState } from "react";
 import type { roomTypes } from "@repo/shared";
 
 type Props = {
   room: roomTypes.Room | null;
   myId: string | null;
-  onStart: () => void;
+  onStart: (targetPlayerCount: number) => void;
   onBackToTitle: () => void;
 };
 
@@ -12,6 +13,55 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     return <div style={{ color: "white", padding: 40 }}>読み込み中...</div>;
 
   const isMeOwner = room.ownerId === myId;
+  const teamUnit = 4;
+  const minimumStartPlayerCount = useMemo(() => {
+    return Math.max(
+      teamUnit,
+      Math.ceil(room.players.length / teamUnit) * teamUnit,
+    );
+  }, [room.players.length]);
+
+  const maxStartPlayerCount = useMemo(() => {
+    return Math.max(
+      minimumStartPlayerCount,
+      Math.floor(room.maxPlayers / teamUnit) * teamUnit,
+    );
+  }, [minimumStartPlayerCount, room.maxPlayers]);
+
+  const startPlayerCountOptions = useMemo(() => {
+    const options: number[] = [];
+    for (
+      let count = minimumStartPlayerCount;
+      count <= maxStartPlayerCount;
+      count += teamUnit
+    ) {
+      options.push(count);
+    }
+
+    return options;
+  }, [minimumStartPlayerCount, maxStartPlayerCount]);
+
+  const [selectedStartPlayerCount, setSelectedStartPlayerCount] = useState(
+    minimumStartPlayerCount,
+  );
+
+  useEffect(() => {
+    setSelectedStartPlayerCount((prev) => {
+      if (prev < minimumStartPlayerCount || prev > maxStartPlayerCount) {
+        return minimumStartPlayerCount;
+      }
+
+      if (prev % teamUnit !== 0) {
+        return minimumStartPlayerCount;
+      }
+
+      return prev;
+    });
+  }, [minimumStartPlayerCount, maxStartPlayerCount]);
+
+  const handleStart = () => {
+    onStart(selectedStartPlayerCount);
+  };
 
   return (
     <>
@@ -111,24 +161,67 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
             }}
           >
             {isMeOwner ? (
-              <button
-                onClick={onStart}
+              <div
                 style={{
                   width: "100%",
                   maxWidth: "350px",
-                  padding: "20px",
-                  fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
-                  cursor: "pointer",
-                  backgroundColor: "#4ade80",
-                  color: "#111",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontWeight: "bold",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
                 }}
               >
-                ゲームスタート
-              </button>
+                <label
+                  htmlFor="start-player-count"
+                  style={{
+                    fontSize: "0.95rem",
+                    fontWeight: 700,
+                    textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
+                  }}
+                >
+                  ゲーム人数
+                </label>
+                <select
+                  id="start-player-count"
+                  value={selectedStartPlayerCount}
+                  onChange={(event) => {
+                    setSelectedStartPlayerCount(Number(event.target.value));
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255,255,255,0.4)",
+                    background: "rgba(0,0,0,0.55)",
+                    color: "white",
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  {startPlayerCountOptions.map((count) => (
+                    <option key={count} value={count}>
+                      {count}人
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={handleStart}
+                  style={{
+                    width: "100%",
+                    padding: "20px",
+                    fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
+                    cursor: "pointer",
+                    backgroundColor: "#4ade80",
+                    color: "#111",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontWeight: "bold",
+                    boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  ゲームスタート
+                </button>
+              </div>
             ) : (
               <div
                 style={{

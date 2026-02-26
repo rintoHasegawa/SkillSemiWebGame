@@ -5,7 +5,10 @@
  */
 import type { PlayerPositionUpdate } from "../../domains/game/game.type";
 import type { CellUpdate } from "../../domains/gridMap/gridMap.type";
-import type { MovePayload as PlayerMovePayload, PlayerData } from "../../domains/player/player.type";
+import type {
+  MovePayload as PlayerMovePayload,
+  PlayerData,
+} from "../../domains/player/player.type";
 
 /** GAME_RESULT イベントで送受信するランキング1行 */
 export type GameResultRanking = {
@@ -52,6 +55,11 @@ export type RemovePlayerPayload = PlayerData["id"];
 
 /** GAME_START イベントで送受信するゲーム開始情報 */
 export type GameStartPayload = { startTime: number };
+
+/** START_GAME イベントで受信するゲーム開始要求 */
+export type StartGameRequestPayload = {
+  targetPlayerCount?: number;
+};
 
 /** MOVE イベントで送受信する移動入力情報 */
 export type MovePayload = PlayerMovePayload;

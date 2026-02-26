@@ -11,6 +11,7 @@ import type {
   CurrentPlayersPayload,
   GameResultPayload,
   GameStartPayload,
+  StartGameRequestPayload,
   MovePayload,
   NewPlayerPayload,
   PlaceBombPayload,
@@ -24,7 +25,7 @@ import type {
 
 /** ゲーム関連のクライアント送信イベントペイロード対応表 */
 export type GameClientToServerEventPayloadMap = {
-  [SocketEvents.START_GAME]: undefined;
+  [SocketEvents.START_GAME]: StartGameRequestPayload;
   [SocketEvents.READY_FOR_GAME]: undefined;
   [SocketEvents.MOVE]: MovePayload;
   [SocketEvents.PLACE_BOMB]: PlaceBombPayload;
