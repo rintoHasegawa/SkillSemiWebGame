@@ -13,17 +13,27 @@ type BombButtonProps = {
 };
 
 const BOMB_BUTTON_FRAME_STYLE: React.CSSProperties = {
-  position: "fixed",
-  right: "30px",
-  bottom: "34px",
   width: "108px",
   height: "108px",
   borderRadius: "50%",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  zIndex: 9999,
   pointerEvents: "none",
+};
+
+const BOMB_BUTTON_HIT_AREA_STYLE: React.CSSProperties = {
+  position: "fixed",
+  right: "24px",
+  bottom: "28px",
+  width: "120px",
+  height: "120px",
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 9999,
+  touchAction: "manipulation",
 };
 
 const BOMB_BUTTON_STYLE: React.CSSProperties = {
@@ -62,16 +72,34 @@ export const BombButton = ({
     cursor: isReady ? "pointer" : "not-allowed",
   };
 
+  const hitAreaStyle: React.CSSProperties = {
+    ...BOMB_BUTTON_HIT_AREA_STYLE,
+    cursor: isReady ? "pointer" : "not-allowed",
+  };
+
+  const handleActivate = () => {
+    if (!isReady) {
+      return;
+    }
+
+    onPress();
+  };
+
   return (
-    <div style={frameStyle}>
-      <button
-        style={buttonStyle}
-        onClick={onPress}
-        type="button"
-        disabled={!isReady}
-      >
-        {isReady ? "BOMB" : `${remainingSecText}s`}
-      </button>
+    <div style={hitAreaStyle} onClick={handleActivate}>
+      <div style={frameStyle}>
+        <button
+          style={buttonStyle}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleActivate();
+          }}
+          type="button"
+          disabled={!isReady}
+        >
+          {isReady ? "BOMB" : `${remainingSecText}s`}
+        </button>
+      </div>
     </div>
   );
 };
