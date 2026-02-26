@@ -183,7 +183,7 @@ export class GameManager {
       appearanceResolver: this.appearanceResolver,
       onBombExploded: (payload) => {
         const result = this.bombHitOrchestrator?.handleBombExploded(payload);
-        this.handleBombHitEvaluation(result);
+        this.handleBombHitEvaluation(result, payload.bombId);
       },
     });
   }
@@ -206,9 +206,14 @@ export class GameManager {
 
   /** 爆弾当たり判定の評価結果を受け取り，後続処理へ接続する */
   private handleBombHitEvaluation(
-    _result: BombHitEvaluationResult | undefined,
+    result: BombHitEvaluationResult | undefined,
+    bombId: string,
   ): void {
-    // 次フェーズでサーバー通知や被弾演出の接続に利用する
+    if (result !== "hit") {
+      return;
+    }
+
+    socketManager.game.sendBombHitReport({ bombId });
   }
 
   /**

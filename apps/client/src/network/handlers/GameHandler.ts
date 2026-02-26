@@ -6,6 +6,7 @@
 import type { Socket } from "socket.io-client";
 import { protocol } from "@repo/shared";
 import type {
+  BombHitReportPayload,
   BombPlacedAckPayload,
   BombPlacedPayload,
   CurrentPlayersPayload,
@@ -45,6 +46,7 @@ export type GameHandler = {
   offBombPlacedAck: (callback: (payload: BombPlacedAckPayload) => void) => void;
   sendMove: (x: number, y: number) => void;
   sendPlaceBomb: (payload: PlaceBombPayload) => void;
+  sendBombHitReport: (payload: BombHitReportPayload) => void;
   readyForGame: () => void;
 };
 
@@ -122,6 +124,9 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     },
     sendPlaceBomb: (payload) => {
       emitEvent(protocol.SocketEvents.PLACE_BOMB, payload);
+    },
+    sendBombHitReport: (payload) => {
+      emitEvent(protocol.SocketEvents.BOMB_HIT_REPORT, payload);
     },
     readyForGame: () => {
       emitEvent(protocol.SocketEvents.READY_FOR_GAME);
