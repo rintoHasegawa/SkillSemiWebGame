@@ -29,15 +29,19 @@ export class BombView {
   public syncPosition(gridX: number, gridY: number): void {
     const { GRID_CELL_SIZE } = config.GAME_CONFIG;
 
-    this.displayObject.x = gridX * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
-    this.displayObject.y = gridY * GRID_CELL_SIZE + GRID_CELL_SIZE / 2;
+    this.displayObject.x = gridX * GRID_CELL_SIZE;
+    this.displayObject.y = gridY * GRID_CELL_SIZE;
   }
 
-  public renderState(state: BombState, radiusGrid: number, color: number): void {
+  public renderState(
+    state: BombState,
+    radiusGrid: number,
+    color: number,
+  ): void {
     if (
-      this.lastRenderedState === state
-      && this.lastRenderedRadiusGrid === radiusGrid
-      && this.lastRenderedColor === color
+      this.lastRenderedState === state &&
+      this.lastRenderedRadiusGrid === radiusGrid &&
+      this.lastRenderedColor === color
     ) {
       return;
     }
