@@ -4,7 +4,12 @@
  * ジョイスティック入力をローカルプレイヤーへ適用する
  */
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
-import type { LoopFrameContext, LoopFrameEffects, LoopStep } from "./LoopStep";
+import type {
+  LoopFrameContext,
+  LoopFrameEffects,
+  LoopMovementState,
+  LoopStep,
+} from "./LoopStep";
 
 type InputStepOptions = {
   getJoystickInput: () => { x: number; y: number };
@@ -33,11 +38,11 @@ export class InputStep implements LoopStep {
       deltaSeconds: context.deltaSeconds,
     };
 
-    const isMoving = this.applyInput(params);
-    effects.setIsMoving(isMoving);
+    const movementState = this.applyInput(params);
+    effects.setMovementState(movementState);
   }
 
-  private applyInput({ me, deltaSeconds }: InputStepParams): boolean {
+  private applyInput({ me, deltaSeconds }: InputStepParams): LoopMovementState {
     const { x: axisX, y: axisY } = this.getJoystickInput();
     const isMoving = axisX !== 0 || axisY !== 0;
 
@@ -45,6 +50,10 @@ export class InputStep implements LoopStep {
       me.applyLocalInput({ axisX, axisY, deltaTime: deltaSeconds });
     }
 
-    return isMoving;
+    return {
+      isMoving,
+      axisX,
+      axisY,
+    };
   }
 }

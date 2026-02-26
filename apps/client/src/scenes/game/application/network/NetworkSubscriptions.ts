@@ -50,50 +50,90 @@ export type NetworkSubscriptionHandlers = {
   onPlayerDead: (payload: PlayerDeadPayload) => void;
 };
 
+type SubscriptionDefinition = {
+  key: keyof SocketSubscriptionDictionary;
+  create: (handlers: NetworkSubscriptionHandlers) => SocketSubscription;
+};
+
+const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
+  {
+    key: "currentPlayers",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onCurrentPlayers(handlers.onCurrentPlayers),
+      unbind: () => socketManager.game.offCurrentPlayers(handlers.onCurrentPlayers),
+    }),
+  },
+  {
+    key: "newPlayer",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onNewPlayer(handlers.onNewPlayer),
+      unbind: () => socketManager.game.offNewPlayer(handlers.onNewPlayer),
+    }),
+  },
+  {
+    key: "gameStart",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onGameStart(handlers.onGameStart),
+      unbind: () => socketManager.game.offGameStart(handlers.onGameStart),
+    }),
+  },
+  {
+    key: "updatePlayers",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onUpdatePlayers(handlers.onUpdatePlayers),
+      unbind: () => socketManager.game.offUpdatePlayers(handlers.onUpdatePlayers),
+    }),
+  },
+  {
+    key: "removePlayer",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onRemovePlayer(handlers.onRemovePlayer),
+      unbind: () => socketManager.game.offRemovePlayer(handlers.onRemovePlayer),
+    }),
+  },
+  {
+    key: "updateMapCells",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onUpdateMapCells(handlers.onUpdateMapCells),
+      unbind: () => socketManager.game.offUpdateMapCells(handlers.onUpdateMapCells),
+    }),
+  },
+  {
+    key: "gameEnd",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onGameEnd(handlers.onGameEnd),
+      unbind: () => socketManager.game.offGameEnd(handlers.onGameEnd),
+    }),
+  },
+  {
+    key: "bombPlaced",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onBombPlaced(handlers.onBombPlaced),
+      unbind: () => socketManager.game.offBombPlaced(handlers.onBombPlaced),
+    }),
+  },
+  {
+    key: "bombPlacedAck",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onBombPlacedAck(handlers.onBombPlacedAck),
+      unbind: () => socketManager.game.offBombPlacedAck(handlers.onBombPlacedAck),
+    }),
+  },
+  {
+    key: "playerDead",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onPlayerDead(handlers.onPlayerDead),
+      unbind: () => socketManager.game.offPlayerDead(handlers.onPlayerDead),
+    }),
+  },
+];
+
 /** ソケット購読辞書を生成する */
 export const createNetworkSubscriptions = (
   handlers: NetworkSubscriptionHandlers,
 ): SocketSubscriptionDictionary => {
-  return {
-    currentPlayers: {
-      bind: () => socketManager.game.onCurrentPlayers(handlers.onCurrentPlayers),
-      unbind: () => socketManager.game.offCurrentPlayers(handlers.onCurrentPlayers),
-    },
-    newPlayer: {
-      bind: () => socketManager.game.onNewPlayer(handlers.onNewPlayer),
-      unbind: () => socketManager.game.offNewPlayer(handlers.onNewPlayer),
-    },
-    gameStart: {
-      bind: () => socketManager.game.onGameStart(handlers.onGameStart),
-      unbind: () => socketManager.game.offGameStart(handlers.onGameStart),
-    },
-    updatePlayers: {
-      bind: () => socketManager.game.onUpdatePlayers(handlers.onUpdatePlayers),
-      unbind: () => socketManager.game.offUpdatePlayers(handlers.onUpdatePlayers),
-    },
-    removePlayer: {
-      bind: () => socketManager.game.onRemovePlayer(handlers.onRemovePlayer),
-      unbind: () => socketManager.game.offRemovePlayer(handlers.onRemovePlayer),
-    },
-    updateMapCells: {
-      bind: () => socketManager.game.onUpdateMapCells(handlers.onUpdateMapCells),
-      unbind: () => socketManager.game.offUpdateMapCells(handlers.onUpdateMapCells),
-    },
-    gameEnd: {
-      bind: () => socketManager.game.onGameEnd(handlers.onGameEnd),
-      unbind: () => socketManager.game.offGameEnd(handlers.onGameEnd),
-    },
-    bombPlaced: {
-      bind: () => socketManager.game.onBombPlaced(handlers.onBombPlaced),
-      unbind: () => socketManager.game.offBombPlaced(handlers.onBombPlaced),
-    },
-    bombPlacedAck: {
-      bind: () => socketManager.game.onBombPlacedAck(handlers.onBombPlacedAck),
-      unbind: () => socketManager.game.offBombPlacedAck(handlers.onBombPlacedAck),
-    },
-    playerDead: {
-      bind: () => socketManager.game.onPlayerDead(handlers.onPlayerDead),
-      unbind: () => socketManager.game.offPlayerDead(handlers.onPlayerDead),
-    },
-  };
+  return SUBSCRIPTION_DEFINITIONS.reduce<SocketSubscriptionDictionary>((dictionary, definition) => {
+    dictionary[definition.key] = definition.create(handlers);
+    return dictionary;
+  }, {} as SocketSubscriptionDictionary);
 };

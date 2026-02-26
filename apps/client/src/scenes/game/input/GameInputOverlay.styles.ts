@@ -12,3 +12,10 @@ export const GAME_INPUT_OVERLAY_LAYER_STYLE: CSSProperties = {
   width: "100%",
   height: "100%",
 };
+
+/** 入力UI全体レイヤーの描画スタイルを返す */
+export const buildGameInputOverlayLayerStyle = (): CSSProperties => {
+  return {
+    ...GAME_INPUT_OVERLAY_LAYER_STYLE,
+  };
+};
