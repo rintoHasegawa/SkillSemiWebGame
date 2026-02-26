@@ -4,6 +4,7 @@
  * ジョイスティック入力をローカルプレイヤーへ適用する
  */
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
+import type { LoopFrameContext, LoopStep } from "./LoopStep";
 
 type InputStepOptions = {
   getJoystickInput: () => { x: number; y: number };
@@ -14,19 +15,26 @@ type InputStepParams = {
   deltaSeconds: number;
 };
 
-type InputStepResult = {
-  isMoving: boolean;
-};
-
 /** 入力段の更新処理を担うステップ */
-export class InputStep {
+export class InputStep implements LoopStep {
   private getJoystickInput: () => { x: number; y: number };
 
   constructor({ getJoystickInput }: InputStepOptions) {
     this.getJoystickInput = getJoystickInput;
   }
 
-  public run({ me, deltaSeconds }: InputStepParams): InputStepResult {
+  /** 入力文脈を適用して移動状態を更新する */
+  public run(context: LoopFrameContext): void {
+    const params: InputStepParams = {
+      me: context.me,
+      deltaSeconds: context.deltaSeconds,
+    };
+
+    const isMoving = this.applyInput(params);
+    context.isMoving = isMoving;
+  }
+
+  private applyInput({ me, deltaSeconds }: InputStepParams): boolean {
     const { x: axisX, y: axisY } = this.getJoystickInput();
     const isMoving = axisX !== 0 || axisY !== 0;
 
@@ -34,6 +42,6 @@ export class InputStep {
       me.applyLocalInput({ axisX, axisY, deltaTime: deltaSeconds });
     }
 
-    return { isMoving };
+    return isMoving;
   }
 }

@@ -7,6 +7,7 @@ import { config } from "@client/config";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
 import type { GamePlayers } from "../game.types";
+import type { LoopFrameContext, LoopStep } from "./LoopStep";
 
 /** SimulationStep の初期化入力 */
 type SimulationStepOptions = {
@@ -22,7 +23,7 @@ type SimulationStepParams = {
 };
 
 /** シミュレーション段の更新処理を担うステップ */
-export class SimulationStep {
+export class SimulationStep implements LoopStep {
   private readonly moveSender: MoveSender;
   private readonly nowMsProvider: () => number;
   private lastPositionSentTime = 0;
@@ -33,9 +34,17 @@ export class SimulationStep {
     this.nowMsProvider = nowMsProvider;
   }
 
-  public run({ me, players, deltaSeconds, isMoving }: SimulationStepParams) {
-    this.runLocalSimulation({ me, isMoving });
-    this.runRemoteSimulation({ players, deltaSeconds });
+  /** ローカル更新とリモート補間更新を実行する */
+  public run(context: LoopFrameContext): void {
+    const params: SimulationStepParams = {
+      me: context.me,
+      players: context.players,
+      deltaSeconds: context.deltaSeconds,
+      isMoving: context.isMoving,
+    };
+
+    this.runLocalSimulation({ me: params.me, isMoving: params.isMoving });
+    this.runRemoteSimulation({ players: params.players, deltaSeconds: params.deltaSeconds });
   }
 
   private runLocalSimulation({ me, isMoving }: Pick<SimulationStepParams, "me" | "isMoving">) {

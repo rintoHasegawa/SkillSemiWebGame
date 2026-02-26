@@ -12,6 +12,7 @@ import { InputStep } from "./loopSteps/InputStep";
 import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";
 import { BombStep } from "./loopSteps/BombStep";
+import type { LoopFrameContext, LoopStep } from "./loopSteps/LoopStep";
 import { resolveFrameDelta } from "./loopSteps/frameDelta";
 import type { MoveSender } from "./network/PlayerMoveSender";
 
@@ -35,6 +36,7 @@ export class GameLoop {
   private simulationStep: SimulationStep;
   private bombStep: BombStep;
   private cameraStep: CameraStep;
+  private steps: LoopStep[];
 
   constructor({ app, worldContainer, players, myId, getJoystickInput, bombManager, moveSender }: GameLoopOptions) {
     this.app = app;
@@ -47,6 +49,12 @@ export class GameLoop {
     });
     this.bombStep = new BombStep({ bombManager });
     this.cameraStep = new CameraStep();
+    this.steps = [
+      this.inputStep,
+      this.simulationStep,
+      this.bombStep,
+      this.cameraStep,
+    ];
   }
 
   public tick = (ticker: Ticker) => {
@@ -57,21 +65,17 @@ export class GameLoop {
       ticker,
       config.GAME_CONFIG.FRAME_DELTA_MAX_MS,
     );
-    const { isMoving } = this.inputStep.run({ me, deltaSeconds });
-
-    this.simulationStep.run({
-      me,
-      players: this.players,
-      deltaSeconds,
-      isMoving,
-    });
-
-    this.bombStep.run();
-
-    this.cameraStep.run({
+    const frameContext: LoopFrameContext = {
       app: this.app,
       worldContainer: this.worldContainer,
+      players: this.players,
       me,
+      deltaSeconds,
+      isMoving: false,
+    };
+
+    this.steps.forEach((step) => {
+      step.run(frameContext);
     });
   };
 }
