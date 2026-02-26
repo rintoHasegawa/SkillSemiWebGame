@@ -18,7 +18,12 @@ import { placeBombUseCase } from "@server/domains/game/application/useCases/plac
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import { createCommonHandlerContext } from "@server/network/handlers/CommonHandler";
-import { isMovePayload, isPingPayload, isPlaceBombPayload } from "@server/network/validation/socketPayloadValidators";
+import {
+  isBombHitReportPayload,
+  isMovePayload,
+  isPingPayload,
+  isPlaceBombPayload,
+} from "@server/network/validation/socketPayloadValidators";
 import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
 import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
 import { createGameOutputAdapter } from "./createGameOutputAdapter";
@@ -28,6 +33,7 @@ const gamePayloadValidators = {
   [protocol.SocketEvents.PING]: isPingPayload,
   [protocol.SocketEvents.MOVE]: isMovePayload,
   [protocol.SocketEvents.PLACE_BOMB]: isPlaceBombPayload,
+  [protocol.SocketEvents.BOMB_HIT_REPORT]: isBombHitReportPayload,
 } as const;
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
@@ -52,6 +58,10 @@ export const registerGameHandlers = (
   const guardPlaceBombPayload = guardOnEvent(
     protocol.SocketEvents.PLACE_BOMB,
     gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB]
+  );
+  const guardBombHitReportPayload = guardOnEvent(
+    protocol.SocketEvents.BOMB_HIT_REPORT,
+    gamePayloadValidators[protocol.SocketEvents.BOMB_HIT_REPORT]
   );
   // 遅延計測用のPINGを検証しPONGを返す
   onEvent(protocol.SocketEvents.PING, (clientTime) => {
@@ -123,6 +133,24 @@ export const registerGameHandlers = (
         nowMs: Date.now(),
       },
       output: gameOutputAdapter,
+    });
+  });
+
+  // 被弾報告を受信し，検証通過時にテストログを出力する
+  onEvent(protocol.SocketEvents.BOMB_HIT_REPORT, (data) => {
+    if (!guardBombHitReportPayload(data)) {
+      return;
+    }
+
+    const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socket.id);
+    if (!runtime) {
+      return;
+    }
+
+    console.log("[ServerTest] BOMB_HIT_REPORT received", {
+      roomId: runtime.roomId,
+      reporterSocketId: socket.id,
+      bombId: data.bombId,
     });
   });
 };

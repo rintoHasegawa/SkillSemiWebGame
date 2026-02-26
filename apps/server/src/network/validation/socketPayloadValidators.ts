@@ -2,7 +2,7 @@
  * socketPayloadValidators
  * ソケット受信ペイロードの型ガードを提供する
  */
-import type { playerTypes, roomTypes, PlaceBombPayload } from "@repo/shared";
+import type { playerTypes, roomTypes, PlaceBombPayload, BombHitReportPayload } from "@repo/shared";
 import type { PingPayload } from "@repo/shared";
 import { isPlaceBombPayload as isValidPlaceBombPayload } from "@server/domains/game/entities/bomb/bombPayloadValidation";
 
@@ -32,6 +32,16 @@ export const isMovePayload = (value: unknown): value is playerTypes.MovePayload 
 /** PLACE_BOMBイベントのペイロードが爆弾設置要求であるか判定する */
 export const isPlaceBombPayload = (value: unknown): value is PlaceBombPayload => {
   return isValidPlaceBombPayload(value);
+};
+
+/** BOMB_HIT_REPORTイベントのペイロードが被弾報告であるか判定する */
+export const isBombHitReportPayload = (value: unknown): value is BombHitReportPayload => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return isNonEmptyString(candidate.bombId);
 };
 
 /** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */

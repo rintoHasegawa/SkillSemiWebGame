@@ -11,7 +11,8 @@ type PayloadGuardEventName =
   | typeof protocol.SocketEvents.JOIN_ROOM
   | typeof protocol.SocketEvents.PING
   | typeof protocol.SocketEvents.MOVE
-  | typeof protocol.SocketEvents.PLACE_BOMB;
+  | typeof protocol.SocketEvents.PLACE_BOMB
+  | typeof protocol.SocketEvents.BOMB_HIT_REPORT;
 type EventBoundPayloadGuard<TPayload> = (payload: unknown) => payload is TPayload;
 
 /**
@@ -56,6 +57,12 @@ export const createPayloadGuard = (socketId: string) => {
         logEvent(logScopes.NETWORK, {
           event: protocol.SocketEvents.PLACE_BOMB,
           result: logResults.IGNORED_INVALID_PAYLOAD,
+          socketId,
+        });
+        break;
+
+      case protocol.SocketEvents.BOMB_HIT_REPORT:
+        console.warn("[PayloadGuard] invalid BOMB_HIT_REPORT payload", {
           socketId,
         });
         break;
