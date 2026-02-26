@@ -73,8 +73,6 @@ export class GameNetworkSync {
   private handlePlayerUpdates = (changedPlayers: UpdatePlayersPayload) => {
     // UPDATE_PLAYERS は差分のみ届くため，対象IDだけ上書き更新する
     changedPlayers.forEach((playerData) => {
-      if (playerData.id === this.myId) return;
-
       const target = this.players[playerData.id];
       if (target && target instanceof RemotePlayerController) {
         target.applyRemoteUpdate({ x: playerData.x, y: playerData.y });

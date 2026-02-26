@@ -7,6 +7,7 @@ import {
   createEmitToAll,
   createEmitToRoom,
   createEmitToSocket,
+  createEmitToSocketById,
 } from "@server/network/adapters/socketEmitters";
 
 /** ハンドラで共通利用する送信コンテキスト */
@@ -14,6 +15,7 @@ export type CommonHandlerContext = {
   emitToAll: ReturnType<typeof createEmitToAll>;
   emitToRoom: ReturnType<typeof createEmitToRoom>;
   emitToSocket: ReturnType<typeof createEmitToSocket>;
+  emitToSocketById: ReturnType<typeof createEmitToSocketById>;
 };
 
 /** 送信先別のエミッタをまとめた共通コンテキストを生成する */
@@ -25,5 +27,6 @@ export const createCommonHandlerContext = (
     emitToAll: createEmitToAll(io),
     emitToRoom: createEmitToRoom(io),
     emitToSocket: createEmitToSocket(socket),
+    emitToSocketById: createEmitToSocketById(io),
   };
 };

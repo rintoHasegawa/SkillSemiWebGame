@@ -39,6 +39,9 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
     publishUpdatePlayersToRoom: (roomId: RoomId, players: UpdatePlayersPayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_PLAYERS, players);
     },
+    publishUpdatePlayersToSocket: (socketId: string, players: UpdatePlayersPayload) => {
+      common.emitToSocketById(socketId, protocol.SocketEvents.UPDATE_PLAYERS, players);
+    },
     publishMapCellUpdatesToRoom: (roomId: RoomId, cellUpdates: UpdateMapCellsPayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, cellUpdates);
     },

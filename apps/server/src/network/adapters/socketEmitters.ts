@@ -20,6 +20,11 @@ type EmitToSocket = {
   <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
+type EmitToSocketById = {
+  <TEvent extends SocketEventName>(socketId: string, event: TEvent): void;
+  <TEvent extends SocketEventName>(socketId: string, event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
+};
+
 type EmitToAll = {
   <TEvent extends SocketEventName>(event: TEvent): void;
   <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
@@ -50,6 +55,13 @@ export const createEmitToRoom = (io: Server): EmitToRoom => {
 export const createEmitToSocket = (socket: Socket): EmitToSocket => {
   return (event: SocketEventName, payload?: unknown) => {
     emitWithOptionalPayload((eventName, body) => socket.emit(eventName, body), event, payload);
+  };
+};
+
+/** 任意ソケットID向けの送信関数を生成する */
+export const createEmitToSocketById = (io: Server): EmitToSocketById => {
+  return (socketId: string, event: SocketEventName, payload?: unknown) => {
+    emitWithOptionalPayload((eventName, body) => io.to(socketId).emit(eventName, body), event, payload);
   };
 };
 

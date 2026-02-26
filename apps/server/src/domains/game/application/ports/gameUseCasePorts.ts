@@ -51,6 +51,10 @@ export interface GameOutputPort {
     roomId: roomTypes.Room["roomId"],
     players: UpdatePlayersPayload
   ): void;
+  publishUpdatePlayersToSocket(
+    socketId: string,
+    players: UpdatePlayersPayload
+  ): void;
   publishMapCellUpdatesToRoom(
     roomId: roomTypes.Room["roomId"],
     cellUpdates: UpdateMapCellsPayload
