@@ -14,8 +14,8 @@ import {
   LocalPlayerController,
   RemotePlayerController,
 } from "@client/scenes/game/entities/player/PlayerController";
+import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
-import { PlayerRepository } from "@client/scenes/game/application/player/PlayerRepository";
 
 /** PlayerSyncHandler の初期化入力 */
 export type PlayerSyncHandlerOptions = {
