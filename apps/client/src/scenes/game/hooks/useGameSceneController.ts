@@ -5,7 +5,6 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { config } from "@client/config";
-import { GameInputManager } from "@client/scenes/game/GameInputManager";
 import { GameManager } from "@client/scenes/game/GameManager";
 
 const formatRemainingTime = (remaining: number) => {
@@ -21,7 +20,6 @@ const getInitialTimeDisplay = () =>
 export const useGameSceneController = (myId: string | null) => {
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
-  const inputManagerRef = useRef<GameInputManager | null>(null);
   const [timeLeft, setTimeLeft] = useState(getInitialTimeDisplay());
   const [startCountdownText, setStartCountdownText] = useState<string | null>(
     null,
@@ -35,47 +33,37 @@ export const useGameSceneController = (myId: string | null) => {
     manager.init();
 
     gameManagerRef.current = manager;
-    inputManagerRef.current = new GameInputManager(
-      (x, y) => {
-        manager.setJoystickInput(x, y);
-      },
-      () => {
-        return manager.placeBomb() !== null;
-      },
-    );
-
-    const timerInterval = setInterval(() => {
-      const nextDisplay = formatRemainingTime(manager.getRemainingTime());
+    const unsubscribeUiState = manager.subscribeUiState((state) => {
+      const nextDisplay = formatRemainingTime(state.remainingTimeSec);
       setTimeLeft((prev) => (prev === nextDisplay ? prev : nextDisplay));
 
-      const remainingSec = manager.getStartCountdownSec();
+      const remainingSec = state.startCountdownSec;
       const nextCountdown = remainingSec > 0 ? String(remainingSec) : null;
       setStartCountdownText((prev) =>
         prev === nextCountdown ? prev : nextCountdown,
       );
 
-      const nextInputEnabled = manager.isInputEnabled();
+      const nextInputEnabled = state.isInputEnabled;
       setIsInputEnabled((prev) =>
         prev === nextInputEnabled ? prev : nextInputEnabled,
       );
-    }, config.GAME_CONFIG.TIMER_DISPLAY_UPDATE_MS);
+    });
 
     return () => {
+      unsubscribeUiState();
       manager.destroy();
       gameManagerRef.current = null;
-      inputManagerRef.current = null;
-      clearInterval(timerInterval);
       setStartCountdownText(null);
       setIsInputEnabled(false);
     };
   }, [myId]);
 
   const handleInput = useCallback((x: number, y: number) => {
-    inputManagerRef.current?.handleJoystickInput(x, y);
+    gameManagerRef.current?.setJoystickInput(x, y);
   }, []);
 
   const handlePlaceBomb = useCallback((): boolean => {
-    return inputManagerRef.current?.handlePlaceBomb() ?? false;
+    return gameManagerRef.current?.placeBomb() !== null;
   }, []);
 
   return {
