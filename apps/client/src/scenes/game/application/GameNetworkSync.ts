@@ -22,7 +22,7 @@ import {
   toRemoteBombPlacedPayload,
   toRemotePlayerDeadPayload,
 } from "./network/adapters/GameNetworkEventAdapter";
-import { PlayerRepository } from "./player/PlayerRepository";
+import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { PlayerSyncHandler } from "./network/handlers/PlayerSyncHandler";
 import { MapSyncHandler } from "./network/handlers/MapSyncHandler";
 import { CombatSyncHandler } from "./network/handlers/CombatSyncHandler";

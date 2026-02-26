@@ -5,7 +5,7 @@
  */
 import type { Application, Container } from "pixi.js";
 import type { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
-import type { PlayerRepository } from "@client/scenes/game/application/player/PlayerRepository";
+import type { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 
 /** 1フレーム分の更新文脈を表す型 */
 export type LoopFrameContext = {

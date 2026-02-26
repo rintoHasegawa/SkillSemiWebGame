@@ -5,8 +5,8 @@
  */
 import { config } from "@client/config";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
+import type { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
-import type { PlayerRepository } from "../player/PlayerRepository";
 import type { LoopFrameContext, LoopStep } from "./LoopStep";
 
 /** SimulationStep の初期化入力 */

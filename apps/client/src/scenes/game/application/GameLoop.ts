@@ -6,9 +6,9 @@
 import { Application, Container, Ticker } from "pixi.js";
 import { config } from "@client/config";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
+import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { BombManager } from "@client/scenes/game/entities/bomb/BombManager";
 import type { GamePlayers } from "./game.types";
-import { PlayerRepository } from "./player/PlayerRepository";
 import { InputStep } from "./loopSteps/InputStep";
 import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";

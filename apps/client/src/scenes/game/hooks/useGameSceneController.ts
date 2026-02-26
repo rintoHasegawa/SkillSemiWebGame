@@ -9,7 +9,7 @@ import {
   buildStartCountdownText,
   formatRemainingTime,
   getInitialTimeDisplay,
-} from "@client/scenes/game/application/presentation/GameUiPresenter";
+} from "@client/scenes/game/input/presentation/GameUiPresenter";
 
 /** ゲーム画面の状態と入力ハンドラを提供するフック */
 export const useGameSceneController = (myId: string | null) => {
