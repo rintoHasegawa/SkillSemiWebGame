@@ -28,6 +28,7 @@ export const JoystickInputPresenter = ({
       onPointerMove={handleMove}
       onPointerUp={handleEnd}
       onPointerCancel={handleEnd}
+      onLostPointerCapture={handleEnd}
       style={{
         position: "absolute",
         top: 0,
