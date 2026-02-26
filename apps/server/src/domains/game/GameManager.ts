@@ -60,12 +60,14 @@ export class GameManager {
    */
   startRoomSession(
     playerIds: string[],
+    playerNamesById: Record<string, string>,
     onTick: (data: gameTypes.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ) {
     this.lifecycleService.startRoomSession(
       playerIds,
+      playerNamesById,
       onTick,
       onGameEnd,
       onBotPlaceBomb,

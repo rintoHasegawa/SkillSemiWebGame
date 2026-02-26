@@ -3,12 +3,13 @@
  * プレイヤーの座標計算と補間計算を担うモデル
  * ローカル移動，リモート目標座標，送信スナップショットを管理する
  */
-import { config } from '@client/config';
-import type { playerTypes } from '@repo/shared';
+import { config } from "@client/config";
+import type { playerTypes } from "@repo/shared";
 
 /** プレイヤーの座標計算と補間計算を管理するモデル */
 export class PlayerModel {
   public readonly id: string;
+  public readonly name: string;
   public readonly teamId: number;
 
   private gridX: number;
@@ -19,6 +20,7 @@ export class PlayerModel {
   /** 共有プレイヤー情報から初期状態を構築する */
   constructor(data: playerTypes.PlayerData) {
     this.id = data.id;
+    this.name = data.name;
     this.teamId = data.teamId;
     this.gridX = data.x;
     this.gridY = data.y;
@@ -35,6 +37,7 @@ export class PlayerModel {
   public getSnapshot(): playerTypes.PlayerData {
     return {
       id: this.id,
+      name: this.name,
       teamId: this.teamId,
       x: this.gridX,
       y: this.gridY,
@@ -43,7 +46,11 @@ export class PlayerModel {
 
   /** ローカル入力に基づいて座標を更新する */
   public moveLocal(vx: number, vy: number, deltaTime: number): void {
-    if (!this.isFiniteNumber(vx) || !this.isFiniteNumber(vy) || !this.isFiniteNumber(deltaTime)) {
+    if (
+      !this.isFiniteNumber(vx) ||
+      !this.isFiniteNumber(vy) ||
+      !this.isFiniteNumber(deltaTime)
+    ) {
       return;
     }
 
@@ -58,8 +65,10 @@ export class PlayerModel {
 
   /** リモート更新の目標座標を設定する */
   public setRemoteTarget(update: Partial<playerTypes.MovePayload>): void {
-    if (update.x !== undefined && this.isFiniteNumber(update.x)) this.targetGridX = update.x;
-    if (update.y !== undefined && this.isFiniteNumber(update.y)) this.targetGridY = update.y;
+    if (update.x !== undefined && this.isFiniteNumber(update.x))
+      this.targetGridX = update.x;
+    if (update.y !== undefined && this.isFiniteNumber(update.y))
+      this.targetGridY = update.y;
   }
 
   /** 目標座標に向けて補間更新する */
@@ -68,7 +77,8 @@ export class PlayerModel {
       return;
     }
 
-    const { PLAYER_LERP_SNAP_THRESHOLD, PLAYER_LERP_SMOOTHNESS } = config.GAME_CONFIG;
+    const { PLAYER_LERP_SNAP_THRESHOLD, PLAYER_LERP_SMOOTHNESS } =
+      config.GAME_CONFIG;
 
     const diffX = this.targetGridX - this.gridX;
     const diffY = this.targetGridY - this.gridY;
@@ -90,8 +100,14 @@ export class PlayerModel {
   private clampToBounds(): void {
     const { GRID_COLS, GRID_ROWS, PLAYER_RADIUS } = config.GAME_CONFIG;
 
-    this.gridX = Math.max(PLAYER_RADIUS, Math.min(GRID_COLS - PLAYER_RADIUS, this.gridX));
-    this.gridY = Math.max(PLAYER_RADIUS, Math.min(GRID_ROWS - PLAYER_RADIUS, this.gridY));
+    this.gridX = Math.max(
+      PLAYER_RADIUS,
+      Math.min(GRID_COLS - PLAYER_RADIUS, this.gridX),
+    );
+    this.gridY = Math.max(
+      PLAYER_RADIUS,
+      Math.min(GRID_ROWS - PLAYER_RADIUS, this.gridY),
+    );
   }
 
   /** 有限数かどうかを判定する */

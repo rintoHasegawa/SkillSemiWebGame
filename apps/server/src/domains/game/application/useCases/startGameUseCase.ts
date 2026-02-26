@@ -29,6 +29,7 @@ const excludeRecipientFromPlayerUpdates = <
 type StartGameUseCaseParams = {
   roomId: string;
   playerIds: string[];
+  playerNamesById: Record<string, string>;
   recipientPlayerIds?: string[];
   gameSession: StartGamePort;
   bombStore: BombPlacementPort;
@@ -40,6 +41,7 @@ type StartGameUseCaseParams = {
 export const startGameUseCase = ({
   roomId,
   playerIds,
+  playerNamesById,
   recipientPlayerIds,
   gameSession,
   bombStore,
@@ -55,6 +57,7 @@ export const startGameUseCase = ({
 
   gameSession.startRoomSession(
     playerIds,
+    playerNamesById,
     (tickData) => {
       if (tickData.playerUpdates.length > 0) {
         updateRecipients.forEach((playerId) => {

@@ -3,10 +3,10 @@
  * 外部入出力とModel/Viewの橋渡しを担うコントローラー群
  * ローカル入力適用，リモート更新適用，描画同期を分離して扱う
  */
-import type { playerTypes } from '@repo/shared';
-import { AppearanceResolver } from '@client/scenes/game/application/AppearanceResolver';
-import { PlayerModel } from './PlayerModel';
-import { PlayerView } from './PlayerView';
+import type { playerTypes } from "@repo/shared";
+import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
+import { PlayerModel } from "./PlayerModel";
+import { PlayerView } from "./PlayerView";
 
 /** ローカル移動入力を表す型 */
 export type LocalInput = {
@@ -26,9 +26,17 @@ abstract class BasePlayerController {
   protected readonly view: PlayerView;
 
   /** 共通初期化としてModelとViewを生成する */
-  protected constructor(data: playerTypes.PlayerData, isLocal: boolean, appearanceResolver: AppearanceResolver) {
+  protected constructor(
+    data: playerTypes.PlayerData,
+    isLocal: boolean,
+    appearanceResolver: AppearanceResolver,
+  ) {
     this.model = new PlayerModel(data);
-    this.view = new PlayerView(appearanceResolver.resolvePlayerImageFile(data.teamId), isLocal);
+    this.view = new PlayerView(
+      appearanceResolver.resolvePlayerImageFile(data.teamId),
+      data.name,
+      isLocal,
+    );
 
     const pos = this.model.getPosition();
     this.view.syncPosition(pos.x, pos.y);
@@ -58,7 +66,10 @@ abstract class BasePlayerController {
 /** ローカルプレイヤーの入力適用と描画同期を担うコントローラー */
 export class LocalPlayerController extends BasePlayerController {
   /** ローカルプレイヤー用コントローラーを初期化する */
-  constructor(data: playerTypes.PlayerData, appearanceResolver: AppearanceResolver) {
+  constructor(
+    data: playerTypes.PlayerData,
+    appearanceResolver: AppearanceResolver,
+  ) {
     super(data, true, appearanceResolver);
   }
 
@@ -77,7 +88,10 @@ export class LocalPlayerController extends BasePlayerController {
 /** リモートプレイヤーの更新適用と補間同期を担うコントローラー */
 export class RemotePlayerController extends BasePlayerController {
   /** リモートプレイヤー用コントローラーを初期化する */
-  constructor(data: playerTypes.PlayerData, appearanceResolver: AppearanceResolver) {
+  constructor(
+    data: playerTypes.PlayerData,
+    appearanceResolver: AppearanceResolver,
+  ) {
     super(data, false, appearanceResolver);
   }
 

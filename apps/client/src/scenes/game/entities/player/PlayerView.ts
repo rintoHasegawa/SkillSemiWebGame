@@ -5,27 +5,46 @@
  */
 import { Assets, Sprite, Texture } from "pixi.js";
 import { config } from "@client/config";
+import { Container, Text, TextStyle } from "pixi.js";
 
 const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 
 export class PlayerView {
-  public readonly displayObject: Sprite;
+  public readonly displayObject: Container;
+  private readonly sprite: Sprite;
+  private readonly nameText: Text;
 
-  constructor(imageFileName: string, isLocal: boolean) {
+  constructor(imageFileName: string, playerName: string, isLocal: boolean) {
     const { PLAYER_RADIUS_PX, PLAYER_RENDER_SCALE } = config.GAME_CONFIG;
 
+    this.displayObject = new Container();
+
     // 🌟 2. スプライト（画像）の生成（初期は1x1テクスチャ）
-    this.displayObject = new Sprite(Texture.WHITE);
+    this.sprite = new Sprite(Texture.WHITE);
 
     // 🌟 3. 画像の基準点を「中心」にする（ズレ防止）
-    this.displayObject.anchor.set(0.5, 0.5);
+    this.sprite.anchor.set(0.5, 0.5);
 
     // 🌟 4. 画像サイズを当たり判定（半径×2）に合わせる
-    this.displayObject.width = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
-    this.displayObject.height = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
+    this.sprite.width = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
+    this.sprite.height = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
 
     // ローカルプレイヤーだけ少し視認性を上げる（未使用引数対策を兼ねる）
-    this.displayObject.alpha = isLocal ? 1 : 0.95;
+    this.sprite.alpha = isLocal ? 1 : 0.95;
+
+    this.nameText = new Text({
+      text: playerName,
+      style: new TextStyle({
+        fill: "#ffffff",
+        fontSize: 16,
+        fontWeight: "700",
+        stroke: { color: "#000000", width: 3 },
+      }),
+    });
+    this.nameText.anchor.set(0.5, 0);
+    this.nameText.y = PLAYER_RADIUS_PX * PLAYER_RENDER_SCALE + 8;
+
+    this.displayObject.addChild(this.sprite, this.nameText);
 
     // 非同期で画像テクスチャを読み込んで差し替える
     void this.applyTexture(imageFileName);
@@ -36,12 +55,13 @@ export class PlayerView {
     try {
       const imageUrl = `${import.meta.env.BASE_URL}${imageFileName}`;
       const texture = await Assets.load(imageUrl);
-      this.displayObject.texture = texture;
+      this.sprite.texture = texture;
 
       const { PLAYER_RADIUS_PX, PLAYER_RENDER_SCALE } = config.GAME_CONFIG;
 
-      this.displayObject.width = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
-      this.displayObject.height = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
+      this.sprite.width = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
+      this.sprite.height = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
+      this.nameText.y = PLAYER_RADIUS_PX * PLAYER_RENDER_SCALE + 8;
 
       if (ENABLE_DEBUG_LOG) {
         console.log(
@@ -64,6 +84,6 @@ export class PlayerView {
 
   /** 描画リソースを破棄する */
   public destroy(): void {
-    this.displayObject.destroy();
+    this.displayObject.destroy({ children: true });
   }
 }

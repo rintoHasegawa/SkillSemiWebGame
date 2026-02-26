@@ -24,6 +24,7 @@ import type {
 export interface StartGamePort {
   startRoomSession(
     playerIds: string[],
+    playerNamesById: Record<string, string>,
     onTick: (data: gameTypes.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
@@ -139,4 +140,7 @@ export type ReportBombHitInput = {
 };
 
 /** 被弾報告ユースケースが利用する出力ポート */
-export type BombHitOutputPort = Pick<BombOutputPort, "publishPlayerDeadToOthersInRoom">;
+export type BombHitOutputPort = Pick<
+  BombOutputPort,
+  "publishPlayerDeadToOthersInRoom"
+>;
