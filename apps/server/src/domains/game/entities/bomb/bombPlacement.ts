@@ -21,6 +21,7 @@ export const createBombPlacedPayload = ({
   bombId,
   ownerSocketId,
 }: CreateBombPlacedPayloadParams): BombPlacedPayload => {
+  // 設置者の識別情報はサーバー確定の socketId を利用する
   return {
     bombId,
     ownerSocketId,

@@ -64,7 +64,7 @@ export type PlaceBombPayload = {
   explodeAtElapsedMs: number;
 };
 
-/** BOMB_PLACED イベントで送受信する他プレイヤー向け爆弾確定情報 */
+/** BOMB_PLACED イベントで送受信する他プレイヤー向け爆弾確定情報，設置者識別は ownerSocketId で扱う */
 export type BombPlacedPayload = {
   bombId: string;
   ownerSocketId: string;

@@ -10,6 +10,7 @@ import type {
   BombPlacedPayload,
   PlaceBombPayload,
 } from "@repo/shared";
+import { config as sharedConfig } from "@repo/shared";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { BombController } from "./BombController";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
@@ -24,6 +25,7 @@ export type BombRenderPayload = {
   explodeAtElapsedMs: number;
   radiusGrid: number;
   teamId: number;
+  color: number;
 };
 
 /** 爆弾設置時に返す結果型 */
@@ -41,12 +43,11 @@ type BombManagerOptions = {
 
 /** 爆弾エンティティのライフサイクルを管理する */
 export class BombManager {
-  private static readonly UNKNOWN_TEAM_ID = -1;
-
   private worldContainer: Container;
   private players: GamePlayers;
   private myId: string;
   private getElapsedMs: ElapsedMsProvider;
+  private readonly cachedTeamColors: number[];
   private bombs = new Map<string, BombController>();
   private bombRenderPayloadById = new Map<string, BombRenderPayload>();
   private pendingOwnRequestToTempBombId = new Map<string, string>();
@@ -59,6 +60,7 @@ export class BombManager {
     this.players = players;
     this.myId = myId;
     this.getElapsedMs = getElapsedMs;
+    this.cachedTeamColors = config.GAME_CONFIG.TEAM_COLORS.map((colorCode) => this.parseColorCode(colorCode));
   }
 
   /** 自プレイヤー位置に爆弾を仮IDで設置し，設置要求を返す */
@@ -81,10 +83,10 @@ export class BombManager {
       explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
     };
     const tempBombId = this.createTempBombId(requestId);
+    // 自分の爆弾は設置時点で teamId を確定して保持する
     const ownTeamId = this.resolveTeamIdBySocketId(this.myId);
 
-    this.pendingOwnRequestToTempBombId.set(requestId, tempBombId);
-    this.pendingTempBombIdToOwnRequest.set(tempBombId, requestId);
+    this.registerPendingOwnRequest(requestId, tempBombId);
     this.upsertBomb(tempBombId, this.toRenderPayload(payload, ownTeamId));
     this.lastBombPlacedElapsedMs = elapsedMs;
     return {
@@ -95,13 +97,14 @@ export class BombManager {
 
   /** 他プレイヤー向けの爆弾確定イベントを反映する */
   public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
+    // 通信では ownerSocketId を受け取り，受信時点で teamId を確定する
     const ownerTeamId = this.resolveTeamIdBySocketId(payload.ownerSocketId);
     this.upsertBomb(payload.bombId, this.toRenderPayload(payload, ownerTeamId));
   }
 
   /** 設置者本人向けACKを反映し，仮IDから正式IDへ置換する */
   public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
-    const tempBombId = this.pendingOwnRequestToTempBombId.get(payload.requestId);
+    const tempBombId = this.getPendingTempBombId(payload.requestId);
     if (!tempBombId) {
       return;
     }
@@ -175,7 +178,8 @@ export class BombManager {
       && a.y === b.y
       && a.explodeAtElapsedMs === b.explodeAtElapsedMs
       && a.radiusGrid === b.radiusGrid
-      && a.teamId === b.teamId;
+      && a.teamId === b.teamId
+      && a.color === b.color;
   }
 
   private toRenderPayload(
@@ -188,16 +192,40 @@ export class BombManager {
       explodeAtElapsedMs: payload.explodeAtElapsedMs,
       radiusGrid: config.GAME_CONFIG.BOMB_RADIUS_GRID,
       teamId,
+      color: this.resolveTeamColorByTeamId(teamId),
     };
   }
 
   private resolveTeamIdBySocketId(socketId: string): number {
     const playerController = this.players[socketId];
     if (!playerController) {
-      return BombManager.UNKNOWN_TEAM_ID;
+      // 参照できない場合でも描画継続できるように未知チームで扱う
+      return sharedConfig.UNKNOWN_TEAM_ID;
     }
 
     return playerController.getSnapshot().teamId;
+  }
+
+  private resolveTeamColorByTeamId(teamId: number): number {
+    const teamColor = this.cachedTeamColors[teamId];
+    if (!Number.isInteger(teamColor)) {
+      return config.GAME_CONFIG.MAP_GRID_COLOR;
+    }
+
+    return teamColor;
+  }
+
+  private parseColorCode(colorCode: string): number {
+    const normalizedColorCode = colorCode.startsWith("#")
+      ? colorCode.slice(1)
+      : colorCode;
+
+    const parsedColor = Number.parseInt(normalizedColorCode, 16);
+    if (Number.isNaN(parsedColor)) {
+      return config.GAME_CONFIG.MAP_GRID_COLOR;
+    }
+
+    return parsedColor;
   }
 
   private createRequestId(_elapsedMs: number): string {
@@ -207,6 +235,15 @@ export class BombManager {
 
   private createTempBombId(requestId: string): string {
     return `temp:${requestId}`;
+  }
+
+  private registerPendingOwnRequest(requestId: string, tempBombId: string): void {
+    this.pendingOwnRequestToTempBombId.set(requestId, tempBombId);
+    this.pendingTempBombIdToOwnRequest.set(tempBombId, requestId);
+  }
+
+  private getPendingTempBombId(requestId: string): string | undefined {
+    return this.pendingOwnRequestToTempBombId.get(requestId);
   }
 
   private removePendingRequestByRequestId(requestId: string): void {

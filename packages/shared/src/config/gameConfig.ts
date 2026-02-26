@@ -38,6 +38,9 @@ export const TEAM_NAMES = [
   "黄チーム",
 ] as const;
 
+/** プレイヤー情報から teamId を解決できない場合に利用する既定値 */
+export const UNKNOWN_TEAM_ID = -1;
+
 /** TEAM_COUNT と TEAM_NAMES の整合性を検証する */
 export const validateTeamConfig = (): void => {
   const { TEAM_COUNT } = GAME_CONFIG;
