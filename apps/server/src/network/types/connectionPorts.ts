@@ -13,7 +13,6 @@ import type {
   JoinRoomPort,
   RoomPhaseTransitionPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
-import type { DisconnectCoordinatorParams } from "../../application/coordinators/disconnectCoordinator";
 
 /** 接続時のルーム処理で利用する入力ポート集合 */
 export type ConnectionRoomPort =
@@ -34,15 +33,6 @@ export type SocketConnectionRoomPort =
 export type SocketConnectionManagerBundle = {
   roomManager: SocketConnectionRoomPort;
 };
-
-/** 切断時のルーム処理で利用する入力ポート集合 */
-export type DisconnectRoomHandlerPort = Pick<
-  SocketConnectionRoomPort,
-  "removePlayer" | "getRoomByPlayerId" | "getRoomById"
->;
-
-/** 切断調停処理へ受け渡す依存集合 */
-export type DisconnectCoordinatorPortBundle = Omit<DisconnectCoordinatorParams, "socketId">;
 
 /** 接続ハンドラ登録関数が受け取る入力パラメータ */
 export type RegisterConnectionHandlersParams = SocketConnectionManagerBundle & {
