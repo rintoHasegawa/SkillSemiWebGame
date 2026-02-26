@@ -8,15 +8,16 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
 } from "@repo/shared";
-import { socketManager } from "@client/network/SocketManager";
 import { AppearanceResolver } from "./application/AppearanceResolver";
 import { BombManager } from "./entities/bomb/BombManager";
 import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
+import { GameEventFacade } from "./application/GameEventFacade";
 import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState";
 import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
 import { CombatLifecycleFacade } from "./application/combat/CombatLifecycleFacade";
 import { GameSceneOrchestrator } from "./application/orchestrators/GameSceneOrchestrator";
+import { SocketGameActionSender } from "./application/network/GameActionSender";
 import type { GamePlayers } from "./application/game.types";
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
@@ -31,12 +32,14 @@ export class GameManager {
   private bombManager: BombManager | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
+  private gameEventFacade: GameEventFacade;
   private combatFacade: CombatLifecycleFacade;
   private lifecycleState = new SceneLifecycleState();
+  private gameActionSender = new SocketGameActionSender();
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
   public setGameStart(startTime: number) {
-    this.sessionFacade.setGameStart(startTime);
+    this.gameEventFacade.handleGameStart(startTime);
   }
 
   public getStartCountdownSec(): number {
@@ -58,16 +61,16 @@ export class GameManager {
     const placed = this.bombManager.placeBomb();
     if (!placed) return null;
 
-    socketManager.game.sendPlaceBomb(placed.payload);
+    this.gameActionSender.sendPlaceBomb(placed.payload);
     return placed.tempBombId;
   }
 
   public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
-    this.bombManager?.applyPlacedBombFromOthers(payload);
+    this.gameEventFacade.handleBombPlacedFromOthers(payload);
   }
 
   public applyPlacedBombAck(payload: BombPlacedAckPayload): void {
-    this.bombManager?.applyPlacedBombAck(payload);
+    this.gameEventFacade.handleBombPlacedAck(payload);
   }
 
   // 入力と状態管理
@@ -84,12 +87,18 @@ export class GameManager {
     this.app = new Application();
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
+    this.gameEventFacade = new GameEventFacade({
+      onGameStart: (startTime) => {
+        this.sessionFacade.setGameStart(startTime);
+      },
+      getBombManager: () => this.bombManager,
+    });
     this.combatFacade = new CombatLifecycleFacade({
       players: this.players,
       myId: this.myId,
       acquireInputLock: this.lockInput.bind(this),
       onSendBombHitReport: (bombId) => {
-        socketManager.game.sendBombHitReport({ bombId });
+        this.gameActionSender.sendBombHitReport(bombId);
       },
     });
   }
@@ -116,7 +125,7 @@ export class GameManager {
     this.initializeSceneSubsystems();
 
     // サーバーへゲーム準備完了を通知
-    socketManager.game.readyForGame();
+    this.gameActionSender.readyForGame();
 
     // メインループの登録
     this.app.ticker.add(this.tick);
@@ -147,13 +156,13 @@ export class GameManager {
       appearanceResolver: this.appearanceResolver,
       getElapsedMs: () => this.sessionFacade.getElapsedMs(),
       getJoystickInput: () => this.joystickInput,
-      onGameStart: this.setGameStart.bind(this),
+      onGameStart: this.gameEventFacade.handleGameStart.bind(this.gameEventFacade),
       onGameEnd: this.lockInput.bind(this),
       onBombPlacedFromOthers: (payload) => {
-        this.applyPlacedBombFromOthers(payload);
+        this.gameEventFacade.handleBombPlacedFromOthers(payload);
       },
       onBombPlacedAckFromNetwork: (payload) => {
-        this.applyPlacedBombAck(payload);
+        this.gameEventFacade.handleBombPlacedAck(payload);
       },
       onPlayerDeadFromNetwork: (payload) => {
         this.combatFacade.handleNetworkPlayerDead(payload);
