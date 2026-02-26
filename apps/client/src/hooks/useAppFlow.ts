@@ -19,6 +19,7 @@ type AppFlowState = {
   joinErrorMessage: string | null;
   isJoining: boolean;
   requestJoin: (payload: roomTypes.JoinRoomPayload) => void;
+  returnToTitle: (options?: { leaveRoom?: boolean }) => void;
 };
 
 type JoinState = {
@@ -26,7 +27,9 @@ type JoinState = {
   joinFailure: JoinFailure | null;
 };
 
-type JoinFailureReason = roomTypes.JoinRoomRejectedPayload["reason"] | "timeout";
+type JoinFailureReason =
+  | roomTypes.JoinRoomRejectedPayload["reason"]
+  | "timeout";
 
 type JoinFailure = {
   reason: JoinFailureReason;
@@ -62,13 +65,17 @@ const joinReducer = (state: JoinState, action: JoinAction): JoinState => {
 
 /** アプリ全体のシーン状態と参加要求フローを管理するフック */
 export const useAppFlow = (): AppFlowState => {
-  const [scenePhase, setScenePhase] = useState<appTypes.ScenePhase>(appConsts.ScenePhase.TITLE);
+  const [scenePhase, setScenePhase] = useState<appTypes.ScenePhase>(
+    appConsts.ScenePhase.TITLE,
+  );
   const [room, setRoom] = useState<roomTypes.Room | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
   const [gameResult, setGameResult] = useState<GameResultPayload | null>(null);
   const [joinState, dispatchJoin] = useReducer(joinReducer, initialJoinState);
   const joinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const joinRejectedHandlerRef = useRef<((payload: roomTypes.JoinRoomRejectedPayload) => void) | null>(null);
+  const joinRejectedHandlerRef = useRef<
+    ((payload: roomTypes.JoinRoomRejectedPayload) => void) | null
+  >(null);
 
   const clearJoinRejectedHandler = useCallback(() => {
     if (!joinRejectedHandlerRef.current) {
@@ -88,56 +95,85 @@ export const useAppFlow = (): AppFlowState => {
     joinTimeoutRef.current = null;
   }, []);
 
-  const completeJoinRequest = useCallback((joinFailure: JoinFailure | null = null) => {
-    clearJoinTimeout();
-    clearJoinRejectedHandler();
-    dispatchJoin({ type: "complete", joinFailure });
-  }, [clearJoinRejectedHandler, clearJoinTimeout]);
+  const completeJoinRequest = useCallback(
+    (joinFailure: JoinFailure | null = null) => {
+      clearJoinTimeout();
+      clearJoinRejectedHandler();
+      dispatchJoin({ type: "complete", joinFailure });
+    },
+    [clearJoinRejectedHandler, clearJoinTimeout],
+  );
 
-  const getJoinErrorMessage = useCallback((joinFailure: JoinFailure | null): string | null => {
-    if (!joinFailure) {
+  const getJoinErrorMessage = useCallback(
+    (joinFailure: JoinFailure | null): string | null => {
+      if (!joinFailure) {
+        return null;
+      }
+
+      if (joinFailure.reason === "full") {
+        return `ルーム ${joinFailure.roomId ?? ""} は満員です`;
+      }
+
+      if (joinFailure.reason === "duplicate") {
+        return `ルーム ${joinFailure.roomId ?? ""} への参加要求が重複しました`;
+      }
+
+      if (joinFailure.reason === "timeout") {
+        return "参加要求がタイムアウトしました，もう一度お試しください";
+      }
+
       return null;
-    }
+    },
+    [],
+  );
 
-    if (joinFailure.reason === "full") {
-      return `ルーム ${joinFailure.roomId ?? ""} は満員です`;
-    }
+  const requestJoin = useCallback(
+    (payload: roomTypes.JoinRoomPayload) => {
+      if (joinState.isJoining) {
+        return;
+      }
 
-    if (joinFailure.reason === "duplicate") {
-      return `ルーム ${joinFailure.roomId ?? ""} への参加要求が重複しました`;
-    }
+      completeJoinRequest();
+      dispatchJoin({ type: "start" });
 
-    if (joinFailure.reason === "timeout") {
-      return "参加要求がタイムアウトしました，もう一度お試しください";
-    }
+      const handleJoinRejected = (
+        payload: roomTypes.JoinRoomRejectedPayload,
+      ) => {
+        completeJoinRequest({
+          reason: payload.reason,
+          roomId: payload.roomId,
+        });
+      };
 
-    return null;
-  }, []);
+      joinRejectedHandlerRef.current = handleJoinRejected;
+      socketManager.title.onceJoinRejected(handleJoinRejected);
 
-  const requestJoin = useCallback((payload: roomTypes.JoinRoomPayload) => {
-    if (joinState.isJoining) {
-      return;
-    }
+      joinTimeoutRef.current = setTimeout(() => {
+        completeJoinRequest({ reason: "timeout" });
+      }, config.GAME_CONFIG.JOIN_REQUEST_TIMEOUT_MS);
 
-    completeJoinRequest();
-    dispatchJoin({ type: "start" });
+      socketManager.title.joinRoom(payload);
+    },
+    [completeJoinRequest, joinState.isJoining],
+  );
 
-    const handleJoinRejected = (payload: roomTypes.JoinRoomRejectedPayload) => {
-      completeJoinRequest({
-        reason: payload.reason,
-        roomId: payload.roomId,
-      });
-    };
+  const returnToTitle = useCallback(
+    (options?: { leaveRoom?: boolean }) => {
+      completeJoinRequest();
+      setRoom(null);
+      setGameResult(null);
+      setScenePhase(appConsts.ScenePhase.TITLE);
 
-    joinRejectedHandlerRef.current = handleJoinRejected;
-    socketManager.title.onceJoinRejected(handleJoinRejected);
+      if (!options?.leaveRoom) {
+        return;
+      }
 
-    joinTimeoutRef.current = setTimeout(() => {
-      completeJoinRequest({ reason: "timeout" });
-    }, config.GAME_CONFIG.JOIN_REQUEST_TIMEOUT_MS);
-
-    socketManager.title.joinRoom(payload);
-  }, [completeJoinRequest, joinState.isJoining]);
+      setMyId(null);
+      socketManager.socket.disconnect();
+      socketManager.socket.connect();
+    },
+    [completeJoinRequest],
+  );
 
   useSocketSubscriptions({
     completeJoinRequest,
@@ -155,5 +191,6 @@ export const useAppFlow = (): AppFlowState => {
     joinErrorMessage: getJoinErrorMessage(joinState.joinFailure),
     isJoining: joinState.isJoining,
     requestJoin,
+    returnToTitle,
   };
 };
