@@ -36,36 +36,12 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
         * {
           box-sizing: border-box;
         }
-        .portrait-blocker {
-          display: none;
-          position: fixed;
-          top: 0; left: 0; width: 100vw; height: 100dvh;
-          background: #111;
-          color: white;
-          z-index: 9999;
-          justify-content: center;
-          align-items: center;
-          flex-direction: column;
-          text-align: center;
-          padding: 20px;
-        }
-        @media screen and (orientation: portrait) {
-          .portrait-blocker {
-            display: flex;
-          }
-        }
         /* 🌟 追加：文字を点滅させるアニメーション */
         @keyframes blink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.2; }
         }
       `}</style>
-
-      {/* 縦画面時のブロック画面 */}
-      <div className="portrait-blocker">
-        <h2>画面を横向きにしてください</h2>
-        <p>Please rotate your device to landscape mode.</p>
-      </div>
 
       {/* 画面全体を覆う背景コンテナ */}
       <div

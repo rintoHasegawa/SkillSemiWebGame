@@ -19,28 +19,6 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
         * {
           box-sizing: border-box;
         }
-        .portrait-blocker {
-          display: none;
-          position: fixed;
-          top: 0; left: 0; width: 100vw; height: 100dvh;
-          background: #111;
-          color: white;
-          z-index: 9999;
-          justify-content: center;
-          align-items: center;
-          flex-direction: column;
-          font-size: 1.5rem;
-          text-align: center;
-          padding: 20px;
-        }
-        @media screen and (orientation: portrait) {
-          .portrait-blocker {
-            display: flex;
-          }
-          .lobby-container {
-            display: none !important;
-          }
-        }
         /* スクロールバーの見た目をスマホ・PCでスッキリさせる */
         ::-webkit-scrollbar {
           width: 8px;
@@ -50,15 +28,6 @@ export const LobbyScene = ({ room, myId, onStart }: Props) => {
           border-radius: 4px;
         }
       `}</style>
-
-      <div className="portrait-blocker">
-        <div style={{ fontSize: "4rem", marginBottom: "20px" }}>🔄</div>
-        <p style={{ margin: 0, lineHeight: "1.5" }}>
-          このゲームは横画面専用です。
-          <br />
-          スマホを横向きにしてください。
-        </p>
-      </div>
 
       {/* 🌟🌟 追加：背景のWebPアニメーション 🌟🌟 */}
       <div

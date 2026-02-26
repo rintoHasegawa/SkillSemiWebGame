@@ -6,15 +6,26 @@ import { TitleScene } from "./scenes/title/TitleScene";
 import { LobbyScene } from "./scenes/lobby/LobbyScene";
 import { GameScene } from "./scenes/game/GameScene";
 import { ResultScene } from "./scenes/result/ResultScene";
+import { LandscapeOnlyGate } from "./components/LandscapeOnlyGate";
 
 import { appConsts } from "@repo/shared";
 
 export default function App() {
-  const { scenePhase, room, myId, gameResult, joinErrorMessage, isJoining, requestJoin } = useAppFlow();
+  const {
+    scenePhase,
+    room,
+    myId,
+    gameResult,
+    joinErrorMessage,
+    isJoining,
+    requestJoin,
+  } = useAppFlow();
+
+  let scene = <GameScene myId={myId} />;
 
   // タイトル画面分岐
   if (scenePhase === appConsts.ScenePhase.TITLE) {
-    return (
+    scene = (
       <TitleScene
         onJoin={requestJoin}
         joinErrorMessage={joinErrorMessage}
@@ -22,17 +33,22 @@ export default function App() {
       />
     );
   }
-  
+
   // ロビー画面分岐
   if (scenePhase === appConsts.ScenePhase.LOBBY) {
-    return <LobbyScene room={room} myId={myId} onStart={() => socketManager.lobby.startGame()} />;
+    scene = (
+      <LobbyScene
+        room={room}
+        myId={myId}
+        onStart={() => socketManager.lobby.startGame()}
+      />
+    );
   }
 
   // 結果画面分岐
   if (scenePhase === appConsts.ScenePhase.RESULT) {
-    return <ResultScene result={gameResult} />;
+    scene = <ResultScene result={gameResult} />;
   }
 
-  // プレイ画面分岐
-  return <GameScene myId={myId} />;
+  return <LandscapeOnlyGate>{scene}</LandscapeOnlyGate>;
 }
