@@ -17,6 +17,7 @@ import type { BombManager } from "../../entities/bomb/BombManager";
 import type { MoveSender } from "../network/PlayerMoveSender";
 import type { GameActionSender } from "../network/GameActionSender";
 import type { GameSessionFacade } from "../lifecycle/GameSessionFacade";
+import { DisposableRegistry } from "../lifecycle/DisposableRegistry";
 
 export type GameSceneRuntimeOptions = {
   app: Application;
@@ -43,6 +44,7 @@ export class GameSceneRuntime {
   private readonly getElapsedMs: () => number;
   private readonly eventPorts: GameSceneEventPorts;
   private readonly sceneFactories?: GameSceneFactoryOptions;
+  private readonly disposableRegistry = new DisposableRegistry();
 
   private readonly appearanceResolver = new AppearanceResolver();
   private bombManager: BombManager | null = null;
@@ -72,6 +74,13 @@ export class GameSceneRuntime {
     this.getElapsedMs = getElapsedMs;
     this.eventPorts = eventPorts;
     this.sceneFactories = sceneFactories;
+
+    this.disposableRegistry.add(() => {
+      this.clearJoystickInput();
+    });
+    this.disposableRegistry.add(() => {
+      this.gameLoop = null;
+    });
   }
 
   /** シーン実行に必要なサブシステムを初期化する */
@@ -93,6 +102,15 @@ export class GameSceneRuntime {
     this.networkSync = initializedScene.networkSync;
     this.bombManager = initializedScene.bombManager;
     this.gameLoop = initializedScene.gameLoop;
+
+    this.disposableRegistry.add(() => {
+      this.networkSync?.unbind();
+      this.networkSync = null;
+    });
+    this.disposableRegistry.add(() => {
+      this.bombManager?.destroy();
+      this.bombManager = null;
+    });
   }
 
   public isInputEnabled(): boolean {
@@ -131,11 +149,6 @@ export class GameSceneRuntime {
 
   /** 実行系サブシステムを破棄する */
   public destroy(): void {
-    this.bombManager?.destroy();
-    this.bombManager = null;
-    this.networkSync?.unbind();
-    this.networkSync = null;
-    this.gameLoop = null;
-    this.clearJoystickInput();
+    this.disposableRegistry.disposeAll();
   }
 }

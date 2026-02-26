@@ -4,6 +4,10 @@
  * トリガー時刻を保持し一定間隔で再計算する
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  SYSTEM_TIME_PROVIDER,
+  type TimeProvider,
+} from "@client/scenes/game/application/time/TimeProvider";
 
 const COOLDOWN_TICK_MS = 50;
 
@@ -20,10 +24,20 @@ const READY_STATE: CooldownState = {
   remainingSecText: null,
 };
 
+/** useCooldownClock の依存注入オプション */
+export type UseCooldownClockOptions = {
+  timeProvider?: TimeProvider;
+};
+
 /** クールダウン状態とトリガー操作を提供するフック */
-export const useCooldownClock = (cooldownMs: number) => {
+export const useCooldownClock = (
+  cooldownMs: number,
+  options?: UseCooldownClockOptions,
+) => {
+  const timeProvider = options?.timeProvider ?? SYSTEM_TIME_PROVIDER;
+  const getNow = useCallback(() => timeProvider.now(), [timeProvider]);
   const [lastTriggeredAt, setLastTriggeredAt] = useState<number | null>(null);
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(() => getNow());
 
   useEffect(() => {
     if (lastTriggeredAt === null || cooldownMs <= 0) {
@@ -31,13 +45,13 @@ export const useCooldownClock = (cooldownMs: number) => {
     }
 
     const timerId = window.setInterval(() => {
-      setNowMs(Date.now());
+      setNowMs(getNow());
     }, COOLDOWN_TICK_MS);
 
     return () => {
       window.clearInterval(timerId);
     };
-  }, [cooldownMs, lastTriggeredAt]);
+  }, [cooldownMs, getNow, lastTriggeredAt]);
 
   const cooldownState = useMemo<CooldownState>(() => {
     if (cooldownMs <= 0 || lastTriggeredAt === null) {
@@ -58,10 +72,10 @@ export const useCooldownClock = (cooldownMs: number) => {
   }, [cooldownMs, lastTriggeredAt, nowMs]);
 
   const markTriggered = useCallback(() => {
-    const now = Date.now();
+    const now = getNow();
     setLastTriggeredAt(now);
     setNowMs(now);
-  }, []);
+  }, [getNow]);
 
   return {
     cooldownState,

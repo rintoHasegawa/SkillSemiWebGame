@@ -8,6 +8,7 @@ import { GameEventFacade } from "./application/GameEventFacade";
 import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState";
 import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
 import { CombatLifecycleFacade } from "./application/combat/CombatLifecycleFacade";
+import { DisposableRegistry } from "./application/lifecycle/DisposableRegistry";
 import {
   type GameSceneFactoryOptions,
 } from "./application/orchestrators/GameSceneOrchestrator";
@@ -51,6 +52,7 @@ export class GameManager {
   private combatFacade: CombatLifecycleFacade;
   private lifecycleState: SceneLifecycleState;
   private uiStateSyncService: GameUiStateSyncService;
+  private disposableRegistry: DisposableRegistry;
 
   public getStartCountdownSec(): number {
     return this.sessionFacade.getStartCountdownSec();
@@ -140,6 +142,30 @@ export class GameManager {
     this.uiStateSyncService = new GameUiStateSyncService({
       getSnapshot: () => this.getUiStateSnapshot(),
     });
+    this.disposableRegistry = new DisposableRegistry();
+    this.disposableRegistry.add(() => {
+      this.uiStateSyncService.clear();
+    });
+    this.disposableRegistry.add(() => {
+      this.players = {};
+    });
+    this.disposableRegistry.add(() => {
+      this.sessionFacade.reset();
+    });
+    this.disposableRegistry.add(() => {
+      this.combatFacade.dispose();
+    });
+    this.disposableRegistry.add(() => {
+      this.runtime.destroy();
+    });
+    this.disposableRegistry.add(() => {
+      if (this.lifecycleState.shouldDestroyApp()) {
+        this.app.destroy(true, { children: true });
+      }
+    });
+    this.disposableRegistry.add(() => {
+      this.uiStateSyncService.stopTicker();
+    });
   }
 
   /**
@@ -205,14 +231,6 @@ export class GameManager {
    */
   public destroy() {
     this.lifecycleState.markDestroyed();
-    this.uiStateSyncService.stopTicker();
-    if (this.lifecycleState.shouldDestroyApp()) {
-      this.app.destroy(true, { children: true });
-    }
-    this.runtime.destroy();
-    this.combatFacade.dispose();
-    this.sessionFacade.reset();
-    this.players = {};
-    this.uiStateSyncService.clear();
+    this.disposableRegistry.disposeAll();
   }
 }

@@ -3,6 +3,11 @@
  * ゲーム画面向けUI状態の購読と差分通知を管理する
  * 秒境界に揃えた定期通知と購読解除を提供する
  */
+import {
+  SYSTEM_TIME_PROVIDER,
+  type TimeProvider,
+} from "@client/scenes/game/application/time/TimeProvider";
+
 const UI_STATE_SECOND_MS = 1000;
 
 /** ゲーム画面UIへ通知する状態スナップショット */
@@ -14,18 +19,21 @@ export type GameUiState = {
 
 type GameUiStateSyncServiceOptions = {
   getSnapshot: () => GameUiState;
+  timeProvider?: TimeProvider;
 };
 
 /** UI状態の購読と定期通知を管理するサービス */
 export class GameUiStateSyncService {
   private readonly getSnapshot: () => GameUiState;
+  private readonly timeProvider: TimeProvider;
   private readonly listeners = new Set<(state: GameUiState) => void>();
   private lastState: GameUiState | null = null;
   private alignTimeoutId: number | null = null;
   private timerId: number | null = null;
 
-  constructor({ getSnapshot }: GameUiStateSyncServiceOptions) {
+  constructor({ getSnapshot, timeProvider }: GameUiStateSyncServiceOptions) {
     this.getSnapshot = getSnapshot;
+    this.timeProvider = timeProvider ?? SYSTEM_TIME_PROVIDER;
   }
 
   public subscribe(listener: (state: GameUiState) => void): () => void {
@@ -64,7 +72,7 @@ export class GameUiStateSyncService {
       return;
     }
 
-    const nowMs = Date.now();
+    const nowMs = this.timeProvider.now();
     const delayToNextSecond = UI_STATE_SECOND_MS - (nowMs % UI_STATE_SECOND_MS);
 
     this.alignTimeoutId = window.setTimeout(() => {
