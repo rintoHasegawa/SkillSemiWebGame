@@ -53,10 +53,10 @@ const chooseNextTarget = (
     { col, row: row - 1 },
   ].filter((candidate) => {
     return (
-      candidate.col >= 0
-      && candidate.col < GRID_COLS
-      && candidate.row >= 0
-      && candidate.row < GRID_ROWS
+      candidate.col >= 0 &&
+      candidate.col < GRID_COLS &&
+      candidate.row >= 0 &&
+      candidate.row < GRID_ROWS
     );
   });
 
@@ -66,22 +66,25 @@ const chooseNextTarget = (
 
   const unpaintedCandidates = candidates.filter((candidate) => {
     return (
-      getCellTeamId(gridColors, candidate.col, candidate.row, GRID_COLS)
-      === UNPAINTED_TEAM_ID
+      getCellTeamId(gridColors, candidate.col, candidate.row, GRID_COLS) ===
+      UNPAINTED_TEAM_ID
     );
   });
 
   if (
-    unpaintedCandidates.length > 0
-    && Math.random() < clamp(UNPAINTED_PRIORITY_STRENGTH, 0, 1)
+    unpaintedCandidates.length > 0 &&
+    Math.random() < clamp(UNPAINTED_PRIORITY_STRENGTH, 0, 1)
   ) {
     return (
-      unpaintedCandidates[Math.floor(Math.random() * unpaintedCandidates.length)]
-      ?? { col, row }
+      unpaintedCandidates[
+        Math.floor(Math.random() * unpaintedCandidates.length)
+      ] ?? { col, row }
     );
   }
 
-  return candidates[Math.floor(Math.random() * candidates.length)] ?? { col, row };
+  return (
+    candidates[Math.floor(Math.random() * candidates.length)] ?? { col, row }
+  );
 };
 
 const moveTowardsTarget = (
@@ -97,9 +100,9 @@ const moveTowardsTarget = (
   const distance = Math.hypot(diffX, diffY);
 
   const maxStep =
-    config.GAME_CONFIG.PLAYER_SPEED
-    * (config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS / 1000)
-    * clamp(config.BOT_AI_CONFIG.MOVE_SMOOTHNESS, 0.1, 2);
+    config.GAME_CONFIG.PLAYER_SPEED *
+    (config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS / 1000) *
+    clamp(config.BOT_AI_CONFIG.MOVE_SMOOTHNESS, 0.1, 2);
 
   if (distance <= maxStep || distance === 0) {
     return { nextX: targetX, nextY: targetY };
@@ -140,20 +143,27 @@ export class BotAiService {
     const targetCenterX = currentState.targetCol + 0.5;
     const targetCenterY = currentState.targetRow + 0.5;
     const reachedTarget =
-      Math.hypot(targetCenterX - player.x, targetCenterY - player.y)
-      <= config.BOT_AI_CONFIG.TARGET_REACHED_EPSILON;
+      Math.hypot(targetCenterX - player.x, targetCenterY - player.y) <=
+      config.BOT_AI_CONFIG.TARGET_REACHED_EPSILON;
 
     const nextTarget = reachedTarget
       ? chooseNextTarget(currentCol, currentRow, gridColors)
       : { col: currentState.targetCol, row: currentState.targetRow };
 
-    const moved = moveTowardsTarget(player.x, player.y, nextTarget.col, nextTarget.row);
+    const moved = moveTowardsTarget(
+      player.x,
+      player.y,
+      nextTarget.col,
+      nextTarget.row,
+    );
 
     let placeBombPayload: PlaceBombPayload | null = null;
-    const canPlaceBomb = nowMs - currentState.lastBombPlacedAtMs >= BOMB_COOLDOWN_MS;
+    const canPlaceBomb =
+      nowMs - currentState.lastBombPlacedAtMs >= BOMB_COOLDOWN_MS;
     if (
-      canPlaceBomb
-      && Math.random() < clamp(config.BOT_AI_CONFIG.BOMB_PLACE_PROBABILITY_PER_TICK, 0, 1)
+      canPlaceBomb &&
+      Math.random() <
+        clamp(config.BOT_AI_CONFIG.BOMB_PLACE_PROBABILITY_PER_TICK, 0, 1)
     ) {
       const nextBombSeq = currentState.bombSeq + 1;
       placeBombPayload = {

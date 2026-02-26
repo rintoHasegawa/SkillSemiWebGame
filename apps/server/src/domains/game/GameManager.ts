@@ -2,7 +2,11 @@
  * GameManager
  * ゲームセッション集合の生成，更新，参照管理を統括する
  */
-import type { gameTypes, GameResultPayload, PlaceBombPayload } from "@repo/shared";
+import type {
+  gameTypes,
+  GameResultPayload,
+  PlaceBombPayload,
+} from "@repo/shared";
 import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
@@ -23,8 +27,15 @@ export class GameManager {
   constructor(roomId: string) {
     this.sessionRef = { current: null };
     this.activePlayerIds = new Set();
-    this.lifecycleService = new GameSessionLifecycleService(this.sessionRef, this.activePlayerIds, roomId);
-    this.playerOperationService = new GamePlayerOperationService(this.sessionRef, this.activePlayerIds);
+    this.lifecycleService = new GameSessionLifecycleService(
+      this.sessionRef,
+      this.activePlayerIds,
+      roomId,
+    );
+    this.playerOperationService = new GamePlayerOperationService(
+      this.sessionRef,
+      this.activePlayerIds,
+    );
   }
 
   // 外部（GameHandlerなど）から開始時刻を取得できるようにする
@@ -48,12 +59,17 @@ export class GameManager {
    * @param onTick 毎フレーム実行される送信用のコールバック関数
    */
   startRoomSession(
-    playerIds: string[], 
+    playerIds: string[],
     onTick: (data: gameTypes.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ) {
-    this.lifecycleService.startRoomSession(playerIds, onTick, onGameEnd, onBotPlaceBomb);
+    this.lifecycleService.startRoomSession(
+      playerIds,
+      onTick,
+      onGameEnd,
+      onBotPlaceBomb,
+    );
   }
 
   // 現在セッションのプレイヤーを取得

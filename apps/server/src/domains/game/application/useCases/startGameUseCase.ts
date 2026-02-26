@@ -8,14 +8,22 @@ import type {
   StartGamePort,
 } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logger";
-import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
+import {
+  gameUseCaseLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 import { placeBombUseCase } from "./placeBombUseCase";
 
-const excludeRecipientFromPlayerUpdates = <TPlayerUpdate extends { id: string }>(
+const excludeRecipientFromPlayerUpdates = <
+  TPlayerUpdate extends { id: string },
+>(
   playerUpdates: TPlayerUpdate[],
-  recipientId: string
+  recipientId: string,
 ): TPlayerUpdate[] => {
-  return playerUpdates.filter((playerUpdate) => playerUpdate.id !== recipientId);
+  return playerUpdates.filter(
+    (playerUpdate) => playerUpdate.id !== recipientId,
+  );
 };
 
 type StartGameUseCaseParams = {
@@ -31,11 +39,11 @@ type StartGameUseCaseParams = {
     | "publishGameEndToRoom"
     | "publishGameResultToRoom"
     | "publishGameStartToRoom"
-  > & Pick<
-    BombOutputPort,
-    | "publishBombPlacedToOthersInRoom"
-    | "publishBombPlacedAckToSocket"
-  >;
+  > &
+    Pick<
+      BombOutputPort,
+      "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
+    >;
 };
 
 /** ゲームセッション開始とティック通知，終了通知を実行する */
@@ -56,7 +64,7 @@ export const startGameUseCase = ({
         updateRecipients.forEach((playerId) => {
           const updatesForPlayer = excludeRecipientFromPlayerUpdates(
             tickData.playerUpdates,
-            playerId
+            playerId,
           );
 
           if (updatesForPlayer.length === 0) {

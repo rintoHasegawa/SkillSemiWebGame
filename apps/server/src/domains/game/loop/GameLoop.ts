@@ -8,8 +8,15 @@ import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@server/config";
 import type { gameTypes, PlaceBombPayload } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
-import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
-import { BotAiService, isBotPlayerId } from "../application/services/BotAiService";
+import {
+  gameDomainLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
+import {
+  BotAiService,
+  isBotPlayerId,
+} from "../application/services/BotAiService";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
@@ -20,7 +27,8 @@ export class GameLoop {
   private endMonotonicTimeMs: number = 0;
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
-  private lastSentPlayers: Map<string, gameTypes.PlayerPositionUpdate> = new Map();
+  private lastSentPlayers: Map<string, gameTypes.PlayerPositionUpdate> =
+    new Map();
   private botAiService: BotAiService = new BotAiService();
 
   constructor(
@@ -30,7 +38,10 @@ export class GameLoop {
     private mapStore: MapStore,
     private onTick: (data: gameTypes.TickData) => void,
     private onGameEnd: () => void,
-    private onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
+    private onBotPlaceBomb?: (
+      ownerId: string,
+      payload: PlaceBombPayload,
+    ) => void,
   ) {}
 
   start() {
@@ -39,7 +50,8 @@ export class GameLoop {
 
     const nowMs = performance.now();
     this.startMonotonicTimeMs = nowMs;
-    this.endMonotonicTimeMs = nowMs + config.GAME_CONFIG.GAME_DURATION_SEC * 1000;
+    this.endMonotonicTimeMs =
+      nowMs + config.GAME_CONFIG.GAME_DURATION_SEC * 1000;
     this.nextTickAtMs = nowMs + this.tickRate;
     this.lastSentPlayers.clear();
     this.isRunning = true;
@@ -75,7 +87,10 @@ export class GameLoop {
 
     let processedTicks = 0;
 
-    while (nowMs >= this.nextTickAtMs && processedTicks < this.maxCatchUpTicks) {
+    while (
+      nowMs >= this.nextTickAtMs &&
+      processedTicks < this.maxCatchUpTicks
+    ) {
       this.processSingleTick();
       this.nextTickAtMs += this.tickRate;
       processedTicks += 1;
@@ -99,7 +114,10 @@ export class GameLoop {
     const changedPlayers: gameTypes.TickData["playerUpdates"] = [];
     const activePlayerIds = new Set<string>();
     const nowMs = performance.now();
-    const elapsedMs = Math.max(0, Math.round(nowMs - this.startMonotonicTimeMs));
+    const elapsedMs = Math.max(
+      0,
+      Math.round(nowMs - this.startMonotonicTimeMs),
+    );
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
 
     // 1. 各プレイヤーの座標処理とマス塗りの判定
@@ -177,7 +195,10 @@ export class GameLoop {
       event: gameDomainLogEvents.GAME_LOOP,
       result: logResults.STOPPED,
       roomId: this.roomId,
-      elapsedMs: Math.max(0, Math.round(performance.now() - this.startMonotonicTimeMs)),
+      elapsedMs: Math.max(
+        0,
+        Math.round(performance.now() - this.startMonotonicTimeMs),
+      ),
     });
   }
 }

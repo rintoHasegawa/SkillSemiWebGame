@@ -69,7 +69,9 @@ export class GameRoomSession {
       this.mapStore,
       onTick,
       () => {
-        const resultPayload = buildGameResultPayload(this.mapStore.getGridColorsSnapshot());
+        const resultPayload = buildGameResultPayload(
+          this.mapStore.getGridColorsSnapshot(),
+        );
         this.dispose();
         onGameEnd(resultPayload);
       },

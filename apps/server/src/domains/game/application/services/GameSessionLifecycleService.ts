@@ -3,9 +3,17 @@
  * ゲームセッションの開始，参照，終了時クリーンアップを管理する
  */
 import { config } from "@server/config";
-import type { gameTypes, GameResultPayload, PlaceBombPayload } from "@repo/shared";
+import type {
+  gameTypes,
+  GameResultPayload,
+  PlaceBombPayload,
+} from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
-import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
+import {
+  gameDomainLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 import { GameRoomSession } from "./GameRoomSession";
 
 type GameSessionRef = { current: GameRoomSession | null };
@@ -16,7 +24,7 @@ export class GameSessionLifecycleService {
   constructor(
     private sessionRef: GameSessionRef,
     private activePlayerIds: ActivePlayerIndex,
-    private roomId: string
+    private roomId: string,
   ) {}
 
   public getRoomStartTime(): number | undefined {
@@ -28,7 +36,10 @@ export class GameSessionLifecycleService {
   }
 
   public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
-    return this.sessionRef.current?.shouldBroadcastBombPlaced(dedupeKey, nowMs) ?? false;
+    return (
+      this.sessionRef.current?.shouldBroadcastBombPlaced(dedupeKey, nowMs) ??
+      false
+    );
   }
 
   public issueServerBombId(): string {
@@ -64,11 +75,16 @@ export class GameSessionLifecycleService {
     });
 
     this.sessionRef.current = session;
-    session.start(tickRate, onTick, (payload) => {
-      this.activePlayerIds.clear();
-      this.sessionRef.current = null;
-      onGameEnd(payload);
-    }, onBotPlaceBomb);
+    session.start(
+      tickRate,
+      onTick,
+      (payload) => {
+        this.activePlayerIds.clear();
+        this.sessionRef.current = null;
+        onGameEnd(payload);
+      },
+      onBotPlaceBomb,
+    );
 
     logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
       event: gameDomainLogEvents.SESSION_START,
