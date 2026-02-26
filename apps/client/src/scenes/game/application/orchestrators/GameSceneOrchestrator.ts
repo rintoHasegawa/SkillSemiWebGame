@@ -24,11 +24,11 @@ export type CreateNetworkSyncOptions = {
   myId: string;
   gameMap: GameMapController;
   appearanceResolver: AppearanceResolver;
-  onGameStart: (startTime: number) => void;
-  onGameEnd: () => void;
-  onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
-  onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
-  onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
+  onGameStarted: (startTime: number) => void;
+  onGameEnded: () => void;
+  onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
+  onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
+  onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
 };
 
 /** BombManager 生成入力型 */
@@ -43,11 +43,11 @@ export type CreateBombManagerOptions = {
 
 /** シーン層で扱うイベント通知ポート群 */
 export type GameSceneEventPorts = {
-  onGameStart: (startTime: number) => void;
-  onGameEnd: () => void;
-  onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
-  onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
-  onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
+  onGameStarted: (startTime: number) => void;
+  onGameEnded: () => void;
+  onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
+  onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
+  onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
   onBombExploded: (payload: BombExplodedPayload) => void;
 };
 
@@ -162,11 +162,11 @@ export class GameSceneOrchestrator {
       myId: this.myId,
       gameMap,
       appearanceResolver: this.appearanceResolver,
-      onGameStart: this.eventPorts.onGameStart,
-      onGameEnd: this.eventPorts.onGameEnd,
-      onBombPlacedFromOthers: this.eventPorts.onBombPlacedFromOthers,
-      onBombPlacedAckFromNetwork: this.eventPorts.onBombPlacedAckFromNetwork,
-      onPlayerDeadFromNetwork: this.eventPorts.onPlayerDeadFromNetwork,
+      onGameStarted: this.eventPorts.onGameStarted,
+      onGameEnded: this.eventPorts.onGameEnded,
+      onRemoteBombPlaced: this.eventPorts.onRemoteBombPlaced,
+      onBombPlacementAcknowledged: this.eventPorts.onBombPlacementAcknowledged,
+      onRemotePlayerDead: this.eventPorts.onRemotePlayerDead,
     });
     networkSync.bind();
     return networkSync;

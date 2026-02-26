@@ -8,32 +8,32 @@ import type { BombManager } from "../entities/bomb/BombManager";
 
 /** GameEventFacade の初期化入力 */
 export type GameEventFacadeOptions = {
-  onGameStart: (startTime: number) => void;
+  onGameStarted: (startTime: number) => void;
   getBombManager: () => BombManager | null;
 };
 
 /** 受信イベントの適用窓口を提供する */
 export class GameEventFacade {
-  private readonly onGameStart: (startTime: number) => void;
+  private readonly onGameStarted: (startTime: number) => void;
   private readonly getBombManager: () => BombManager | null;
 
-  constructor({ onGameStart, getBombManager }: GameEventFacadeOptions) {
-    this.onGameStart = onGameStart;
+  constructor({ onGameStarted, getBombManager }: GameEventFacadeOptions) {
+    this.onGameStarted = onGameStarted;
     this.getBombManager = getBombManager;
   }
 
-  /** サーバー同期のゲーム開始時刻を適用する */
-  public handleGameStart(startTime: number): void {
-    this.onGameStart(startTime);
+  /** 内部ゲーム開始イベントを適用する */
+  public applyGameStarted(startTime: number): void {
+    this.onGameStarted(startTime);
   }
 
-  /** 他プレイヤー爆弾設置を反映する */
-  public handleBombPlacedFromOthers(payload: BombPlacedPayload): void {
+  /** 内部リモート爆弾設置イベントを適用する */
+  public applyRemoteBombPlaced(payload: BombPlacedPayload): void {
     this.getBombManager()?.applyPlacedBombFromOthers(payload);
   }
 
-  /** 爆弾設置ACKを反映する */
-  public handleBombPlacedAck(payload: BombPlacedAckPayload): void {
+  /** 内部爆弾設置ACKイベントを適用する */
+  public applyBombPlacementAcknowledged(payload: BombPlacedAckPayload): void {
     this.getBombManager()?.applyPlacedBombAck(payload);
   }
 }

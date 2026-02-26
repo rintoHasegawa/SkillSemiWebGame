@@ -11,39 +11,39 @@ import type {
 
 /** CombatSyncHandler の初期化入力 */
 export type CombatSyncHandlerOptions = {
-  onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
-  onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
-  onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
+  onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
+  onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
+  onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
 };
 
 /** 戦闘関連イベントの橋渡しを担当する */
 export class CombatSyncHandler {
-  private readonly onBombPlacedFromOthers: (payload: BombPlacedPayload) => void;
-  private readonly onBombPlacedAckFromNetwork: (payload: BombPlacedAckPayload) => void;
-  private readonly onPlayerDeadFromNetwork: (payload: PlayerDeadPayload) => void;
+  private readonly onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
+  private readonly onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
+  private readonly onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
 
   constructor({
-    onBombPlacedFromOthers,
-    onBombPlacedAckFromNetwork,
-    onPlayerDeadFromNetwork,
+    onRemoteBombPlaced,
+    onBombPlacementAcknowledged,
+    onRemotePlayerDead,
   }: CombatSyncHandlerOptions) {
-    this.onBombPlacedFromOthers = onBombPlacedFromOthers;
-    this.onBombPlacedAckFromNetwork = onBombPlacedAckFromNetwork;
-    this.onPlayerDeadFromNetwork = onPlayerDeadFromNetwork;
+    this.onRemoteBombPlaced = onRemoteBombPlaced;
+    this.onBombPlacementAcknowledged = onBombPlacementAcknowledged;
+    this.onRemotePlayerDead = onRemotePlayerDead;
   }
 
-  /** 他プレイヤーの爆弾設置イベントを橋渡しする */
-  public handleBombPlaced = (payload: BombPlacedPayload): void => {
-    this.onBombPlacedFromOthers(payload);
+  /** 他プレイヤーの爆弾設置受信イベントを橋渡しする */
+  public handleReceivedBombPlaced = (payload: BombPlacedPayload): void => {
+    this.onRemoteBombPlaced(payload);
   };
 
-  /** 設置ACKイベントを橋渡しする */
-  public handleBombPlacedAck = (payload: BombPlacedAckPayload): void => {
-    this.onBombPlacedAckFromNetwork(payload);
+  /** 爆弾設置ACK受信イベントを橋渡しする */
+  public handleReceivedBombPlacedAck = (payload: BombPlacedAckPayload): void => {
+    this.onBombPlacementAcknowledged(payload);
   };
 
-  /** 被弾通知イベントを橋渡しする */
-  public handlePlayerDead = (payload: PlayerDeadPayload): void => {
-    this.onPlayerDeadFromNetwork(payload);
+  /** プレイヤー死亡受信イベントを橋渡しする */
+  public handleReceivedPlayerDead = (payload: PlayerDeadPayload): void => {
+    this.onRemotePlayerDead(payload);
   };
 }
