@@ -4,6 +4,7 @@
  * 各 Step を呼び出して更新順序を統制する
  */
 import { Application, Container, Ticker } from "pixi.js";
+import { config } from "@client/config";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import { BombManager } from "@client/scenes/game/entities/bomb/BombManager";
 import type { GamePlayers } from "./game.types";
@@ -11,6 +12,7 @@ import { InputStep } from "./loopSteps/InputStep";
 import { SimulationStep } from "./loopSteps/SimulationStep";
 import { CameraStep } from "./loopSteps/CameraStep";
 import { BombStep } from "./loopSteps/BombStep";
+import { resolveFrameDelta } from "./loopSteps/frameDelta";
 
 type GameLoopOptions = {
   app: Application;
@@ -47,7 +49,10 @@ export class GameLoop {
     const me = this.players[this.myId];
     if (!me || !(me instanceof LocalPlayerController)) return;
 
-    const deltaSeconds = ticker.deltaMS / 1000;
+    const { deltaSeconds } = resolveFrameDelta(
+      ticker,
+      config.GAME_CONFIG.FRAME_DELTA_MAX_MS,
+    );
     const { isMoving } = this.inputStep.run({ me, deltaSeconds });
 
     this.simulationStep.run({

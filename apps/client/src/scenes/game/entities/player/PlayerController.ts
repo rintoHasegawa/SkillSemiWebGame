@@ -42,9 +42,9 @@ abstract class BasePlayerController {
     );
     this.bombHitBlinkRenderer = new BombHitBlinkRenderer({
       target: this.view.displayObject,
-      blinkIntervalMs: config.GAME_CONFIG.PLAYER_HIT_BLINK_INTERVAL_MS,
-      hiddenAlpha: config.GAME_CONFIG.PLAYER_HIT_BLINK_HIDDEN_ALPHA,
-      maxDeltaMs: config.GAME_CONFIG.PLAYER_HIT_BLINK_MAX_DELTA_MS,
+      blinkIntervalMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_INTERVAL_MS,
+      hiddenAlpha: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_HIDDEN_ALPHA,
+      maxDeltaMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_MAX_DELTA_MS,
     });
 
     const pos = this.model.getPosition();

@@ -4,6 +4,10 @@
  * ローカル被弾とネットワーク通知被弾を同じ窓口で扱う
  */
 import type { GamePlayers } from "./game.types";
+import type {
+  PlayerHitEffectEventName,
+  PlayerHitEffectEventPayloadMap,
+} from "@repo/shared";
 
 type PlayerHitEffectOrchestratorOptions = {
   players: GamePlayers;
@@ -12,14 +16,10 @@ type PlayerHitEffectOrchestratorOptions = {
   nowMsProvider?: () => number;
 };
 
-/** 被弾演出イベント名を表す型 */
-type PlayerHitEffectEventName = "local-bomb-hit" | "network-player-dead";
-
 /** 被弾演出イベント入力を表す型 */
-type PlayerHitEffectEvent = {
-  name: PlayerHitEffectEventName;
-  playerId: string;
-  localPlayerId: string;
+type PlayerHitEffectEvent<TEventName extends PlayerHitEffectEventName = PlayerHitEffectEventName> = {
+  name: TEventName;
+  payload: PlayerHitEffectEventPayloadMap[TEventName];
 };
 
 /** 被弾演出の発火責務を管理するオーケストレーター */
@@ -46,8 +46,10 @@ export class PlayerHitEffectOrchestrator {
   public handleLocalBombHit(localPlayerId: string): void {
     this.dispatch({
       name: "local-bomb-hit",
-      playerId: localPlayerId,
-      localPlayerId,
+      payload: {
+        playerId: localPlayerId,
+        localPlayerId,
+      },
     });
   }
 
@@ -55,22 +57,27 @@ export class PlayerHitEffectOrchestrator {
   public handleNetworkPlayerDead(playerId: string, localPlayerId: string): void {
     this.dispatch({
       name: "network-player-dead",
-      playerId,
-      localPlayerId,
+      payload: {
+        playerId,
+        localPlayerId,
+      },
     });
   }
 
   /** 被弾演出イベント名に応じて処理を分岐する */
   public dispatch(event: PlayerHitEffectEvent): void {
-    if (event.name === "network-player-dead" && event.playerId === event.localPlayerId) {
+    if (
+      event.name === "network-player-dead"
+      && event.payload.playerId === event.payload.localPlayerId
+    ) {
       return;
     }
 
-    if (!this.shouldTrigger(event.playerId)) {
+    if (!this.shouldTrigger(event.payload.playerId)) {
       return;
     }
 
-    this.playBombHitBlink(event.playerId);
+    this.playBombHitBlink(event.payload.playerId);
   }
 
   /** 指定プレイヤーへ被弾点滅演出を適用する */

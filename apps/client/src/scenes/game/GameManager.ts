@@ -120,8 +120,8 @@ export class GameManager {
     });
     this.playerHitEffectOrchestrator = new PlayerHitEffectOrchestrator({
       players: this.players,
-      blinkDurationMs: config.GAME_CONFIG.PLAYER_HIT_BLINK_MS,
-      dedupWindowMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT_DEDUP_WINDOW_MS,
+      blinkDurationMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_DURATION_MS,
+      dedupWindowMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.DEDUP_WINDOW_MS,
     });
   }
 
