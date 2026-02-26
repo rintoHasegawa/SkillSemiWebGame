@@ -8,6 +8,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
 } from "@repo/shared";
+import { config } from "@client/config";
 import { socketManager } from "@client/network/SocketManager";
 import { AppearanceResolver } from "./application/AppearanceResolver";
 import { GameMapController } from "./entities/map/GameMapController";
@@ -48,7 +49,7 @@ export class GameManager {
   }
 
   private canAcceptInput(): boolean {
-    return !this.isInputLocked && this.timer.isStarted();
+    return this.inputLockCount === 0 && this.timer.isStarted();
   }
 
   // 現在の残り秒数を取得する
@@ -78,11 +79,21 @@ export class GameManager {
   private joystickInput = { x: 0, y: 0 };
   private isInitialized = false;
   private isDestroyed = false;
-  private isInputLocked = false;
+  private inputLockCount = 0;
 
-  public lockInput() {
-    this.isInputLocked = true;
+  public lockInput(): () => void {
+    this.inputLockCount += 1;
     this.joystickInput = { x: 0, y: 0 };
+
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      this.inputLockCount = Math.max(0, this.inputLockCount - 1);
+    };
   }
 
   constructor(container: HTMLDivElement, myId: string) {
@@ -93,7 +104,8 @@ export class GameManager {
     this.worldContainer.sortableChildren = true;
     this.playerDeathPolicy = new PlayerDeathPolicy({
       myId: this.myId,
-      lockInput: this.lockInput.bind(this),
+      hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
+      acquireInputLock: this.lockInput.bind(this),
     });
   }
 
@@ -226,6 +238,8 @@ export class GameManager {
       return;
     }
 
+    this.playerDeathPolicy.applyLocalHitStun();
+
     socketManager.game.sendBombHitReport({ bombId });
   }
 
@@ -257,9 +271,11 @@ export class GameManager {
     this.bombManager = null;
     this.bombHitOrchestrator?.clear();
     this.bombHitOrchestrator = null;
+    this.playerDeathPolicy.dispose();
     this.reportedBombHitIds.clear();
     this.players = {};
-    this.isInputLocked = false;
+    this.inputLockCount = 0;
+    this.joystickInput = { x: 0, y: 0 };
 
     // イベント購読の解除
     this.networkSync?.unbind();

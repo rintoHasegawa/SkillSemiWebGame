@@ -21,6 +21,7 @@
 - `GAME_CONFIG.GRID_ROWS`: マップ縦方向のグリッド数
 - `GAME_CONFIG.PLAYER_RADIUS`: プレイヤー当たり判定半径（グリッド単位）
 - `GAME_CONFIG.PLAYER_SPEED`: プレイヤー移動速度（1秒あたりのグリッド移動量）
+- `GAME_CONFIG.PLAYER_HIT_STUN_MS`: 被弾時に入力を停止する時間（ms）
 - `GAME_CONFIG.BOMB_RADIUS_GRID`: 爆風半径（グリッド単位）
 - `GAME_CONFIG.BOMB_FUSE_MS`: 爆弾設置から爆発までの時間（ms）
 - `GAME_CONFIG.BOMB_COOLDOWN_MS`: 次の爆弾を置けるまでの待機時間（ms）

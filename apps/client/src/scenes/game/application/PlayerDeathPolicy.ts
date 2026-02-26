@@ -2,17 +2,22 @@ import type { PlayerDeadPayload } from "@repo/shared";
 
 type PlayerDeathPolicyParams = {
   myId: string;
-  lockInput: () => void;
+  hitStunMs: number;
+  acquireInputLock: () => () => void;
 };
 
 /** 被弾後のローカルプレイヤー処理ポリシーを管理する */
 export class PlayerDeathPolicy {
   private myId: string;
-  private lockInput: () => void;
+  private hitStunMs: number;
+  private acquireInputLock: () => () => void;
+  private activeLockRelease: (() => void) | null = null;
+  private unlockTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor({ myId, lockInput }: PlayerDeathPolicyParams) {
+  constructor({ myId, hitStunMs, acquireInputLock }: PlayerDeathPolicyParams) {
     this.myId = myId;
-    this.lockInput = lockInput;
+    this.hitStunMs = hitStunMs;
+    this.acquireInputLock = acquireInputLock;
   }
 
   /** サーバーからの死亡通知に応じてローカル被弾後処理を適用する */
@@ -21,6 +26,43 @@ export class PlayerDeathPolicy {
       return;
     }
 
-    this.lockInput();
+    this.applyHitStun();
+  }
+
+  /** ローカル被弾判定時に硬直を適用する */
+  public applyLocalHitStun(): void {
+    this.applyHitStun();
+  }
+
+  /** ポリシーが保持するタイマーと入力ロックを解放する */
+  public dispose(): void {
+    if (this.unlockTimer) {
+      clearTimeout(this.unlockTimer);
+      this.unlockTimer = null;
+    }
+
+    if (this.activeLockRelease) {
+      this.activeLockRelease();
+      this.activeLockRelease = null;
+    }
+  }
+
+  private applyHitStun(): void {
+    if (!this.activeLockRelease) {
+      this.activeLockRelease = this.acquireInputLock();
+    }
+
+    if (this.unlockTimer) {
+      clearTimeout(this.unlockTimer);
+      this.unlockTimer = null;
+    }
+
+    this.unlockTimer = setTimeout(() => {
+      this.unlockTimer = null;
+      if (this.activeLockRelease) {
+        this.activeLockRelease();
+        this.activeLockRelease = null;
+      }
+    }, this.hitStunMs);
   }
 }

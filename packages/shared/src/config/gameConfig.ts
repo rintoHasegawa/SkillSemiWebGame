@@ -20,6 +20,7 @@ export const GAME_CONFIG = {
   PLAYER_RADIUS: 0.5, // プレイヤー半径（グリッド単位、目安: 0.05〜0.2）
   PLAYER_SPEED: 3, // 1秒当たりの移動量（グリッド単位）
   PLAYER_RENDER_SCALE: 1, // プレイヤー見た目サイズ倍率（1=等倍）
+  PLAYER_HIT_STUN_MS: 1000, // 被弾時に入力を停止する時間（ms）
 
   // 爆弾設定（内部座標はグリッド単位、時間はms、契約値）
   BOMB_RADIUS_GRID: 1.5, // 爆風半径（グリッド単位、円形当たり判定）
