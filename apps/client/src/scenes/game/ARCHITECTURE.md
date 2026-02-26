@@ -26,3 +26,13 @@
 - 依存方向違反は `eslint.config.mjs` の `no-restricted-imports` で検出する
 - 新規ファイル追加時はまずどのレイヤーへ属するかを決めてから配置する
 - 依存方向をまたぐ必要がある場合は application層へ adapter を追加して橋渡しする
+
+## 移動完了済みマップ
+- `PlayerRepository` は `application/player` から `entities/player` へ移動済み
+- `GameUiPresenter` は `application/presentation` から `input/presentation` へ移動済み
+- `input/joystick` は `presentation` `hooks` `model` の責務分割へ移行済み
+- `input/bomb/BombButton` は `bomb/presentation` へ移行済み
+
+## 次回以降の移動候補
+- `application` 内の受信処理は `network/receivers` と `network/handlers` へ分離を優先する
+- UI構成要素のスタイル定数は `presentation/*.styles.ts` へ集約する

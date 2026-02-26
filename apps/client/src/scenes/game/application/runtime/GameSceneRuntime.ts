@@ -7,17 +7,14 @@ import { Application, Container, Ticker } from "pixi.js";
 import { AppearanceResolver } from "../AppearanceResolver";
 import { GameNetworkSync } from "../GameNetworkSync";
 import { GameLoop } from "../GameLoop";
-import {
-  GameSceneOrchestrator,
-  type GameSceneEventPorts,
-  type GameSceneFactoryOptions,
-} from "../orchestrators/GameSceneOrchestrator";
+import { type GameSceneEventPorts, type GameSceneFactoryOptions } from "../orchestrators/GameSceneOrchestrator";
 import type { GamePlayers } from "../game.types";
 import type { BombManager } from "../../entities/bomb/BombManager";
 import type { MoveSender } from "../network/PlayerMoveSender";
 import type { GameActionSender } from "../network/GameActionSender";
 import type { GameSessionFacade } from "../lifecycle/GameSessionFacade";
 import { DisposableRegistry } from "../lifecycle/DisposableRegistry";
+import { GameSceneRuntimeWiring } from "./GameSceneRuntimeWiring";
 
 export type GameSceneRuntimeOptions = {
   app: Application;
@@ -85,7 +82,7 @@ export class GameSceneRuntime {
 
   /** シーン実行に必要なサブシステムを初期化する */
   public initialize(): void {
-    const orchestrator = new GameSceneOrchestrator({
+    const runtimeWiring = new GameSceneRuntimeWiring({
       app: this.app,
       worldContainer: this.worldContainer,
       players: this.players,
@@ -95,10 +92,10 @@ export class GameSceneRuntime {
       getJoystickInput: () => this.joystickInput,
       moveSender: this.moveSender,
       eventPorts: this.eventPorts,
-      factories: this.sceneFactories,
+      sceneFactories: this.sceneFactories,
     });
 
-    const initializedScene = orchestrator.initialize();
+    const initializedScene = runtimeWiring.wire();
     this.networkSync = initializedScene.networkSync;
     this.bombManager = initializedScene.bombManager;
     this.gameLoop = initializedScene.gameLoop;

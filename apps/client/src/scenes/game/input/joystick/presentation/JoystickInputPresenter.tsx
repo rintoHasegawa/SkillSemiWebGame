@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { useJoystickController } from "../hooks/useJoystickController";
 import { JoystickView } from "./JoystickView.tsx";
 import type { UseJoystickInputPresenterProps } from "../common";
+import { buildJoystickInputLayerStyle } from "./JoystickInputPresenter.styles";
 
 /** 入力と表示状態の橋渡しを行う */
 export const JoystickInputPresenter = ({
@@ -33,6 +34,8 @@ export const JoystickInputPresenter = ({
     reset();
   }, [isEnabled, reset]);
 
+  const layerStyle = buildJoystickInputLayerStyle(isEnabled);
+
   return (
     <div
       onPointerDown={isEnabled ? handleStart : undefined}
@@ -40,16 +43,7 @@ export const JoystickInputPresenter = ({
       onPointerUp={handleEnd}
       onPointerCancel={handleEnd}
       onLostPointerCapture={handleEnd}
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "50%",
-        height: "100%",
-        zIndex: 10,
-        touchAction: "none",
-        pointerEvents: isEnabled ? "auto" : "none",
-      }}
+      style={layerStyle}
     >
       <JoystickView
         isActive={isMoving}
