@@ -5,13 +5,9 @@
 import {
   type GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
-import type { FindGameByPlayerPort, FindRoomByPlayerPort } from "@server/domains/room/application/ports/roomUseCasePorts";
+import type { ReadyForGameDeps } from "@server/domains/room/application/ports/roomUseCasePorts";
+import { resolveRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import { readyForGameUseCase } from "@server/domains/game/application/useCases/readyForGameUseCase";
-
-type ReadyForGameDeps = {
-  roomManager: FindRoomByPlayerPort;
-  runtimeRegistry: FindGameByPlayerPort;
-};
 
 type ReadyForGameCoordinatorParams = {
   socketId: string;
@@ -26,13 +22,12 @@ export const readyForGameCoordinator = ({
   runtimeRegistry,
   output,
 }: ReadyForGameCoordinatorParams) => {
-  const room = roomManager.getRoomByPlayerId(socketId);
-  const gameManager = runtimeRegistry.getGameManagerByPlayerId(socketId);
+  const runtime = resolveRuntimeByPlayerId(roomManager, runtimeRegistry, socketId);
 
   readyForGameUseCase({
     socketId,
-    roomId: room?.roomId,
-    gameManager,
+    roomId: runtime?.roomId,
+    gameManager: runtime?.gameManager,
     output,
   });
 };

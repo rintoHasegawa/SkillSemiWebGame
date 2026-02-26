@@ -11,6 +11,7 @@ import type {
   StartGamePort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 
+/** ルーム単位ゲーム管理が満たす操作ポート集合 */
 export type RoomScopedGamePort =
   & StartGamePort
   & ReadyForGamePort
@@ -68,7 +69,7 @@ export interface EnsureGameRuntimePort {
 
 /** ルーム解散後に不要ランタイムを破棄する操作ポート */
 export interface CleanupGameRuntimePort {
-  cleanupDisposedRoomRuntimes(): void;
+  cleanupGameManagerForRoom(roomId: string): void;
 }
 
 /** ルームIDでゲーム管理を解決する参照ポート */
@@ -80,3 +81,21 @@ export interface FindGameByRoomPort {
 export interface FindGameByPlayerPort {
   getGameManagerByPlayerId(playerId: string): RoomScopedGamePort | undefined;
 }
+
+/** START_GAME調停で利用する依存集合 */
+export type StartGameDeps = {
+  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
+  runtimeRegistry: FindGameByRoomPort;
+};
+
+/** READY_FOR_GAME調停で利用する依存集合 */
+export type ReadyForGameDeps = {
+  roomManager: FindRoomByPlayerPort;
+  runtimeRegistry: FindGameByPlayerPort;
+};
+
+/** DISCONNECT調停で利用する依存集合 */
+export type DisconnectDeps = {
+  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
+  runtimeRegistry: FindGameByPlayerPort & CleanupGameRuntimePort;
+};

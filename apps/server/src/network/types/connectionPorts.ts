@@ -5,6 +5,7 @@
 import type { Server } from "socket.io";
 import type {
   CleanupGameRuntimePort,
+  DisconnectDeps,
   DisconnectRoomPort,
   EnsureGameRuntimePort,
   FindGameByRoomPort,
@@ -28,24 +29,6 @@ export type ConnectionRuntimePort =
   & EnsureGameRuntimePort
   & FindGameByRoomPort
   & FindGameByPlayerPort;
-
-/** START_GAME調停で利用する依存集合 */
-export type StartGameDeps = {
-  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
-  runtimeRegistry: FindGameByRoomPort;
-};
-
-/** READY_FOR_GAME調停で利用する依存集合 */
-export type ReadyForGameDeps = {
-  roomManager: FindRoomByPlayerPort;
-  runtimeRegistry: FindGameByPlayerPort;
-};
-
-/** DISCONNECT調停で利用する依存集合 */
-export type DisconnectDeps = {
-  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
-  runtimeRegistry: FindGameByPlayerPort & CleanupGameRuntimePort;
-};
 
 /** ソケット接続全体で利用するルーム管理ポート集合 */
 export type SocketConnectionRoomPort =
