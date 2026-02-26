@@ -7,6 +7,7 @@
 export const GAME_CONFIG = {
   // ゲーム進行設定（クライアント/サーバー契約）
   GAME_DURATION_SEC: 30, // 1ゲームの制限時間（3分 = 180秒）
+  GAME_START_DELAY_MS: 5000, // 開始通知から実際にゲーム進行を開始するまでの待機時間（ms）
 
   // ネットワーク同期設定（クライアント/サーバー契約）
   PLAYER_POSITION_UPDATE_MS: 50, // 座標送信間隔（20Hz）

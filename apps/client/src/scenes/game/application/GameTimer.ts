@@ -21,11 +21,37 @@ export class GameTimer {
     this.gameStartTime = startTime;
   }
 
+  public getStartTime(): number | null {
+    return this.gameStartTime;
+  }
+
+  public isStarted(): boolean {
+    if (!this.gameStartTime) {
+      return false;
+    }
+
+    return this.nowMsProvider() >= this.gameStartTime;
+  }
+
+  public getPreStartRemainingSec(): number {
+    if (!this.gameStartTime) {
+      return 0;
+    }
+
+    const remainingMs = this.gameStartTime - this.nowMsProvider();
+    if (remainingMs <= 0) {
+      return 0;
+    }
+
+    return Math.ceil(remainingMs / 1000);
+  }
+
   public getRemainingTime(): number {
     if (!this.gameStartTime) return config.GAME_CONFIG.GAME_DURATION_SEC;
 
     const elapsedMs = this.nowMsProvider() - this.gameStartTime;
-    const remainingSec = config.GAME_CONFIG.GAME_DURATION_SEC - elapsedMs / 1000;
+    const remainingSec =
+      config.GAME_CONFIG.GAME_DURATION_SEC - elapsedMs / 1000;
 
     return Math.max(0, remainingSec);
   }

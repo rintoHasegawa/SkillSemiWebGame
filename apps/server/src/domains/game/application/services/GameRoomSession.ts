@@ -9,6 +9,7 @@ import {
   logScopes,
 } from "@server/logging/index";
 import type { gameTypes, GameResultPayload } from "@repo/shared";
+import { config } from "@server/config";
 import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
@@ -29,6 +30,7 @@ export class GameRoomSession {
   private bombStateStore: BombStateStore;
   private gameLoop: GameLoop | null = null;
   private startTime: number | undefined;
+  private startDelayTimer: NodeJS.Timeout | null = null;
 
   constructor(
     private roomId: string,
@@ -61,7 +63,13 @@ export class GameRoomSession {
       return;
     }
 
-    this.startTime = Date.now();
+    const gameStartDelayMs = (
+      config.GAME_CONFIG as typeof config.GAME_CONFIG & {
+        GAME_START_DELAY_MS?: number;
+      }
+    ).GAME_START_DELAY_MS;
+    const startDelayMs = Math.max(0, gameStartDelayMs ?? 0);
+    this.startTime = Date.now() + startDelayMs;
     this.gameLoop = new GameLoop(
       this.roomId,
       tickRate,
@@ -78,10 +86,28 @@ export class GameRoomSession {
       onBotPlaceBomb,
     );
 
-    this.gameLoop.start();
+    if (startDelayMs === 0) {
+      this.gameLoop.start();
+      return;
+    }
+
+    this.startDelayTimer = setTimeout(() => {
+      this.startDelayTimer = null;
+      this.gameLoop?.start();
+    }, startDelayMs);
   }
 
   public movePlayer(id: string, x: number, y: number): void {
+    if (this.startTime && Date.now() < this.startTime) {
+      logEvent(logScopes.GAME_ROOM_SESSION, {
+        event: gameDomainLogEvents.MOVE,
+        result: logResults.IGNORED_INVALID_PAYLOAD,
+        roomId: this.roomId,
+        socketId: id,
+      });
+      return;
+    }
+
     const player = this.players.get(id);
     if (!player) {
       logEvent(logScopes.GAME_ROOM_SESSION, {
@@ -131,6 +157,11 @@ export class GameRoomSession {
   }
 
   public dispose(): void {
+    if (this.startDelayTimer) {
+      clearTimeout(this.startDelayTimer);
+      this.startDelayTimer = null;
+    }
+
     if (this.gameLoop) {
       this.gameLoop.stop();
       this.gameLoop = null;
