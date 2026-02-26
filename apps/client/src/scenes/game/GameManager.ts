@@ -37,8 +37,8 @@ export class GameManager {
   private bombHitOrchestrator: BombHitOrchestrator | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
-  private playerDeathPolicy: PlayerDeathPolicy;
-  private playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
+  private playerDeathPolicy!: PlayerDeathPolicy;
+  private playerHitEffectOrchestrator!: PlayerHitEffectOrchestrator;
   private reportedBombHitIds = new Set<string>();
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
@@ -108,6 +108,11 @@ export class GameManager {
     this.app = new Application();
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
+    this.initializeHitSubsystem();
+  }
+
+  /** 被弾時の入力制御と演出発火のサブシステムを初期化する */
+  private initializeHitSubsystem(): void {
     this.playerDeathPolicy = new PlayerDeathPolicy({
       myId: this.myId,
       hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
@@ -116,6 +121,7 @@ export class GameManager {
     this.playerHitEffectOrchestrator = new PlayerHitEffectOrchestrator({
       players: this.players,
       blinkDurationMs: config.GAME_CONFIG.PLAYER_HIT_BLINK_MS,
+      dedupWindowMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT_DEDUP_WINDOW_MS,
     });
   }
 
