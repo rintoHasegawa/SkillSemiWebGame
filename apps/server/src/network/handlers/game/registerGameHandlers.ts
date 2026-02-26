@@ -15,8 +15,7 @@ import {
   isPlaceBombPayload,
   isStartGamePayload,
 } from "@server/network/validation/socketPayloadValidators";
-import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
-import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
+import { createSocketRegistrationContext } from "@server/network/handlers/registration";
 import type { GameOutputAdapter } from "./createGameOutputAdapter";
 import {
   type BombHitReportEventPayload,
@@ -35,7 +34,7 @@ import {
 import {
   registerGuardedEvent,
   registerSelfValidatedEvent,
-  registerUnguardedEvents,
+  registerUnguardedEvent,
   type GuardedEventDefinition,
   type SelfValidatedEventDefinition,
   type UnguardedEventDefinition,
@@ -168,8 +167,7 @@ export const registerGameHandlers = (
     runtimeRegistry,
     gameOutputAdapter,
   );
-  const { onEvent } = createServerSocketOnBridge(socket);
-  const { guardOnEvent } = createPayloadGuard(socket.id);
+  const { onEvent, guardOnEvent } = createSocketRegistrationContext(socket);
 
   // 検証が必要なイベントを宣言的に登録する
   const pingEventDefinition = createPingEventDefinition(orchestratorDeps);
@@ -188,9 +186,8 @@ export const registerGameHandlers = (
   registerSelfValidatedEvent(onEvent, startGameEventDefinition);
 
   // 検証不要イベントを宣言的に登録する
-  const unguardedGameEventDefinitions: ReadyForGameEventDefinition[] = [
-    createReadyForGameEventDefinition(orchestratorDeps),
-  ];
+  const readyForGameEventDefinition: ReadyForGameEventDefinition =
+    createReadyForGameEventDefinition(orchestratorDeps);
 
-  registerUnguardedEvents(onEvent, unguardedGameEventDefinitions);
+  registerUnguardedEvent(onEvent, readyForGameEventDefinition);
 };

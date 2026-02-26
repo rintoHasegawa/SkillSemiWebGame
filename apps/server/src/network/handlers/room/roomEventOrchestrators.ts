@@ -23,6 +23,9 @@ export type JoinRoomOrchestratorDeps = {
   joinRoom: (roomId: string) => Promise<void>;
 };
 
+/** JOIN_ROOMイベントの入力ペイロード型 */
+export type JoinRoomEventPayload = Parameters<typeof handleJoinRoomEvent>[1];
+
 /** JOIN_ROOMイベントを調停して参加ユースケースを実行する */
 export const handleJoinRoomEvent = async (
   deps: JoinRoomOrchestratorDeps,

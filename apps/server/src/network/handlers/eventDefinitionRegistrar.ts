@@ -68,25 +68,21 @@ export const registerSelfValidatedEvent = <TEvent extends string, TPayload>(
 };
 
 /** 検証不要イベント定義を登録する */
-export const registerUnguardedEvents = <TEvent extends string>(
+export const registerUnguardedEvent = <TEvent extends string>(
   subscribe: (event: TEvent, callback: () => void) => void,
-  definitions: UnguardedEventDefinition<TEvent>[],
+  definition: UnguardedEventDefinition<TEvent>,
 ): void => {
-  definitions.forEach((definition) => {
-    subscribe(definition.event, () => {
-      void definition.orchestrate();
-    });
+  subscribe(definition.event, () => {
+    void definition.orchestrate();
   });
 };
 
 /** 汎用イベント定義を登録する */
-export const registerEvents = <TEvent extends string, TPayload>(
+export const registerEvent = <TEvent extends string, TPayload>(
   subscribe: (event: TEvent, callback: (payload: TPayload) => void) => void,
-  definitions: EventDefinition<TEvent, TPayload>[],
+  definition: EventDefinition<TEvent, TPayload>,
 ): void => {
-  definitions.forEach((definition) => {
-    subscribe(definition.event, (payload) => {
-      void definition.orchestrate(payload);
-    });
+  subscribe(definition.event, (payload) => {
+    void definition.orchestrate(payload);
   });
 };

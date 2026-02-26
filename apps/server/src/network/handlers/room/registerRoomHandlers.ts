@@ -8,12 +8,12 @@ import type {
   JoinRoomEventRoomUseCasePort,
   JoinRoomEventRuntimeUseCasePort,
 } from "@server/network/types/connectionPorts";
-import { createPayloadGuard } from "@server/network/handlers/payloadGuard";
-import { createServerSocketOnBridge } from "@server/network/handlers/socketEventBridge";
+import { createSocketRegistrationContext } from "@server/network/handlers/registration";
 import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 import {
   handleJoinRoomEvent,
+  type JoinRoomEventPayload,
   type JoinRoomOrchestratorDeps,
 } from "./roomEventOrchestrators";
 import {
@@ -23,7 +23,7 @@ import {
 
 type JoinRoomEventDefinition = GuardedEventDefinition<
   typeof protocol.SocketEvents.JOIN_ROOM,
-  Parameters<typeof handleJoinRoomEvent>[1]
+  JoinRoomEventPayload
 >;
 
 /** ルーム受信イベントごとの入力検証関数を保持するテーブル */
@@ -75,8 +75,7 @@ export const registerRoomHandlers = (
     runtimeRegistry,
     roomOutputAdapter,
   );
-  const { onEvent } = createServerSocketOnBridge(socket);
-  const { guardOnEvent } = createPayloadGuard(socket.id);
+  const { onEvent, guardOnEvent } = createSocketRegistrationContext(socket);
 
   // 検証が必要なイベントを宣言的に登録する
   const joinRoomEventDefinition = createJoinRoomEventDefinition(

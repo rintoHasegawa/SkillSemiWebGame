@@ -8,7 +8,7 @@ import type {
   SocketConnectionRoomPort,
   SocketConnectionRuntimePort,
 } from "./types/connectionPorts";
-import { registerConnectionHandlers } from "./handlers/registerConnectionHandlers";
+import { registerConnectionHandlers } from "./handlers";
 
 /** Socket.IOの接続ハンドラ登録を統括する */
 export class SocketManager {
