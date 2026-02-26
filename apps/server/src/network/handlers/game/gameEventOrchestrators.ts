@@ -24,6 +24,18 @@ export type StartGamePayload = {
   targetPlayerCount?: number;
 };
 
+/** PINGイベントの入力ペイロード型 */
+export type PingEventPayload = Parameters<typeof handlePingEvent>[1];
+
+/** MOVEイベントの入力ペイロード型 */
+export type MoveEventPayload = Parameters<typeof handleMoveEvent>[1];
+
+/** PLACE_BOMBイベントの入力ペイロード型 */
+export type PlaceBombEventPayload = Parameters<typeof handlePlaceBombEvent>[1];
+
+/** BOMB_HIT_REPORTイベントの入力ペイロード型 */
+export type BombHitReportEventPayload = Parameters<typeof handleBombHitReportEvent>[1];
+
 /** ゲームイベント調停で利用する依存集合 */
 export type GameEventOrchestratorDeps = {
   socketId: string;

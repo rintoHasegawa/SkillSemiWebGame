@@ -17,7 +17,7 @@ import {
   type JoinRoomOrchestratorDeps,
 } from "./roomEventOrchestrators";
 import {
-  registerGuardedEvents,
+  registerGuardedEvent,
   type GuardedEventDefinition,
 } from "@server/network/handlers/eventDefinitionRegistrar";
 
@@ -49,6 +49,19 @@ const createJoinRoomOrchestratorDeps = (
   };
 };
 
+/** JOIN_ROOMイベント定義を生成する */
+const createJoinRoomEventDefinition = (
+  deps: JoinRoomOrchestratorDeps,
+): JoinRoomEventDefinition => {
+  return {
+    event: protocol.SocketEvents.JOIN_ROOM,
+    validator: roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM],
+    orchestrate: async (payload) => {
+      await handleJoinRoomEvent(deps, payload);
+    },
+  };
+};
+
 /** ルーム参加イベントを検証して参加ユースケースへ連携する */
 export const registerRoomHandlers = (
   socket: Socket,
@@ -66,15 +79,9 @@ export const registerRoomHandlers = (
   const { guardOnEvent } = createPayloadGuard(socket.id);
 
   // 検証が必要なイベントを宣言的に登録する
-  const guardedRoomEventDefinitions: JoinRoomEventDefinition[] = [
-    {
-      event: protocol.SocketEvents.JOIN_ROOM,
-      validator: roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM],
-      orchestrate: async (payload) => {
-        await handleJoinRoomEvent(orchestratorDeps, payload);
-      },
-    },
-  ];
+  const joinRoomEventDefinition = createJoinRoomEventDefinition(
+    orchestratorDeps,
+  );
 
-  registerGuardedEvents(onEvent, guardOnEvent, guardedRoomEventDefinitions);
+  registerGuardedEvent(onEvent, guardOnEvent, joinRoomEventDefinition);
 };

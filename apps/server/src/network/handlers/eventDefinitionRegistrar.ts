@@ -35,39 +35,35 @@ export type EventDefinition<TEvent extends string, TPayload> = {
 };
 
 /** 検証付きイベント定義を登録する */
-export const registerGuardedEvents = <TEvent extends string>(
+export const registerGuardedEvent = <TEvent extends string, TPayload>(
   subscribe: (event: TEvent, callback: (payload: unknown) => void) => void,
-  createGuard: <TPayload>(
+  createGuard: (
     event: TEvent,
     validator: (value: unknown) => value is TPayload,
   ) => (payload: unknown) => payload is TPayload,
-  definitions: GuardedEventDefinition<TEvent, any>[],
+  definition: GuardedEventDefinition<TEvent, TPayload>,
 ): void => {
-  definitions.forEach((definition) => {
-    const guard = createGuard(definition.event, definition.validator);
-    subscribe(definition.event, (payload) => {
-      if (!guard(payload)) {
-        return;
-      }
+  const guard = createGuard(definition.event, definition.validator);
+  subscribe(definition.event, (payload) => {
+    if (!guard(payload)) {
+      return;
+    }
 
-      void definition.orchestrate(payload);
-    });
+    void definition.orchestrate(payload);
   });
 };
 
 /** 自前検証イベント定義を登録する */
-export const registerSelfValidatedEvents = <TEvent extends string>(
+export const registerSelfValidatedEvent = <TEvent extends string, TPayload>(
   subscribe: (event: TEvent, callback: (payload: unknown) => void) => void,
-  definitions: SelfValidatedEventDefinition<TEvent, any>[],
+  definition: SelfValidatedEventDefinition<TEvent, TPayload>,
 ): void => {
-  definitions.forEach((definition) => {
-    subscribe(definition.event, (payload) => {
-      if (!definition.validator(payload)) {
-        return;
-      }
+  subscribe(definition.event, (payload) => {
+    if (!definition.validator(payload)) {
+      return;
+    }
 
-      void definition.orchestrate(payload);
-    });
+    void definition.orchestrate(payload);
   });
 };
 
