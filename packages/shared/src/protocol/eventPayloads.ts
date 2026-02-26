@@ -28,6 +28,8 @@ export type {
   PlaceBombPayload,
   BombPlacedPayload,
   BombPlacedAckPayload,
+  BombHitReportPayload,
+  PlayerDeadPayload,
   GameResultPayload,
   GameResultRanking,
 } from "./payloads/gamePayloads";

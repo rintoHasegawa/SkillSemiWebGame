@@ -34,6 +34,8 @@ export type {
 	CurrentPlayersPayload,
 	BombPlacedPayload,
 	BombPlacedAckPayload,
+	BombHitReportPayload,
+	PlayerDeadPayload,
 	PlaceBombPayload,
 	BombNetworkPayload,
 	GameStartPayload,
