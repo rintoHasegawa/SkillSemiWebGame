@@ -6,7 +6,7 @@
 import type { CSSProperties } from "react";
 
 /** ゲーム画面全体のルートスタイル */
-export const ROOT_STYLE: CSSProperties = {
+export const GAME_VIEW_ROOT_STYLE: CSSProperties = {
   width: "100vw",
   height: "100vh",
   overflow: "hidden",
@@ -17,7 +17,7 @@ export const ROOT_STYLE: CSSProperties = {
 };
 
 /** 上部中央のタイマー表示スタイル */
-export const TIMER_STYLE: CSSProperties = {
+export const GAME_VIEW_TIMER_STYLE: CSSProperties = {
   position: "absolute",
   top: "20px",
   left: "50%",
@@ -33,7 +33,7 @@ export const TIMER_STYLE: CSSProperties = {
 };
 
 /** Pixi描画レイヤーの配置スタイル */
-export const PIXI_LAYER_STYLE: CSSProperties = {
+export const GAME_VIEW_PIXI_LAYER_STYLE: CSSProperties = {
   position: "absolute",
   top: 0,
   left: 0,
@@ -41,7 +41,7 @@ export const PIXI_LAYER_STYLE: CSSProperties = {
 };
 
 /** 画面中央の開始カウントダウン表示スタイル */
-export const START_COUNTDOWN_STYLE: CSSProperties = {
+export const GAME_VIEW_START_COUNTDOWN_STYLE: CSSProperties = {
   position: "absolute",
   top: "50%",
   left: "50%",

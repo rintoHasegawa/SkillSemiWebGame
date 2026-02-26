@@ -98,7 +98,7 @@ export class GameManager {
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
     this.gameEventFacade = new GameEventFacade({
-      onGameStart: (startTime) => {
+      onGameStarted: (startTime) => {
         this.sessionFacade.setGameStart(startTime);
         this.uiStateSyncService.emitIfChanged();
       },
@@ -122,15 +122,15 @@ export class GameManager {
       moveSender,
       getElapsedMs: () => this.sessionFacade.getElapsedMs(),
       eventPorts: {
-        onGameStart: this.gameEventFacade.handleGameStart.bind(this.gameEventFacade),
-        onGameEnd: this.lockInput.bind(this),
-        onBombPlacedFromOthers: (payload) => {
-          this.gameEventFacade.handleBombPlacedFromOthers(payload);
+        onGameStarted: this.gameEventFacade.applyGameStarted.bind(this.gameEventFacade),
+        onGameEnded: this.lockInput.bind(this),
+        onRemoteBombPlaced: (payload) => {
+          this.gameEventFacade.applyRemoteBombPlaced(payload);
         },
-        onBombPlacedAckFromNetwork: (payload) => {
-          this.gameEventFacade.handleBombPlacedAck(payload);
+        onBombPlacementAcknowledged: (payload) => {
+          this.gameEventFacade.applyBombPlacementAcknowledged(payload);
         },
-        onPlayerDeadFromNetwork: (payload) => {
+        onRemotePlayerDead: (payload) => {
           this.combatFacade.handleNetworkPlayerDead(payload);
         },
         onBombExploded: (payload) => {
