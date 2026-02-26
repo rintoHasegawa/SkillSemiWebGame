@@ -6,6 +6,7 @@
 import { useJoystickController } from "./useJoystickController";
 import { JoystickView } from "./JoystickView";
 import type { UseJoystickInputPresenterProps } from "./common";
+import { useEffect } from "react";
 
 /** 入力と表示状態の橋渡しを行う */
 export const JoystickInputPresenter = ({
@@ -21,15 +22,24 @@ export const JoystickInputPresenter = ({
     handleStart,
     handleMove,
     handleEnd,
+    reset,
   } = useJoystickController({ onInput, maxDist });
+
+  useEffect(() => {
+    if (isEnabled) {
+      return;
+    }
+
+    reset();
+  }, [isEnabled, reset]);
 
   return (
     <div
       onPointerDown={isEnabled ? handleStart : undefined}
       onPointerMove={isEnabled ? handleMove : undefined}
-      onPointerUp={isEnabled ? handleEnd : undefined}
-      onPointerCancel={isEnabled ? handleEnd : undefined}
-      onLostPointerCapture={isEnabled ? handleEnd : undefined}
+      onPointerUp={handleEnd}
+      onPointerCancel={handleEnd}
+      onLostPointerCapture={handleEnd}
       style={{
         position: "absolute",
         top: 0,

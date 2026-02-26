@@ -3,7 +3,7 @@
  * ジョイスティック入力状態の管理と入力ハンドラの提供を担うフック
  * UI描画に必要な中心点，ノブ位置，半径を保持する
  */
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { JOYSTICK_DEADZONE, MAX_DIST } from "./common";
 import { computeJoystick } from "./JoystickModel";
 import type {
@@ -26,7 +26,25 @@ export const useJoystickState = ({
   const [center, setCenter] = useState<Point>({ x: 0, y: 0 });
   const [knobOffset, setKnobOffset] = useState<Point>({ x: 0, y: 0 });
   const activePointerIdRef = useRef<number | null>(null);
+  const activePointerTargetRef = useRef<HTMLDivElement | null>(null);
   const radius = maxDist ?? MAX_DIST;
+
+  const reset = useCallback(() => {
+    const pointerId = activePointerIdRef.current;
+    const pointerTarget = activePointerTargetRef.current;
+    if (
+      pointerId !== null &&
+      pointerTarget &&
+      pointerTarget.hasPointerCapture(pointerId)
+    ) {
+      pointerTarget.releasePointerCapture(pointerId);
+    }
+
+    activePointerIdRef.current = null;
+    activePointerTargetRef.current = null;
+    setIsMoving(false);
+    setKnobOffset({ x: 0, y: 0 });
+  }, []);
 
   // 入力開始時の基準座標をセットする
   const handleStart = useCallback((e: JoystickPointerEvent) => {
@@ -37,6 +55,7 @@ export const useJoystickState = ({
     if (point.x > window.innerWidth / 2) return;
 
     activePointerIdRef.current = e.pointerId;
+    activePointerTargetRef.current = e.currentTarget;
     e.currentTarget.setPointerCapture(e.pointerId);
     setCenter(point);
     setKnobOffset({ x: 0, y: 0 });
@@ -68,17 +87,34 @@ export const useJoystickState = ({
   );
 
   // 入力終了時に状態をリセットする
-  const handleEnd = useCallback((e: JoystickPointerEvent) => {
-    if (activePointerIdRef.current !== e.pointerId) return;
+  const handleEnd = useCallback(
+    (e: JoystickPointerEvent) => {
+      if (activePointerIdRef.current !== e.pointerId) return;
 
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
+      reset();
+    },
+    [reset],
+  );
 
-    activePointerIdRef.current = null;
-    setIsMoving(false);
-    setKnobOffset({ x: 0, y: 0 });
-  }, []);
+  useEffect(() => {
+    const handleWindowBlur = () => {
+      reset();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        reset();
+      }
+    };
+
+    window.addEventListener("blur", handleWindowBlur);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("blur", handleWindowBlur);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [reset]);
 
   return {
     isMoving,
@@ -88,5 +124,6 @@ export const useJoystickState = ({
     handleStart,
     handleMove,
     handleEnd,
+    reset,
   };
 };

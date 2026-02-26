@@ -30,6 +30,7 @@ export const useJoystickController = ({
     handleStart,
     handleMove: baseHandleMove,
     handleEnd: baseHandleEnd,
+    reset: baseReset,
   } = useJoystickState({ maxDist });
 
   const lastEmittedRef = useRef<NormalizedInput | null>(null);
@@ -75,6 +76,12 @@ export const useJoystickController = ({
     [baseHandleEnd, emitInput],
   );
 
+  const reset = useCallback(() => {
+    baseReset();
+    emitInput({ x: 0, y: 0 });
+    lastEmittedRef.current = { x: 0, y: 0 };
+  }, [baseReset, emitInput]);
+
   return {
     isMoving,
     center,
@@ -83,5 +90,6 @@ export const useJoystickController = ({
     handleStart,
     handleMove,
     handleEnd,
+    reset,
   };
 };
