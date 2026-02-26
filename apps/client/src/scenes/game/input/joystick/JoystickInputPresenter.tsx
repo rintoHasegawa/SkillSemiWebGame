@@ -1,64 +1,8 @@
 /**
  * JoystickInputPresenter
- * ジョイスティック入力の受け取りと表示状態の橋渡しを担うプレゼンター
- * 入力イベントをコントローラーへ委譲し，描画用状態をViewへ渡す
+ * presentation配下のJoystickInputPresenterを段階移行のため再公開する
+ * 既存import互換を維持して段階的な参照置換を可能にする
  */
-import { useJoystickController } from "./useJoystickController";
-import { JoystickView } from "./JoystickView";
-import type { UseJoystickInputPresenterProps } from "./common";
-import { useEffect } from "react";
 
-/** 入力と表示状態の橋渡しを行う */
-export const JoystickInputPresenter = ({
-  onInput,
-  maxDist,
-  isEnabled = true,
-}: UseJoystickInputPresenterProps) => {
-  const {
-    isMoving,
-    center,
-    knobOffset,
-    radius,
-    handleStart,
-    handleMove,
-    handleEnd,
-    reset,
-  } = useJoystickController({ onInput, maxDist });
-
-  useEffect(() => {
-    if (isEnabled) {
-      return;
-    }
-
-    reset();
-  }, [isEnabled, reset]);
-
-  return (
-    <div
-      onPointerDown={isEnabled ? handleStart : undefined}
-      onPointerMove={isEnabled ? handleMove : undefined}
-      onPointerUp={handleEnd}
-      onPointerCancel={handleEnd}
-      onLostPointerCapture={handleEnd}
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "50%",
-        height: "100%",
-        // キャンバス前面入力キャプチャレイヤー
-        zIndex: 10,
-        touchAction: "none",
-        pointerEvents: isEnabled ? "auto" : "none",
-      }}
-    >
-      {/* 入力イベントをコントローラーへ渡し，描画用状態をViewへ渡す */}
-      <JoystickView
-        isActive={isMoving}
-        center={center}
-        knobOffset={knobOffset}
-        radius={radius}
-      />
-    </div>
-  );
-};
+/** presentation配下のコンポーネントを互換再エクスポートする */
+export { JoystickInputPresenter } from "./presentation/JoystickInputPresenter";
