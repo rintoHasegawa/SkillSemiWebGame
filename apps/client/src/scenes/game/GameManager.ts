@@ -19,6 +19,7 @@ import { GameLoop } from "./application/GameLoop";
 import { BombHitContextProvider } from "./application/BombHitContextProvider";
 import { BombHitOrchestrator } from "./application/BombHitOrchestrator";
 import { PlayerDeathPolicy } from "./application/PlayerDeathPolicy";
+import { PlayerHitEffectOrchestrator } from "./application/PlayerHitEffectOrchestrator";
 import type { BombHitEvaluationResult } from "./application/BombHitOrchestrator";
 import type { GamePlayers } from "./application/game.types";
 
@@ -37,6 +38,7 @@ export class GameManager {
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
   private playerDeathPolicy: PlayerDeathPolicy;
+  private playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
   private reportedBombHitIds = new Set<string>();
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
@@ -110,6 +112,10 @@ export class GameManager {
       myId: this.myId,
       hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
       acquireInputLock: this.lockInput.bind(this),
+    });
+    this.playerHitEffectOrchestrator = new PlayerHitEffectOrchestrator({
+      players: this.players,
+      blinkDurationMs: config.GAME_CONFIG.PLAYER_HIT_BLINK_MS,
     });
   }
 
@@ -189,9 +195,7 @@ export class GameManager {
       },
       onPlayerDeadFromNetwork: (payload) => {
         this.playerDeathPolicy.applyPlayerDeadEvent(payload);
-        if (payload.playerId !== this.myId) {
-          this.playBombHitBlink(payload.playerId);
-        }
+        this.playerHitEffectOrchestrator.handleNetworkPlayerDead(payload.playerId, this.myId);
       },
     });
     this.networkSync.bind();
@@ -246,18 +250,9 @@ export class GameManager {
     }
 
     this.playerDeathPolicy.applyLocalHitStun();
-    this.playBombHitBlink(this.myId);
+    this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
 
     socketManager.game.sendBombHitReport({ bombId });
-  }
-
-  private playBombHitBlink(playerId: string): void {
-    const target = this.players[playerId];
-    if (!target) {
-      return;
-    }
-
-    target.playBombHitBlink(config.GAME_CONFIG.PLAYER_HIT_STUN_MS);
   }
 
   private shouldSendBombHitReport(
