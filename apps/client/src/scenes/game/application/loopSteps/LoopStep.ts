@@ -14,7 +14,7 @@ export type LoopFrameContext = {
   playerRepository: PlayerRepository;
   me: LocalPlayerController;
   deltaSeconds: number;
-  isMoving: boolean;
+  getIsMoving: () => boolean;
 };
 
 /** 1フレーム内で許可する副作用操作の型 */

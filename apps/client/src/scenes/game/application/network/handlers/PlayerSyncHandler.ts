@@ -42,19 +42,13 @@ export class PlayerSyncHandler {
   /** 初期プレイヤー一覧を生成して反映する */
   public handleCurrentPlayers = (serverPlayers: CurrentPlayersPayload): void => {
     serverPlayers.forEach((player) => {
-      const playerController = player.id === this.myId
-        ? new LocalPlayerController(player, this.appearanceResolver)
-        : new RemotePlayerController(player, this.appearanceResolver);
-      this.worldContainer.addChild(playerController.getDisplayObject());
-      this.playerRepository.upsert(player.id, playerController);
+      this.replacePlayerController(player.id, player);
     });
   };
 
   /** 新規参加プレイヤーを生成して反映する */
   public handleNewPlayer = (payload: NewPlayerPayload): void => {
-    const playerController = new RemotePlayerController(payload, this.appearanceResolver);
-    this.worldContainer.addChild(playerController.getDisplayObject());
-    this.playerRepository.upsert(payload.id, playerController);
+    this.replacePlayerController(payload.id, payload);
   };
 
   /** プレイヤー差分更新を反映する */
@@ -77,4 +71,19 @@ export class PlayerSyncHandler {
     this.worldContainer.removeChild(target.getDisplayObject());
     target.destroy();
   };
+
+  private replacePlayerController(playerId: string, payload: NewPlayerPayload): void {
+    const existing = this.playerRepository.remove(playerId);
+    if (existing) {
+      this.worldContainer.removeChild(existing.getDisplayObject());
+      existing.destroy();
+    }
+
+    const playerController = playerId === this.myId
+      ? new LocalPlayerController(payload, this.appearanceResolver)
+      : new RemotePlayerController(payload, this.appearanceResolver);
+
+    this.worldContainer.addChild(playerController.getDisplayObject());
+    this.playerRepository.upsert(playerId, playerController);
+  }
 }
