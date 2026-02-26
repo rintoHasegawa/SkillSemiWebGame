@@ -3,11 +3,11 @@
  * DISCONNECTイベントの調停を行い，ゲーム離脱処理とルーム離脱処理を順序実行する
  */
 import {
-  type DisconnectPlayerPort,
   type GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
   DisconnectRoomPort,
+  FindGameByPlayerPort,
   FindRoomByIdPort,
   FindRoomByPlayerPort,
   RoomOutputPort,
@@ -18,8 +18,7 @@ import { roomDisconnectUseCase } from "@server/domains/room/application/useCases
 /** 切断調停で利用する入力ポートと出力ポートの契約 */
 export type DisconnectCoordinatorParams = {
   socketId: string;
-  gameManager: DisconnectPlayerPort;
-  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
+  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort & FindGameByPlayerPort;
   gameOutput: Pick<GameOutputPort, "publishPlayerRemovedToRoom">;
   roomOutput: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
 };
@@ -27,19 +26,21 @@ export type DisconnectCoordinatorParams = {
 /** 切断時にゲーム処理とルーム処理を調停し，一貫した離脱処理を実行する */
 export const disconnectCoordinator = ({
   socketId,
-  gameManager,
   roomManager,
   gameOutput,
   roomOutput,
 }: DisconnectCoordinatorParams) => {
   const roomId = roomManager.getRoomByPlayerId(socketId)?.roomId;
+  const gameManager = roomManager.getGameManagerByPlayerId(socketId);
 
-  disconnectUseCase({
-    gameManager,
-    roomId,
-    playerId: socketId,
-    output: gameOutput,
-  });
+  if (gameManager) {
+    disconnectUseCase({
+      gameManager,
+      roomId,
+      playerId: socketId,
+      output: gameOutput,
+    });
+  }
 
   roomDisconnectUseCase({
     roomManager,

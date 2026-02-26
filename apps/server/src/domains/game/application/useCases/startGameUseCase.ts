@@ -38,7 +38,6 @@ export const startGameUseCase = ({
   output,
 }: StartGameUseCaseParams) => {
   gameManager.startRoomSession(
-    roomId,
     playerIds,
     (tickData) => {
       if (tickData.playerUpdates.length > 0) {
@@ -73,6 +72,6 @@ export const startGameUseCase = ({
     }
   );
 
-  const startTime = gameManager.getRoomStartTime(roomId) || Date.now();
+  const startTime = gameManager.getRoomStartTime() || Date.now();
   output.publishGameStartToRoom(roomId, { startTime });
 };
