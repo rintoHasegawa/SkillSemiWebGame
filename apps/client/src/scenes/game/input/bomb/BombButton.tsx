@@ -85,8 +85,13 @@ export const BombButton = ({
     onPress();
   };
 
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    handleActivate();
+  };
+
   return (
-    <div style={hitAreaStyle} onClick={handleActivate}>
+    <div style={hitAreaStyle} onPointerDown={handlePointerDown}>
       <div style={frameStyle}>
         <button
           style={buttonStyle}

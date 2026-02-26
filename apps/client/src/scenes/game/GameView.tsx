@@ -11,7 +11,7 @@ type Props = {
   startCountdownText: string | null;
   pixiContainerRef: React.RefObject<HTMLDivElement>;
   onJoystickInput: (x: number, y: number) => void;
-  onPlaceBomb: () => void;
+  onPlaceBomb: () => boolean;
 };
 
 const ROOT_STYLE: React.CSSProperties = {

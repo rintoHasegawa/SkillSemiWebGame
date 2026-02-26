@@ -11,7 +11,7 @@ import { BombButton } from "./bomb/BombButton";
 /** 入力UIレイヤーの入力プロパティ */
 type GameInputOverlayProps = {
   onJoystickInput: (x: number, y: number) => void;
-  onPlaceBomb: () => void;
+  onPlaceBomb: () => boolean;
 };
 
 const UI_LAYER_STYLE: React.CSSProperties = {
@@ -83,7 +83,11 @@ export const GameInputOverlay = ({
       return;
     }
 
-    onPlaceBomb();
+    const placed = onPlaceBomb();
+    if (!placed) {
+      return;
+    }
+
     setLastBombPressedAt(Date.now());
     setNowMs(Date.now());
   };

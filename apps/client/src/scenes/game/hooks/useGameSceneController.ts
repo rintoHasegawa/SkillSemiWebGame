@@ -39,7 +39,7 @@ export const useGameSceneController = (myId: string | null) => {
         manager.setJoystickInput(x, y);
       },
       () => {
-        manager.placeBomb();
+        return manager.placeBomb() !== null;
       },
     );
 
@@ -67,8 +67,8 @@ export const useGameSceneController = (myId: string | null) => {
     inputManagerRef.current?.handleJoystickInput(x, y);
   }, []);
 
-  const handlePlaceBomb = useCallback(() => {
-    inputManagerRef.current?.handlePlaceBomb();
+  const handlePlaceBomb = useCallback((): boolean => {
+    return inputManagerRef.current?.handlePlaceBomb() ?? false;
   }, []);
 
   return {
