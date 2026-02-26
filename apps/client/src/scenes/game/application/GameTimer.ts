@@ -49,7 +49,12 @@ export class GameTimer {
   public getRemainingTime(): number {
     if (!this.gameStartTime) return config.GAME_CONFIG.GAME_DURATION_SEC;
 
-    const elapsedMs = this.nowMsProvider() - this.gameStartTime;
+    const nowMs = this.nowMsProvider();
+    if (nowMs < this.gameStartTime) {
+      return config.GAME_CONFIG.GAME_DURATION_SEC;
+    }
+
+    const elapsedMs = nowMs - this.gameStartTime;
     const remainingSec =
       config.GAME_CONFIG.GAME_DURATION_SEC - elapsedMs / 1000;
 
