@@ -4,6 +4,7 @@
  * ローカル入力適用，リモート更新適用，描画同期を分離して扱う
  */
 import type { playerTypes } from '@repo/shared';
+import { AppearanceResolver } from '@client/scenes/game/application/AppearanceResolver';
 import { PlayerModel } from './PlayerModel';
 import { PlayerView } from './PlayerView';
 
@@ -25,9 +26,9 @@ abstract class BasePlayerController {
   protected readonly view: PlayerView;
 
   /** 共通初期化としてModelとViewを生成する */
-  protected constructor(data: playerTypes.PlayerData, isLocal: boolean) {
+  protected constructor(data: playerTypes.PlayerData, isLocal: boolean, appearanceResolver: AppearanceResolver) {
     this.model = new PlayerModel(data);
-    this.view = new PlayerView(data.teamId, isLocal);
+    this.view = new PlayerView(appearanceResolver.resolvePlayerImageFile(data.teamId), isLocal);
 
     const pos = this.model.getPosition();
     this.view.syncPosition(pos.x, pos.y);
@@ -57,8 +58,8 @@ abstract class BasePlayerController {
 /** ローカルプレイヤーの入力適用と描画同期を担うコントローラー */
 export class LocalPlayerController extends BasePlayerController {
   /** ローカルプレイヤー用コントローラーを初期化する */
-  constructor(data: playerTypes.PlayerData) {
-    super(data, true);
+  constructor(data: playerTypes.PlayerData, appearanceResolver: AppearanceResolver) {
+    super(data, true, appearanceResolver);
   }
 
   /** ローカル入力を座標計算へ適用する */
@@ -76,8 +77,8 @@ export class LocalPlayerController extends BasePlayerController {
 /** リモートプレイヤーの更新適用と補間同期を担うコントローラー */
 export class RemotePlayerController extends BasePlayerController {
   /** リモートプレイヤー用コントローラーを初期化する */
-  constructor(data: playerTypes.PlayerData) {
-    super(data, false);
+  constructor(data: playerTypes.PlayerData, appearanceResolver: AppearanceResolver) {
+    super(data, false, appearanceResolver);
   }
 
   /** ネットワーク更新を目標座標へ反映する */

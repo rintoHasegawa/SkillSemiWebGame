@@ -5,19 +5,22 @@
  */
 import type { gridMapTypes } from '@repo/shared';
 import type { Container } from 'pixi.js';
+import { AppearanceResolver } from '@client/scenes/game/application/AppearanceResolver';
 import { GameMapModel } from './GameMapModel';
 import { GameMapView } from './GameMapView';
 
 /** マップ更新の仲介責務を担うコントローラー */
 export class GameMapController {
+  private readonly appearanceResolver: AppearanceResolver;
   private readonly model: GameMapModel;
   private readonly view: GameMapView;
 
   /** モデルとビューを生成し初期同期する */
-  constructor() {
+  constructor(appearanceResolver: AppearanceResolver) {
+    this.appearanceResolver = appearanceResolver;
     this.model = new GameMapModel();
     this.view = new GameMapView();
-    this.view.renderAll(this.model.getAllTeamIds());
+    this.view.renderAll(this.resolveAllCellColors(this.model.getAllTeamIds()));
   }
 
   /** 描画オブジェクトを取得する */
@@ -28,7 +31,7 @@ export class GameMapController {
   /** 全体マップ状態を反映する */
   public updateMapState(state: gridMapTypes.MapState): void {
     this.model.applyMapState(state);
-    this.view.renderAll(this.model.getAllTeamIds());
+    this.view.renderAll(this.resolveAllCellColors(this.model.getAllTeamIds()));
   }
 
   /** 差分セル更新を反映する */
@@ -38,12 +41,22 @@ export class GameMapController {
     updates.forEach(({ index }) => {
       const teamId = this.model.getTeamId(index);
       if (teamId === undefined) return;
-      this.view.renderCell(index, teamId);
+      this.view.renderCell(index, this.resolveCellColor(teamId));
     });
   }
 
   /** 管理中の描画リソースを破棄する */
   public destroy(): void {
     this.view.destroy();
+  }
+
+  /** すべてのセルteamIdを描画色へ変換する */
+  private resolveAllCellColors(teamIds: number[]): Array<number | null> {
+    return teamIds.map((teamId) => this.resolveCellColor(teamId));
+  }
+
+  /** セルteamIdを描画色へ変換する */
+  private resolveCellColor(teamId: number): number | null {
+    return this.appearanceResolver.resolveMapCellColor(teamId);
   }
 }

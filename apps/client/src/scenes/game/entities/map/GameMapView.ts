@@ -27,15 +27,15 @@ export class GameMapView {
   }
 
   /** 全セル状態をまとめて描画へ反映する */
-  public renderAll(teamIds: number[]): void {
-    const maxLength = Math.min(this.cells.length, teamIds.length);
+  public renderAll(cellColors: Array<number | null>): void {
+    const maxLength = Math.min(this.cells.length, cellColors.length);
     for (let index = 0; index < maxLength; index++) {
-      this.renderCell(index, teamIds[index]);
+      this.renderCell(index, cellColors[index]);
     }
   }
 
   /** 指定セルの状態を描画へ反映する */
-  public renderCell(index: number, teamId: number): void {
+  public renderCell(index: number, color: number | null): void {
     const cell = this.cells[index];
     if (!cell) return;
 
@@ -43,10 +43,9 @@ export class GameMapView {
 
     // 対象セルをクリアしてから必要に応じて再塗布する
     cell.clear();
-    if (teamId === -1) return;
+    if (color === null) return;
 
-    const hexColor = this.toHexColor(teamId);
-    cell.rect(0, 0, GRID_CELL_SIZE, GRID_CELL_SIZE).fill(hexColor);
+    cell.rect(0, 0, GRID_CELL_SIZE, GRID_CELL_SIZE).fill(color);
   }
 
   /** 描画リソースを破棄する */
@@ -94,13 +93,5 @@ export class GameMapView {
     }
 
     this.gridGraphics.rect(0, 0, MAP_WIDTH_PX, MAP_HEIGHT_PX).stroke({ width: 5, color: MAP_BORDER_COLOR });
-  }
-
-  /** チームIDから塗り色の16進数カラー値を取得する */
-  private toHexColor(teamId: number): number {
-    config.assertValidTeamId(teamId);
-    const { TEAM_COLORS } = config.GAME_CONFIG;
-    const colorString = TEAM_COLORS[teamId];
-    return parseInt(colorString.replace('#', '0x'), 16);
   }
 }
