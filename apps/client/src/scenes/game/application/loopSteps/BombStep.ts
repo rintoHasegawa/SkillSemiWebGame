@@ -10,6 +10,11 @@ type BombStepOptions = {
   bombManager: BombManager;
 };
 
+/** 爆弾更新段の実行入力 */
+type BombStepParams = {
+  deltaSeconds: number;
+};
+
 /** 爆弾更新処理を担うステップ */
 export class BombStep {
   private bombManager: BombManager;
@@ -19,7 +24,7 @@ export class BombStep {
   }
 
   /** 爆弾更新を実行する */
-  public run(): void {
+  public run(_params: BombStepParams): void {
     this.bombManager.tick();
   }
 }

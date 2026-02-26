@@ -57,7 +57,7 @@ export class GameLoop {
       isMoving,
     });
 
-    this.bombStep.run();
+    this.bombStep.run({ deltaSeconds });
 
     this.cameraStep.run({
       app: this.app,

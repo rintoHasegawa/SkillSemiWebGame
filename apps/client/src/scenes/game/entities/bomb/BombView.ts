@@ -11,6 +11,8 @@ import type { BombState } from "./BombModel";
 /** 爆弾の描画表現を管理するビュー */
 export class BombView {
   public readonly displayObject: Container;
+  private static bombTexturePromise: Promise<Texture> | null = null;
+  private static bombTexture: Texture | null = null;
 
   private bombSprite: Sprite;
   private bombFallbackGraphic: Graphics;
@@ -42,7 +44,7 @@ export class BombView {
     const imageUrl = `${import.meta.env.BASE_URL}Bomb.svg`;
 
     try {
-      const texture = await Assets.load(imageUrl);
+      const texture = await BombView.loadBombTexture(imageUrl);
       if (this.isDestroyed || this.bombSprite.destroyed) {
         return;
       }
@@ -57,6 +59,21 @@ export class BombView {
       this.isBombTextureReady = false;
       console.error(`[BombView] Bomb.svg 読み込み失敗: ${imageUrl}`, error);
     }
+  }
+
+  /** 爆弾テクスチャを共有キャッシュ経由で取得する */
+  private static async loadBombTexture(imageUrl: string): Promise<Texture> {
+    if (BombView.bombTexture) {
+      return BombView.bombTexture;
+    }
+
+    if (!BombView.bombTexturePromise) {
+      BombView.bombTexturePromise = Assets.load<Texture>(imageUrl);
+    }
+
+    const loadedTexture = await BombView.bombTexturePromise;
+    BombView.bombTexture = loadedTexture;
+    return loadedTexture;
   }
 
   public syncPosition(gridX: number, gridY: number): void {
