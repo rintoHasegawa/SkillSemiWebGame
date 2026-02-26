@@ -12,14 +12,14 @@ import { config } from "@client/config";
 import { socketManager } from "@client/network/SocketManager";
 import { AppearanceResolver } from "./application/AppearanceResolver";
 import { BombManager } from "./entities/bomb/BombManager";
-import { GameTimer } from "./application/GameTimer";
 import { GameNetworkSync } from "./application/GameNetworkSync";
 import { GameLoop } from "./application/GameLoop";
 import { BombHitContextProvider } from "./application/BombHitContextProvider";
 import { BombHitOrchestrator } from "./application/BombHitOrchestrator";
 import { PlayerDeathPolicy } from "./application/PlayerDeathPolicy";
 import { PlayerHitEffectOrchestrator } from "./application/PlayerHitEffectOrchestrator";
-import { InputGate } from "./application/lifecycle/InputGate";
+import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState";
+import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
 import { HitReportPolicy } from "./application/combat/HitReportPolicy";
 import { GameSceneOrchestrator } from "./application/orchestrators/GameSceneOrchestrator";
 import type { BombHitEvaluationResult } from "./application/BombHitOrchestrator";
@@ -32,7 +32,7 @@ export class GameManager {
   private players: GamePlayers = {};
   private myId: string;
   private container: HTMLDivElement;
-  private timer = new GameTimer();
+  private sessionFacade = new GameSessionFacade();
   private appearanceResolver = new AppearanceResolver();
   private bombManager: BombManager | null = null;
   private bombHitOrchestrator: BombHitOrchestrator | null = null;
@@ -40,29 +40,29 @@ export class GameManager {
   private gameLoop: GameLoop | null = null;
   private playerDeathPolicy!: PlayerDeathPolicy;
   private playerHitEffectOrchestrator!: PlayerHitEffectOrchestrator;
-  private inputGate: InputGate;
+  private lifecycleState = new SceneLifecycleState();
   private hitReportPolicy = new HitReportPolicy();
 
   // サーバーからゲーム開始通知（と開始時刻）を受け取った時に呼ぶ
   public setGameStart(startTime: number) {
-    this.timer.setGameStart(startTime);
+    this.sessionFacade.setGameStart(startTime);
   }
 
   public getStartCountdownSec(): number {
-    return this.timer.getPreStartRemainingSec();
+    return this.sessionFacade.getStartCountdownSec();
   }
 
   // 現在の残り秒数を取得する
   public getRemainingTime(): number {
-    return this.timer.getRemainingTime();
+    return this.sessionFacade.getRemainingTime();
   }
 
   public isInputEnabled(): boolean {
-    return this.inputGate.canAcceptInput();
+    return this.sessionFacade.canAcceptInput();
   }
 
   public placeBomb(): string | null {
-    if (!this.inputGate.canAcceptInput()) return null;
+    if (!this.sessionFacade.canAcceptInput()) return null;
     if (!this.bombManager) return null;
     const placed = this.bombManager.placeBomb();
     if (!placed) return null;
@@ -81,12 +81,10 @@ export class GameManager {
 
   // 入力と状態管理
   private joystickInput = { x: 0, y: 0 };
-  private isInitialized = false;
-  private isDestroyed = false;
 
   public lockInput(): () => void {
     this.joystickInput = { x: 0, y: 0 };
-    return this.inputGate.lockInput();
+    return this.sessionFacade.lockInput();
   }
 
   constructor(container: HTMLDivElement, myId: string) {
@@ -95,9 +93,6 @@ export class GameManager {
     this.app = new Application();
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
-    this.inputGate = new InputGate({
-      isStartedProvider: () => this.timer.isStarted(),
-    });
     this.initializeHitSubsystem();
   }
 
@@ -127,7 +122,7 @@ export class GameManager {
     });
 
     // 初期化完了前に destroy() が呼ばれていたら、ここで処理を中断して破棄する
-    if (this.isDestroyed) {
+    if (this.lifecycleState.shouldAbortInit()) {
       this.app.destroy(true, { children: true });
       return;
     }
@@ -141,14 +136,14 @@ export class GameManager {
 
     // メインループの登録
     this.app.ticker.add(this.tick);
-    this.isInitialized = true;
+    this.lifecycleState.markInitialized();
   }
 
   /**
    * React側からジョイスティックの入力を受け取る
    */
   public setJoystickInput(x: number, y: number) {
-    this.joystickInput = this.inputGate.sanitizeJoystickInput({ x, y });
+    this.joystickInput = this.sessionFacade.sanitizeJoystickInput({ x, y });
   }
 
   /**
@@ -179,7 +174,7 @@ export class GameManager {
       players: this.players,
       myId: this.myId,
       appearanceResolver: this.appearanceResolver,
-      getElapsedMs: () => this.timer.getElapsedMs(),
+      getElapsedMs: () => this.sessionFacade.getElapsedMs(),
       getJoystickInput: () => this.joystickInput,
       onGameStart: this.setGameStart.bind(this),
       onGameEnd: this.lockInput.bind(this),
@@ -224,8 +219,8 @@ export class GameManager {
    * クリーンアップ処理（コンポーネントアンマウント時）
    */
   public destroy() {
-    this.isDestroyed = true;
-    if (this.isInitialized) {
+    this.lifecycleState.markDestroyed();
+    if (this.lifecycleState.shouldDestroyApp()) {
       this.app.destroy(true, { children: true });
     }
     this.bombManager?.destroy();
@@ -234,7 +229,7 @@ export class GameManager {
     this.bombHitOrchestrator = null;
     this.playerDeathPolicy.dispose();
     this.hitReportPolicy.clear();
-    this.inputGate.reset();
+    this.sessionFacade.reset();
     this.players = {};
     this.joystickInput = { x: 0, y: 0 };
 
