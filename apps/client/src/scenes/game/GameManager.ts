@@ -13,6 +13,7 @@ import {
   type GameSceneFactoryOptions,
 } from "./application/orchestrators/GameSceneOrchestrator";
 import { GameSceneRuntime } from "./application/runtime/GameSceneRuntime";
+import { GameManagerBootstrapper } from "./application/runtime/GameManagerBootstrapper";
 import {
   SocketGameActionSender,
   type GameActionSender,
@@ -172,29 +173,19 @@ export class GameManager {
    * ゲームエンジンの初期化
    */
   public async init() {
-    // PixiJS本体の初期化
-    await this.app.init({
-      resizeTo: window,
-      backgroundColor: 0x111111,
-      antialias: true,
+    const bootstrapper = new GameManagerBootstrapper({
+      app: this.app,
+      lifecycleState: this.lifecycleState,
+      container: this.container,
+      runtime: this.runtime,
+      tick: this.tick,
     });
 
-    // 初期化完了前に destroy() が呼ばれていたら、ここで処理を中断して破棄する
-    if (this.lifecycleState.shouldAbortInit()) {
-      this.app.destroy(true, { children: true });
+    const result = await bootstrapper.bootstrap();
+    if (!result.initialized) {
       return;
     }
 
-    this.container.appendChild(this.app.canvas);
-
-    this.runtime.initialize();
-
-    // サーバーへゲーム準備完了を通知
-    this.runtime.readyForGame();
-
-    // メインループの登録
-    this.app.ticker.add(this.tick);
-    this.lifecycleState.markInitialized();
     this.uiStateSyncService.startTicker();
     this.uiStateSyncService.emitIfChanged(true);
   }

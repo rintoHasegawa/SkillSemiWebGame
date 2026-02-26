@@ -17,7 +17,12 @@ export type LoopFrameContext = {
   isMoving: boolean;
 };
 
+/** 1フレーム内で許可する副作用操作の型 */
+export type LoopFrameEffects = {
+  setIsMoving: (isMoving: boolean) => void;
+};
+
 /** ゲームループ内で実行されるステップ共通インターフェース */
 export type LoopStep = {
-  run: (context: LoopFrameContext) => void;
+  run: (context: Readonly<LoopFrameContext>, effects: LoopFrameEffects) => void;
 };

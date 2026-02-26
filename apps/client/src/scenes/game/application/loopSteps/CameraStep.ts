@@ -5,7 +5,7 @@
  */
 import { Application, Container } from "pixi.js";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
-import type { LoopFrameContext, LoopStep } from "./LoopStep";
+import type { LoopFrameContext, LoopFrameEffects, LoopStep } from "./LoopStep";
 
 type CameraStepParams = {
   app: Application;
@@ -16,7 +16,10 @@ type CameraStepParams = {
 /** カメラ追従更新を担うステップ */
 export class CameraStep implements LoopStep {
   /** ローカルプレイヤー位置へカメラを追従させる */
-  public run(context: LoopFrameContext): void {
+  public run(
+    context: Readonly<LoopFrameContext>,
+    _effects: LoopFrameEffects,
+  ): void {
     const params: CameraStepParams = {
       app: context.app,
       worldContainer: context.worldContainer,

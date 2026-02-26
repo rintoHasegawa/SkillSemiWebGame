@@ -7,7 +7,7 @@ import { config } from "@client/config";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
-import type { LoopFrameContext, LoopStep } from "./LoopStep";
+import type { LoopFrameContext, LoopFrameEffects, LoopStep } from "./LoopStep";
 
 /** SimulationStep の初期化入力 */
 type SimulationStepOptions = {
@@ -35,7 +35,10 @@ export class SimulationStep implements LoopStep {
   }
 
   /** ローカル更新とリモート補間更新を実行する */
-  public run(context: LoopFrameContext): void {
+  public run(
+    context: Readonly<LoopFrameContext>,
+    _effects: LoopFrameEffects,
+  ): void {
     const params: SimulationStepParams = {
       me: context.me,
       playerRepository: context.playerRepository,
