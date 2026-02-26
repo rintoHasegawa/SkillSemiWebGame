@@ -5,6 +5,7 @@
  */
 import { BombModel } from "./BombModel";
 import { BombView } from "./BombView";
+import type { BombState } from "./BombModel";
 
 type BombControllerOptions = {
   x: number;
@@ -36,6 +37,22 @@ export class BombController {
   public tick(elapsedMs: number): void {
     this.model.update(elapsedMs);
     this.view.renderState(this.model.getState(), this.model.getExplosionRadiusGrid(), this.model.getColor());
+  }
+
+  public getState(): BombState {
+    return this.model.getState();
+  }
+
+  public getPosition(): { x: number; y: number } {
+    return this.model.getPosition();
+  }
+
+  public getExplosionRadiusGrid(): number {
+    return this.model.getExplosionRadiusGrid();
+  }
+
+  public getTeamId(): number {
+    return this.model.getTeamId();
   }
 
   public isFinished(): boolean {
