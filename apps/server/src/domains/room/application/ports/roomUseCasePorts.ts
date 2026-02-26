@@ -38,8 +38,14 @@ export interface JoinRoomPort {
 
 /** ルーム切断ユースケースが利用する退出操作ポート */
 export interface DisconnectRoomPort {
-  removePlayer(socketId: string): roomTypes.Room[];
+  removePlayer(socketId: string): RoomDisconnectResult;
 }
+
+/** 退出処理で更新対象となったルーム情報 */
+export type RoomDisconnectResult = {
+  updatedRooms: roomTypes.Room[];
+  deletedRoomIds: string[];
+};
 
 /** 切断調停で利用するプレイヤー所属ルーム参照ポート */
 export interface FindRoomByPlayerPort {
@@ -53,9 +59,15 @@ export interface FindRoomByOwnerPort {
 
 /** ゲーム開始調停で利用するルーム状態遷移ポート */
 export interface RoomPhaseTransitionPort {
-  markRoomPlaying(roomId: string): roomTypes.Room | undefined;
-  markRoomWaiting(roomId: string): roomTypes.Room | undefined;
+  markRoomPlaying(roomId: string): RoomPhaseTransitionResult;
+  markRoomWaiting(roomId: string): RoomPhaseTransitionResult;
 }
+
+/** ルーム状態遷移の実行結果 */
+export type RoomPhaseTransitionResult = {
+  status: "updated" | "not_found" | "invalid_transition";
+  room?: roomTypes.Room;
+};
 
 /** ルームIDでの存在確認に利用する参照ポート */
 export interface FindRoomByIdPort {
@@ -81,21 +93,3 @@ export interface FindGameByRoomPort {
 export interface FindGameByPlayerPort {
   getGameManagerByPlayerId(playerId: string): RoomScopedGamePort | undefined;
 }
-
-/** START_GAME調停で利用する依存集合 */
-export type StartGameDeps = {
-  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
-  runtimeRegistry: FindGameByRoomPort;
-};
-
-/** READY_FOR_GAME調停で利用する依存集合 */
-export type ReadyForGameDeps = {
-  roomManager: FindRoomByPlayerPort;
-  runtimeRegistry: FindGameByPlayerPort;
-};
-
-/** DISCONNECT調停で利用する依存集合 */
-export type DisconnectDeps = {
-  roomManager: DisconnectRoomPort & FindRoomByPlayerPort & FindRoomByIdPort;
-  runtimeRegistry: FindGameByPlayerPort & CleanupGameRuntimePort;
-};

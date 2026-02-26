@@ -7,7 +7,11 @@ import { RoomJoinService } from "./application/services/RoomJoinService";
 import { RoomExitService } from "./application/services/RoomExitService";
 import { RoomPhaseService } from "./application/services/RoomPhaseService";
 import { RoomQueryService } from "./application/services/RoomQueryService";
-import type { JoinRoomResult } from "./application/ports/roomUseCasePorts";
+import type {
+  JoinRoomResult,
+  RoomDisconnectResult,
+  RoomPhaseTransitionResult,
+} from "./application/ports/roomUseCasePorts";
 
 /** ルーム操作の公開インターフェースを提供するマネージャ */
 export class RoomManager {
@@ -30,7 +34,7 @@ export class RoomManager {
   }
 
   // プレイヤーをルームから削除し，更新が発生したルーム配列を返す
-  public removePlayer(socketId: string): roomTypes.Room[] {
+  public removePlayer(socketId: string): RoomDisconnectResult {
     return this.roomExitService.removePlayer(socketId);
   }
 
@@ -50,12 +54,12 @@ export class RoomManager {
   }
 
   // ルーム状態をPLAYINGへ更新する
-  public markRoomPlaying(roomId: string): roomTypes.Room | undefined {
+  public markRoomPlaying(roomId: string): RoomPhaseTransitionResult {
     return this.roomPhaseService.markRoomPlaying(roomId);
   }
 
   // ルーム状態をWAITINGへ更新する
-  public markRoomWaiting(roomId: string): roomTypes.Room | undefined {
+  public markRoomWaiting(roomId: string): RoomPhaseTransitionResult {
     return this.roomPhaseService.markRoomWaiting(roomId);
   }
 }
