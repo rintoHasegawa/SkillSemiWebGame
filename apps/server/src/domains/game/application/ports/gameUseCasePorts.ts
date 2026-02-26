@@ -80,8 +80,8 @@ export interface BombOutputPort {
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {
-  shouldBroadcastBombPlaced(roomId: string, dedupeKey: string, nowMs: number): boolean;
-  issueServerBombId(roomId: string): string;
+  shouldBroadcastBombPlacedForRoom(roomId: string, dedupeKey: string, nowMs: number): boolean;
+  issueServerBombIdForRoom(roomId: string): string;
 }
 
 /** 爆弾設置ユースケースの入力値 */

@@ -35,11 +35,11 @@ export const placeBombUseCase = ({
   }
 
   const dedupeKey = createBombDedupeKey(input.socketId, input.payload.requestId);
-  if (!bombStore.shouldBroadcastBombPlaced(roomId, dedupeKey, input.nowMs)) {
+  if (!bombStore.shouldBroadcastBombPlacedForRoom(roomId, dedupeKey, input.nowMs)) {
     return;
   }
 
-  const bombId = bombStore.issueServerBombId(roomId);
+  const bombId = bombStore.issueServerBombIdForRoom(roomId);
 
   output.publishBombPlacedToOthersInRoom(
     roomId,
