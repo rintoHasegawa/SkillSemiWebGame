@@ -5,6 +5,7 @@
  */
 import { GameInputOverlay } from "./input/GameInputOverlay";
 import {
+  GAME_VIEW_FEVER_TEXT_STYLE,
   GAME_VIEW_PAINT_RATE_ITEM_STYLE,
   GAME_VIEW_PAINT_RATE_PANEL_STYLE,
   GAME_VIEW_PAINT_RATE_SQUARE_STYLE,
@@ -38,9 +39,13 @@ const parseRemainingSeconds = (timeLeft: string): number => {
   return minutes * 60 + seconds;
 };
 
-const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => {
-  const remainingSeconds = parseRemainingSeconds(timeLeft);
-
+const TimerOverlay = ({
+  timeLeft,
+  remainingSeconds,
+}: {
+  timeLeft: string;
+  remainingSeconds: number;
+}) => {
   return (
     <div
       style={{
@@ -94,12 +99,18 @@ export const GameView = ({
   onJoystickInput,
   onPlaceBomb,
 }: Props) => {
+  const remainingSeconds = parseRemainingSeconds(timeLeft);
+
   return (
     <div style={GAME_VIEW_ROOT_STYLE}>
-      <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } }`}</style>
+      <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } } @keyframes feverPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }`}</style>
       {/* タイマーUIの表示 */}
-      <TimerOverlay timeLeft={timeLeft} />
+      <TimerOverlay timeLeft={timeLeft} remainingSeconds={remainingSeconds} />
       <TeamPaintRateOverlay teamPaintRates={teamPaintRates} />
+
+      {remainingSeconds === 60 && (
+        <div style={GAME_VIEW_FEVER_TEXT_STYLE}>！Fever Time！</div>
+      )}
 
       {startCountdownText && (
         <div style={GAME_VIEW_START_COUNTDOWN_STYLE}>{startCountdownText}</div>
