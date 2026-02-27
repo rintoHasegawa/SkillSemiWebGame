@@ -55,4 +55,18 @@ export class GamePlayerOperationService {
       });
     }
   }
+
+  public replaceDisconnectedPlayerWithBot(id: string): boolean {
+    const session = this.sessionRef.current;
+    if (!session || !this.activePlayerIds.has(id)) {
+      logEvent(logScopes.GAME_PLAYER_OPERATION_SERVICE, {
+        event: gameDomainLogEvents.PLAYER_REMOVE,
+        result: logResults.IGNORED_PLAYER_NOT_IN_SESSION,
+        socketId: id,
+      });
+      return false;
+    }
+
+    return session.promotePlayerToBotControl(id);
+  }
 }
