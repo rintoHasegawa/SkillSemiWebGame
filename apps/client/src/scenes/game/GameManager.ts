@@ -9,6 +9,7 @@ import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState
 import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
 import { CombatLifecycleFacade } from "./application/combat/CombatLifecycleFacade";
 import { DisposableRegistry } from "./application/lifecycle/DisposableRegistry";
+import { registerGameManagerDisposers } from "./application/lifecycle/registerGameManagerDisposers";
 import { type GameSceneFactoryOptions } from "./application/orchestrators/GameSceneOrchestrator";
 import { GameSceneRuntime } from "./application/runtime/GameSceneRuntime";
 import { GameManagerBootstrapper } from "./application/runtime/GameManagerBootstrapper";
@@ -146,28 +147,17 @@ export class GameManager {
       getSnapshot: () => this.getUiStateSnapshot(),
     });
     this.disposableRegistry = new DisposableRegistry();
-    this.disposableRegistry.add(() => {
-      this.uiStateSyncService.clear();
-    });
-    this.disposableRegistry.add(() => {
-      this.players = {};
-    });
-    this.disposableRegistry.add(() => {
-      this.sessionFacade.reset();
-    });
-    this.disposableRegistry.add(() => {
-      this.combatFacade.dispose();
-    });
-    this.disposableRegistry.add(() => {
-      if (this.lifecycleState.shouldDestroyApp()) {
-        this.app.destroy(true, { children: true });
-      }
-    });
-    this.disposableRegistry.add(() => {
-      this.runtime.destroy();
-    });
-    this.disposableRegistry.add(() => {
-      this.uiStateSyncService.stopTicker();
+    registerGameManagerDisposers({
+      disposableRegistry: this.disposableRegistry,
+      uiStateSyncService: this.uiStateSyncService,
+      resetPlayers: () => {
+        this.players = {};
+      },
+      sessionFacade: this.sessionFacade,
+      combatFacade: this.combatFacade,
+      runtime: this.runtime,
+      lifecycleState: this.lifecycleState,
+      app: this.app,
     });
   }
 

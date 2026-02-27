@@ -7,6 +7,11 @@ import { useEffect } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { domain } from "@repo/shared";
 import type { GameResultPayload } from "@repo/shared";
+import type { AppFlowAction } from "./types/appFlowState";
+
+type UseSocketSubscriptionsParams = {
+  completeJoinRequest: () => void;
+  dispatchAppFlow: (action: AppFlowAction) => void;
 import type { Dispatch, SetStateAction } from "react";
 
 type UseSocketSubscriptionsParams = {
@@ -67,19 +72,17 @@ const unregisterGameSubscriptions = ({
 /** アプリ共通のソケット購読を登録しクリーンアップするフック */
 export const useSocketSubscriptions = ({
   completeJoinRequest,
-  setGameResult,
-  setMyId,
-  setRoom,
-  setScenePhase,
+  dispatchAppFlow,
 }: UseSocketSubscriptionsParams): void => {
   useEffect(() => {
     const handlers: AppSocketHandlers = {
       handleConnect: (id: string) => {
-        setMyId(id);
+        dispatchAppFlow({ type: "setMyId", myId: id });
       },
 
       handleRoomUpdate: (updatedRoom: domain.room.Room) => {
         completeJoinRequest();
+        dispatchAppFlow({ type: "setRoomAndLobby", room: updatedRoom });
         setRoom(updatedRoom);
         setScenePhase((currentPhase) => {
           if (
@@ -94,13 +97,11 @@ export const useSocketSubscriptions = ({
       },
 
       handleGameStart: () => {
-        setGameResult(null);
-        setScenePhase(domain.app.ScenePhase.PLAYING);
+        dispatchAppFlow({ type: "setPlaying" });
       },
 
       handleGameResult: (payload: GameResultPayload) => {
-        setGameResult(payload);
-        setScenePhase(domain.app.ScenePhase.RESULT);
+        dispatchAppFlow({ type: "setResult", result: payload });
       },
     };
 
@@ -114,5 +115,5 @@ export const useSocketSubscriptions = ({
       unregisterRoomSubscriptions(handlers);
       unregisterGameSubscriptions(handlers);
     };
-  }, [completeJoinRequest, setGameResult, setMyId, setRoom, setScenePhase]);
+  }, [completeJoinRequest, dispatchAppFlow]);
 };
