@@ -7,7 +7,10 @@ import { Application, Container, Ticker } from "pixi.js";
 import { AppearanceResolver } from "../AppearanceResolver";
 import { GameNetworkSync } from "../GameNetworkSync";
 import { GameLoop } from "../GameLoop";
-import { type GameSceneEventPorts, type GameSceneFactoryOptions } from "../orchestrators/GameSceneOrchestrator";
+import {
+  type GameSceneEventPorts,
+  type GameSceneFactoryOptions,
+} from "../orchestrators/GameSceneOrchestrator";
 import type { GamePlayers } from "../game.types";
 import type { BombManager } from "../../entities/bomb/BombManager";
 import type { MoveSender } from "../network/PlayerMoveSender";
@@ -177,7 +180,7 @@ export class GameSceneRuntime {
 
     this.lifecycleState = "destroyed";
     if (this.tickerHandler) {
-      this.app.ticker.remove(this.tickerHandler);
+      this.app.ticker?.remove(this.tickerHandler);
       this.tickerHandler = null;
     }
     this.disposableRegistry.disposeAll();

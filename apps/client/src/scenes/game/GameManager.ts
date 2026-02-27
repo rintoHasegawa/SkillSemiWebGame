@@ -9,9 +9,7 @@ import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState
 import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
 import { CombatLifecycleFacade } from "./application/combat/CombatLifecycleFacade";
 import { DisposableRegistry } from "./application/lifecycle/DisposableRegistry";
-import {
-  type GameSceneFactoryOptions,
-} from "./application/orchestrators/GameSceneOrchestrator";
+import { type GameSceneFactoryOptions } from "./application/orchestrators/GameSceneOrchestrator";
 import { GameSceneRuntime } from "./application/runtime/GameSceneRuntime";
 import { GameManagerBootstrapper } from "./application/runtime/GameManagerBootstrapper";
 import {
@@ -91,8 +89,10 @@ export class GameManager {
     this.container = container; // 明示的に代入
     this.myId = myId;
     this.sessionFacade = dependencies.sessionFacade ?? new GameSessionFacade();
-    this.lifecycleState = dependencies.lifecycleState ?? new SceneLifecycleState();
-    const gameActionSender = dependencies.gameActionSender ?? new SocketGameActionSender();
+    this.lifecycleState =
+      dependencies.lifecycleState ?? new SceneLifecycleState();
+    const gameActionSender =
+      dependencies.gameActionSender ?? new SocketGameActionSender();
     const moveSender = dependencies.moveSender ?? new SocketPlayerMoveSender();
     const sceneFactories = dependencies.sceneFactories;
     this.app = new Application();
@@ -123,7 +123,9 @@ export class GameManager {
       moveSender,
       getElapsedMs: () => this.sessionFacade.getElapsedMs(),
       eventPorts: {
-        onGameStarted: this.gameEventFacade.applyGameStarted.bind(this.gameEventFacade),
+        onGameStarted: this.gameEventFacade.applyGameStarted.bind(
+          this.gameEventFacade,
+        ),
         onGameEnded: this.lockInput.bind(this),
         onRemoteBombPlaced: (payload) => {
           this.gameEventFacade.applyRemoteBombPlaced(payload);
@@ -157,12 +159,12 @@ export class GameManager {
       this.combatFacade.dispose();
     });
     this.disposableRegistry.add(() => {
-      this.runtime.destroy();
-    });
-    this.disposableRegistry.add(() => {
       if (this.lifecycleState.shouldDestroyApp()) {
         this.app.destroy(true, { children: true });
       }
+    });
+    this.disposableRegistry.add(() => {
+      this.runtime.destroy();
     });
     this.disposableRegistry.add(() => {
       this.uiStateSyncService.stopTicker();
