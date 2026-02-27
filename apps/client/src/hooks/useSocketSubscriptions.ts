@@ -7,13 +7,14 @@ import { useEffect } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { domain } from "@repo/shared";
 import type { GameResultPayload } from "@repo/shared";
+import type { Dispatch, SetStateAction } from "react";
 
 type UseSocketSubscriptionsParams = {
   completeJoinRequest: () => void;
   setGameResult: (payload: GameResultPayload | null) => void;
   setMyId: (id: string | null) => void;
   setRoom: (room: domain.room.Room | null) => void;
-  setScenePhase: (phase: domain.app.ScenePhaseType) => void;
+  setScenePhase: Dispatch<SetStateAction<domain.app.ScenePhaseType>>;
 };
 
 type AppSocketHandlers = {
@@ -80,7 +81,16 @@ export const useSocketSubscriptions = ({
       handleRoomUpdate: (updatedRoom: domain.room.Room) => {
         completeJoinRequest();
         setRoom(updatedRoom);
-        setScenePhase(domain.app.ScenePhase.LOBBY);
+        setScenePhase((currentPhase) => {
+          if (
+            currentPhase === domain.app.ScenePhase.PLAYING ||
+            currentPhase === domain.app.ScenePhase.RESULT
+          ) {
+            return currentPhase;
+          }
+
+          return domain.app.ScenePhase.LOBBY;
+        });
       },
 
       handleGameStart: () => {
