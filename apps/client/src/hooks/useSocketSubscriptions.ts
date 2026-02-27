@@ -7,13 +7,11 @@ import { useEffect } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { domain } from "@repo/shared";
 import type { GameResultPayload } from "@repo/shared";
+import type { AppFlowAction } from "./types/appFlowState";
 
 type UseSocketSubscriptionsParams = {
   completeJoinRequest: () => void;
-  setGameResult: (payload: GameResultPayload | null) => void;
-  setMyId: (id: string | null) => void;
-  setRoom: (room: domain.room.Room | null) => void;
-  setScenePhase: (phase: domain.app.ScenePhaseType) => void;
+  dispatchAppFlow: (action: AppFlowAction) => void;
 };
 
 type AppSocketHandlers = {
@@ -66,31 +64,25 @@ const unregisterGameSubscriptions = ({
 /** アプリ共通のソケット購読を登録しクリーンアップするフック */
 export const useSocketSubscriptions = ({
   completeJoinRequest,
-  setGameResult,
-  setMyId,
-  setRoom,
-  setScenePhase,
+  dispatchAppFlow,
 }: UseSocketSubscriptionsParams): void => {
   useEffect(() => {
     const handlers: AppSocketHandlers = {
       handleConnect: (id: string) => {
-        setMyId(id);
+        dispatchAppFlow({ type: "setMyId", myId: id });
       },
 
       handleRoomUpdate: (updatedRoom: domain.room.Room) => {
         completeJoinRequest();
-        setRoom(updatedRoom);
-        setScenePhase(domain.app.ScenePhase.LOBBY);
+        dispatchAppFlow({ type: "setRoomAndLobby", room: updatedRoom });
       },
 
       handleGameStart: () => {
-        setGameResult(null);
-        setScenePhase(domain.app.ScenePhase.PLAYING);
+        dispatchAppFlow({ type: "setPlaying" });
       },
 
       handleGameResult: (payload: GameResultPayload) => {
-        setGameResult(payload);
-        setScenePhase(domain.app.ScenePhase.RESULT);
+        dispatchAppFlow({ type: "setResult", result: payload });
       },
     };
 
@@ -104,5 +96,5 @@ export const useSocketSubscriptions = ({
       unregisterRoomSubscriptions(handlers);
       unregisterGameSubscriptions(handlers);
     };
-  }, [completeJoinRequest, setGameResult, setMyId, setRoom, setScenePhase]);
+  }, [completeJoinRequest, dispatchAppFlow]);
 };

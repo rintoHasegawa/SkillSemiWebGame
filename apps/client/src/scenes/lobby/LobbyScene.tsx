@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { domain } from "@repo/shared";
+import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 
 type Props = {
   room: domain.room.Room | null;
@@ -143,16 +144,9 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
             <button
               onClick={onBackToTitle}
               style={{
+                ...OVERLAY_BUTTON_STYLE,
                 alignSelf: "flex-start",
                 marginBottom: "14px",
-                padding: "10px 14px",
-                fontSize: "0.95rem",
-                cursor: "pointer",
-                borderRadius: "8px",
-                border: "1px solid rgba(255,255,255,0.4)",
-                background: "rgba(0,0,0,0.55)",
-                color: "white",
-                fontWeight: 700,
               }}
             >
               タイトルへ戻る

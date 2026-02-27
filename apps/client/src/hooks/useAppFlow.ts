@@ -3,11 +3,15 @@
  * アプリ全体の画面遷移と参加フロー状態を管理するフック
  * 参加要求の成功失敗と接続状態を統合してシーンへ渡す
  */
-import { useCallback, useReducer, useRef, useState } from "react";
+import { useCallback, useReducer, useRef } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { domain } from "@repo/shared";
 import { config } from "@client/config";
 import type { GameResultPayload } from "@repo/shared";
+import {
+  appFlowReducer,
+  initialAppFlowData,
+} from "./application/appFlowReducer";
 import { useSocketSubscriptions } from "./useSocketSubscriptions";
 
 /** アプリフロー管理フックの公開状態と操作を表す型 */
@@ -65,12 +69,10 @@ const joinReducer = (state: JoinState, action: JoinAction): JoinState => {
 
 /** アプリ全体のシーン状態と参加要求フローを管理するフック */
 export const useAppFlow = (): AppFlowState => {
-  const [scenePhase, setScenePhase] = useState<domain.app.ScenePhaseType>(
-    domain.app.ScenePhase.TITLE,
+  const [appFlow, dispatchAppFlow] = useReducer(
+    appFlowReducer,
+    initialAppFlowData,
   );
-  const [room, setRoom] = useState<domain.room.Room | null>(null);
-  const [myId, setMyId] = useState<string | null>(null);
-  const [gameResult, setGameResult] = useState<GameResultPayload | null>(null);
   const [joinState, dispatchJoin] = useReducer(joinReducer, initialJoinState);
   const joinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinRejectedHandlerRef = useRef<
@@ -160,15 +162,15 @@ export const useAppFlow = (): AppFlowState => {
   const returnToTitle = useCallback(
     (options?: { leaveRoom?: boolean }) => {
       completeJoinRequest();
-      setRoom(null);
-      setGameResult(null);
-      setScenePhase(domain.app.ScenePhase.TITLE);
+      dispatchAppFlow({
+        type: "resetToTitle",
+        clearMyId: Boolean(options?.leaveRoom),
+      });
 
       if (!options?.leaveRoom) {
         return;
       }
 
-      setMyId(null);
       socketManager.socket.disconnect();
       socketManager.socket.connect();
     },
@@ -177,17 +179,14 @@ export const useAppFlow = (): AppFlowState => {
 
   useSocketSubscriptions({
     completeJoinRequest,
-    setGameResult,
-    setMyId,
-    setRoom,
-    setScenePhase,
+    dispatchAppFlow,
   });
 
   return {
-    scenePhase,
-    room,
-    myId,
-    gameResult,
+    scenePhase: appFlow.scenePhase,
+    room: appFlow.room,
+    myId: appFlow.myId,
+    gameResult: appFlow.gameResult,
     joinErrorMessage: getJoinErrorMessage(joinState.joinFailure),
     isJoining: joinState.isJoining,
     requestJoin,
