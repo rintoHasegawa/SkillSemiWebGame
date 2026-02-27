@@ -1,12 +1,13 @@
 /**
  * BotRosterService
- * 4チームの人数差をなくすためのBot ID補充ロジックを提供する
+ * チーム人数差を埋めるためのBotプレイヤーID補充ロジックを提供する
  */
 import { config } from "@server/config";
 
 const BOT_PLAYER_ID_PREFIX = "bot:";
 declare const botPlayerIdBrand: unique symbol;
 
+/** BotプレイヤーIDのブランド型 */
 export type BotPlayerId = string & { readonly [botPlayerIdBrand]: true };
 
 /** BotプレイヤーIDを生成する */
@@ -68,9 +69,7 @@ const getRequiredBotCount = (
   return Math.max(0, totalPlayers - humanPlayerCount);
 };
 
-/**
- * 人間プレイヤーIDに必要数のBot IDを補充し，チーム人数差が0になる構成を返す
- */
+/** 人間プレイヤーIDへ必要数のBot IDを補充した配列を返す */
 export const createBalancedSessionPlayerIds = (
   roomId: string,
   humanPlayerIds: string[],

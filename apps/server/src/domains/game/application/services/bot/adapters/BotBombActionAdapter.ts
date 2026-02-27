@@ -1,13 +1,13 @@
 /**
- * BotBombActionService
- * Bot由来の爆弾設置アクションを既存ユースケースへ橋渡しする
+ * BotBombActionAdapter
+ * Bot由来の爆弾設置アクションをユースケースへ橋渡しする
  */
 import type { PlaceBombPayload } from "@repo/shared";
 import type {
   BombPlacementPort,
   StartGameOutputPort,
-} from "../ports/gameUseCasePorts";
-import { placeBombUseCase } from "../useCases/placeBombUseCase";
+} from "../../../ports/gameUseCasePorts";
+import { placeBombUseCase } from "../../../useCases/placeBombUseCase";
 
 type CreateBotBombActionHandlerParams = {
   roomId: string;
