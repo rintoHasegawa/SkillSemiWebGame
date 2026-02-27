@@ -13,20 +13,30 @@ export type JoystickInput = {
 /** InputGate の初期化入力 */
 export type InputGateOptions = {
   isStartedProvider: () => boolean;
+  getRemainingTimeProvider: () => number;
 };
 
 /** ゲーム入力の受付可否とロック状態を管理する */
 export class InputGate {
   private readonly isStartedProvider: () => boolean;
+  private readonly getRemainingTimeProvider: () => number;
   private inputLockCount = 0;
 
-  constructor({ isStartedProvider }: InputGateOptions) {
+  constructor({
+    isStartedProvider,
+    getRemainingTimeProvider,
+  }: InputGateOptions) {
     this.isStartedProvider = isStartedProvider;
+    this.getRemainingTimeProvider = getRemainingTimeProvider;
   }
 
   /** 現在入力を受け付け可能かを返す */
   public canAcceptInput(): boolean {
-    return this.inputLockCount === 0 && this.isStartedProvider();
+    return (
+      this.inputLockCount === 0 &&
+      this.isStartedProvider() &&
+      this.getRemainingTimeProvider() > 0
+    );
   }
 
   /** 入力ロックを取得し，解除関数を返す */
