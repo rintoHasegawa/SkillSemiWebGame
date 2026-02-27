@@ -13,8 +13,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import { BotAiService } from "../application/services/BotAiService";
-import { isBotPlayerId } from "../application/services/BotRosterService";
+import { BotTurnOrchestrator, isBotPlayerId } from "../application/services/bot/index.js";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
@@ -27,7 +26,8 @@ export class GameLoop {
   private readonly maxCatchUpTicks: number = 3;
   private lastSentPlayers: Map<string, domain.game.PlayerPositionUpdate> =
     new Map();
-  private botAiService: BotAiService = new BotAiService();
+  private botTurnOrchestrator: BotTurnOrchestrator =
+    new BotTurnOrchestrator();
 
   constructor(
     private roomId: string,
@@ -127,7 +127,7 @@ export class GameLoop {
   ): void {
     this.players.forEach((player) => {
       if (isBotPlayerId(player.id)) {
-        const decision = this.botAiService.decide(
+        const decision = this.botTurnOrchestrator.decide(
           player.id,
           player,
           gridColorsSnapshot,
@@ -200,7 +200,7 @@ export class GameLoop {
     if (!this.isRunning) return;
 
     this.isRunning = false;
-    this.botAiService.clear();
+    this.botTurnOrchestrator.clear();
     this.lastSentPlayers.clear();
 
     if (this.loopId) {

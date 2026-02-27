@@ -8,7 +8,7 @@ import { startGameUseCase } from "@server/domains/game/application/useCases/star
 import {
   createBalancedSessionPlayerIds,
   isBotPlayerId,
-} from "@server/domains/game/application/services/BotRosterService";
+} from "@server/domains/game/application/services/bot";
 import { logEvent } from "@server/logging/logger";
 import {
   gameUseCaseLogEvents,
