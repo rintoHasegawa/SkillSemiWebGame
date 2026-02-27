@@ -8,6 +8,7 @@ import type { BotPlayerId } from "../roster/BotRosterService.js";
 import { moveTowardsTarget } from "../movement/MovePlanner.js";
 import { chooseNextTarget } from "../policies/TargetSelectionPolicy.js";
 import { decideBombPlacement } from "../policies/BombPlacementPolicy.js";
+import { BotHitStunPolicy } from "../combat/BotHitStunPolicy.js";
 import { BotStateStore } from "../state/BotStateStore.js";
 import type { BotDecision } from "../types/BotTypes.js";
 
@@ -18,6 +19,9 @@ const clamp = (value: number, min: number, max: number): number => {
 /** Botの1tick分の意思決定を提供するオーケストレータ */
 export class BotTurnOrchestrator {
   private stateStore = new BotStateStore();
+  private readonly hitStunPolicy = new BotHitStunPolicy({
+    hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
+  });
 
   public decide(
     botPlayerId: BotPlayerId,
@@ -35,7 +39,20 @@ export class BotTurnOrchestrator {
       targetRow: currentRow,
       lastBombPlacedAtMs: Number.NEGATIVE_INFINITY,
       bombSeq: 0,
+      stunUntilMs: Number.NEGATIVE_INFINITY,
     });
+
+    if (this.hitStunPolicy.isStunned(nowMs, currentState.stunUntilMs)) {
+      this.stateStore.set(botPlayerId, {
+        ...currentState,
+      });
+
+      return {
+        nextX: player.x,
+        nextY: player.y,
+        placeBombPayload: null,
+      };
+    }
 
     const targetCenterX = currentState.targetCol + 0.5;
     const targetCenterY = currentState.targetRow + 0.5;
@@ -69,6 +86,7 @@ export class BotTurnOrchestrator {
       targetRow: nextTarget.row,
       bombSeq: bombDecision.nextBombSeq,
       lastBombPlacedAtMs: bombDecision.nextLastBombPlacedAtMs,
+      stunUntilMs: currentState.stunUntilMs,
     });
 
     return {
@@ -76,6 +94,19 @@ export class BotTurnOrchestrator {
       nextY: moved.nextY,
       placeBombPayload: bombDecision.placeBombPayload,
     };
+  }
+
+  /** 指定Botへ被弾硬直を適用する */
+  public applyHitStun(botPlayerId: BotPlayerId, nowMs: number): void {
+    this.stateStore.update(botPlayerId, (state) => {
+      return {
+        ...state,
+        stunUntilMs: this.hitStunPolicy.calculateNextStunUntilMs(
+          state.stunUntilMs,
+          nowMs,
+        ),
+      };
+    });
   }
 
   public clear(): void {

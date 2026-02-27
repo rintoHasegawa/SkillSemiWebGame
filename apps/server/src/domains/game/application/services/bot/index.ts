@@ -17,3 +17,6 @@ export type { BotPlayerId } from "./roster/BotRosterService.js";
 
 /** Bot爆弾アクションハンドラ生成関数を再公開 */
 export { createBotBombActionHandler } from "./adapters/BotBombActionAdapter.js";
+
+/** Bot被弾硬直ポリシーを再公開 */
+export { BotHitStunPolicy } from "./combat/BotHitStunPolicy.js";
