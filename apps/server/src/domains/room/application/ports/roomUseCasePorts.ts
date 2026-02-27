@@ -2,7 +2,7 @@
  * roomUseCasePorts
  * ルームユースケースが依存する操作ポートを定義する
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 import type {
   BombHitReportValidationPort,
   BombPlacementPort,

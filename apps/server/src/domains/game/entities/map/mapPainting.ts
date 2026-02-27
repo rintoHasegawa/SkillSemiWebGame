@@ -2,7 +2,7 @@
  * mapPainting
  * マップセルの塗り更新と差分追加処理を提供する
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 
 type PaintCellParams = {
   gridColors: number[];

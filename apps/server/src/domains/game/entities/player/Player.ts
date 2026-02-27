@@ -2,7 +2,7 @@
  * Player
  * サーバー側で保持するプレイヤー状態モデルを定義する
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 
 export class Player implements domain.player.PlayerData {
   public id: string;

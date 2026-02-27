@@ -4,7 +4,7 @@
  * ローカル移動，リモート目標座標，送信スナップショットを管理する
  */
 import { config } from "@client/config";
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 
 /** プレイヤーの座標計算と補間計算を管理するモデル */
 export class PlayerModel {

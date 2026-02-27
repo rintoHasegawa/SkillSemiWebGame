@@ -2,7 +2,7 @@
  * joinRoomUseCase
  * ルーム参加要求を処理し，状態更新を配信するユースケース
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 import type {
   EnsureGameRuntimePort,
   JoinRoomPort,

@@ -2,7 +2,7 @@
  * RoomExitService
  * ルーム退出処理とオーナー移譲処理を担うサービス
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 import type { RoomDisconnectResult } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/index";

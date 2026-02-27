@@ -2,7 +2,7 @@
  * RoomManager
  * ルーム状態の保持とルーム操作サービスへの委譲を担うマネージャ
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { RoomJoinService } from "./application/services/RoomJoinService";
 import { RoomExitService } from "./application/services/RoomExitService";
 import { RoomPhaseService } from "./application/services/RoomPhaseService";

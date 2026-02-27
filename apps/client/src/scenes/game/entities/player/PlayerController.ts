@@ -3,7 +3,7 @@
  * 外部入出力とModel/Viewの橋渡しを担うコントローラー群
  * ローカル入力適用，リモート更新適用，描画同期を分離して扱う
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { config } from "@client/config";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { BombHitBlinkRenderer } from "@client/scenes/game/entities/bomb/BombHitBlinkRenderer";

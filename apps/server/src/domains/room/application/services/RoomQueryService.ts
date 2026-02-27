@@ -2,7 +2,7 @@
  * RoomQueryService
  * ルーム状態の参照系クエリを提供するサービス
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 
 /** ルームの参照クエリを提供するサービス */
 export class RoomQueryService {

@@ -2,7 +2,7 @@
  * mapUpdates
  * マップ差分キューの取り出しとクリア処理を提供する
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 
 /** 差分キューを配列として返却し，キューを空にする */
 export const drainPendingUpdates = (

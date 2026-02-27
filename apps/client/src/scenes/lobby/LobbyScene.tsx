@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 
 type Props = {
   room: domain.room.Room | null;

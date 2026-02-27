@@ -2,7 +2,7 @@
  * MapStore
  * 塗り状態グリッドと差分更新キューを保持して提供する
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { createInitialGridColors } from "./mapGrid.js";
 import { paintCellIfChanged } from "./mapPainting.js";
 import { drainPendingUpdates } from "./mapUpdates.js";

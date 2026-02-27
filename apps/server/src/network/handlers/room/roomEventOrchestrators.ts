@@ -4,7 +4,7 @@
  * 受信ハンドラからユースケース実行責務を分離する
  * 本ファイルではランタイム未解決ログ対象イベントを扱わない
  */
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";

@@ -4,7 +4,7 @@
  */
 import { Server } from "socket.io";
 import { contracts as protocol } from "@repo/shared";
-import type { domain } from "@repo/shared";
+import { domain } from "@repo/shared";
 import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
