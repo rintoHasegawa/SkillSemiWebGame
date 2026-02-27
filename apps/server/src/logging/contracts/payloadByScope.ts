@@ -5,7 +5,7 @@
 import { protocol } from "@repo/shared";
 import { gameDomainLogEvents, gameUseCaseLogEvents, roomDomainLogEvents, roomUseCaseLogEvents } from "../constants/eventNames";
 import { logResults } from "../constants/results";
-import { logScopes, type LogScope } from "../constants/scopes";
+import { logScopes } from "../constants/scopes";
 
 /** Network接続確立ログの契約 */
 type NetworkConnectLogPayload = {
@@ -276,6 +276,3 @@ export type LogPayloadByScope = {
   [logScopes.ROOM_JOIN_SERVICE]: RoomJoinServiceLogPayload;
   [logScopes.ROOM_EXIT_SERVICE]: RoomExitServiceLogPayload;
 };
-
-/** スコープごとのログペイロード型を参照するユーティリティ */
-export type LogPayloadOf<TScope extends LogScope> = LogPayloadByScope[TScope];

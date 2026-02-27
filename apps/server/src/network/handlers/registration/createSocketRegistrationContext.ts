@@ -7,7 +7,7 @@ import { createPayloadGuard } from "../payloadGuard";
 import { createServerSocketOnBridge } from "../socketEventBridge";
 
 /** 受信イベント登録で利用する共通コンテキスト */
-export type SocketRegistrationContext = {
+type SocketRegistrationContext = {
   onEvent: ReturnType<typeof createServerSocketOnBridge>["onEvent"];
   guardOnEvent: ReturnType<typeof createPayloadGuard>["guardOnEvent"];
 };

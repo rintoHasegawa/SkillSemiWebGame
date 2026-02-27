@@ -10,7 +10,7 @@ declare const botPlayerIdBrand: unique symbol;
 export type BotPlayerId = string & { readonly [botPlayerIdBrand]: true };
 
 /** BotプレイヤーIDを生成する */
-export const createBotPlayerId = (
+const createBotPlayerId = (
   roomId: string,
   serialNumber: number,
 ): BotPlayerId => {

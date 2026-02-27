@@ -10,13 +10,13 @@ import {
 } from "../createOutputAdapters";
 
 /** 接続イベント調停で利用する依存束 */
-export type ConnectionHandlerDeps = {
+type ConnectionHandlerDeps = {
   io: Server;
   socket: Socket;
 } & Omit<RegisterConnectionHandlersParams, "io">;
 
 /** 接続イベント登録で利用する共通コンテキスト */
-export type ConnectionRegistrationContext = {
+type ConnectionRegistrationContext = {
   deps: ConnectionHandlerDeps;
   socketOutputAdapters: SocketOutputAdapters;
 };
