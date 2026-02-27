@@ -135,7 +135,18 @@ export class GameRoomSession {
   }
 
   public removePlayer(id: string): boolean {
+    this.gameLoop?.releaseBotControl(id);
     return this.players.delete(id);
+  }
+
+  /** 指定プレイヤーを切断後もBot制御で継続させる */
+  public promotePlayerToBotControl(id: string): boolean {
+    if (!this.players.has(id) || !this.gameLoop) {
+      return false;
+    }
+
+    this.gameLoop.promotePlayerToBotControl(id);
+    return true;
   }
 
   public getStartTime(): number | undefined {

@@ -48,6 +48,11 @@ export class GameManager {
     this.playerOperationService.removePlayer(id);
   }
 
+  // 切断プレイヤーをBot制御へ引き継ぐ
+  replaceDisconnectedPlayerWithBot(id: string): boolean {
+    return this.playerOperationService.replaceDisconnectedPlayerWithBot(id);
+  }
+
   // 指定プレイヤー座標更新処理
   movePlayer(id: string, x: number, y: number) {
     this.playerOperationService.movePlayer(id, x, y);

@@ -20,15 +20,20 @@ export const disconnectUseCase = ({
   playerId,
   output,
 }: DisconnectUseCaseParams) => {
-  gameManager.removePlayer(playerId);
+  const replacedWithBot = gameManager.replaceDisconnectedPlayerWithBot(playerId);
 
-  if (roomId) {
-    output.publishPlayerRemovedToRoom(roomId, playerId);
+  if (!replacedWithBot) {
+    gameManager.removePlayer(playerId);
+
+    if (roomId) {
+      output.publishPlayerRemovedToRoom(roomId, playerId);
+    }
   }
 
   logEvent(logScopes.GAME_USE_CASE, {
     event: gameUseCaseLogEvents.DISCONNECT,
     result: logResults.PLAYER_REMOVED,
     socketId: playerId,
+    replacedWithBot,
   });
 };

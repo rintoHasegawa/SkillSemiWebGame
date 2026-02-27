@@ -13,7 +13,11 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import { BotTurnOrchestrator, isBotPlayerId } from "../application/services/bot/index.js";
+import {
+  BotTurnOrchestrator,
+  isBotPlayerId,
+  type BotPlayerId,
+} from "../application/services/bot/index.js";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
@@ -26,6 +30,7 @@ export class GameLoop {
   private readonly maxCatchUpTicks: number = 3;
   private lastSentPlayers: Map<string, domain.game.PlayerPositionUpdate> =
     new Map();
+  private disconnectedBotControlledPlayerIds: Set<string> = new Set();
   private botTurnOrchestrator: BotTurnOrchestrator =
     new BotTurnOrchestrator();
 
@@ -127,9 +132,12 @@ export class GameLoop {
     gridColorsSnapshot: number[],
   ): void {
     this.players.forEach((player) => {
-      if (isBotPlayerId(player.id)) {
+      if (
+        isBotPlayerId(player.id) ||
+        this.disconnectedBotControlledPlayerIds.has(player.id)
+      ) {
         const decision = this.botTurnOrchestrator.decide(
-          player.id,
+          player.id as BotPlayerId,
           player,
           gridColorsSnapshot,
           nowMs,
@@ -147,12 +155,27 @@ export class GameLoop {
   /** 指定プレイヤーがBotなら被弾硬直を適用する */
   public applyBotHitStun(playerId: string, nowMs: number): boolean {
     const player = this.players.get(playerId);
-    if (!player || !isBotPlayerId(player.id)) {
+    const isBotControlled =
+      !!player &&
+      (isBotPlayerId(player.id) ||
+        this.disconnectedBotControlledPlayerIds.has(player.id));
+
+    if (!isBotControlled) {
       return false;
     }
 
-    this.botTurnOrchestrator.applyHitStun(player.id, nowMs);
+    this.botTurnOrchestrator.applyHitStun(playerId as BotPlayerId, nowMs);
     return true;
+  }
+
+  /** 切断プレイヤーをBot制御対象へ昇格する */
+  public promotePlayerToBotControl(playerId: string): void {
+    this.disconnectedBotControlledPlayerIds.add(playerId);
+  }
+
+  /** プレイヤー削除時にBot制御対象から除外する */
+  public releaseBotControl(playerId: string): void {
+    this.disconnectedBotControlledPlayerIds.delete(playerId);
   }
 
   private buildTickData(): domain.game.TickData {
@@ -213,6 +236,7 @@ export class GameLoop {
 
     this.isRunning = false;
     this.botTurnOrchestrator.clear();
+    this.disconnectedBotControlledPlayerIds.clear();
     this.lastSentPlayers.clear();
 
     if (this.loopId) {
