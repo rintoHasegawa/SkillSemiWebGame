@@ -7,10 +7,10 @@ import type {
   GameResultPayload,
   PlaceBombPayload,
 } from "@repo/shared";
-import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
 import { GamePlayerOperationService } from "./application/services/GamePlayerOperationService";
+import { PlayerIdentityRegistry } from "./application/services/player/PlayerIdentityRegistry";
 
 type GameSessionRef = {
   current: GameRoomSession | null;
@@ -23,6 +23,7 @@ export class GameManager {
   private activePlayerIds: Set<string>;
   private lifecycleService: GameSessionLifecycleService;
   private playerOperationService: GamePlayerOperationService;
+  private playerIdentityRegistry: PlayerIdentityRegistry;
 
   constructor(roomId: string) {
     this.sessionRef = { current: null };
@@ -36,6 +37,35 @@ export class GameManager {
       this.sessionRef,
       this.activePlayerIds,
     );
+    this.playerIdentityRegistry = new PlayerIdentityRegistry(roomId);
+  }
+
+  /** セッション開始前に playerId 対応表を初期化する */
+  resetPlayerIdentitySession(): void {
+    this.playerIdentityRegistry.reset();
+  }
+
+  /** 接続中ソケットへ内部 playerId を割り当てる */
+  issuePlayerIdForSocket(socketId: string): string {
+    return this.playerIdentityRegistry.issueHumanPlayerId(socketId);
+  }
+
+  /** Bot playerId を対応表へ登録する */
+  registerBotPlayerId(playerId: string): void {
+    this.playerIdentityRegistry.registerBotPlayerId(playerId);
+  }
+
+  /** 内部 playerId をクライアント互換IDへ変換する */
+  resolveClientVisiblePlayerId(playerId: string): string {
+    return this.playerIdentityRegistry.resolveClientVisibleId(playerId);
+  }
+
+  private resolveInternalPlayerId(actorId: string): string {
+    return (
+      this.playerIdentityRegistry.resolvePlayerIdFromSocketId(actorId) ??
+      this.playerIdentityRegistry.resolvePlayerIdFromClientVisibleId(actorId) ??
+      actorId
+    );
   }
 
   // 外部（GameHandlerなど）から開始時刻を取得できるようにする
@@ -45,17 +75,28 @@ export class GameManager {
 
   // プレイヤー登録解除処理
   removePlayer(id: string) {
-    this.playerOperationService.removePlayer(id);
+    const internalPlayerId = this.resolveInternalPlayerId(id);
+    this.playerOperationService.removePlayer(internalPlayerId);
   }
 
   // 切断プレイヤーをBot制御へ引き継ぐ
   replaceDisconnectedPlayerWithBot(id: string): boolean {
-    return this.playerOperationService.replaceDisconnectedPlayerWithBot(id);
+    const internalPlayerId = this.resolveInternalPlayerId(id);
+    const replaced = this.playerOperationService.replaceDisconnectedPlayerWithBot(
+      internalPlayerId,
+    );
+
+    if (replaced) {
+      this.playerIdentityRegistry.promoteHumanToBotBySocketId(id);
+    }
+
+    return replaced;
   }
 
   // 指定プレイヤー座標更新処理
   movePlayer(id: string, x: number, y: number) {
-    this.playerOperationService.movePlayer(id, x, y);
+    const internalPlayerId = this.resolveInternalPlayerId(id);
+    this.playerOperationService.movePlayer(internalPlayerId, x, y);
   }
 
   /**
@@ -80,8 +121,9 @@ export class GameManager {
   }
 
   // 現在セッションのプレイヤーを取得
-  getRoomPlayers(): Player[] {
-    return this.lifecycleService.getRoomPlayers();
+  getRoomPlayers(): domain.player.PlayerData[] {
+    const internalPlayers = this.lifecycleService.getRoomPlayers();
+    return this.playerIdentityRegistry.toClientVisiblePlayers(internalPlayers);
   }
 
   // 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する
@@ -101,10 +143,12 @@ export class GameManager {
 
   /** 指定プレイヤーがBotなら被弾硬直を適用する */
   applyBotHitStun(playerId: string, nowMs: number): boolean {
-    return this.lifecycleService.applyBotHitStun(playerId, nowMs);
+    const internalPlayerId = this.resolveInternalPlayerId(playerId);
+    return this.lifecycleService.applyBotHitStun(internalPlayerId, nowMs);
   }
 
   dispose(): void {
     this.lifecycleService.dispose();
+    this.playerIdentityRegistry.reset();
   }
 }

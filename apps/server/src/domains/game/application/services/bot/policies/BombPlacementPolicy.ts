@@ -4,7 +4,7 @@
  */
 import type { PlaceBombPayload } from "@repo/shared";
 import { config } from "@server/config";
-import type { BotPlayerId } from "../roster/BotRosterService.js";
+import type { BotControlPlayerId } from "../types/BotTypes.js";
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.max(min, Math.min(max, value));
@@ -12,7 +12,7 @@ const clamp = (value: number, min: number, max: number): number => {
 
 /** 爆弾設置可否を判定して設置時の情報を返す */
 export const decideBombPlacement = (
-  botPlayerId: BotPlayerId,
+  botPlayerId: BotControlPlayerId,
   nowMs: number,
   elapsedMs: number,
   lastBombPlacedAtMs: number,

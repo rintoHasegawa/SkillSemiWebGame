@@ -4,6 +4,9 @@
  */
 import type { PlaceBombPayload } from "@repo/shared";
 
+/** Bot制御で利用するプレイヤー識別子 */
+export type BotControlPlayerId = string;
+
 /** Botの内部状態 */
 export type BotState = {
   targetCol: number;

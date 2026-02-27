@@ -7,6 +7,7 @@ import type {
   StartGameOutputPort,
   StartGamePort,
 } from "../ports/gameUseCasePorts";
+import type { domain } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import {
   gameUseCaseLogEvents,
@@ -26,6 +27,18 @@ const excludeRecipientFromPlayerUpdates = <
   );
 };
 
+const mapPlayerUpdatesToClientVisibleIds = (
+  playerUpdates: domain.game.PlayerPositionUpdate[],
+  mapPlayerIdToClientVisibleId: (playerId: string) => string,
+): domain.game.PlayerPositionUpdate[] => {
+  return playerUpdates.map((playerUpdate) => {
+    return {
+      ...playerUpdate,
+      id: mapPlayerIdToClientVisibleId(playerUpdate.id),
+    };
+  });
+};
+
 type StartGameUseCaseParams = {
   roomId: string;
   playerIds: string[];
@@ -33,6 +46,7 @@ type StartGameUseCaseParams = {
   recipientPlayerIds?: string[];
   gameSession: StartGamePort;
   bombStore: BombPlacementPort;
+  mapPlayerIdToClientVisibleId?: (playerId: string) => string;
   onGameEnd: () => void;
   output: StartGameOutputPort;
 };
@@ -45,13 +59,18 @@ export const startGameUseCase = ({
   recipientPlayerIds,
   gameSession,
   bombStore,
+  mapPlayerIdToClientVisibleId,
   onGameEnd,
   output,
 }: StartGameUseCaseParams) => {
-  const updateRecipients = recipientPlayerIds ?? playerIds;
+  const resolveClientVisibleId =
+    mapPlayerIdToClientVisibleId ?? ((playerId: string) => playerId);
+  const updateRecipients =
+    recipientPlayerIds ?? playerIds.map((playerId) => resolveClientVisibleId(playerId));
   const handleBotBombAction = createBotBombActionHandler({
     roomId,
     bombStore,
+    resolveClientVisiblePlayerId: resolveClientVisibleId,
     output,
   });
 
@@ -59,10 +78,15 @@ export const startGameUseCase = ({
     playerIds,
     playerNamesById,
     (tickData) => {
-      if (tickData.playerUpdates.length > 0) {
+      const mappedPlayerUpdates = mapPlayerUpdatesToClientVisibleIds(
+        tickData.playerUpdates,
+        resolveClientVisibleId,
+      );
+
+      if (mappedPlayerUpdates.length > 0) {
         updateRecipients.forEach((playerId) => {
           const updatesForPlayer = excludeRecipientFromPlayerUpdates(
-            tickData.playerUpdates,
+            mappedPlayerUpdates,
             playerId,
           );
 

@@ -76,27 +76,43 @@ export const startGameCoordinator = ({
   });
 
   const humanPlayerIds = updatedRoom.players.map((player) => player.id);
-  const playerNamesById = Object.fromEntries(
-    updatedRoom.players.map((player) => [player.id, player.name]),
-  );
-  const sessionPlayerIds = createBalancedSessionPlayerIds(
-    updatedRoom.roomId,
-    humanPlayerIds,
-    requestedPlayerCount,
-  );
-  sessionPlayerIds.forEach((playerId) => {
-    if (!isBotPlayerId(playerId)) {
-      return;
-    }
-
-    playerNamesById[playerId] = "BOT";
-  });
   const gameManager = runtimeRegistry.getGameManagerByRoomId(
     updatedRoom.roomId,
   );
   if (!gameManager) {
     return;
   }
+
+  gameManager.resetPlayerIdentitySession();
+
+  const sessionHumanPlayerIds = humanPlayerIds.map((socketId) => {
+    return gameManager.issuePlayerIdForSocket(socketId);
+  });
+
+  const playerNamesById: Record<string, string> = {};
+  updatedRoom.players.forEach((player, index) => {
+    const sessionPlayerId = sessionHumanPlayerIds[index];
+    if (!sessionPlayerId) {
+      return;
+    }
+
+    playerNamesById[sessionPlayerId] = player.name;
+  });
+
+  const sessionPlayerIds = createBalancedSessionPlayerIds(
+    updatedRoom.roomId,
+    sessionHumanPlayerIds,
+    requestedPlayerCount,
+  );
+
+  sessionPlayerIds.forEach((playerId) => {
+    if (!isBotPlayerId(playerId)) {
+      return;
+    }
+
+    gameManager.registerBotPlayerId(playerId);
+    playerNamesById[playerId] = "BOT";
+  });
 
   startGameUseCase({
     roomId: updatedRoom.roomId,
@@ -105,6 +121,9 @@ export const startGameCoordinator = ({
     recipientPlayerIds: humanPlayerIds,
     gameSession: gameManager,
     bombStore: gameManager,
+    mapPlayerIdToClientVisibleId: (playerId: string) => {
+      return gameManager.resolveClientVisiblePlayerId(playerId);
+    },
     onGameEnd: () => {
       roomManager.markRoomWaiting(updatedRoom.roomId);
     },
