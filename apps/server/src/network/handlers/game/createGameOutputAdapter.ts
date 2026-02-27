@@ -61,8 +61,8 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
     publishGameStartToSocket: (payload: GameStartPayload) => {
       common.emitToSocket(protocol.SocketEvents.GAME_START, payload);
     },
-    publishBombPlacedToOthersInRoom: (roomId: RoomId, ownerSocketId: string, payload: BombPlacedPayload) => {
-      common.emitToRoomExceptSocket(roomId, ownerSocketId, protocol.SocketEvents.BOMB_PLACED, payload);
+    publishBombPlacedToOthersInRoom: (roomId: RoomId, ownerPlayerId: string, payload: BombPlacedPayload) => {
+      common.emitToRoomExceptSocket(roomId, ownerPlayerId, protocol.SocketEvents.BOMB_PLACED, payload);
     },
     publishBombPlacedAckToSocket: (socketId: string, payload: BombPlacedAckPayload) => {
       common.emitToSocketById(socketId, protocol.SocketEvents.BOMB_PLACED_ACK, payload);

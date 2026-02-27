@@ -87,7 +87,7 @@ export interface GameOutputPort {
 export interface BombOutputPort {
   publishBombPlacedToOthersInRoom(
     roomId: domain.room.Room["roomId"],
-    ownerSocketId: string,
+    ownerPlayerId: string,
     payload: BombPlacedPayload,
   ): void;
   publishBombPlacedAckToSocket(

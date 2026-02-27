@@ -40,7 +40,7 @@ export const placeBombUseCase = ({
     createBombPlacedPayload({
       payload: input.payload,
       bombId,
-      ownerSocketId: input.socketId,
+      ownerPlayerId: input.socketId,
     })
   );
 
