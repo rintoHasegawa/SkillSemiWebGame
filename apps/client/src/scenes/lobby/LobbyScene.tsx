@@ -88,7 +88,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           left: 0,
           width: "100vw",
           height: "100dvh",
-          backgroundImage: "url('/LobbyAni.webp')", // ここで画像を読み込み
+          backgroundImage: "url('/LobbyAni2.webp')", // ここで画像を読み込み
           backgroundSize: "cover",
           backgroundPosition: "center",
           zIndex: -1, // UIの一番後ろに配置
