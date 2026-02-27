@@ -25,9 +25,9 @@ const publishPlayerDeadFromBombHit = (
   output: BombHitOutputPort,
 ): void => {
   const deadPlayerId =
-    input.payload.targetPlayerVisibleId ?? input.socketId;
+    input.payload.targetPlayerId ?? input.socketId;
 
-  output.publishPlayerDeadToOthersInRoom(roomId, deadPlayerId, {
+  output.publishPlayerDeadToOthersInRoom(roomId, input.socketId, {
     playerId: deadPlayerId,
   });
 };
@@ -44,9 +44,9 @@ export const reportBombHitUseCase = ({
     return;
   }
 
-  const targetPlayerVisibleId = input.payload.targetPlayerVisibleId;
-  if (targetPlayerVisibleId) {
-    botHitReaction.applyBotHitStun(targetPlayerVisibleId, input.nowMs);
+  const targetPlayerId = input.payload.targetPlayerId;
+  if (targetPlayerId) {
+    botHitReaction.applyBotHitStun(targetPlayerId, input.nowMs);
   }
 
   publishPlayerDeadFromBombHit(roomId, input, output);

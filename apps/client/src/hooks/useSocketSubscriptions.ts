@@ -6,7 +6,7 @@
 import { useEffect } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { domain } from "@repo/shared";
-import type { GameResultPayload } from "@repo/shared";
+import type { GameResultPayload, GameStartPayload } from "@repo/shared";
 import type { AppFlowAction } from "./types/appFlowState";
 
 type UseSocketSubscriptionsParams = {
@@ -17,7 +17,7 @@ type UseSocketSubscriptionsParams = {
 type AppSocketHandlers = {
   handleConnect: (id: string) => void;
   handleRoomUpdate: (updatedRoom: domain.room.Room) => void;
-  handleGameStart: () => void;
+  handleGameStart: (payload: GameStartPayload) => void;
   handleGameResult: (payload: GameResultPayload) => void;
 };
 
@@ -77,7 +77,11 @@ export const useSocketSubscriptions = ({
         dispatchAppFlow({ type: "setRoomAndLobby", room: updatedRoom });
       },
 
-      handleGameStart: () => {
+      handleGameStart: (payload: GameStartPayload) => {
+        if (payload.myPlayerId) {
+          dispatchAppFlow({ type: "setMyId", myId: payload.myPlayerId });
+        }
+
         dispatchAppFlow({ type: "setPlaying" });
       },
 

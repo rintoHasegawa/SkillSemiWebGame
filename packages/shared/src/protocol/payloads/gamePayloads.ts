@@ -65,7 +65,10 @@ export type NewPlayerPayload = PlayerData;
 export type RemovePlayerPayload = PlayerData["id"];
 
 /** game-start イベントで送受信するゲーム開始情報 */
-export type GameStartPayload = { startTime: number };
+export type GameStartPayload = {
+  startTime: number;
+  myPlayerId?: string;
+};
 
 /** start-game イベントで受信するゲーム開始要求 */
 export type StartGameRequestPayload = {
@@ -101,7 +104,7 @@ export type BombPlacedAckPayload = {
 /** bomb-hit-report イベントで送受信する被弾報告 */
 export type BombHitReportPayload = {
   bombId: string;
-  targetPlayerVisibleId?: string;
+  targetPlayerId?: string;
 };
 
 /** player-dead イベントで送受信する死亡プレイヤー情報 */

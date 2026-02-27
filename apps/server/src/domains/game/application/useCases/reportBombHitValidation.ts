@@ -12,7 +12,7 @@ export const shouldPublishPlayerDeadFromBombHit = (
   const dedupeKey = createBombHitReportDedupeKey(
     input.socketId,
     input.payload.bombId,
-    input.payload.targetPlayerVisibleId,
+    input.payload.targetPlayerId,
   );
   return validation.shouldBroadcastBombHitReport(dedupeKey, input.nowMs);
 };

@@ -89,6 +89,15 @@ export const startGameCoordinator = ({
     return gameManager.issuePlayerIdForSocket(socketId);
   });
 
+  const humanPlayerBindings = humanPlayerIds.flatMap((socketId, index) => {
+    const playerId = sessionHumanPlayerIds[index];
+    if (!playerId) {
+      return [];
+    }
+
+    return [{ socketId, playerId }];
+  });
+
   const playerNamesById: Record<string, string> = {};
   updatedRoom.players.forEach((player, index) => {
     const sessionPlayerId = sessionHumanPlayerIds[index];
@@ -118,12 +127,9 @@ export const startGameCoordinator = ({
     roomId: updatedRoom.roomId,
     playerIds: sessionPlayerIds,
     playerNamesById,
-    recipientPlayerIds: humanPlayerIds,
+    humanPlayerBindings,
     gameSession: gameManager,
     bombStore: gameManager,
-    mapPlayerIdToClientVisibleId: (playerId: string) => {
-      return gameManager.resolveClientVisiblePlayerId(playerId);
-    },
     onGameEnd: () => {
       roomManager.markRoomWaiting(updatedRoom.roomId);
     },

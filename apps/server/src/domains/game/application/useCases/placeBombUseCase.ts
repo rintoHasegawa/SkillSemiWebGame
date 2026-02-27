@@ -27,7 +27,10 @@ export const placeBombUseCase = ({
   input,
   output,
 }: PlaceBombUseCaseParams): void => {
-  const dedupeKey = createBombDedupeKey(input.socketId, input.payload.requestId);
+  const dedupeKey = createBombDedupeKey(
+    input.ownerPlayerId,
+    input.payload.requestId,
+  );
   if (!bombStore.shouldBroadcastBombPlaced(dedupeKey, input.nowMs)) {
     return;
   }
@@ -36,16 +39,16 @@ export const placeBombUseCase = ({
 
   output.publishBombPlacedToOthersInRoom(
     roomId,
-    input.socketId,
+    input.requesterSocketId,
     createBombPlacedPayload({
       payload: input.payload,
       bombId,
-      ownerPlayerId: input.socketId,
+      ownerPlayerId: input.ownerPlayerId,
     })
   );
 
   output.publishBombPlacedAckToSocket(
-    input.socketId,
+    input.requesterSocketId,
     createBombPlacedAckPayload({
       requestId: input.payload.requestId,
       bombId,

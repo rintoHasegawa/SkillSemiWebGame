@@ -55,17 +55,13 @@ export class GameManager {
     this.playerIdentityRegistry.registerBotPlayerId(playerId);
   }
 
-  /** 内部 playerId をクライアント互換IDへ変換する */
-  resolveClientVisiblePlayerId(playerId: string): string {
-    return this.playerIdentityRegistry.resolveClientVisibleId(playerId);
+  /** socketId から内部 playerId を解決する */
+  resolvePlayerIdFromSocketId(socketId: string): string | undefined {
+    return this.playerIdentityRegistry.resolvePlayerIdFromSocketId(socketId);
   }
 
   private resolveInternalPlayerId(actorId: string): string {
-    return (
-      this.playerIdentityRegistry.resolvePlayerIdFromSocketId(actorId) ??
-      this.playerIdentityRegistry.resolvePlayerIdFromClientVisibleId(actorId) ??
-      actorId
-    );
+    return this.playerIdentityRegistry.resolvePlayerIdFromSocketId(actorId) ?? actorId;
   }
 
   // 外部（GameHandlerなど）から開始時刻を取得できるようにする
@@ -123,7 +119,7 @@ export class GameManager {
   // 現在セッションのプレイヤーを取得
   getRoomPlayers(): domain.player.PlayerData[] {
     const internalPlayers = this.lifecycleService.getRoomPlayers();
-    return this.playerIdentityRegistry.toClientVisiblePlayers(internalPlayers);
+    return this.playerIdentityRegistry.toSessionPlayers(internalPlayers);
   }
 
   // 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する

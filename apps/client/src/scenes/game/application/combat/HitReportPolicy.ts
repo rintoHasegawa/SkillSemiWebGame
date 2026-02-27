@@ -15,13 +15,13 @@ export class HitReportPolicy {
   public shouldSendReport(
     result: HitEvaluationResult | undefined,
     bombId: string,
-    targetPlayerVisibleId: string,
+    targetPlayerId: string,
   ): boolean {
     if (result !== "hit") {
       return false;
     }
 
-    const reportKey = `${bombId}:${targetPlayerVisibleId}`;
+    const reportKey = `${bombId}:${targetPlayerId}`;
     if (this.reportedBombHitKeys.has(reportKey)) {
       return false;
     }

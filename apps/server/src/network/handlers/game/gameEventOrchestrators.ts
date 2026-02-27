@@ -113,11 +113,15 @@ export const handlePlaceBombEvent = (
     deps.runtimeRegistry,
     deps.socketId,
     ({ roomId, gameManager }) => {
+      const ownerPlayerId =
+        gameManager.resolvePlayerIdFromSocketId(deps.socketId) ?? deps.socketId;
+
       placeBombUseCase({
         roomId,
         bombStore: gameManager,
         input: {
-          socketId: deps.socketId,
+          requesterSocketId: deps.socketId,
+          ownerPlayerId,
           payload,
           nowMs: Date.now(),
         },

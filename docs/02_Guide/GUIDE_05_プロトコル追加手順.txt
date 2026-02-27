@@ -141,5 +141,5 @@
 
 ■ 適用例（2026-02-27）
 ・`BombPlacedPayload.ownerSocketId` → `ownerPlayerId`
-・`BombHitReportPayload.targetPlayerId` → `targetPlayerVisibleId`
+・`BombHitReportPayload.targetPlayerId` を playerId 基準で統一
 ・命名変更に合わせて，client/server 双方の送受信参照を追従済み

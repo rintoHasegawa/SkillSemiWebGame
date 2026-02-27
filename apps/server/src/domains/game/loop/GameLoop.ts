@@ -131,7 +131,9 @@ export class GameLoop {
     gridColorsSnapshot: number[],
   ): void {
     this.players.forEach((player) => {
-      if (this.botControlRegistry.isBotControlled(player.id)) {
+      if (
+        this.botControlRegistry.isBotControlled(player.id, player.ownerType)
+      ) {
         const decision = this.botTurnOrchestrator.decide(
           player.id,
           player,
@@ -152,7 +154,8 @@ export class GameLoop {
   public applyBotHitStun(playerId: string, nowMs: number): boolean {
     const player = this.players.get(playerId);
     const isBotControlled =
-      !!player && this.botControlRegistry.isBotControlled(player.id);
+      !!player &&
+      this.botControlRegistry.isBotControlled(player.id, player.ownerType);
 
     if (!isBotControlled) {
       return false;

@@ -110,8 +110,8 @@ export class GameManager {
       players: this.players,
       myId: this.myId,
       acquireInputLock: this.lockInput.bind(this),
-      onSendBombHitReport: (bombId, targetPlayerVisibleId) => {
-        gameActionSender.sendBombHitReport(bombId, targetPlayerVisibleId);
+      onSendBombHitReport: (bombId, targetPlayerId) => {
+        gameActionSender.sendBombHitReport(bombId, targetPlayerId);
       },
     });
     this.runtime = new GameSceneRuntime({

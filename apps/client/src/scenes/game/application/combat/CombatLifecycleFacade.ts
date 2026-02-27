@@ -20,7 +20,7 @@ export type CombatLifecycleFacadeOptions = {
   acquireInputLock: () => () => void;
   onSendBombHitReport: (
     bombId: string,
-    targetPlayerVisibleId: string,
+    targetPlayerId: string,
   ) => void;
 };
 
@@ -29,7 +29,7 @@ export class CombatLifecycleFacade {
   private readonly myId: string;
   private readonly onSendBombHitReport: (
     bombId: string,
-    targetPlayerVisibleId: string,
+    targetPlayerId: string,
   ) => void;
   private readonly bombHitOrchestrator: BombHitOrchestrator;
   private readonly playerDeathPolicy: PlayerDeathPolicy;
@@ -71,12 +71,12 @@ export class CombatLifecycleFacade {
       this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
     }
 
-    result.hitPlayerIds.forEach((targetPlayerVisibleId) => {
-      if (!this.hitReportPolicy.shouldSendReport(result.status, payload.bombId, targetPlayerVisibleId)) {
+    result.hitPlayerIds.forEach((targetPlayerId) => {
+      if (!this.hitReportPolicy.shouldSendReport(result.status, payload.bombId, targetPlayerId)) {
         return;
       }
 
-      this.onSendBombHitReport(payload.bombId, targetPlayerVisibleId);
+      this.onSendBombHitReport(payload.bombId, targetPlayerId);
     });
   }
 
