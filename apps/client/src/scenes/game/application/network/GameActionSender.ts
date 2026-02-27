@@ -26,7 +26,10 @@ export class SocketGameActionSender implements GameActionSender {
   }
 
   /** 被弾報告をサーバーへ送信する */
-  public sendBombHitReport(bombId: string, targetPlayerId: string): void {
+  public sendBombHitReport(
+    bombId: string,
+    targetPlayerId: string,
+  ): void {
     socketManager.game.sendBombHitReport({ bombId, targetPlayerId });
   }
 }

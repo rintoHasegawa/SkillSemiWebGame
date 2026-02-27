@@ -5,9 +5,13 @@
  */
 
 /** クライアントとサーバー間で共有するプレイヤー基本情報 */
+export type PlayerOwnerType = "human" | "bot";
+
+/** クライアントとサーバー間で共有するプレイヤー基本情報 */
 export interface PlayerData {
   id: string;
   name: string;
+  ownerType: PlayerOwnerType;
   // グリッド単位の座標
   x: number;
   y: number;

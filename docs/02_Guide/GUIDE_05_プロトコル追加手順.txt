@@ -109,3 +109,37 @@
 ・プロトコル追加時は，本ガイドの 4-1 から 4-5 までを PR テンプレート上でチェックする
 ・events.ts に型本体を戻さない（再公開専用を維持する）
 ・新規型のコメントは `GUIDE_04_コードコメント規則` に従う
+
+
+9. 既存payload命名変更時の影響確認テンプレート (Rename Impact Template)
+------------------------------------------------------------------------
+既存イベントの payload プロパティ名を変更する場合は，次の順で確認する．
+
+9-1. shared の契約更新
+    ・対象: payloads/*.ts
+    ・作業: 旧プロパティ名を新プロパティ名へ変更する
+    ・確認: eventPayloads.ts / events.ts の再公開経路で型崩れがない
+
+9-2. server 受信側の更新
+    ・対象: network/validation，useCase，entity helper
+    ・作業: バリデータ，重複排除キー生成，ユースケース入力参照を新プロパティ名へ変更する
+    ・確認: 旧プロパティ名参照が残っていない
+
+9-3. server 送信側の更新
+    ・対象: output port，adapter，payload builder
+    ・作業: 送信ポート契約と payload 組み立てを新プロパティ名へ変更する
+    ・確認: client が受け取る最終payloadと命名が一致する
+
+9-4. client 利用側の更新
+    ・対象: handler，manager，service，facade
+    ・作業: 受信参照名と送信リクエスト名を新プロパティ名へ変更する
+    ・確認: 変数名も含めて旧命名が残っていない
+
+9-5. 検証
+    ・作業: 7. 検証コマンドを shared → server → client の順で実行する
+    ・確認: 型エラー 0 件，ビルド成功
+
+■ 適用例（2026-02-27）
+・`BombPlacedPayload.ownerSocketId` → `ownerPlayerId`
+・`BombHitReportPayload.targetPlayerId` を playerId 基準で統一
+・命名変更に合わせて，client/server 双方の送受信参照を追従済み

@@ -18,7 +18,10 @@ export type CombatLifecycleFacadeOptions = {
   players: GamePlayers;
   myId: string;
   acquireInputLock: () => () => void;
-  onSendBombHitReport: (bombId: string, targetPlayerId: string) => void;
+  onSendBombHitReport: (
+    bombId: string,
+    targetPlayerId: string,
+  ) => void;
 };
 
 /** 被弾関連ライフサイクルの制御を担当する */

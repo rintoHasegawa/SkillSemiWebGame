@@ -7,7 +7,6 @@ import type {
   StartGameOutputPort,
   StartGamePort,
 } from "../ports/gameUseCasePorts";
-import type { domain } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import {
   gameUseCaseLogEvents,
@@ -16,37 +15,27 @@ import {
 } from "@server/logging/index";
 import { createBotBombActionHandler } from "../services/bot/index.js";
 
-const excludeRecipientFromPlayerUpdates = <
-  TPlayerUpdate extends { id: string },
->(
-  playerUpdates: TPlayerUpdate[],
-  recipientId: string,
-): TPlayerUpdate[] => {
-  return playerUpdates.filter(
-    (playerUpdate) => playerUpdate.id !== recipientId,
-  );
+type HumanPlayerBinding = {
+  socketId: string;
+  playerId: string;
 };
 
-const mapPlayerUpdatesToClientVisibleIds = (
-  playerUpdates: domain.game.PlayerPositionUpdate[],
-  mapPlayerIdToClientVisibleId: (playerId: string) => string,
-): domain.game.PlayerPositionUpdate[] => {
-  return playerUpdates.map((playerUpdate) => {
-    return {
-      ...playerUpdate,
-      id: mapPlayerIdToClientVisibleId(playerUpdate.id),
-    };
-  });
+const excludeRecipientFromPlayerUpdates = <TPlayerUpdate extends { id: string }>(
+  playerUpdates: TPlayerUpdate[],
+  recipientPlayerId: string,
+): TPlayerUpdate[] => {
+  return playerUpdates.filter(
+    (playerUpdate) => playerUpdate.id !== recipientPlayerId,
+  );
 };
 
 type StartGameUseCaseParams = {
   roomId: string;
   playerIds: string[];
   playerNamesById: Record<string, string>;
-  recipientPlayerIds?: string[];
+  humanPlayerBindings?: HumanPlayerBinding[];
   gameSession: StartGamePort;
   bombStore: BombPlacementPort;
-  mapPlayerIdToClientVisibleId?: (playerId: string) => string;
   onGameEnd: () => void;
   output: StartGameOutputPort;
 };
@@ -56,21 +45,18 @@ export const startGameUseCase = ({
   roomId,
   playerIds,
   playerNamesById,
-  recipientPlayerIds,
+  humanPlayerBindings,
   gameSession,
   bombStore,
-  mapPlayerIdToClientVisibleId,
   onGameEnd,
   output,
 }: StartGameUseCaseParams) => {
-  const resolveClientVisibleId =
-    mapPlayerIdToClientVisibleId ?? ((playerId: string) => playerId);
-  const updateRecipients =
-    recipientPlayerIds ?? playerIds.map((playerId) => resolveClientVisibleId(playerId));
+  const bindings = humanPlayerBindings ??
+    playerIds.map((playerId) => ({ socketId: playerId, playerId }));
+
   const handleBotBombAction = createBotBombActionHandler({
     roomId,
     bombStore,
-    resolveClientVisiblePlayerId: resolveClientVisibleId,
     output,
   });
 
@@ -78,15 +64,10 @@ export const startGameUseCase = ({
     playerIds,
     playerNamesById,
     (tickData) => {
-      const mappedPlayerUpdates = mapPlayerUpdatesToClientVisibleIds(
-        tickData.playerUpdates,
-        resolveClientVisibleId,
-      );
-
-      if (mappedPlayerUpdates.length > 0) {
-        updateRecipients.forEach((playerId) => {
+      if (tickData.playerUpdates.length > 0) {
+        bindings.forEach(({ socketId, playerId }) => {
           const updatesForPlayer = excludeRecipientFromPlayerUpdates(
-            mappedPlayerUpdates,
+            tickData.playerUpdates,
             playerId,
           );
 
@@ -94,7 +75,7 @@ export const startGameUseCase = ({
             return;
           }
 
-          output.publishUpdatePlayersToSocket(playerId, updatesForPlayer);
+          output.publishUpdatePlayersToSocket(socketId, updatesForPlayer);
         });
       }
 
@@ -117,5 +98,10 @@ export const startGameUseCase = ({
   );
 
   const startTime = gameSession.getRoomStartTime() || Date.now();
-  output.publishGameStartToRoom(roomId, { startTime });
+  bindings.forEach(({ socketId, playerId }) => {
+    output.publishGameStartToSocketById(socketId, {
+      startTime,
+      myPlayerId: playerId,
+    });
+  });
 };

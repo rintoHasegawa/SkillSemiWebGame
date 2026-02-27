@@ -61,14 +61,17 @@ export const createGameOutputAdapter = (common: CommonHandlerContext): GameOutpu
     publishGameStartToSocket: (payload: GameStartPayload) => {
       common.emitToSocket(protocol.SocketEvents.GAME_START, payload);
     },
-    publishBombPlacedToOthersInRoom: (roomId: RoomId, ownerPlayerId: string, payload: BombPlacedPayload) => {
-      common.emitToRoomExceptSocket(roomId, ownerPlayerId, protocol.SocketEvents.BOMB_PLACED, payload);
+    publishGameStartToSocketById: (socketId: string, payload: GameStartPayload) => {
+      common.emitToSocketById(socketId, protocol.SocketEvents.GAME_START, payload);
+    },
+    publishBombPlacedToOthersInRoom: (roomId: RoomId, excludedSocketId: string, payload: BombPlacedPayload) => {
+      common.emitToRoomExceptSocket(roomId, excludedSocketId, protocol.SocketEvents.BOMB_PLACED, payload);
     },
     publishBombPlacedAckToSocket: (socketId: string, payload: BombPlacedAckPayload) => {
       common.emitToSocketById(socketId, protocol.SocketEvents.BOMB_PLACED_ACK, payload);
     },
-    publishPlayerDeadToOthersInRoom: (roomId: RoomId, deadPlayerId: string, payload: PlayerDeadPayload) => {
-      common.emitToRoomExceptSocket(roomId, deadPlayerId, protocol.SocketEvents.PLAYER_DEAD, payload);
+    publishPlayerDeadToOthersInRoom: (roomId: RoomId, excludedSocketId: string, payload: PlayerDeadPayload) => {
+      common.emitToRoomExceptSocket(roomId, excludedSocketId, protocol.SocketEvents.PLAYER_DEAD, payload);
     },
   };
 };

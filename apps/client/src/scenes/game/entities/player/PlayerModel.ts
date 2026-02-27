@@ -10,6 +10,7 @@ import { domain } from "@repo/shared";
 export class PlayerModel {
   public readonly id: string;
   public readonly name: string;
+  public readonly ownerType: domain.player.PlayerOwnerType;
   public readonly teamId: number;
 
   private gridX: number;
@@ -21,6 +22,7 @@ export class PlayerModel {
   constructor(data: domain.player.PlayerData) {
     this.id = data.id;
     this.name = data.name;
+    this.ownerType = data.ownerType;
     this.teamId = data.teamId;
     this.gridX = data.x;
     this.gridY = data.y;
@@ -38,6 +40,7 @@ export class PlayerModel {
     return {
       id: this.id,
       name: this.name,
+      ownerType: this.ownerType,
       teamId: this.teamId,
       x: this.gridX,
       y: this.gridY,

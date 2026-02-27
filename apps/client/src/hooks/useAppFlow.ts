@@ -147,7 +147,6 @@ export const useAppFlow = (): AppFlowState => {
         completeJoinRequest({
           reason: payload.reason,
           roomId: payload.roomId,
-          playerName: payload.playerName,
         });
       };
 

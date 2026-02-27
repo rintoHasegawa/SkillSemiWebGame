@@ -22,6 +22,7 @@ import {
 import { buildGameResultPayload } from "./gameResultCalculator.js";
 import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
 import type { PlaceBombPayload } from "@repo/shared";
+import { isBotPlayerId } from "./bot/index.js";
 
 /** ルーム単位のゲーム状態とループ進行を保持するセッションクラス */
 export class GameRoomSession {
@@ -49,7 +50,13 @@ export class GameRoomSession {
 
       // 算出したチームIDを指定してプレイヤーを生成する
       const playerName = playerNamesById[playerId] ?? playerId;
-      const player = createSpawnedPlayer(playerId, playerName, assignedTeamId);
+      const ownerType = isBotPlayerId(playerId) ? "bot" : "human";
+      const player = createSpawnedPlayer(
+        playerId,
+        playerName,
+        assignedTeamId,
+        ownerType,
+      );
 
       this.players.set(playerId, player);
     });
@@ -141,10 +148,12 @@ export class GameRoomSession {
 
   /** 指定プレイヤーを切断後もBot制御で継続させる */
   public promotePlayerToBotControl(id: string): boolean {
-    if (!this.players.has(id) || !this.gameLoop) {
+    const player = this.players.get(id);
+    if (!player || !this.gameLoop) {
       return false;
     }
 
+    player.ownerType = "bot";
     this.gameLoop.promotePlayerToBotControl(id);
     return true;
   }

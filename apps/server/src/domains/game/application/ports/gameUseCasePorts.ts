@@ -34,6 +34,7 @@ export interface StartGamePort {
 export interface ReadyForGamePort {
   getRoomPlayers(): domain.player.PlayerData[];
   getRoomStartTime(): number | undefined;
+  resolvePlayerIdFromSocketId(socketId: string): string | undefined;
 }
 
 /** 移動入力ユースケースが利用するプレイヤー操作入力ポート */
@@ -52,7 +53,6 @@ export interface SessionPlayerIdentityPort {
   resetPlayerIdentitySession(): void;
   issuePlayerIdForSocket(socketId: string): string;
   registerBotPlayerId(playerId: string): void;
-  resolveClientVisiblePlayerId(playerId: string): string;
 }
 
 /** ゲーム系ユースケースが利用する送信出力ポート */
@@ -77,6 +77,7 @@ export interface GameOutputPort {
   ): void;
   publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
   publishGameStartToSocket(payload: GameStartPayload): void;
+  publishGameStartToSocketById(socketId: string, payload: GameStartPayload): void;
   publishPlayerRemovedToRoom(
     roomId: domain.room.Room["roomId"],
     removedPlayerId: RemovePlayerPayload,
@@ -87,7 +88,7 @@ export interface GameOutputPort {
 export interface BombOutputPort {
   publishBombPlacedToOthersInRoom(
     roomId: domain.room.Room["roomId"],
-    ownerPlayerId: string,
+    excludedSocketId: string,
     payload: BombPlacedPayload,
   ): void;
   publishBombPlacedAckToSocket(
@@ -96,7 +97,7 @@ export interface BombOutputPort {
   ): void;
   publishPlayerDeadToOthersInRoom(
     roomId: domain.room.Room["roomId"],
-    deadPlayerId: string,
+    excludedSocketId: string,
     payload: PlayerDeadPayload,
   ): void;
 }
@@ -115,6 +116,7 @@ export type StartGameOutputPort = Pick<
   | "publishGameEndToRoom"
   | "publishGameResultToRoom"
   | "publishGameStartToRoom"
+  | "publishGameStartToSocketById"
 > &
   Pick<
     BombOutputPort,
@@ -139,7 +141,8 @@ export interface BotHitReactionPort {
 
 /** 爆弾設置ユースケースの入力値 */
 export type PlaceBombInput = {
-  socketId: string;
+  requesterSocketId: string;
+  ownerPlayerId: string;
   payload: PlaceBombPayload;
   nowMs: number;
 };

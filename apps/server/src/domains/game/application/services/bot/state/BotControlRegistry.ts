@@ -2,17 +2,20 @@
  * BotControlRegistry
  * Bot制御対象プレイヤーIDの判定と管理を担う
  */
-import { isBotPlayerId } from "../roster/BotRosterService.js";
 import type { BotControlPlayerId } from "../types/BotTypes.js";
+import type { domain } from "@repo/shared";
 
 /** Bot制御対象プレイヤーID集合を管理するストア */
 export class BotControlRegistry {
   private disconnectedPlayerIds = new Set<BotControlPlayerId>();
 
   /** 指定プレイヤーがBot制御対象かを判定する */
-  public isBotControlled(playerId: string): boolean {
+  public isBotControlled(
+    playerId: string,
+    ownerType: domain.player.PlayerOwnerType,
+  ): boolean {
     return (
-      isBotPlayerId(playerId) ||
+      ownerType === "bot" ||
       this.disconnectedPlayerIds.has(playerId)
     );
   }

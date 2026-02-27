@@ -11,8 +11,9 @@ export const createSpawnedPlayer = (
   id: string,
   name: string,
   teamId: number,
+  ownerType: "human" | "bot",
 ): Player => {
-  const player = new Player(id, name, teamId); // ここにteamIdを渡す！
+  const player = new Player(id, name, teamId, ownerType); // ここにteamIdを渡す！
 
   const { GRID_COLS, GRID_ROWS, TEAM_COUNT } = config.GAME_CONFIG;
 

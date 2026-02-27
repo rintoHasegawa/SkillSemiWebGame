@@ -12,8 +12,6 @@ export class PlayerIdentityRegistry {
   private sequenceNumber = 0;
   private socketIdToPlayerId = new Map<string, string>();
   private playerIdToSocketId = new Map<string, string>();
-  private clientVisibleIdByPlayerId = new Map<string, string>();
-  private playerIdByClientVisibleId = new Map<string, string>();
   private ownerTypeByPlayerId = new Map<string, PlayerOwnerType>();
 
   constructor(private roomId: string) {}
@@ -23,8 +21,6 @@ export class PlayerIdentityRegistry {
     this.sequenceNumber = 0;
     this.socketIdToPlayerId.clear();
     this.playerIdToSocketId.clear();
-    this.clientVisibleIdByPlayerId.clear();
-    this.playerIdByClientVisibleId.clear();
     this.ownerTypeByPlayerId.clear();
   }
 
@@ -35,8 +31,6 @@ export class PlayerIdentityRegistry {
 
     this.socketIdToPlayerId.set(socketId, playerId);
     this.playerIdToSocketId.set(playerId, socketId);
-    this.clientVisibleIdByPlayerId.set(playerId, socketId);
-    this.playerIdByClientVisibleId.set(socketId, playerId);
     this.ownerTypeByPlayerId.set(playerId, "human");
 
     return playerId;
@@ -44,24 +38,12 @@ export class PlayerIdentityRegistry {
 
   /** Botプレイヤーの内部IDを対応表へ登録する */
   public registerBotPlayerId(playerId: string): void {
-    this.clientVisibleIdByPlayerId.set(playerId, playerId);
-    this.playerIdByClientVisibleId.set(playerId, playerId);
     this.ownerTypeByPlayerId.set(playerId, "bot");
   }
 
   /** socketId から内部 playerId を解決する */
   public resolvePlayerIdFromSocketId(socketId: string): string | undefined {
     return this.socketIdToPlayerId.get(socketId);
-  }
-
-  /** クライアント互換IDから内部 playerId を解決する */
-  public resolvePlayerIdFromClientVisibleId(clientVisibleId: string): string | undefined {
-    return this.playerIdByClientVisibleId.get(clientVisibleId);
-  }
-
-  /** 内部 playerId をクライアント互換IDへ変換する */
-  public resolveClientVisibleId(playerId: string): string {
-    return this.clientVisibleIdByPlayerId.get(playerId) ?? playerId;
   }
 
   /** 内部 playerId に紐づく現在の socketId を解決する */
@@ -82,27 +64,10 @@ export class PlayerIdentityRegistry {
     return true;
   }
 
-  /** プレイヤー一覧をクライアント互換IDへ変換する */
-  public toClientVisiblePlayers(
+  /** プレイヤー一覧をそのまま返す */
+  public toSessionPlayers(
     players: domain.player.PlayerData[],
   ): domain.player.PlayerData[] {
-    return players.map((player) => {
-      return {
-        ...player,
-        id: this.resolveClientVisibleId(player.id),
-      };
-    });
-  }
-
-  /** プレイヤー差分をクライアント互換IDへ変換する */
-  public toClientVisiblePlayerUpdates(
-    playerUpdates: domain.game.PlayerPositionUpdate[],
-  ): domain.game.PlayerPositionUpdate[] {
-    return playerUpdates.map((playerUpdate) => {
-      return {
-        ...playerUpdate,
-        id: this.resolveClientVisibleId(playerUpdate.id),
-      };
-    });
+    return players;
   }
 }

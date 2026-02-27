@@ -5,4 +5,4 @@
  */
 
 /** プレイヤー契約関連の型を再公開する */
-export type { PlayerData, MovePayload } from "./player.type";
+export type { PlayerData, MovePayload, PlayerOwnerType } from "./player.type";
