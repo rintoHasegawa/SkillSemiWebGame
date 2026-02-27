@@ -61,6 +61,16 @@ export class GameSessionLifecycleService {
     return session.issueServerBombId();
   }
 
+  /** 指定プレイヤーがBotなら被弾硬直を適用する */
+  public applyBotHitStun(playerId: string, nowMs: number): boolean {
+    const session = this.sessionRef.current;
+    if (!session) {
+      return false;
+    }
+
+    return session.applyBotHitStun(playerId, nowMs);
+  }
+
   public startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,

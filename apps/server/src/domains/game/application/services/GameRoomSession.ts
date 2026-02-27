@@ -165,6 +165,15 @@ export class GameRoomSession {
     return this.bombStateStore.issueServerBombId();
   }
 
+  /** 指定プレイヤーがBotなら被弾硬直を適用する */
+  public applyBotHitStun(playerId: string, nowMs: number): boolean {
+    if (!this.gameLoop) {
+      return false;
+    }
+
+    return this.gameLoop.applyBotHitStun(playerId, nowMs);
+  }
+
   public dispose(): void {
     if (this.startDelayTimer) {
       clearTimeout(this.startDelayTimer);

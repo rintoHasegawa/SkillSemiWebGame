@@ -3,6 +3,7 @@
  * 被弾報告を受け取り，死亡通知の配信処理へ橋渡しする
  */
 import type {
+  BotHitReactionPort,
   BombHitOutputPort,
   BombHitReportValidationPort,
   ReportBombHitInput,
@@ -12,6 +13,7 @@ import { shouldPublishPlayerDeadFromBombHit } from "./reportBombHitValidation";
 type ReportBombHitUseCaseParams = {
   roomId: string;
   validation: BombHitReportValidationPort;
+  botHitReaction: BotHitReactionPort;
   input: ReportBombHitInput;
   output: BombHitOutputPort;
 };
@@ -31,10 +33,16 @@ const publishPlayerDeadFromBombHit = (
 export const reportBombHitUseCase = ({
   roomId,
   validation,
+  botHitReaction,
   input,
   output,
 }: ReportBombHitUseCaseParams): void => {
   if (!shouldPublishPlayerDeadFromBombHit(validation, input)) {
+    return;
+  }
+
+  const targetPlayerId = input.payload.targetPlayerId;
+  if (targetPlayerId && botHitReaction.applyBotHitStun(targetPlayerId, input.nowMs)) {
     return;
   }
 

@@ -94,6 +94,11 @@ export class GameManager {
     return this.lifecycleService.issueServerBombId();
   }
 
+  /** 指定プレイヤーがBotなら被弾硬直を適用する */
+  applyBotHitStun(playerId: string, nowMs: number): boolean {
+    return this.lifecycleService.applyBotHitStun(playerId, nowMs);
+  }
+
   dispose(): void {
     this.lifecycleService.dispose();
   }

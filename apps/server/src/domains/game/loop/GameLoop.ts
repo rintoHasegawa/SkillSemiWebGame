@@ -143,6 +143,17 @@ export class GameLoop {
     });
   }
 
+  /** 指定プレイヤーがBotなら被弾硬直を適用する */
+  public applyBotHitStun(playerId: string, nowMs: number): boolean {
+    const player = this.players.get(playerId);
+    if (!player || !isBotPlayerId(player.id)) {
+      return false;
+    }
+
+    this.botTurnOrchestrator.applyHitStun(player.id, nowMs);
+    return true;
+  }
+
   private buildTickData(): domain.game.TickData {
     const activePlayerIds = new Set<string>();
     const playerUpdates = this.collectChangedPlayerUpdates(activePlayerIds);
