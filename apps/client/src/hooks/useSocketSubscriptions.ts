@@ -12,6 +12,14 @@ import type { AppFlowAction } from "./types/appFlowState";
 type UseSocketSubscriptionsParams = {
   completeJoinRequest: () => void;
   dispatchAppFlow: (action: AppFlowAction) => void;
+import type { Dispatch, SetStateAction } from "react";
+
+type UseSocketSubscriptionsParams = {
+  completeJoinRequest: () => void;
+  setGameResult: (payload: GameResultPayload | null) => void;
+  setMyId: (id: string | null) => void;
+  setRoom: (room: domain.room.Room | null) => void;
+  setScenePhase: Dispatch<SetStateAction<domain.app.ScenePhaseType>>;
 };
 
 type AppSocketHandlers = {
@@ -75,6 +83,17 @@ export const useSocketSubscriptions = ({
       handleRoomUpdate: (updatedRoom: domain.room.Room) => {
         completeJoinRequest();
         dispatchAppFlow({ type: "setRoomAndLobby", room: updatedRoom });
+        setRoom(updatedRoom);
+        setScenePhase((currentPhase) => {
+          if (
+            currentPhase === domain.app.ScenePhase.PLAYING ||
+            currentPhase === domain.app.ScenePhase.RESULT
+          ) {
+            return currentPhase;
+          }
+
+          return domain.app.ScenePhase.LOBBY;
+        });
       },
 
       handleGameStart: () => {

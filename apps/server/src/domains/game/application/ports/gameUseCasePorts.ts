@@ -44,6 +44,7 @@ export interface MovePlayerPort {
 /** 切断ユースケースが利用するプレイヤー削除入力ポート */
 export interface DisconnectPlayerPort {
   removePlayer(id: string): void;
+  replaceDisconnectedPlayerWithBot(id: string): boolean;
 }
 
 /** ゲーム系ユースケースが利用する送信出力ポート */
