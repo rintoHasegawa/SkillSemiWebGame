@@ -12,6 +12,7 @@ import { placeBombUseCase } from "../../../useCases/placeBombUseCase";
 type CreateBotBombActionHandlerParams = {
   roomId: string;
   bombStore: BombPlacementPort;
+  resolveClientVisiblePlayerId?: (playerId: string) => string;
   output: StartGameOutputPort;
 };
 
@@ -19,14 +20,19 @@ type CreateBotBombActionHandlerParams = {
 export const createBotBombActionHandler = ({
   roomId,
   bombStore,
+  resolveClientVisiblePlayerId,
   output,
 }: CreateBotBombActionHandlerParams) => {
   return (ownerId: string, payload: PlaceBombPayload): void => {
+    const ownerClientVisibleId = resolveClientVisiblePlayerId
+      ? resolveClientVisiblePlayerId(ownerId)
+      : ownerId;
+
     placeBombUseCase({
       roomId,
       bombStore,
       input: {
-        socketId: ownerId,
+        socketId: ownerClientVisibleId,
         payload,
         nowMs: Date.now(),
       },

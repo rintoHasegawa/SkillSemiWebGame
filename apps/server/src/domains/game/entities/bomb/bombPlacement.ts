@@ -12,19 +12,19 @@ export const createBombDedupeKey = (ownerId: string, requestId: string): string 
 type CreateBombPlacedPayloadParams = {
   payload: PlaceBombPayload;
   bombId: string;
-  ownerSocketId: string;
+  ownerPlayerId: string;
 };
 
 /** 爆弾確定通知で他プレイヤーへ配信するペイロードを生成する */
 export const createBombPlacedPayload = ({
   payload,
   bombId,
-  ownerSocketId,
+  ownerPlayerId,
 }: CreateBombPlacedPayloadParams): BombPlacedPayload => {
-  // 設置者の識別情報はサーバー確定の socketId を利用する
+  // 設置者の識別情報はクライアント互換の playerId を利用する
   return {
     bombId,
-    ownerSocketId,
+    ownerPlayerId,
     x: payload.x,
     y: payload.y,
     explodeAtElapsedMs: payload.explodeAtElapsedMs,

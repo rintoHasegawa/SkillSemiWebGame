@@ -47,6 +47,14 @@ export interface DisconnectPlayerPort {
   replaceDisconnectedPlayerWithBot(id: string): boolean;
 }
 
+/** セッション内 playerId 管理と外部ID変換を提供する入力ポート */
+export interface SessionPlayerIdentityPort {
+  resetPlayerIdentitySession(): void;
+  issuePlayerIdForSocket(socketId: string): string;
+  registerBotPlayerId(playerId: string): void;
+  resolveClientVisiblePlayerId(playerId: string): string;
+}
+
 /** ゲーム系ユースケースが利用する送信出力ポート */
 export interface GameOutputPort {
   publishPongToSocket(payload: PongPayload): void;
@@ -79,7 +87,7 @@ export interface GameOutputPort {
 export interface BombOutputPort {
   publishBombPlacedToOthersInRoom(
     roomId: domain.room.Room["roomId"],
-    ownerSocketId: string,
+    ownerPlayerId: string,
     payload: BombPlacedPayload,
   ): void;
   publishBombPlacedAckToSocket(

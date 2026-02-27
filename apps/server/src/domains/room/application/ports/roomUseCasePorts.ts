@@ -10,6 +10,7 @@ import type {
   DisconnectPlayerPort,
   MovePlayerPort,
   ReadyForGamePort,
+  SessionPlayerIdentityPort,
   StartGamePort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 
@@ -21,7 +22,8 @@ export type RoomScopedGamePort =
   & BombPlacementPort
   & BombHitReportValidationPort
   & BotHitReactionPort
-  & DisconnectPlayerPort;
+  & DisconnectPlayerPort
+  & SessionPlayerIdentityPort;
 
 /** ルーム参加処理の実行結果 */
 export type JoinRoomResult = {

@@ -4,13 +4,12 @@
  */
 import { config } from "@server/config";
 import type { Player } from "../../../../entities/player/Player";
-import type { BotPlayerId } from "../roster/BotRosterService.js";
 import { moveTowardsTarget } from "../movement/MovePlanner.js";
 import { chooseNextTarget } from "../policies/TargetSelectionPolicy.js";
 import { decideBombPlacement } from "../policies/BombPlacementPolicy.js";
 import { BotHitStunPolicy } from "../combat/BotHitStunPolicy.js";
 import { BotStateStore } from "../state/BotStateStore.js";
-import type { BotDecision } from "../types/BotTypes.js";
+import type { BotControlPlayerId, BotDecision } from "../types/BotTypes.js";
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.max(min, Math.min(max, value));
@@ -24,7 +23,7 @@ export class BotTurnOrchestrator {
   });
 
   public decide(
-    botPlayerId: BotPlayerId,
+    botPlayerId: BotControlPlayerId,
     player: Player,
     gridColors: number[],
     nowMs: number,
@@ -97,7 +96,7 @@ export class BotTurnOrchestrator {
   }
 
   /** 指定Botへ被弾硬直を適用する */
-  public applyHitStun(botPlayerId: BotPlayerId, nowMs: number): void {
+  public applyHitStun(botPlayerId: BotControlPlayerId, nowMs: number): void {
     this.stateStore.update(botPlayerId, (state) => {
       return {
         ...state,

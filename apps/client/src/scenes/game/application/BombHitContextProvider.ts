@@ -50,7 +50,7 @@ export class BombHitContextProvider {
   /** 被弾報告対象として扱うプレイヤー円情報を取得する */
   public getReportablePlayerCircles(): ReportablePlayerCircle[] {
     const reportablePlayers = Object.entries(this.players).filter(([playerId]) => {
-      return playerId === this.myId || this.isBotPlayerId(playerId);
+      return playerId !== this.myId;
     });
 
     return reportablePlayers.map(([playerId, controller]) => {
@@ -65,10 +65,5 @@ export class BombHitContextProvider {
         teamId: snapshot.teamId,
       };
     });
-  }
-
-  /** BotプレイヤーIDかどうかを判定する */
-  private isBotPlayerId(playerId: string): boolean {
-    return playerId.startsWith("bot:");
   }
 }

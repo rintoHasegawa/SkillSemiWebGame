@@ -66,7 +66,7 @@ export class BombPlacementService {
       y: position.y,
       explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
     };
-    const ownTeamId = this.resolveTeamIdBySocketId(this.myId);
+    const ownTeamId = this.resolveTeamIdByPlayerId(this.myId);
 
     this.lastBombPlacedElapsedMs = elapsedMs;
     return {
@@ -79,9 +79,9 @@ export class BombPlacementService {
   /** 指定オーナー情報から描画ペイロードを生成する */
   public createRenderPayload(
     payload: { x: number; y: number; explodeAtElapsedMs: number },
-    ownerSocketId: string,
+    ownerPlayerId: string,
   ): BombRenderPayload {
-    const ownerTeamId = this.resolveTeamIdBySocketId(ownerSocketId);
+    const ownerTeamId = this.resolveTeamIdByPlayerId(ownerPlayerId);
     return this.toRenderPayload(payload, ownerTeamId);
   }
 
@@ -99,8 +99,8 @@ export class BombPlacementService {
     };
   }
 
-  private resolveTeamIdBySocketId(socketId: string): number {
-    const playerController = this.players[socketId];
+  private resolveTeamIdByPlayerId(playerId: string): number {
+    const playerController = this.players[playerId];
     if (!playerController) {
       return sharedConfig.UNKNOWN_TEAM_ID;
     }
