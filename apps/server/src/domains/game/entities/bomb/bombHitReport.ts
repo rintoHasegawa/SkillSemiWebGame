@@ -7,10 +7,10 @@
 export const createBombHitReportDedupeKey = (
   reporterSocketId: string,
   bombId: string,
-  targetPlayerId?: string,
+  targetPlayerVisibleId?: string,
 ): string => {
-  if (targetPlayerId) {
-    return `${bombId}:${targetPlayerId}`;
+  if (targetPlayerVisibleId) {
+    return `${bombId}:${targetPlayerVisibleId}`;
   }
 
   return `${reporterSocketId}:${bombId}`;

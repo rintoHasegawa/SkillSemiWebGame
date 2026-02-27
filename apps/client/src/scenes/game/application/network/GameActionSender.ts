@@ -10,7 +10,7 @@ import { socketManager } from "@client/network/SocketManager";
 export type GameActionSender = {
   readyForGame: () => void;
   sendPlaceBomb: (payload: PlaceBombPayload) => void;
-  sendBombHitReport: (bombId: string, targetPlayerId: string) => void;
+  sendBombHitReport: (bombId: string, targetPlayerVisibleId: string) => void;
 };
 
 /** ソケット経由でゲーム中送信アクションを実行する実装 */
@@ -26,7 +26,10 @@ export class SocketGameActionSender implements GameActionSender {
   }
 
   /** 被弾報告をサーバーへ送信する */
-  public sendBombHitReport(bombId: string, targetPlayerId: string): void {
-    socketManager.game.sendBombHitReport({ bombId, targetPlayerId });
+  public sendBombHitReport(
+    bombId: string,
+    targetPlayerVisibleId: string,
+  ): void {
+    socketManager.game.sendBombHitReport({ bombId, targetPlayerVisibleId });
   }
 }

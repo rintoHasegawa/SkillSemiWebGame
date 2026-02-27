@@ -51,9 +51,12 @@ export const isBombHitReportPayload = (
   }
 
   const candidate = value as Record<string, unknown>;
-  const targetPlayerId = candidate.targetPlayerId;
+  const targetPlayerVisibleId = candidate.targetPlayerVisibleId;
 
-  if (targetPlayerId !== undefined && !isNonEmptyString(targetPlayerId)) {
+  if (
+    targetPlayerVisibleId !== undefined &&
+    !isNonEmptyString(targetPlayerVisibleId)
+  ) {
     return false;
   }
 
