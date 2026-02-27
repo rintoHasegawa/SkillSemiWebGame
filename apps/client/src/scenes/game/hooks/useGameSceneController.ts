@@ -5,11 +5,16 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GameManager } from "@client/scenes/game/GameManager";
+import { config } from "@client/config";
 import {
   buildStartCountdownText,
   formatRemainingTime,
   getInitialTimeDisplay,
 } from "@client/scenes/game/input/presentation/GameUiPresenter";
+
+const DEFAULT_TEAM_PAINT_RATES = new Array<number>(
+  config.GAME_CONFIG.TEAM_COUNT,
+).fill(0);
 
 /** ゲーム画面の状態と入力ハンドラを提供するフック */
 export const useGameSceneController = (myId: string | null) => {
@@ -20,6 +25,9 @@ export const useGameSceneController = (myId: string | null) => {
     null,
   );
   const [isInputEnabled, setIsInputEnabled] = useState(false);
+  const [teamPaintRates, setTeamPaintRates] = useState<number[]>(
+    DEFAULT_TEAM_PAINT_RATES,
+  );
 
   useEffect(() => {
     if (!pixiContainerRef.current || !myId) return;
@@ -41,6 +49,8 @@ export const useGameSceneController = (myId: string | null) => {
       setIsInputEnabled((prev) =>
         prev === nextInputEnabled ? prev : nextInputEnabled,
       );
+
+      setTeamPaintRates(state.teamPaintRates);
     });
 
     return () => {
@@ -49,6 +59,7 @@ export const useGameSceneController = (myId: string | null) => {
       gameManagerRef.current = null;
       setStartCountdownText(null);
       setIsInputEnabled(false);
+      setTeamPaintRates(DEFAULT_TEAM_PAINT_RATES);
     };
   }, [myId]);
 
@@ -65,6 +76,7 @@ export const useGameSceneController = (myId: string | null) => {
     timeLeft,
     startCountdownText,
     isInputEnabled,
+    teamPaintRates,
     handleInput,
     handlePlaceBomb,
   };

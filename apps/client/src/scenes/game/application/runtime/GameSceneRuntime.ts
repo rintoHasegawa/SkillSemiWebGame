@@ -19,6 +19,8 @@ import type { GameSessionFacade } from "../lifecycle/GameSessionFacade";
 import { DisposableRegistry } from "../lifecycle/DisposableRegistry";
 import { GameSceneRuntimeWiring } from "./GameSceneRuntimeWiring";
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
+import type { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
+import { config } from "@client/config";
 
 type RuntimeLifecycleState = "created" | "initialized" | "destroyed";
 
@@ -52,6 +54,7 @@ export class GameSceneRuntime {
 
   private readonly appearanceResolver = new AppearanceResolver();
   private bombManager: BombManager | null = null;
+  private gameMap: GameMapController | null = null;
   private networkSync: GameNetworkSync | null = null;
   private gameLoop: GameLoop | null = null;
   private joystickInput = { x: 0, y: 0 };
@@ -111,11 +114,16 @@ export class GameSceneRuntime {
     });
 
     const initializedScene = runtimeWiring.wire();
+    this.gameMap = initializedScene.gameMap;
     this.networkSync = initializedScene.networkSync;
     this.bombManager = initializedScene.bombManager;
     this.gameLoop = initializedScene.gameLoop;
     this.lifecycleState = "initialized";
 
+    this.disposableRegistry.add(() => {
+      this.gameMap?.destroy();
+      this.gameMap = null;
+    });
     this.disposableRegistry.add(() => {
       this.networkSync?.unbind();
       this.networkSync = null;
@@ -170,6 +178,15 @@ export class GameSceneRuntime {
 
   public tick(ticker: Ticker): void {
     this.gameLoop?.tick(ticker);
+  }
+
+  /** チームごとの塗り率配列を返す */
+  public getPaintRatesByTeam(): number[] {
+    if (!this.gameMap) {
+      return new Array<number>(config.GAME_CONFIG.TEAM_COUNT).fill(0);
+    }
+
+    return this.gameMap.getPaintRatesByTeam();
   }
 
   /** 実行系サブシステムを破棄する */

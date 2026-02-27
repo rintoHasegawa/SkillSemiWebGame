@@ -3,8 +3,8 @@
  * マップセルの色状態を管理する計算モデル
  * 全体更新と差分更新を適用して描画入力用の状態を保持する
  */
-import { config } from '@client/config';
-import type { domain } from '@repo/shared';
+import { config } from "@client/config";
+import type { domain } from "@repo/shared";
 
 /** マップセル状態の計算責務を担うモデル */
 export class GameMapModel {
@@ -18,7 +18,10 @@ export class GameMapModel {
 
   /** 全体マップ状態を適用する */
   public applyMapState(state: domain.gridMap.MapState): void {
-    const maxLength = Math.min(this.cellTeamIds.length, state.gridColors.length);
+    const maxLength = Math.min(
+      this.cellTeamIds.length,
+      state.gridColors.length,
+    );
     for (let index = 0; index < maxLength; index++) {
       this.cellTeamIds[index] = state.gridColors[index];
     }
@@ -43,8 +46,34 @@ export class GameMapModel {
     return [...this.cellTeamIds];
   }
 
+  /** チームごとの塗り率配列を取得する */
+  public getPaintRatesByTeam(teamCount: number): number[] {
+    if (teamCount <= 0) {
+      return [];
+    }
+
+    const paintedCounts = new Array<number>(teamCount).fill(0);
+    const totalCells = this.cellTeamIds.length;
+
+    this.cellTeamIds.forEach((teamId) => {
+      if (!Number.isInteger(teamId) || teamId < 0 || teamId >= teamCount) {
+        return;
+      }
+
+      paintedCounts[teamId] += 1;
+    });
+
+    if (totalCells <= 0) {
+      return paintedCounts.map(() => 0);
+    }
+
+    return paintedCounts.map((count) => (count / totalCells) * 100);
+  }
+
   /** セル添字が有効範囲内かを判定する */
   private isValidIndex(index: number): boolean {
-    return Number.isInteger(index) && index >= 0 && index < this.cellTeamIds.length;
+    return (
+      Number.isInteger(index) && index >= 0 && index < this.cellTeamIds.length
+    );
   }
 }
