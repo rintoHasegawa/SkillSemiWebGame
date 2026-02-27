@@ -14,6 +14,7 @@ export type BombButtonProps = {
   onPress: () => void;
   cooldownProgress: number;
   isReady: boolean;
+  isFeverTime: boolean;
   remainingSecText: string | null;
 };
 
@@ -22,10 +23,11 @@ export const BombButton = ({
   onPress,
   cooldownProgress,
   isReady,
+  isFeverTime,
   remainingSecText,
 }: BombButtonProps) => {
   const frameStyle = buildBombButtonFrameStyle(cooldownProgress);
-  const buttonStyle = buildBombButtonStyle(isReady);
+  const buttonStyle = buildBombButtonStyle(isReady, isFeverTime);
   const hitAreaStyle = buildBombButtonHitAreaStyle(isReady);
 
   const handleActivate = () => {

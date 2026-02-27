@@ -5,6 +5,7 @@
  */
 import { GameInputOverlay } from "./input/GameInputOverlay";
 import {
+  GAME_VIEW_FEVER_TEXT_STYLE,
   GAME_VIEW_PAINT_RATE_ITEM_STYLE,
   GAME_VIEW_PAINT_RATE_PANEL_STYLE,
   GAME_VIEW_PAINT_RATE_SQUARE_STYLE,
@@ -59,9 +60,13 @@ const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => {
 
 const TeamPaintRateOverlay = ({
   teamPaintRates,
+  remainingSeconds,
 }: {
   teamPaintRates: number[];
+  remainingSeconds: number;
 }) => {
+  const shouldMaskPaintRate = remainingSeconds <= 30;
+
   return (
     <div style={GAME_VIEW_PAINT_RATE_PANEL_STYLE}>
       {teamPaintRates.map((rate, index) => (
@@ -77,7 +82,7 @@ const TeamPaintRateOverlay = ({
           >
             ■
           </span>
-          <span>{`${Math.round(rate)}%`}</span>
+          <span>{shouldMaskPaintRate ? "???%" : `${Math.round(rate)}%`}</span>
         </div>
       ))}
     </div>
@@ -94,12 +99,23 @@ export const GameView = ({
   onJoystickInput,
   onPlaceBomb,
 }: Props) => {
+  const remainingSeconds = parseRemainingSeconds(timeLeft);
+  const isFeverTime =
+    remainingSeconds <= config.GAME_CONFIG.BOMB_FEVER_START_REMAINING_SEC;
+
   return (
     <div style={GAME_VIEW_ROOT_STYLE}>
-      <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } }`}</style>
+      <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } } @keyframes feverPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }`}</style>
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
-      <TeamPaintRateOverlay teamPaintRates={teamPaintRates} />
+      <TeamPaintRateOverlay
+        teamPaintRates={teamPaintRates}
+        remainingSeconds={remainingSeconds}
+      />
+
+      {remainingSeconds === 60 && (
+        <div style={GAME_VIEW_FEVER_TEXT_STYLE}>！Fever Tieme！</div>
+      )}
 
       {startCountdownText && (
         <div style={GAME_VIEW_START_COUNTDOWN_STYLE}>{startCountdownText}</div>
@@ -111,6 +127,7 @@ export const GameView = ({
       {/* 入力UI レイヤー */}
       <GameInputOverlay
         isInputEnabled={isInputEnabled}
+        isFeverTime={isFeverTime}
         onJoystickInput={onJoystickInput}
         onPlaceBomb={onPlaceBomb}
       />
