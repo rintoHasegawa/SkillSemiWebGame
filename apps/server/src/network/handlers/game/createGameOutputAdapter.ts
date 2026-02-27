@@ -7,11 +7,11 @@ import { contracts as protocol } from "@repo/shared";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
+  domain,
   GameStartPayload,
   GameResultPayload,
   PlayerDeadPayload,
   PongPayload,
-  roomTypes,
   CurrentPlayersPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
@@ -25,7 +25,7 @@ import { sanitizeUpdatePlayersPayload } from "@server/network/adapters/gamePaylo
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
-type RoomId = roomTypes.Room["roomId"];
+type RoomId = domain.room.Room["roomId"];
 
 /** ゲーム出力アダプターのインターフェース */
 export type GameOutputAdapter = Omit<GameOutputPort, "publishPlayerRemovedToRoom"> & BombOutputPort;

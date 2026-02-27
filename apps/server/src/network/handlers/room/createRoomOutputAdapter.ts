@@ -4,13 +4,13 @@
  */
 import { Server } from "socket.io";
 import { contracts as protocol } from "@repo/shared";
-import type { roomTypes } from "@repo/shared";
+import type { domain } from "@repo/shared";
 import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
-type RoomId = roomTypes.Room["roomId"];
-type RoomUpdatePayload = roomTypes.Room;
+type RoomId = domain.room.Room["roomId"];
+type RoomUpdatePayload = domain.room.Room;
 
 /** ルーム出力アダプターのインターフェース */
 export type RoomOutputAdapter = RoomOutputPort;
@@ -23,7 +23,7 @@ export const createRoomOutputAdapter = (
     publishRoomUpdateToRoom: (roomId: RoomId, room: RoomUpdatePayload) => {
       common.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
     },
-    publishJoinRejectedToSocket: (payload: roomTypes.JoinRoomRejectedPayload) => {
+    publishJoinRejectedToSocket: (payload: domain.room.JoinRoomRejectedPayload) => {
       common.emitToSocket(protocol.SocketEvents.ROOM_JOIN_REJECTED, payload);
     },
   };

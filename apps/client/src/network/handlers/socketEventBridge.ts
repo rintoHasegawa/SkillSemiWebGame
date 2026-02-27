@@ -19,16 +19,16 @@ type ClientInboundEventPayloadMap =
 /** クライアント向けの型付きソケットイベント bridge を生成する */
 export const createClientSocketEventBridge = (socket: Socket) => {
   const bridgeTarget: SocketBridgeTarget = {
-    on: (event, callback) => {
-      socket.on(event, callback);
+    on: <TPayload>(event: string, callback: (payload: TPayload) => void) => {
+      socket.on(event, callback as (payload: unknown) => void);
     },
-    once: (event, callback) => {
-      socket.once(event, callback);
+    once: <TPayload>(event: string, callback: (payload: TPayload) => void) => {
+      socket.once(event, callback as (payload: unknown) => void);
     },
-    off: (event, callback) => {
-      socket.off(event, callback);
+    off: <TPayload>(event: string, callback: (payload: TPayload) => void) => {
+      socket.off(event, callback as (payload: unknown) => void);
     },
-    emit: (event, payload?: unknown) => {
+    emit: (event: string, payload?: unknown) => {
       if (payload === undefined) {
         socket.emit(event);
         return;

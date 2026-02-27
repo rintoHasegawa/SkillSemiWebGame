@@ -2,7 +2,7 @@
  * joinRoomUseCase
  * ルーム参加要求を処理し，状態更新を配信するユースケース
  */
-import type { roomTypes } from "@repo/shared";
+import type { domain } from "@repo/shared";
 import type {
   EnsureGameRuntimePort,
   JoinRoomPort,
@@ -16,7 +16,7 @@ type JoinRoomUseCaseParams = {
   roomManager: JoinRoomPort;
   runtimeRegistry: EnsureGameRuntimePort;
   socketId: string;
-  data: roomTypes.JoinRoomPayload;
+  data: domain.room.JoinRoomPayload;
   output: Pick<RoomOutputPort, "publishJoinRejectedToSocket">;
 };
 

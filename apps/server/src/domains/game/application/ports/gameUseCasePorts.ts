@@ -7,10 +7,8 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   PlayerDeadPayload,
-  gameTypes,
-  playerTypes,
+  domain,
   PlaceBombPayload,
-  roomTypes,
   CurrentPlayersPayload,
   GameResultPayload,
   GameStartPayload,
@@ -25,7 +23,7 @@ export interface StartGamePort {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
-    onTick: (data: gameTypes.TickData) => void,
+    onTick: (data: domain.game.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ): void;
@@ -34,7 +32,7 @@ export interface StartGamePort {
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
 export interface ReadyForGamePort {
-  getRoomPlayers(): playerTypes.PlayerData[];
+  getRoomPlayers(): domain.player.PlayerData[];
   getRoomStartTime(): number | undefined;
 }
 
@@ -56,22 +54,22 @@ export interface GameOutputPort {
     players: UpdatePlayersPayload,
   ): void;
   publishMapCellUpdatesToRoom(
-    roomId: roomTypes.Room["roomId"],
+    roomId: domain.room.Room["roomId"],
     cellUpdates: UpdateMapCellsPayload,
   ): void;
-  publishGameEndToRoom(roomId: roomTypes.Room["roomId"]): void;
+  publishGameEndToRoom(roomId: domain.room.Room["roomId"]): void;
   publishGameResultToRoom(
-    roomId: roomTypes.Room["roomId"],
+    roomId: domain.room.Room["roomId"],
     payload: GameResultPayload,
   ): void;
   publishGameStartToRoom(
-    roomId: roomTypes.Room["roomId"],
+    roomId: domain.room.Room["roomId"],
     payload: GameStartPayload,
   ): void;
   publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
   publishGameStartToSocket(payload: GameStartPayload): void;
   publishPlayerRemovedToRoom(
-    roomId: roomTypes.Room["roomId"],
+    roomId: domain.room.Room["roomId"],
     removedPlayerId: RemovePlayerPayload,
   ): void;
 }
@@ -79,7 +77,7 @@ export interface GameOutputPort {
 /** 爆弾ユースケースが利用する送信出力ポート */
 export interface BombOutputPort {
   publishBombPlacedToOthersInRoom(
-    roomId: roomTypes.Room["roomId"],
+    roomId: domain.room.Room["roomId"],
     ownerSocketId: string,
     payload: BombPlacedPayload,
   ): void;
@@ -88,7 +86,7 @@ export interface BombOutputPort {
     payload: BombPlacedAckPayload,
   ): void;
   publishPlayerDeadToOthersInRoom(
-    roomId: roomTypes.Room["roomId"],
+    roomId: domain.room.Room["roomId"],
     deadPlayerId: string,
     payload: PlayerDeadPayload,
   ): void;

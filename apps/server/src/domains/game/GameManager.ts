@@ -3,7 +3,7 @@
  * ゲームセッション集合の生成，更新，参照管理を統括する
  */
 import type {
-  gameTypes,
+  domain,
   GameResultPayload,
   PlaceBombPayload,
 } from "@repo/shared";
@@ -61,7 +61,7 @@ export class GameManager {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
-    onTick: (data: gameTypes.TickData) => void,
+    onTick: (data: domain.game.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ) {

@@ -1,10 +1,10 @@
 import { useState } from "react";
 // ルーム参加時送信ペイロード型
-import type { roomTypes } from "@repo/shared";
+import type { domain } from "@repo/shared";
 
 type Props = {
   // 入室実行時呼び出しコールバック
-  onJoin: (payload: roomTypes.JoinRoomPayload) => void;
+  onJoin: (payload: domain.room.JoinRoomPayload) => void;
   // 入室失敗時の表示メッセージ
   joinErrorMessage: string | null;
   // 入室リクエスト送信中フラグ

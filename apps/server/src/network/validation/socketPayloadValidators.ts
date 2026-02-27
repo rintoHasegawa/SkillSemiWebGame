@@ -3,8 +3,7 @@
  * ソケット受信ペイロードの型ガードを提供する
  */
 import type {
-  playerTypes,
-  roomTypes,
+  domain,
   PlaceBombPayload,
   BombHitReportPayload,
 } from "@repo/shared";
@@ -27,7 +26,7 @@ export const isPingPayload = (value: unknown): value is PingPayload => {
 /** MOVEイベントのペイロードが移動座標であるか判定する */
 export const isMovePayload = (
   value: unknown,
-): value is playerTypes.MovePayload => {
+): value is domain.player.MovePayload => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -79,7 +78,7 @@ export const isStartGamePayload = (
 /** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */
 export const isJoinRoomPayload = (
   value: unknown,
-): value is roomTypes.JoinRoomPayload => {
+): value is domain.room.JoinRoomPayload => {
   if (typeof value !== "object" || value === null) {
     return false;
   }

@@ -3,7 +3,7 @@
  * 外部からのマップ更新入力をModelとViewへ仲介するコントローラー
  * 全体更新と差分更新を統一的に扱い，描画同期を提供する
  */
-import type { gridMapTypes } from '@repo/shared';
+import type { domain } from '@repo/shared';
 import type { Container } from 'pixi.js';
 import { AppearanceResolver } from '@client/scenes/game/application/AppearanceResolver';
 import { GameMapModel } from './GameMapModel';
@@ -29,13 +29,13 @@ export class GameMapController {
   }
 
   /** 全体マップ状態を反映する */
-  public updateMapState(state: gridMapTypes.MapState): void {
+  public updateMapState(state: domain.gridMap.MapState): void {
     this.model.applyMapState(state);
     this.view.renderAll(this.resolveAllCellColors(this.model.getAllTeamIds()));
   }
 
   /** 差分セル更新を反映する */
-  public updateCells(updates: gridMapTypes.CellUpdate[]): void {
+  public updateCells(updates: domain.gridMap.CellUpdate[]): void {
     this.model.applyUpdates(updates);
 
     updates.forEach(({ index }) => {

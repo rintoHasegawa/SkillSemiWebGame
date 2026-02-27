@@ -4,7 +4,7 @@
  * ローカル移動，リモート目標座標，送信スナップショットを管理する
  */
 import { config } from "@client/config";
-import type { playerTypes } from "@repo/shared";
+import type { domain } from "@repo/shared";
 
 /** プレイヤーの座標計算と補間計算を管理するモデル */
 export class PlayerModel {
@@ -18,7 +18,7 @@ export class PlayerModel {
   private targetGridY: number;
 
   /** 共有プレイヤー情報から初期状態を構築する */
-  constructor(data: playerTypes.PlayerData) {
+  constructor(data: domain.player.PlayerData) {
     this.id = data.id;
     this.name = data.name;
     this.teamId = data.teamId;
@@ -29,12 +29,12 @@ export class PlayerModel {
   }
 
   /** 現在座標を取得する */
-  public getPosition(): playerTypes.MovePayload {
+  public getPosition(): domain.player.MovePayload {
     return { x: this.gridX, y: this.gridY };
   }
 
   /** 送信用スナップショットを取得する */
-  public getSnapshot(): playerTypes.PlayerData {
+  public getSnapshot(): domain.player.PlayerData {
     return {
       id: this.id,
       name: this.name,
@@ -64,7 +64,7 @@ export class PlayerModel {
   }
 
   /** リモート更新の目標座標を設定する */
-  public setRemoteTarget(update: Partial<playerTypes.MovePayload>): void {
+  public setRemoteTarget(update: Partial<domain.player.MovePayload>): void {
     if (update.x !== undefined && this.isFiniteNumber(update.x))
       this.targetGridX = update.x;
     if (update.y !== undefined && this.isFiniteNumber(update.y))

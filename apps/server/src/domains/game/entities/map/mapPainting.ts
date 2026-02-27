@@ -2,11 +2,11 @@
  * mapPainting
  * マップセルの塗り更新と差分追加処理を提供する
  */
-import type { gridMapTypes } from "@repo/shared";
+import type { domain } from "@repo/shared";
 
 type PaintCellParams = {
   gridColors: number[];
-  pendingUpdates: gridMapTypes.CellUpdate[];
+  pendingUpdates: domain.gridMap.CellUpdate[];
   index: number;
   teamId: number;
 };
