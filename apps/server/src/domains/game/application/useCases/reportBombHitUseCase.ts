@@ -44,8 +44,8 @@ export const reportBombHitUseCase = ({
   }
 
   const targetPlayerId = input.payload.targetPlayerId;
-  if (targetPlayerId && botHitReaction.applyBotHitStun(targetPlayerId, input.nowMs)) {
-    return;
+  if (targetPlayerId) {
+    botHitReaction.applyBotHitStun(targetPlayerId, input.nowMs);
   }
 
   publishPlayerDeadFromBombHit(roomId, input, output);
