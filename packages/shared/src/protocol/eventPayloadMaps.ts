@@ -4,7 +4,7 @@
  * 機能別に分割した対応表を合成して公開契約を維持する
  */
 import type {
-  ConnectionLifecycleEventPayloadMap as CommonConnectionLifecycleEventPayloadMap,
+  ConnectionLifecycleEventPayloadMap,
 } from "./maps/commonEventPayloadMap";
 import type {
   LobbyClientToServerEventPayloadMap,
@@ -17,9 +17,6 @@ import type {
 
 /** 接続ライフサイクルイベントのペイロード対応表を再公開する */
 export type { ConnectionLifecycleEventPayloadMap } from "./maps/commonEventPayloadMap";
-
-/** 接続ライフサイクルイベントのペイロード対応表 */
-type ConnectionLifecycleEventPayloadMap = CommonConnectionLifecycleEventPayloadMap;
 
 /** クライアントからサーバーへ送信するイベントごとのペイロード対応表 */
 export type ClientToServerEventPayloadMap =

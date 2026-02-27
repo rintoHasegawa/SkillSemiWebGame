@@ -5,6 +5,10 @@
  */
 import { SocketEvents } from "../socketEvents";
 import type {
+  PingPayload,
+  PongPayload,
+} from "../payloads/commonPayloads";
+import type {
   BombHitReportPayload,
   BombPlacedAckPayload,
   BombPlacedPayload,
@@ -16,12 +20,10 @@ import type {
   NewPlayerPayload,
   PlaceBombPayload,
   PlayerDeadPayload,
-  PingPayload,
-  PongPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
-} from "../eventPayloads";
+} from "../payloads/gamePayloads";
 
 /** ゲーム関連のクライアント送信イベントペイロード対応表 */
 export type GameClientToServerEventPayloadMap = {

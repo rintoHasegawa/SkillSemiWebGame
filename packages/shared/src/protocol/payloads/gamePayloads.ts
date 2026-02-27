@@ -24,33 +24,33 @@ export type GameResultPayload = {
 };
 
 /**
- * 初期同期（CURRENT_PLAYERS）で利用するプレイヤー一覧
+ * 初期同期（current-players）で利用するプレイヤー一覧
  * 初期同期用のため teamId を含む完全な PlayerData を配信する
  */
 export type InitialPlayerSyncPayload = PlayerData[];
 
 /**
- * 差分同期（UPDATE_PLAYERS）で利用するプレイヤー差分配列
+ * 差分同期（update-players）で利用するプレイヤー差分配列
  * 帯域最適化のため teamId は含めず，id/x/y のみを配信する
  */
 export type DeltaPlayerSyncPayload = PlayerPositionUpdate[];
 
-/** UPDATE_PLAYERS イベントで送受信するプレイヤー差分配列 */
+/** update-players イベントで送受信するプレイヤー差分配列 */
 export type UpdatePlayersPayload = DeltaPlayerSyncPayload;
 
-/** CURRENT_PLAYERS イベントで送受信するプレイヤー一覧 */
+/** current-players イベントで送受信するプレイヤー一覧 */
 export type CurrentPlayersPayload = InitialPlayerSyncPayload;
 
-/** UPDATE_MAP_CELLS イベントで送受信するマップ差分配列 */
+/** update-map-cells イベントで送受信するマップ差分配列 */
 export type UpdateMapCellsPayload = CellUpdate[];
 
 /**
- * NEW_PLAYER イベントで送受信するプレイヤー情報
+ * new-player イベントで送受信するプレイヤー情報
  * 初回参加通知のため teamId を含む完全な PlayerData を配信する
  */
 export type NewPlayerPayload = PlayerData;
 
-/** REMOVE_PLAYER イベントで送受信するプレイヤーID */
+/** remove-player イベントで送受信するプレイヤーID */
 export type RemovePlayerPayload = PlayerData["id"];
 
 /** GAME_START イベントで送受信するゲーム開始情報 */

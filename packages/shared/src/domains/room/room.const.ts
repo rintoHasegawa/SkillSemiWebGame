@@ -1,8 +1,15 @@
-import type { RoomPhase as RoomPhaseType } from "./room.type";
+/**
+ * room.const
+ * ルーム領域で利用する定数と派生型を定義する
+ * 進行フェーズの単一情報源を提供する
+ */
 
-// ルーム進行フェーズ状態の値
+/** ルーム進行フェーズで利用する定数 */
 export const RoomPhase = {
   WAITING: "waiting",
   PLAYING: "playing",
   RESULT: "result",
-} as const satisfies Record<string, RoomPhaseType>;
+} as const;
+
+/** ルーム進行フェーズで利用する型 */
+export type RoomPhase = (typeof RoomPhase)[keyof typeof RoomPhase];
