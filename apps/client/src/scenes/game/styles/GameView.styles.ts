@@ -32,6 +32,39 @@ export const GAME_VIEW_TIMER_STYLE: CSSProperties = {
   WebkitUserSelect: "none",
 };
 
+/** 右上のチーム塗り率パネルスタイル */
+export const GAME_VIEW_PAINT_RATE_PANEL_STYLE: CSSProperties = {
+  position: "absolute",
+  top: "20px",
+  right: "16px",
+  zIndex: 12,
+  color: "white",
+  fontSize: "14px",
+  fontWeight: 700,
+  textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
+  fontFamily: "monospace",
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  pointerEvents: "none",
+};
+
+/** チーム塗り率1行のスタイル */
+export const GAME_VIEW_PAINT_RATE_ITEM_STYLE: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  gap: "4px",
+};
+
+/** チーム色四角マーカーのスタイル */
+export const GAME_VIEW_PAINT_RATE_SQUARE_STYLE: CSSProperties = {
+  lineHeight: 1,
+  fontSize: "14px",
+};
+
 /** Pixi描画レイヤーの配置スタイル */
 export const GAME_VIEW_PIXI_LAYER_STYLE: CSSProperties = {
   position: "absolute",

@@ -15,6 +15,21 @@ export type GameUiState = {
   remainingTimeSec: number;
   startCountdownSec: number;
   isInputEnabled: boolean;
+  teamPaintRates: number[];
+};
+
+const isSamePaintRates = (a: number[], b: number[]): boolean => {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  for (let index = 0; index < a.length; index += 1) {
+    if (Math.abs(a[index] - b[index]) > 0.01) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 type GameUiStateSyncServiceOptions = {
@@ -52,11 +67,12 @@ export class GameUiStateSyncService {
 
     const snapshot = this.getSnapshot();
     if (
-      !force
-      && this.lastState
-      && this.lastState.remainingTimeSec === snapshot.remainingTimeSec
-      && this.lastState.startCountdownSec === snapshot.startCountdownSec
-      && this.lastState.isInputEnabled === snapshot.isInputEnabled
+      !force &&
+      this.lastState &&
+      this.lastState.remainingTimeSec === snapshot.remainingTimeSec &&
+      this.lastState.startCountdownSec === snapshot.startCountdownSec &&
+      this.lastState.isInputEnabled === snapshot.isInputEnabled &&
+      isSamePaintRates(this.lastState.teamPaintRates, snapshot.teamPaintRates)
     ) {
       return;
     }

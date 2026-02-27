@@ -3,11 +3,12 @@
  * 外部からのマップ更新入力をModelとViewへ仲介するコントローラー
  * 全体更新と差分更新を統一的に扱い，描画同期を提供する
  */
-import type { domain } from '@repo/shared';
-import type { Container } from 'pixi.js';
-import { AppearanceResolver } from '@client/scenes/game/application/AppearanceResolver';
-import { GameMapModel } from './GameMapModel';
-import { GameMapView } from './GameMapView';
+import type { domain } from "@repo/shared";
+import type { Container } from "pixi.js";
+import { config } from "@client/config";
+import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
+import { GameMapModel } from "./GameMapModel";
+import { GameMapView } from "./GameMapView";
 
 /** マップ更新の仲介責務を担うコントローラー */
 export class GameMapController {
@@ -48,6 +49,11 @@ export class GameMapController {
   /** 管理中の描画リソースを破棄する */
   public destroy(): void {
     this.view.destroy();
+  }
+
+  /** チームごとの塗り率配列を取得する */
+  public getPaintRatesByTeam(): number[] {
+    return this.model.getPaintRatesByTeam(config.GAME_CONFIG.TEAM_COUNT);
   }
 
   /** すべてのセルteamIdを描画色へ変換する */

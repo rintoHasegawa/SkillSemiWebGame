@@ -194,6 +194,7 @@ export class GameManager {
    */
   private tick = (ticker: Ticker) => {
     this.runtime.tick(ticker);
+    this.uiStateSyncService.emitIfChanged();
   };
 
   /** UI状態購読を登録し，解除関数を返す */
@@ -206,6 +207,7 @@ export class GameManager {
       remainingTimeSec: Math.floor(this.sessionFacade.getRemainingTime()),
       startCountdownSec: this.sessionFacade.getStartCountdownSec(),
       isInputEnabled: this.runtime.isInputEnabled(),
+      teamPaintRates: this.runtime.getPaintRatesByTeam(),
     };
   }
 
