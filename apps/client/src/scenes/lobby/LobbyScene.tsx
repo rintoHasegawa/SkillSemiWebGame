@@ -121,30 +121,11 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           ルーム: {room.roomId} (待機中)
         </h2>
 
-        <button
-          onClick={onBackToTitle}
-          style={{
-            alignSelf: "flex-start",
-            marginBottom: "14px",
-            padding: "10px 14px",
-            fontSize: "0.95rem",
-            cursor: "pointer",
-            borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.4)",
-            background: "rgba(0,0,0,0.55)",
-            color: "white",
-            fontWeight: 700,
-          }}
-        >
-          タイトルへ戻る
-        </button>
-
         <div
           style={{
             display: "flex",
             flexDirection: "row",
             width: "100%",
-            maxWidth: "900px",
             flexGrow: 1,
             gap: "20px",
             minHeight: 0,
@@ -155,90 +136,117 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
             style={{
               flex: 1,
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              flexDirection: "column",
               padding: "10px",
             }}
           >
-            {isMeOwner ? (
-              <div
-                style={{
-                  width: "100%",
-                  maxWidth: "350px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                }}
-              >
-                <label
-                  htmlFor="start-player-count"
-                  style={{
-                    fontSize: "0.95rem",
-                    fontWeight: 700,
-                    textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
-                  }}
-                >
-                  ゲーム人数
-                </label>
-                <select
-                  id="start-player-count"
-                  value={selectedStartPlayerCount}
-                  onChange={(event) => {
-                    setSelectedStartPlayerCount(Number(event.target.value));
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255,255,255,0.4)",
-                    background: "rgba(0,0,0,0.55)",
-                    color: "white",
-                    fontSize: "1rem",
-                    fontWeight: 700,
-                  }}
-                >
-                  {startPlayerCountOptions.map((count) => (
-                    <option key={count} value={count}>
-                      {count}人
-                    </option>
-                  ))}
-                </select>
+            <button
+              onClick={onBackToTitle}
+              style={{
+                alignSelf: "flex-start",
+                marginBottom: "14px",
+                padding: "10px 14px",
+                fontSize: "0.95rem",
+                cursor: "pointer",
+                borderRadius: "8px",
+                border: "1px solid rgba(255,255,255,0.4)",
+                background: "rgba(0,0,0,0.55)",
+                color: "white",
+                fontWeight: 700,
+              }}
+            >
+              タイトルへ戻る
+            </button>
 
-                <button
-                  onClick={handleStart}
+            <div
+              style={{
+                width: "100%",
+                flexGrow: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {isMeOwner ? (
+                <div
                   style={{
                     width: "100%",
+                    maxWidth: "350px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                  }}
+                >
+                  <label
+                    htmlFor="start-player-count"
+                    style={{
+                      fontSize: "0.95rem",
+                      fontWeight: 700,
+                      textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
+                    }}
+                  >
+                    ゲーム人数
+                  </label>
+                  <select
+                    id="start-player-count"
+                    value={selectedStartPlayerCount}
+                    onChange={(event) => {
+                      setSelectedStartPlayerCount(Number(event.target.value));
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255,255,255,0.4)",
+                      background: "rgba(0,0,0,0.55)",
+                      color: "white",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {startPlayerCountOptions.map((count) => (
+                      <option key={count} value={count}>
+                        {count}人
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={handleStart}
+                    style={{
+                      width: "100%",
+                      padding: "20px",
+                      fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
+                      cursor: "pointer",
+                      backgroundColor: "#4ade80",
+                      color: "#111",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontWeight: "bold",
+                      boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    ゲームスタート
+                  </button>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: "350px",
                     padding: "20px",
-                    fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
-                    cursor: "pointer",
-                    backgroundColor: "#4ade80",
-                    color: "#111",
-                    border: "none",
+                    fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
+                    backgroundColor: "#555",
+                    color: "#ccc",
                     borderRadius: "8px",
-                    fontWeight: "bold",
+                    textAlign: "center",
                     boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
                   }}
                 >
-                  ゲームスタート
-                </button>
-              </div>
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  maxWidth: "350px",
-                  padding: "20px",
-                  fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
-                  backgroundColor: "#555",
-                  color: "#ccc",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-                }}
-              >
-                ホストの開始を待っています...
-              </div>
-            )}
+                  ホストの開始を待っています...
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 右半分: 参加プレイヤーリスト */}
@@ -275,6 +283,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                 fontSize: "1.1rem",
                 overflowY: "auto",
                 flexGrow: 1,
+                minHeight: "320px",
                 paddingRight: "10px",
               }}
             >
