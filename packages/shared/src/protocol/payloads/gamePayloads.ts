@@ -10,7 +10,7 @@ import type {
   PlayerData,
 } from "../../domains/player/player.type";
 
-/** GAME_RESULT イベントで送受信するランキング1行 */
+/** game-result イベントで送受信するランキング1行 */
 export type GameResultRanking = {
   rank: number;
   teamId: number;
@@ -18,28 +18,37 @@ export type GameResultRanking = {
   paintRate: number;
 };
 
-/** GAME_RESULT イベントで送受信する最終結果 */
+/** game-result イベントで送受信する最終結果 */
 export type GameResultPayload = {
   rankings: GameResultRanking[];
 };
+
+/** current-players で配信するプレイヤー全体スナップショット */
+export type PlayerSnapshotPayload = PlayerData[];
+
+/**
+ * update-players で配信するプレイヤー差分配列
+ * 帯域最適化のため teamId は含めず，id/x/y のみを配信する
+ */
+export type PlayerDeltaPayload = PlayerPositionUpdate[];
 
 /**
  * 初期同期（current-players）で利用するプレイヤー一覧
  * 初期同期用のため teamId を含む完全な PlayerData を配信する
  */
-export type InitialPlayerSyncPayload = PlayerData[];
+export type InitialPlayerSyncPayload = PlayerSnapshotPayload;
 
 /**
  * 差分同期（update-players）で利用するプレイヤー差分配列
  * 帯域最適化のため teamId は含めず，id/x/y のみを配信する
  */
-export type DeltaPlayerSyncPayload = PlayerPositionUpdate[];
+export type DeltaPlayerSyncPayload = PlayerDeltaPayload;
 
 /** update-players イベントで送受信するプレイヤー差分配列 */
-export type UpdatePlayersPayload = DeltaPlayerSyncPayload;
+export type UpdatePlayersPayload = PlayerDeltaPayload;
 
 /** current-players イベントで送受信するプレイヤー一覧 */
-export type CurrentPlayersPayload = InitialPlayerSyncPayload;
+export type CurrentPlayersPayload = PlayerSnapshotPayload;
 
 /** update-map-cells イベントで送受信するマップ差分配列 */
 export type UpdateMapCellsPayload = CellUpdate[];
@@ -53,18 +62,18 @@ export type NewPlayerPayload = PlayerData;
 /** remove-player イベントで送受信するプレイヤーID */
 export type RemovePlayerPayload = PlayerData["id"];
 
-/** GAME_START イベントで送受信するゲーム開始情報 */
+/** game-start イベントで送受信するゲーム開始情報 */
 export type GameStartPayload = { startTime: number };
 
-/** START_GAME イベントで受信するゲーム開始要求 */
+/** start-game イベントで受信するゲーム開始要求 */
 export type StartGameRequestPayload = {
   targetPlayerCount?: number;
 };
 
-/** MOVE イベントで送受信する移動入力情報 */
+/** move イベントで送受信する移動入力情報 */
 export type MovePayload = PlayerMovePayload;
 
-/** PLACE_BOMB イベントで送受信する爆弾設置要求 */
+/** place-bomb イベントで送受信する爆弾設置要求 */
 export type PlaceBombPayload = {
   requestId: string;
   x: number;
@@ -72,7 +81,7 @@ export type PlaceBombPayload = {
   explodeAtElapsedMs: number;
 };
 
-/** BOMB_PLACED イベントで送受信する他プレイヤー向け爆弾確定情報，設置者識別は ownerSocketId で扱う */
+/** bomb-placed イベントで送受信する他プレイヤー向け爆弾確定情報，設置者識別は ownerSocketId で扱う */
 export type BombPlacedPayload = {
   bombId: string;
   ownerSocketId: string;
@@ -81,18 +90,18 @@ export type BombPlacedPayload = {
   explodeAtElapsedMs: number;
 };
 
-/** BOMB_PLACED_ACK イベントで送受信する設置者向け確定情報 */
+/** bomb-placed-ack イベントで送受信する設置者向け確定情報 */
 export type BombPlacedAckPayload = {
   bombId: string;
   requestId: string;
 };
 
-/** BOMB_HIT_REPORT イベントで送受信する被弾報告 */
+/** bomb-hit-report イベントで送受信する被弾報告 */
 export type BombHitReportPayload = {
   bombId: string;
 };
 
-/** PLAYER_DEAD イベントで送受信する死亡プレイヤー情報 */
+/** player-dead イベントで送受信する死亡プレイヤー情報 */
 export type PlayerDeadPayload = {
   playerId: string;
 };

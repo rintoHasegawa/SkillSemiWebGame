@@ -8,10 +8,13 @@ type EventNameOf<TPayloadMap extends EventPayloadMap> = Extract<keyof TPayloadMa
 
 /** ソケットブリッジ生成に必要な最小インターフェース */
 export type SocketBridgeTarget = {
-  on: (event: string, callback: (payload: unknown) => void) => void;
-  once: (event: string, callback: (payload: unknown) => void) => void;
-  off: (event: string, callback: (payload: unknown) => void) => void;
-  emit: (event: string, payload?: unknown) => void;
+  on: <TPayload>(event: string, callback: (payload: TPayload) => void) => void;
+  once: <TPayload>(event: string, callback: (payload: TPayload) => void) => void;
+  off: <TPayload>(event: string, callback: (payload: TPayload) => void) => void;
+  emit: {
+    (event: string): void;
+    <TPayload>(event: string, payload: TPayload): void;
+  };
 };
 
 /**
@@ -25,21 +28,21 @@ export const createSocketEventBridge = <
     event: TEvent,
     callback: (payload: TInboundMap[TEvent]) => void
   ) => {
-    socket.on(event, callback as (payload: unknown) => void);
+    socket.on<TInboundMap[TEvent]>(event, callback);
   };
 
   const onceEvent = <TEvent extends EventNameOf<TInboundMap>>(
     event: TEvent,
     callback: (payload: TInboundMap[TEvent]) => void
   ) => {
-    socket.once(event, callback as (payload: unknown) => void);
+    socket.once<TInboundMap[TEvent]>(event, callback);
   };
 
   const offEvent = <TEvent extends EventNameOf<TInboundMap>>(
     event: TEvent,
     callback: (payload: TInboundMap[TEvent]) => void
   ) => {
-    socket.off(event, callback as (payload: unknown) => void);
+    socket.off<TInboundMap[TEvent]>(event, callback);
   };
 
   function emitEvent<TEvent extends EventNameOf<TOutboundMap>>(event: TEvent): void;
@@ -50,7 +53,7 @@ export const createSocketEventBridge = <
       return;
     }
 
-    socket.emit(event, payload as unknown);
+    socket.emit<TOutboundMap[TEvent]>(event, payload);
   }
 
   return {

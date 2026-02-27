@@ -16,6 +16,6 @@ export {
 	assertValidTeamId,
 	isUnknownTeamId,
 	isKnownTeamId,
-} from "./gameConfig";
+} from "./teamValidators";
 /** ネットワーク共有設定値を再公開する */
 export { NETWORK_CONFIG } from "./networkConfig";
