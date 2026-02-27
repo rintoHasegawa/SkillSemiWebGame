@@ -21,6 +21,7 @@ export type GameResultRanking = {
 /** game-result イベントで送受信する最終結果 */
 export type GameResultPayload = {
   rankings: GameResultRanking[];
+  /** ゲーム終了時点のマップ色配列，index はセル位置に対応する */
   finalGridColors?: number[];
 };
 

@@ -13,9 +13,7 @@ type Props = {
   onBackToTitle: () => void;
 };
 
-type GameResultWithFinalMap = GameResultPayload & {
-  finalGridColors?: number[];
-};
+type ResultViewMode = "mapPreview" | "ranking";
 
 const formatPaintRate = (value: number): string => `${value.toFixed(1)}%`;
 
@@ -239,10 +237,11 @@ const getMapCellStyle = (teamId: number): CSSProperties => ({
 
 /** 最終結果データを受け取り，順位一覧を表示する */
 export const ResultScene = ({ result, onBackToTitle }: Props) => {
-  const [isRankingVisible, setIsRankingVisible] = useState(false);
+  const [viewMode, setViewMode] = useState<ResultViewMode>("mapPreview");
+  const isRankingVisible = viewMode === "ranking";
 
   useEffect(() => {
-    setIsRankingVisible(false);
+    setViewMode("mapPreview");
   }, [result]);
 
   if (!result) {
@@ -256,12 +255,11 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
     result.rankings[0]?.teamId;
   const winnerColor =
     config.GAME_CONFIG.TEAM_COLORS[winnerTeamId ?? -1] ?? "#888888";
-  const resultWithFinalMap = result as GameResultWithFinalMap;
   const gridCols = config.GAME_CONFIG.GRID_COLS;
   const gridRows = config.GAME_CONFIG.GRID_ROWS;
   const totalCells = gridCols * gridRows;
   const finalGridColors = Array.from({ length: totalCells }, (_, index) => {
-    const teamId = resultWithFinalMap.finalGridColors?.[index];
+    const teamId = result.finalGridColors?.[index];
     return typeof teamId === "number" ? teamId : -1;
   });
 
@@ -276,7 +274,7 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
           return;
         }
 
-        setIsRankingVisible(true);
+        setViewMode("ranking");
       }}
     >
       <style>
@@ -352,7 +350,7 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
             <button
               onClick={(event) => {
                 event.stopPropagation();
-                setIsRankingVisible(false);
+                setViewMode("mapPreview");
               }}
               style={{
                 padding: "10px 14px",
