@@ -6,7 +6,7 @@
 /** ゲーム全体で利用する共有設定値 */
 export const GAME_CONFIG = {
   // ゲーム進行設定（クライアント/サーバー契約）
-  GAME_DURATION_SEC: 60, // 1ゲームの制限時間（3分 = 180秒）
+  GAME_DURATION_SEC: 90, // 1ゲームの制限時間（秒）
   GAME_START_DELAY_MS: 5000, // 開始通知から実際にゲーム進行を開始するまでの待機時間（ms）
 
   // ネットワーク同期設定（クライアント/サーバー契約）
@@ -26,7 +26,10 @@ export const GAME_CONFIG = {
   BOMB_RADIUS_GRID: 1.5, // 爆風半径（グリッド単位、円形当たり判定）
   BOMB_RENDER_SCALE: 1.0, // 爆弾見た目サイズ倍率（1=等倍）
   BOMB_FUSE_MS: 1000, // 設置から爆発までの時間（ms）
-  BOMB_COOLDOWN_MS: 3000, // 設置後に次の爆弾を置けるまでの待機時間（ms）
+  BOMB_COOLDOWN_MS: 4000, // 通常時の後方互換用クールダウン時間（ms）
+  BOMB_NORMAL_COOLDOWN_MS: 4000, // 通常時に次の爆弾を置けるまでの待機時間（ms）
+  BOMB_FEVER_COOLDOWN_MS: 2000, // フィーバー時に次の爆弾を置けるまでの待機時間（ms）
+  BOMB_FEVER_START_REMAINING_SEC: 60, // フィーバー開始の残り時間しきい値（秒）
   BOMB_DEDUP_EXTRA_TTL_MS: 1000, // 重複排除保持時間の追加分（ms）
 
   // チーム設定（クライアント/サーバー契約）

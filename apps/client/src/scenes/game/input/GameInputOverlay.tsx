@@ -12,6 +12,7 @@ import { buildGameInputOverlayLayerStyle } from "./GameInputOverlay.styles";
 /** 入力UIレイヤーの入力プロパティ */
 type GameInputOverlayProps = {
   isInputEnabled: boolean;
+  isFeverTime: boolean;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
 };
@@ -19,10 +20,13 @@ type GameInputOverlayProps = {
 /** 入力UIレイヤーを描画する */
 export const GameInputOverlay = ({
   isInputEnabled,
+  isFeverTime,
   onJoystickInput,
   onPlaceBomb,
 }: GameInputOverlayProps) => {
-  const bombCooldownMs = config.GAME_CONFIG.BOMB_COOLDOWN_MS;
+  const bombCooldownMs = isFeverTime
+    ? config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS
+    : config.GAME_CONFIG.BOMB_NORMAL_COOLDOWN_MS;
   const { cooldownState, markTriggered } = useBombCooldownClock(bombCooldownMs);
   const layerStyle = buildGameInputOverlayLayerStyle();
 
@@ -49,6 +53,7 @@ export const GameInputOverlay = ({
         onPress={handlePressBomb}
         cooldownProgress={cooldownState.progress}
         isReady={isInputEnabled && cooldownState.isReady}
+        isFeverTime={isFeverTime}
         remainingSecText={cooldownState.remainingSecText}
       />
     </div>

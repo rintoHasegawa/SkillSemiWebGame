@@ -37,7 +37,13 @@ export class BombPlacementService {
   private readonly bombIdRegistry: BombIdRegistry;
   private lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
 
-  constructor({ players, myId, getElapsedMs, appearanceResolver, bombIdRegistry }: BombPlacementServiceOptions) {
+  constructor({
+    players,
+    myId,
+    getElapsedMs,
+    appearanceResolver,
+    bombIdRegistry,
+  }: BombPlacementServiceOptions) {
     this.players = players;
     this.myId = myId;
     this.getElapsedMs = getElapsedMs;
@@ -53,13 +59,27 @@ export class BombPlacementService {
     }
 
     const elapsedMs = this.getElapsedMs();
-    const { BOMB_COOLDOWN_MS, BOMB_FUSE_MS } = config.GAME_CONFIG;
-    if (elapsedMs - this.lastBombPlacedElapsedMs < BOMB_COOLDOWN_MS) {
+    const {
+      BOMB_COOLDOWN_MS,
+      BOMB_NORMAL_COOLDOWN_MS,
+      BOMB_FEVER_COOLDOWN_MS,
+      BOMB_FEVER_START_REMAINING_SEC,
+      BOMB_FUSE_MS,
+      GAME_DURATION_SEC,
+    } = config.GAME_CONFIG;
+    const remainingSec = Math.max(0, GAME_DURATION_SEC - elapsedMs / 1000);
+    const isFeverTime = remainingSec <= BOMB_FEVER_START_REMAINING_SEC;
+    const cooldownMs = isFeverTime
+      ? BOMB_FEVER_COOLDOWN_MS
+      : (BOMB_NORMAL_COOLDOWN_MS ?? BOMB_COOLDOWN_MS);
+
+    if (elapsedMs - this.lastBombPlacedElapsedMs < cooldownMs) {
       return null;
     }
 
     const position = me.getPosition();
-    const { requestId, tempBombId } = this.bombIdRegistry.issuePendingOwnBombId();
+    const { requestId, tempBombId } =
+      this.bombIdRegistry.issuePendingOwnBombId();
     const payload: PlaceBombPayload = {
       requestId,
       x: position.x,

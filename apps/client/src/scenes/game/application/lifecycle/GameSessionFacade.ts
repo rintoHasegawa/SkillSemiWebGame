@@ -4,10 +4,7 @@
  * タイマーと入力ゲートの操作窓口を統一する
  */
 import { GameTimer } from "@client/scenes/game/application/GameTimer";
-import {
-  InputGate,
-  type JoystickInput,
-} from "./InputGate";
+import { InputGate, type JoystickInput } from "./InputGate";
 
 /** ゲーム進行状態と入力可否の窓口を提供する */
 export class GameSessionFacade {
@@ -17,6 +14,7 @@ export class GameSessionFacade {
   constructor() {
     this.inputGate = new InputGate({
       isStartedProvider: () => this.timer.isStarted(),
+      isPlayableTimeProvider: () => this.timer.getRemainingTime() > 0,
     });
   }
 

@@ -177,6 +177,10 @@ export class GameSceneRuntime {
   }
 
   public tick(ticker: Ticker): void {
+    if (!this.sessionFacade.canAcceptInput()) {
+      this.clearJoystickInput();
+    }
+
     this.gameLoop?.tick(ticker);
   }
 

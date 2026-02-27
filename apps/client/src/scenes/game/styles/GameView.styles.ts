@@ -89,3 +89,25 @@ export const GAME_VIEW_START_COUNTDOWN_STYLE: CSSProperties = {
   WebkitUserSelect: "none",
   pointerEvents: "none",
 };
+
+/** 画面中央のフィーバー表示スタイル */
+export const GAME_VIEW_FEVER_TEXT_STYLE: CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  zIndex: 31,
+  color: "#fff27a",
+  fontSize: "clamp(1.4rem, 7vw, 3.6rem)",
+  fontWeight: 1000,
+  letterSpacing: "0.08em",
+  WebkitTextStroke: "2px rgba(120, 0, 0, 0.9)",
+  textShadow:
+    "0 0 6px rgba(255,255,255,0.9), 0 0 18px rgba(255,214,10,0.95), 0 0 32px rgba(255,120,0,0.85), 0 0 48px rgba(255,0,0,0.75)",
+  fontFamily: "monospace",
+  whiteSpace: "nowrap",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  pointerEvents: "none",
+  animation: "feverPulse 0.9s ease-in-out infinite",
+};

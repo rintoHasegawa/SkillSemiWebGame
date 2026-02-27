@@ -60,17 +60,36 @@ export const buildBombButtonFrameStyle = (
 };
 
 /** ボタン活性状態に応じた本体スタイルを生成する */
-export const buildBombButtonStyle = (isReady: boolean): CSSProperties => {
+export const buildBombButtonStyle = (
+  isReady: boolean,
+  isFeverTime: boolean,
+): CSSProperties => {
+  const readyBackground = isFeverTime
+    ? "linear-gradient(145deg, rgba(255, 230, 90, 0.95), rgba(255, 130, 0, 0.92))"
+    : "rgba(220, 60, 60, 0.85)";
+  const coolingBackground = isFeverTime
+    ? "linear-gradient(145deg, rgba(155, 110, 25, 0.9), rgba(120, 60, 10, 0.88))"
+    : "rgba(110, 40, 40, 0.85)";
+
   return {
     ...BOMB_BUTTON_STYLE,
-    background: isReady ? "rgba(220, 60, 60, 0.85)" : "rgba(110, 40, 40, 0.85)",
+    background: isReady ? readyBackground : coolingBackground,
+    color: isFeverTime ? "#201100" : BOMB_BUTTON_STYLE.color,
+    border: isFeverTime
+      ? "2px solid rgba(255,255,190,0.95)"
+      : BOMB_BUTTON_STYLE.border,
+    boxShadow: isFeverTime
+      ? "0 0 14px rgba(255, 195, 60, 0.65), 0 0 26px rgba(255, 120, 0, 0.45)"
+      : "none",
     opacity: isReady ? 1 : 0.88,
     cursor: isReady ? "pointer" : "not-allowed",
   };
 };
 
 /** 入力領域の活性状態スタイルを生成する */
-export const buildBombButtonHitAreaStyle = (isReady: boolean): CSSProperties => {
+export const buildBombButtonHitAreaStyle = (
+  isReady: boolean,
+): CSSProperties => {
   return {
     ...BOMB_BUTTON_HIT_AREA_STYLE,
     cursor: isReady ? "pointer" : "not-allowed",
