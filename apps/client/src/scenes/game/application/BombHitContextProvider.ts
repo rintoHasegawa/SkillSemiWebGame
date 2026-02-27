@@ -8,6 +8,11 @@ import { LocalPlayerController } from "@client/scenes/game/entities/player/Playe
 import type { TeamCollisionCircle } from "@client/scenes/game/entities/bomb/BombHitDetector";
 import type { GamePlayers } from "./game.types";
 
+/** 被弾判定と報告に利用するプレイヤー円情報 */
+export type ReportablePlayerCircle = TeamCollisionCircle & {
+  playerId: string;
+};
+
 /** 判定用コンテキスト供給クラスの初期化入力 */
 type BombHitContextProviderOptions = {
   players: GamePlayers;
@@ -40,5 +45,30 @@ export class BombHitContextProvider {
       radius: config.GAME_CONFIG.PLAYER_RADIUS,
       teamId: snapshot.teamId,
     };
+  }
+
+  /** 被弾報告対象として扱うプレイヤー円情報を取得する */
+  public getReportablePlayerCircles(): ReportablePlayerCircle[] {
+    const reportablePlayers = Object.entries(this.players).filter(([playerId]) => {
+      return playerId === this.myId || this.isBotPlayerId(playerId);
+    });
+
+    return reportablePlayers.map(([playerId, controller]) => {
+      const position = controller.getPosition();
+      const snapshot = controller.getSnapshot();
+
+      return {
+        playerId,
+        x: position.x,
+        y: position.y,
+        radius: config.GAME_CONFIG.PLAYER_RADIUS,
+        teamId: snapshot.teamId,
+      };
+    });
+  }
+
+  /** BotプレイヤーIDかどうかを判定する */
+  private isBotPlayerId(playerId: string): boolean {
+    return playerId.startsWith("bot:");
   }
 }

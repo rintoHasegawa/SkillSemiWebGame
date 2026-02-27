@@ -9,24 +9,29 @@ export type HitEvaluationResult = "duplicate" | "missing-local-player" | "no-hit
 
 /** 爆弾被弾報告の送信可否を管理する */
 export class HitReportPolicy {
-  private readonly reportedBombHitIds = new Set<string>();
+  private readonly reportedBombHitKeys = new Set<string>();
 
   /** 被弾報告を送信すべき場合に true を返す */
-  public shouldSendReport(result: HitEvaluationResult | undefined, bombId: string): boolean {
+  public shouldSendReport(
+    result: HitEvaluationResult | undefined,
+    bombId: string,
+    targetPlayerId: string,
+  ): boolean {
     if (result !== "hit") {
       return false;
     }
 
-    if (this.reportedBombHitIds.has(bombId)) {
+    const reportKey = `${bombId}:${targetPlayerId}`;
+    if (this.reportedBombHitKeys.has(reportKey)) {
       return false;
     }
 
-    this.reportedBombHitIds.add(bombId);
+    this.reportedBombHitKeys.add(reportKey);
     return true;
   }
 
   /** 判定済みIDをすべて破棄する */
   public clear(): void {
-    this.reportedBombHitIds.clear();
+    this.reportedBombHitKeys.clear();
   }
 }

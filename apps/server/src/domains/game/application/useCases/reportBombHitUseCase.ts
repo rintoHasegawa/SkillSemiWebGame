@@ -24,8 +24,10 @@ const publishPlayerDeadFromBombHit = (
   input: ReportBombHitInput,
   output: BombHitOutputPort,
 ): void => {
-  output.publishPlayerDeadToOthersInRoom(roomId, input.socketId, {
-    playerId: input.socketId,
+  const deadPlayerId = input.payload.targetPlayerId ?? input.socketId;
+
+  output.publishPlayerDeadToOthersInRoom(roomId, deadPlayerId, {
+    playerId: deadPlayerId,
   });
 };
 
