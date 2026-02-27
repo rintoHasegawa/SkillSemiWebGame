@@ -2,7 +2,7 @@
  * payloadByScope
  * スコープごとのログペイロード型契約を提供する
  */
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import { gameDomainLogEvents, gameUseCaseLogEvents, roomDomainLogEvents, roomUseCaseLogEvents } from "../constants/eventNames";
 import { logResults } from "../constants/results";
 import { logScopes } from "../constants/scopes";

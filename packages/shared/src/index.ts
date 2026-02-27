@@ -1,8 +1,14 @@
 /**
  * index
  * shared パッケージの公開 API を集約して再公開するエントリ
- * ドメイン型，プロトコル型，設定値を外部利用向けに束ねる
+ * 安定公開面と既存互換公開面を併存して外部利用向けに束ねる
  */
+/** 安定公開面として domains の集約を再公開 */
+export * as domain from "./domains";
+/** 安定公開面として protocol 契約の集約を再公開 */
+export * as contracts from "./protocol";
+
+/** 既存互換のため，以下は従来どおり再公開する */
 /** グリッドマップ関連の型定義を再公開 */
 export * as gridMapTypes from "./domains/gridMap/gridMap.type";
 /** グリッドマップ関連のロジックを再公開 */

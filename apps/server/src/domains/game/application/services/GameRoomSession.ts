@@ -8,7 +8,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import type { gameTypes, GameResultPayload } from "@repo/shared";
+import type { domain, GameResultPayload } from "@repo/shared";
 import { config } from "@server/config";
 import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
@@ -57,7 +57,7 @@ export class GameRoomSession {
 
   public start(
     tickRate: number,
-    onTick: (data: gameTypes.TickData) => void,
+    onTick: (data: domain.game.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ): void {

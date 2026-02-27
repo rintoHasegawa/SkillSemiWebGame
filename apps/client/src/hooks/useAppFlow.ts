@@ -5,20 +5,20 @@
  */
 import { useCallback, useReducer, useRef, useState } from "react";
 import { socketManager } from "@client/network/SocketManager";
-import { appConsts } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { config } from "@client/config";
-import type { appTypes, roomTypes, GameResultPayload } from "@repo/shared";
+import type { GameResultPayload } from "@repo/shared";
 import { useSocketSubscriptions } from "./useSocketSubscriptions";
 
 /** アプリフロー管理フックの公開状態と操作を表す型 */
 type AppFlowState = {
-  scenePhase: appTypes.ScenePhase;
-  room: roomTypes.Room | null;
+  scenePhase: domain.app.ScenePhaseType;
+  room: domain.room.Room | null;
   myId: string | null;
   gameResult: GameResultPayload | null;
   joinErrorMessage: string | null;
   isJoining: boolean;
-  requestJoin: (payload: roomTypes.JoinRoomPayload) => void;
+  requestJoin: (payload: domain.room.JoinRoomPayload) => void;
   returnToTitle: (options?: { leaveRoom?: boolean }) => void;
 };
 
@@ -28,7 +28,7 @@ type JoinState = {
 };
 
 type JoinFailureReason =
-  | roomTypes.JoinRoomRejectedPayload["reason"]
+  | domain.room.JoinRoomRejectedPayload["reason"]
   | "timeout";
 
 type JoinFailure = {
@@ -65,16 +65,16 @@ const joinReducer = (state: JoinState, action: JoinAction): JoinState => {
 
 /** アプリ全体のシーン状態と参加要求フローを管理するフック */
 export const useAppFlow = (): AppFlowState => {
-  const [scenePhase, setScenePhase] = useState<appTypes.ScenePhase>(
-    appConsts.ScenePhase.TITLE,
+  const [scenePhase, setScenePhase] = useState<domain.app.ScenePhaseType>(
+    domain.app.ScenePhase.TITLE,
   );
-  const [room, setRoom] = useState<roomTypes.Room | null>(null);
+  const [room, setRoom] = useState<domain.room.Room | null>(null);
   const [myId, setMyId] = useState<string | null>(null);
   const [gameResult, setGameResult] = useState<GameResultPayload | null>(null);
   const [joinState, dispatchJoin] = useReducer(joinReducer, initialJoinState);
   const joinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinRejectedHandlerRef = useRef<
-    ((payload: roomTypes.JoinRoomRejectedPayload) => void) | null
+    ((payload: domain.room.JoinRoomRejectedPayload) => void) | null
   >(null);
 
   const clearJoinRejectedHandler = useCallback(() => {
@@ -128,7 +128,7 @@ export const useAppFlow = (): AppFlowState => {
   );
 
   const requestJoin = useCallback(
-    (payload: roomTypes.JoinRoomPayload) => {
+    (payload: domain.room.JoinRoomPayload) => {
       if (joinState.isJoining) {
         return;
       }
@@ -137,7 +137,7 @@ export const useAppFlow = (): AppFlowState => {
       dispatchJoin({ type: "start" });
 
       const handleJoinRejected = (
-        payload: roomTypes.JoinRoomRejectedPayload,
+        payload: domain.room.JoinRoomRejectedPayload,
       ) => {
         completeJoinRequest({
           reason: payload.reason,
@@ -162,7 +162,7 @@ export const useAppFlow = (): AppFlowState => {
       completeJoinRequest();
       setRoom(null);
       setGameResult(null);
-      setScenePhase(appConsts.ScenePhase.TITLE);
+      setScenePhase(domain.app.ScenePhase.TITLE);
 
       if (!options?.leaveRoom) {
         return;

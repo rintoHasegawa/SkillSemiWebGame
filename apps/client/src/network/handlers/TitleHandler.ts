@@ -4,7 +4,7 @@
  * ルーム参加フローの送受信イベントを集約する
  */
 import type { Socket } from "socket.io-client";
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import type { ClientToServerPayloadOf, ServerToClientPayloadOf } from "@repo/shared";
 import { createClientSocketEventBridge } from "./socketEventBridge";
 

@@ -2,17 +2,17 @@
  * RoomExitService
  * ルーム退出処理とオーナー移譲処理を担うサービス
  */
-import type { roomTypes } from "@repo/shared";
+import { domain } from "@repo/shared";
 import type { RoomDisconnectResult } from "../ports/roomUseCasePorts";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/index";
 
 /** 退出要求に応じてプレイヤー削除とルーム整理を行うサービス */
 export class RoomExitService {
-  constructor(private rooms: Map<string, roomTypes.Room>) {}
+  constructor(private rooms: Map<string, domain.room.Room>) {}
 
   public removePlayer(socketId: string): RoomDisconnectResult {
-    const updatedRooms: roomTypes.Room[] = [];
+    const updatedRooms: domain.room.Room[] = [];
     const deletedRoomIds: string[] = [];
 
     for (const [roomId, room] of this.rooms.entries()) {

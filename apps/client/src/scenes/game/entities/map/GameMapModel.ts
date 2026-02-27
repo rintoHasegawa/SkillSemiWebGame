@@ -4,7 +4,7 @@
  * 全体更新と差分更新を適用して描画入力用の状態を保持する
  */
 import { config } from '@client/config';
-import type { gridMapTypes } from '@repo/shared';
+import type { domain } from '@repo/shared';
 
 /** マップセル状態の計算責務を担うモデル */
 export class GameMapModel {
@@ -17,7 +17,7 @@ export class GameMapModel {
   }
 
   /** 全体マップ状態を適用する */
-  public applyMapState(state: gridMapTypes.MapState): void {
+  public applyMapState(state: domain.gridMap.MapState): void {
     const maxLength = Math.min(this.cellTeamIds.length, state.gridColors.length);
     for (let index = 0; index < maxLength; index++) {
       this.cellTeamIds[index] = state.gridColors[index];
@@ -25,7 +25,7 @@ export class GameMapModel {
   }
 
   /** 差分セル更新を適用する */
-  public applyUpdates(updates: gridMapTypes.CellUpdate[]): void {
+  public applyUpdates(updates: domain.gridMap.CellUpdate[]): void {
     updates.forEach(({ index, teamId }) => {
       if (!this.isValidIndex(index)) return;
       this.cellTeamIds[index] = teamId;

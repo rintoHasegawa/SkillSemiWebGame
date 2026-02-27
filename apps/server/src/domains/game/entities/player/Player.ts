@@ -2,10 +2,9 @@
  * Player
  * サーバー側で保持するプレイヤー状態モデルを定義する
  */
-import type { playerTypes } from "@repo/shared";
-// configのimportは不要になります
+import { domain } from "@repo/shared";
 
-export class Player implements playerTypes.PlayerData {
+export class Player implements domain.player.PlayerData {
   public id: string;
   public name: string;
   public x: number = 0;

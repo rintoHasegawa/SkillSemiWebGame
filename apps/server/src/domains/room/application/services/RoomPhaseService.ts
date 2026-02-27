@@ -2,13 +2,12 @@
  * RoomPhaseService
  * ルーム状態のフェーズ更新処理を提供する
  */
-import { roomConsts } from "@repo/shared";
-import type { roomTypes } from "@repo/shared";
+import { domain } from "@repo/shared";
 import type { RoomPhaseTransitionResult } from "../ports/roomUseCasePorts";
 
 /** ルーム状態のフェーズ遷移を管理するサービス */
 export class RoomPhaseService {
-  constructor(private rooms: Map<string, roomTypes.Room>) {}
+  constructor(private rooms: Map<string, domain.room.Room>) {}
 
   public markRoomPlaying(roomId: string): RoomPhaseTransitionResult {
     const room = this.rooms.get(roomId);
@@ -16,14 +15,14 @@ export class RoomPhaseService {
       return { status: "not_found" };
     }
 
-    if (room.status === roomConsts.RoomPhase.PLAYING) {
+    if (room.status === domain.room.RoomPhase.PLAYING) {
       return {
         status: "invalid_transition",
         room,
       };
     }
 
-    room.status = roomConsts.RoomPhase.PLAYING;
+    room.status = domain.room.RoomPhase.PLAYING;
     return {
       status: "updated",
       room,
@@ -36,14 +35,14 @@ export class RoomPhaseService {
       return { status: "not_found" };
     }
 
-    if (room.status === roomConsts.RoomPhase.WAITING) {
+    if (room.status === domain.room.RoomPhase.WAITING) {
       return {
         status: "invalid_transition",
         room,
       };
     }
 
-    room.status = roomConsts.RoomPhase.WAITING;
+    room.status = domain.room.RoomPhase.WAITING;
     return {
       status: "updated",
       room,

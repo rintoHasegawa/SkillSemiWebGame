@@ -4,7 +4,7 @@
  * 受信ハンドラからユースケース実行責務を分離する
  * 本ファイルではランタイム未解決ログ対象イベントを扱わない
  */
-import type { roomTypes } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";
@@ -29,7 +29,7 @@ export type JoinRoomEventPayload = Parameters<typeof handleJoinRoomEvent>[1];
 /** JOIN_ROOMイベントを調停して参加ユースケースを実行する */
 export const handleJoinRoomEvent = async (
   deps: JoinRoomOrchestratorDeps,
-  payload: roomTypes.JoinRoomPayload,
+  payload: domain.room.JoinRoomPayload,
 ): Promise<void> => {
   const joinResult = joinRoomUseCase({
     roomManager: deps.roomManager,

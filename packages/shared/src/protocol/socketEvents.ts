@@ -19,14 +19,21 @@ export const SocketEvents = {
   READY_FOR_GAME: "ready-for-game",
 
   // ゲームプレイ関連イベント名
-  CURRENT_PLAYERS: "current_players",
-  NEW_PLAYER: "new_player",
-  UPDATE_PLAYERS: "update_players",
-  REMOVE_PLAYER: "remove_player",
+  CURRENT_PLAYERS_SYNC: "current-players",
+  NEW_PLAYER_SYNC: "new-player",
+  UPDATE_PLAYERS_SYNC: "update-players",
+  REMOVE_PLAYER_SYNC: "remove-player",
+  UPDATE_MAP_CELLS_SYNC: "update-map-cells",
+
+  // 互換維持のため残す旧キー名
+  CURRENT_PLAYERS: "current-players",
+  NEW_PLAYER: "new-player",
+  UPDATE_PLAYERS: "update-players",
+  REMOVE_PLAYER: "remove-player",
   MOVE: "move",
   PLACE_BOMB: "place-bomb",
   BOMB_HIT_REPORT: "bomb-hit-report",
-  UPDATE_MAP_CELLS: "update_map_cells",
+  UPDATE_MAP_CELLS: "update-map-cells",
   BOMB_PLACED: "bomb-placed",
   BOMB_PLACED_ACK: "bomb-placed-ack",
   PLAYER_DEAD: "player-dead",

@@ -233,7 +233,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     }
   });
 
-  socket.on("current_players", (players: CurrentPlayer[]) => {
+  socket.on("current-players", (players: CurrentPlayer[]) => {
     const self = players.find((player) => player.id === socket.id);
     if (self) {
       posX = self.x;

@@ -3,7 +3,7 @@
  * 外部入出力とModel/Viewの橋渡しを担うコントローラー群
  * ローカル入力適用，リモート更新適用，描画同期を分離して扱う
  */
-import type { playerTypes } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { config } from "@client/config";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { BombHitBlinkRenderer } from "@client/scenes/game/entities/bomb/BombHitBlinkRenderer";
@@ -18,7 +18,7 @@ export type LocalInput = {
 };
 
 /** リモート移動更新を表す型 */
-export type RemoteUpdate = Partial<playerTypes.MovePayload>;
+export type RemoteUpdate = Partial<domain.player.MovePayload>;
 
 /**
  * ローカル用コントローラーとリモート用コントローラーの共通基底
@@ -30,7 +30,7 @@ abstract class BasePlayerController {
 
   /** 共通初期化としてModelとViewを生成する */
   protected constructor(
-    data: playerTypes.PlayerData,
+    data: domain.player.PlayerData,
     isLocal: boolean,
     appearanceResolver: AppearanceResolver,
   ) {
@@ -57,12 +57,12 @@ abstract class BasePlayerController {
   }
 
   /** 現在座標を取得する */
-  public getPosition(): playerTypes.MovePayload {
+  public getPosition(): domain.player.MovePayload {
     return this.model.getPosition();
   }
 
   /** 外部送信用スナップショットを取得する */
-  public getSnapshot(): playerTypes.PlayerData {
+  public getSnapshot(): domain.player.PlayerData {
     return this.model.getSnapshot();
   }
 
@@ -82,7 +82,7 @@ abstract class BasePlayerController {
 export class LocalPlayerController extends BasePlayerController {
   /** ローカルプレイヤー用コントローラーを初期化する */
   constructor(
-    data: playerTypes.PlayerData,
+    data: domain.player.PlayerData,
     appearanceResolver: AppearanceResolver,
   ) {
     super(data, true, appearanceResolver);
@@ -104,7 +104,7 @@ export class LocalPlayerController extends BasePlayerController {
 export class RemotePlayerController extends BasePlayerController {
   /** リモートプレイヤー用コントローラーを初期化する */
   constructor(
-    data: playerTypes.PlayerData,
+    data: domain.player.PlayerData,
     appearanceResolver: AppearanceResolver,
   ) {
     super(data, false, appearanceResolver);

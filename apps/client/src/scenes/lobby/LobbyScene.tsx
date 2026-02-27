@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { roomTypes } from "@repo/shared";
+import { domain } from "@repo/shared";
 
 type Props = {
-  room: roomTypes.Room | null;
+  room: domain.room.Room | null;
   myId: string | null;
   onStart: (targetPlayerCount: number) => void;
   onBackToTitle: () => void;
@@ -278,7 +278,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                 paddingRight: "10px",
               }}
             >
-              {room.players.map((p: roomTypes.RoomMember) => (
+              {room.players.map((p: domain.room.RoomMember) => (
                 <li
                   key={p.id}
                   style={{

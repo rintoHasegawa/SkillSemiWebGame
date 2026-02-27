@@ -5,6 +5,10 @@
  */
 import { SocketEvents } from "../socketEvents";
 import type {
+  PingPayload,
+  PongPayload,
+} from "../payloads/commonPayloads";
+import type {
   BombHitReportPayload,
   BombPlacedAckPayload,
   BombPlacedPayload,
@@ -16,12 +20,10 @@ import type {
   NewPlayerPayload,
   PlaceBombPayload,
   PlayerDeadPayload,
-  PingPayload,
-  PongPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
-} from "../eventPayloads";
+} from "../payloads/gamePayloads";
 
 /** ゲーム関連のクライアント送信イベントペイロード対応表 */
 export type GameClientToServerEventPayloadMap = {
@@ -36,11 +38,11 @@ export type GameClientToServerEventPayloadMap = {
 /** ゲーム関連のサーバー送信イベントペイロード対応表 */
 export type GameServerToClientEventPayloadMap = {
   [SocketEvents.GAME_START]: GameStartPayload;
-  [SocketEvents.CURRENT_PLAYERS]: CurrentPlayersPayload;
-  [SocketEvents.NEW_PLAYER]: NewPlayerPayload;
-  [SocketEvents.UPDATE_PLAYERS]: UpdatePlayersPayload;
-  [SocketEvents.REMOVE_PLAYER]: RemovePlayerPayload;
-  [SocketEvents.UPDATE_MAP_CELLS]: UpdateMapCellsPayload;
+  [SocketEvents.CURRENT_PLAYERS_SYNC]: CurrentPlayersPayload;
+  [SocketEvents.NEW_PLAYER_SYNC]: NewPlayerPayload;
+  [SocketEvents.UPDATE_PLAYERS_SYNC]: UpdatePlayersPayload;
+  [SocketEvents.REMOVE_PLAYER_SYNC]: RemovePlayerPayload;
+  [SocketEvents.UPDATE_MAP_CELLS_SYNC]: UpdateMapCellsPayload;
   [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
   [SocketEvents.BOMB_PLACED_ACK]: BombPlacedAckPayload;
   [SocketEvents.PLAYER_DEAD]: PlayerDeadPayload;

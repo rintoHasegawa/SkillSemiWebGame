@@ -6,7 +6,7 @@ import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@server/config";
-import type { gameTypes, PlaceBombPayload } from "@repo/shared";
+import type { domain, PlaceBombPayload } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import {
   gameDomainLogEvents,
@@ -25,7 +25,7 @@ export class GameLoop {
   private endMonotonicTimeMs: number = 0;
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
-  private lastSentPlayers: Map<string, gameTypes.PlayerPositionUpdate> =
+  private lastSentPlayers: Map<string, domain.game.PlayerPositionUpdate> =
     new Map();
   private botAiService: BotAiService = new BotAiService();
 
@@ -34,7 +34,7 @@ export class GameLoop {
     private tickRate: number,
     private players: Map<string, Player>,
     private mapStore: MapStore,
-    private onTick: (data: gameTypes.TickData) => void,
+    private onTick: (data: domain.game.TickData) => void,
     private onGameEnd: () => void,
     private onBotPlaceBomb?: (
       ownerId: string,
@@ -143,7 +143,7 @@ export class GameLoop {
     });
   }
 
-  private buildTickData(): gameTypes.TickData {
+  private buildTickData(): domain.game.TickData {
     const activePlayerIds = new Set<string>();
     const playerUpdates = this.collectChangedPlayerUpdates(activePlayerIds);
     this.cleanupInactivePlayerSnapshots(activePlayerIds);
@@ -156,8 +156,8 @@ export class GameLoop {
 
   private collectChangedPlayerUpdates(
     activePlayerIds: Set<string>,
-  ): gameTypes.TickData["playerUpdates"] {
-    const changedPlayers: gameTypes.TickData["playerUpdates"] = [];
+  ): domain.game.TickData["playerUpdates"] {
+    const changedPlayers: domain.game.TickData["playerUpdates"] = [];
 
     this.players.forEach((player) => {
       activePlayerIds.add(player.id);
@@ -167,7 +167,7 @@ export class GameLoop {
       }
 
       // 送信用のプレイヤーデータを構築
-      const playerData: gameTypes.PlayerPositionUpdate = {
+      const playerData: domain.game.PlayerPositionUpdate = {
         id: player.id,
         x: player.x,
         y: player.y,

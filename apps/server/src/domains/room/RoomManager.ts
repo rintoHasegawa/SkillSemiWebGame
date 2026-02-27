@@ -2,7 +2,7 @@
  * RoomManager
  * ルーム状態の保持とルーム操作サービスへの委譲を担うマネージャ
  */
-import type { roomTypes } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { RoomJoinService } from "./application/services/RoomJoinService";
 import { RoomExitService } from "./application/services/RoomExitService";
 import { RoomPhaseService } from "./application/services/RoomPhaseService";
@@ -15,7 +15,7 @@ import type {
 
 /** ルーム操作の公開インターフェースを提供するマネージャ */
 export class RoomManager {
-  private rooms: Map<string, roomTypes.Room> = new Map();
+  private rooms: Map<string, domain.room.Room> = new Map();
   private roomJoinService: RoomJoinService;
   private roomExitService: RoomExitService;
   private roomPhaseService: RoomPhaseService;
@@ -39,17 +39,17 @@ export class RoomManager {
   }
 
   // オーナーIDからルームを取得する
-  public getRoomByOwnerId(ownerId: string): roomTypes.Room | undefined {
+  public getRoomByOwnerId(ownerId: string): domain.room.Room | undefined {
     return this.roomQueryService.getRoomByOwnerId(ownerId);
   }
 
   // ルームIDからルームを取得する
-  public getRoomById(roomId: string): roomTypes.Room | undefined {
+  public getRoomById(roomId: string): domain.room.Room | undefined {
     return this.roomQueryService.getRoomById(roomId);
   }
 
   // プレイヤーIDから所属ルームを取得する
-  public getRoomByPlayerId(playerId: string): roomTypes.Room | undefined {
+  public getRoomByPlayerId(playerId: string): domain.room.Room | undefined {
     return this.roomQueryService.getRoomByPlayerId(playerId);
   }
 

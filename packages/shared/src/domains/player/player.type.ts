@@ -1,4 +1,10 @@
-// クライアント・サーバー間共有プレイヤー基本情報型
+/**
+ * player.type
+ * プレイヤー領域で利用する共有型を定義する
+ * クライアントとサーバーで参照する契約を集約する
+ */
+
+/** クライアントとサーバー間で共有するプレイヤー基本情報 */
 export interface PlayerData {
   id: string;
   name: string;
@@ -8,7 +14,7 @@ export interface PlayerData {
   teamId: number; // 0〜3 のチームID
 }
 
-// 移動イベント送信ペイロード型
+/** MOVE イベントで利用する移動入力ペイロード */
 export interface MovePayload {
   // グリッド単位の座標
   x: number;

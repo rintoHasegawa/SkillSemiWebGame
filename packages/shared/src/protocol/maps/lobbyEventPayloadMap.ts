@@ -8,7 +8,7 @@ import type {
   JoinRoomPayload,
   RoomJoinRejectedPayload,
   RoomUpdatePayload,
-} from "../eventPayloads";
+} from "../payloads/lobbyPayloads";
 
 /** ロビー関連のクライアント送信イベントペイロード対応表 */
 export type LobbyClientToServerEventPayloadMap = {

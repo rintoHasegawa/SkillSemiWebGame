@@ -8,7 +8,7 @@ import { GameScene } from "./scenes/game/GameScene";
 import { ResultScene } from "./scenes/result/ResultScene";
 import { LandscapeOnlyGate } from "./components/LandscapeOnlyGate";
 
-import { appConsts } from "@repo/shared";
+import { domain } from "@repo/shared";
 
 export default function App() {
   const {
@@ -25,7 +25,7 @@ export default function App() {
   let scene = <GameScene myId={myId} />;
 
   // タイトル画面分岐
-  if (scenePhase === appConsts.ScenePhase.TITLE) {
+  if (scenePhase === domain.app.ScenePhase.TITLE) {
     scene = (
       <TitleScene
         onJoin={requestJoin}
@@ -36,7 +36,7 @@ export default function App() {
   }
 
   // ロビー画面分岐
-  if (scenePhase === appConsts.ScenePhase.LOBBY) {
+  if (scenePhase === domain.app.ScenePhase.LOBBY) {
     scene = (
       <LobbyScene
         room={room}
@@ -50,7 +50,7 @@ export default function App() {
   }
 
   // 結果画面分岐
-  if (scenePhase === appConsts.ScenePhase.RESULT) {
+  if (scenePhase === domain.app.ScenePhase.RESULT) {
     scene = (
       <ResultScene
         result={gameResult}

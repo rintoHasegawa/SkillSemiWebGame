@@ -4,7 +4,7 @@
  */
 import { config } from "@server/config";
 import type {
-  gameTypes,
+  domain,
   GameResultPayload,
   PlaceBombPayload,
 } from "@repo/shared";
@@ -64,7 +64,7 @@ export class GameSessionLifecycleService {
   public startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
-    onTick: (data: gameTypes.TickData) => void,
+    onTick: (data: domain.game.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ) {

@@ -4,7 +4,7 @@
  * シーン層が利用する通信操作を集約する
  */
 import type { Socket } from "socket.io-client";
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import type {
   BombHitReportPayload,
   BombPlacedAckPayload,
