@@ -109,13 +109,14 @@ export class GameLoop {
   }
 
   private processSingleTick(): void {
-    const nowMs = performance.now();
+    const monotonicNowMs = performance.now();
+    const wallClockNowMs = Date.now();
     const elapsedMs = Math.max(
       0,
-      Math.round(nowMs - this.startMonotonicTimeMs),
+      Math.round(monotonicNowMs - this.startMonotonicTimeMs),
     );
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
-    this.updateBotPlayers(nowMs, elapsedMs, gridColorsSnapshot);
+    this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsSnapshot);
     const tickData = this.buildTickData();
     this.onTick(tickData);
   }
