@@ -16,8 +16,10 @@ export default function App() {
     room,
     myId,
     gameResult,
+    playerName,
     joinErrorMessage,
     isJoining,
+    setPlayerName,
     requestJoin,
     returnToTitle,
   } = useAppFlow();
@@ -29,6 +31,8 @@ export default function App() {
     scene = (
       <TitleScene
         onJoin={requestJoin}
+        playerName={playerName}
+        onPlayerNameChange={setPlayerName}
         joinErrorMessage={joinErrorMessage}
         isJoining={isJoining}
       />

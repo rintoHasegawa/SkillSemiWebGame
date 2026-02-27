@@ -12,11 +12,13 @@ export type AppFlowData = {
   room: domain.room.Room | null;
   myId: string | null;
   gameResult: GameResultPayload | null;
+  playerName: string;
 };
 
 /** アプリフローを更新するアクション型 */
 export type AppFlowAction =
   | { type: "setMyId"; myId: string | null }
+  | { type: "setPlayerName"; playerName: string }
   | { type: "setRoomAndLobby"; room: domain.room.Room }
   | { type: "setPlaying" }
   | { type: "setResult"; result: GameResultPayload }

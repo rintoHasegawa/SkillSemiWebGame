@@ -12,6 +12,7 @@ export const initialAppFlowData: AppFlowData = {
   room: null,
   myId: null,
   gameResult: null,
+  playerName: "",
 };
 
 /** アプリフロー状態をアクションに応じて更新する */
@@ -23,6 +24,13 @@ export const appFlowReducer = (
     return {
       ...state,
       myId: action.myId,
+    };
+  }
+
+  if (action.type === "setPlayerName") {
+    return {
+      ...state,
+      playerName: action.playerName,
     };
   }
 
@@ -56,6 +64,7 @@ export const appFlowReducer = (
       room: null,
       myId: action.clearMyId ? null : state.myId,
       gameResult: null,
+      playerName: state.playerName,
     };
   }
 
