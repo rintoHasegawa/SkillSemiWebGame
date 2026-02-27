@@ -99,6 +99,7 @@ export type BombPlacedAckPayload = {
 /** bomb-hit-report イベントで送受信する被弾報告 */
 export type BombHitReportPayload = {
   bombId: string;
+  targetPlayerId?: string;
 };
 
 /** player-dead イベントで送受信する死亡プレイヤー情報 */

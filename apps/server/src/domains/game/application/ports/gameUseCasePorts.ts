@@ -123,6 +123,11 @@ export interface BombHitReportValidationPort {
   shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean;
 }
 
+/** 被弾報告ユースケースが利用するBot被弾反映入力ポート */
+export interface BotHitReactionPort {
+  applyBotHitStun(playerId: string, nowMs: number): boolean;
+}
+
 /** 爆弾設置ユースケースの入力値 */
 export type PlaceBombInput = {
   socketId: string;

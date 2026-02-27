@@ -18,13 +18,16 @@ export type CombatLifecycleFacadeOptions = {
   players: GamePlayers;
   myId: string;
   acquireInputLock: () => () => void;
-  onSendBombHitReport: (bombId: string) => void;
+  onSendBombHitReport: (bombId: string, targetPlayerId: string) => void;
 };
 
 /** 被弾関連ライフサイクルの制御を担当する */
 export class CombatLifecycleFacade {
   private readonly myId: string;
-  private readonly onSendBombHitReport: (bombId: string) => void;
+  private readonly onSendBombHitReport: (
+    bombId: string,
+    targetPlayerId: string,
+  ) => void;
   private readonly bombHitOrchestrator: BombHitOrchestrator;
   private readonly playerDeathPolicy: PlayerDeathPolicy;
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
@@ -59,13 +62,19 @@ export class CombatLifecycleFacade {
   /** 爆弾爆発時の判定と後続処理を実行する */
   public handleBombExploded(payload: BombExplodedPayload): void {
     const result = this.bombHitOrchestrator.handleBombExploded(payload);
-    if (!this.hitReportPolicy.shouldSendReport(result, payload.bombId)) {
-      return;
+    const hasLocalHit = result.hitPlayerIds.includes(this.myId);
+    if (hasLocalHit) {
+      this.playerDeathPolicy.applyLocalHitStun();
+      this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
     }
 
-    this.playerDeathPolicy.applyLocalHitStun();
-    this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
-    this.onSendBombHitReport(payload.bombId);
+    result.hitPlayerIds.forEach((targetPlayerId) => {
+      if (!this.hitReportPolicy.shouldSendReport(result.status, payload.bombId, targetPlayerId)) {
+        return;
+      }
+
+      this.onSendBombHitReport(payload.bombId, targetPlayerId);
+    });
   }
 
   /** ネットワーク被弾通知を適用する */

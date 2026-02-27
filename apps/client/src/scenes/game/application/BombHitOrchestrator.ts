@@ -13,7 +13,10 @@ type BombHitOrchestratorOptions = {
 };
 
 /** 爆弾爆発イベントの判定結果を表す型 */
-export type BombHitEvaluationResult = "duplicate" | "missing-local-player" | "no-hit" | "hit";
+export type BombHitEvaluationResult = {
+  status: "duplicate" | "missing-local-player" | "no-hit" | "hit";
+  hitPlayerIds: string[];
+};
 
 /** 爆弾当たり判定の実行順序を制御する */
 export class BombHitOrchestrator {
@@ -27,30 +30,49 @@ export class BombHitOrchestrator {
   /** 爆弾爆発イベントを受けて当たり判定を実行し結果を返す */
   public handleBombExploded(payload: BombExplodedPayload): BombHitEvaluationResult {
     if (this.handledBombIds.has(payload.bombId)) {
-      return "duplicate";
+      return {
+        status: "duplicate",
+        hitPlayerIds: [],
+      };
     }
 
     this.handledBombIds.add(payload.bombId);
     const localPlayer = this.contextProvider.getLocalPlayerCircle();
     if (!localPlayer) {
-      return "missing-local-player";
+      return {
+        status: "missing-local-player",
+        hitPlayerIds: [],
+      };
     }
 
-    const result = checkBombHit({
-      bomb: {
-        x: payload.x,
-        y: payload.y,
-        radius: payload.radius,
-        teamId: payload.teamId,
-      },
-      player: localPlayer,
-    });
+    const reportablePlayers = this.contextProvider.getReportablePlayerCircles();
+    const hitPlayerIds = reportablePlayers
+      .filter((player) => {
+        const result = checkBombHit({
+          bomb: {
+            x: payload.x,
+            y: payload.y,
+            radius: payload.radius,
+            teamId: payload.teamId,
+          },
+          player,
+        });
 
-    if (!result.isHit) {
-      return "no-hit";
+        return result.isHit;
+      })
+      .map((player) => player.playerId);
+
+    if (hitPlayerIds.length === 0) {
+      return {
+        status: "no-hit",
+        hitPlayerIds: [],
+      };
     }
 
-    return "hit";
+    return {
+      status: "hit",
+      hitPlayerIds,
+    };
 
   }
 

@@ -17,6 +17,19 @@ export class BotStateStore {
     this.states.set(botPlayerId, state);
   }
 
+  /** 既存状態がある場合のみ更新関数を適用する */
+  public update(
+    botPlayerId: BotPlayerId,
+    updater: (state: BotState) => BotState,
+  ): void {
+    const current = this.states.get(botPlayerId);
+    if (!current) {
+      return;
+    }
+
+    this.states.set(botPlayerId, updater(current));
+  }
+
   public clear(): void {
     this.states.clear();
   }
