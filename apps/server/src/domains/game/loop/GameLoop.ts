@@ -13,8 +13,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import { BotTurnOrchestrator } from "../application/services/bot/orchestrators/BotTurnOrchestrator.js";
-import { isBotPlayerId } from "../application/services/bot/roster/BotRosterService";
+import { BotTurnOrchestrator, isBotPlayerId } from "../application/services/bot/index.js";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */

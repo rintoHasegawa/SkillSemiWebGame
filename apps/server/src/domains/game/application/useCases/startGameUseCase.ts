@@ -13,7 +13,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import { createBotBombActionHandler } from "../services/bot/adapters/BotBombActionAdapter.js";
+import { createBotBombActionHandler } from "../services/bot/index.js";
 
 const excludeRecipientFromPlayerUpdates = <
   TPlayerUpdate extends { id: string },
