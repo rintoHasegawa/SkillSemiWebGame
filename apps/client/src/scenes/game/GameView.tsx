@@ -26,9 +26,36 @@ type Props = {
   onPlaceBomb: () => boolean;
 };
 
-const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => (
-  <div style={GAME_VIEW_TIMER_STYLE}>{timeLeft}</div>
-);
+const parseRemainingSeconds = (timeLeft: string): number => {
+  const [minutesText, secondsText] = timeLeft.split(":");
+  const minutes = Number(minutesText);
+  const seconds = Number(secondsText);
+
+  if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return minutes * 60 + seconds;
+};
+
+const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => {
+  const remainingSeconds = parseRemainingSeconds(timeLeft);
+
+  return (
+    <div
+      style={{
+        ...GAME_VIEW_TIMER_STYLE,
+        color: remainingSeconds <= 30 ? "#8B0000" : GAME_VIEW_TIMER_STYLE.color,
+        animation:
+          remainingSeconds <= 10
+            ? "timerUrgentBlink 1s step-end infinite"
+            : "none",
+      }}
+    >
+      {timeLeft}
+    </div>
+  );
+};
 
 const TeamPaintRateOverlay = ({
   teamPaintRates,
@@ -69,6 +96,7 @@ export const GameView = ({
 }: Props) => {
   return (
     <div style={GAME_VIEW_ROOT_STYLE}>
+      <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } }`}</style>
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
       <TeamPaintRateOverlay teamPaintRates={teamPaintRates} />
