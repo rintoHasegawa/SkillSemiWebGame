@@ -7,7 +7,9 @@ import { config } from "@server/config";
 import type { GameResultPayload } from "@repo/shared";
 
 /** グリッド色配列からゲーム結果ペイロードを生成する */
-export const buildGameResultPayload = (gridColors: number[]): GameResultPayload => {
+export const buildGameResultPayload = (
+  gridColors: number[],
+): GameResultPayload => {
   const { TEAM_COUNT } = config.GAME_CONFIG;
   const totalCells = gridColors.length;
   const paintedCounts = new Array<number>(TEAM_COUNT).fill(0);
@@ -40,7 +42,10 @@ export const buildGameResultPayload = (gridColors: number[]): GameResultPayload 
   const epsilon = 1e-9;
 
   rankings.forEach((item, index) => {
-    if (previousPaintRate === null || Math.abs(item.paintRate - previousPaintRate) > epsilon) {
+    if (
+      previousPaintRate === null ||
+      Math.abs(item.paintRate - previousPaintRate) > epsilon
+    ) {
       currentRank = index + 1;
       previousPaintRate = item.paintRate;
     }
@@ -48,5 +53,8 @@ export const buildGameResultPayload = (gridColors: number[]): GameResultPayload 
     item.rank = currentRank;
   });
 
-  return { rankings };
+  return {
+    rankings,
+    finalGridColors: [...gridColors],
+  };
 };

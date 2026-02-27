@@ -21,6 +21,7 @@ export type GameResultRanking = {
 /** game-result イベントで送受信する最終結果 */
 export type GameResultPayload = {
   rankings: GameResultRanking[];
+  finalGridColors?: number[];
 };
 
 /** current-players で配信するプレイヤー全体スナップショット */
