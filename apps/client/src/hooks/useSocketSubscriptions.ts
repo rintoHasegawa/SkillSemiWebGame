@@ -5,20 +5,20 @@
  */
 import { useEffect } from "react";
 import { socketManager } from "@client/network/SocketManager";
-import { appConsts } from "@repo/shared";
-import type { appTypes, roomTypes, GameResultPayload } from "@repo/shared";
+import { domain } from "@repo/shared";
+import type { GameResultPayload } from "@repo/shared";
 
 type UseSocketSubscriptionsParams = {
   completeJoinRequest: () => void;
   setGameResult: (payload: GameResultPayload | null) => void;
   setMyId: (id: string | null) => void;
-  setRoom: (room: roomTypes.Room | null) => void;
-  setScenePhase: (phase: appTypes.ScenePhase) => void;
+  setRoom: (room: domain.room.Room | null) => void;
+  setScenePhase: (phase: domain.app.ScenePhaseType) => void;
 };
 
 type AppSocketHandlers = {
   handleConnect: (id: string) => void;
-  handleRoomUpdate: (updatedRoom: roomTypes.Room) => void;
+  handleRoomUpdate: (updatedRoom: domain.room.Room) => void;
   handleGameStart: () => void;
   handleGameResult: (payload: GameResultPayload) => void;
 };
@@ -77,20 +77,20 @@ export const useSocketSubscriptions = ({
         setMyId(id);
       },
 
-      handleRoomUpdate: (updatedRoom: roomTypes.Room) => {
+      handleRoomUpdate: (updatedRoom: domain.room.Room) => {
         completeJoinRequest();
         setRoom(updatedRoom);
-        setScenePhase(appConsts.ScenePhase.LOBBY);
+        setScenePhase(domain.app.ScenePhase.LOBBY);
       },
 
       handleGameStart: () => {
         setGameResult(null);
-        setScenePhase(appConsts.ScenePhase.PLAYING);
+        setScenePhase(domain.app.ScenePhase.PLAYING);
       },
 
       handleGameResult: (payload: GameResultPayload) => {
         setGameResult(payload);
-        setScenePhase(appConsts.ScenePhase.RESULT);
+        setScenePhase(domain.app.ScenePhase.RESULT);
       },
     };
 

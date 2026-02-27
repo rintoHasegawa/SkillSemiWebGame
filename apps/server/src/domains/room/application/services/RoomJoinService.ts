@@ -2,16 +2,15 @@
  * RoomJoinService
  * ルーム作成とプレイヤー参加処理を担うサービス
  */
-import { roomConsts } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { config } from "@server/config";
-import type { roomTypes } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomDomainLogEvents } from "@server/logging/index";
 import type { JoinRoomResult } from "../ports/roomUseCasePorts";
 
 /** 参加要求に応じてルーム作成と参加者追加を行うサービス */
 export class RoomJoinService {
-  constructor(private rooms: Map<string, roomTypes.Room>) {}
+  constructor(private rooms: Map<string, domain.room.Room>) {}
 
   public addPlayerToRoom(roomId: string, socketId: string, playerName: string): JoinRoomResult {
     let room = this.rooms.get(roomId);
@@ -20,7 +19,7 @@ export class RoomJoinService {
         roomId,
         ownerId: socketId,
         players: [],
-        status: roomConsts.RoomPhase.WAITING,
+        status: domain.room.RoomPhase.WAITING,
         maxPlayers: config.GAME_CONFIG.MAX_PLAYERS_PER_ROOM,
       };
       this.rooms.set(roomId, room);
@@ -59,7 +58,7 @@ export class RoomJoinService {
       return { room, status: "full" };
     }
 
-    const newPlayer: roomTypes.RoomMember = {
+    const newPlayer: domain.room.RoomMember = {
       id: socketId,
       name: playerName,
       isOwner: room.ownerId === socketId,
