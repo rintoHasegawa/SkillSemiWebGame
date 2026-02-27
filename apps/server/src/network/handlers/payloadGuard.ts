@@ -2,7 +2,7 @@
  * payloadGuard
  * 受信ペイロード検証と不正時ログ記録を共通化するガード生成を担う
  */
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes } from "@server/logging/index";
 

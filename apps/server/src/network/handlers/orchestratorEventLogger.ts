@@ -2,7 +2,7 @@
  * orchestratorEventLogger
  * オーケストレータ層で利用するイベントログ記録を共通化する
  */
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes } from "@server/logging/index";
 

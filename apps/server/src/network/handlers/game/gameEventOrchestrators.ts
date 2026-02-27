@@ -4,7 +4,7 @@
  * 受信ハンドラからユースケース実行責務を分離する
  * ランタイム未解決時はNetworkスコープでignored_missing_roomを記録する
  */
-import { protocol, type BombHitReportPayload, type PingPayload, type PlaceBombPayload, type playerTypes } from "@repo/shared";
+import { contracts as protocol, type BombHitReportPayload, type PingPayload, type PlaceBombPayload, type playerTypes } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";

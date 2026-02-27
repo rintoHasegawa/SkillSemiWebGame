@@ -3,7 +3,7 @@
  * 接続時にルームとゲームの各ハンドラを登録する
  */
 import { Socket } from "socket.io";
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
 import { registerGameHandlers } from "./game/registerGameHandlers";
 import { registerRoomHandlers } from "./room/registerRoomHandlers";

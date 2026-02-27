@@ -2,7 +2,7 @@
  * eventNames
  * ログ出力で利用するイベント名定数群を提供する
  */
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 
 /** GameUseCaseログで利用するイベント名定数 */
 export const gameUseCaseLogEvents = {

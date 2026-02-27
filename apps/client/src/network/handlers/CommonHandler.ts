@@ -4,7 +4,7 @@
  * connect イベントをアプリ用の id 通知に変換する
  */
 import type { Socket } from "socket.io-client";
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import type { ConnectionLifecyclePayloadOf } from "@repo/shared";
 import { createClientSocketEventBridge } from "./socketEventBridge";
 

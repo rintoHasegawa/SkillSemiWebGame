@@ -4,7 +4,7 @@
  * ルーム更新購読とゲーム開始要求送信を提供する
  */
 import type { Socket } from "socket.io-client";
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import type { ServerToClientPayloadOf } from "@repo/shared";
 import { createClientSocketEventBridge } from "./socketEventBridge";
 

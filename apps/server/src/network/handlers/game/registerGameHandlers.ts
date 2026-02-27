@@ -3,7 +3,7 @@
  * ゲーム関連イベントの受信ハンドラを登録する
  */
 import { Socket } from "socket.io";
-import { protocol } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import type {
   GameEventRoomUseCasePort,
   GameEventRuntimeUseCasePort,
