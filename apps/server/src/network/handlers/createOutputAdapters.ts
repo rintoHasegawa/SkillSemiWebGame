@@ -23,7 +23,7 @@ export type SocketOutputAdapters = {
 };
 
 /** 切断処理で利用するゲームとルームの出力アダプタ集合 */
-export type DisconnectOutputAdapters = {
+type DisconnectOutputAdapters = {
   game: GameDisconnectOutputAdapter;
   room: Pick<RoomOutputAdapter, "publishRoomUpdateToRoom">;
 };

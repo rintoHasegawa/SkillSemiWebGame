@@ -20,14 +20,14 @@ import type {
 } from "@server/domains/room/application/ports/roomUseCasePorts";
 
 /** 接続時のルーム処理で利用する入力ポート集合 */
-export type ConnectionRoomPort =
+type ConnectionRoomPort =
   & JoinRoomPort
   & FindRoomByOwnerPort
   & FindRoomByPlayerPort
   & RoomPhaseTransitionPort;
 
 /** 接続時のゲームランタイム解決で利用する入力ポート集合 */
-export type ConnectionRuntimePort =
+type ConnectionRuntimePort =
   & EnsureGameRuntimePort
   & FindGameByRoomPort
   & FindGameByPlayerPort;

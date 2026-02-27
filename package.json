@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "shared:prune": "node scripts/ts-prune-filter.mjs packages/shared/tsconfig.json packages/shared/ts-prune-allowlist.json",
+    "shared:prune:check": "node scripts/ts-prune-filter.mjs packages/shared/tsconfig.json packages/shared/ts-prune-allowlist.json --fail-on-findings"
   },
   "keywords": [],
   "author": "",

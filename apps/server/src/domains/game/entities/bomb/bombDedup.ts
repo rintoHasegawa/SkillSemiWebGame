@@ -17,7 +17,7 @@ type ShouldBroadcastBombHitReportParams = {
 };
 
 /** 重複排除テーブルの期限切れエントリを削除する */
-export const cleanupExpiredBombDedup = (
+const cleanupExpiredBombDedup = (
   dedupTable: Map<string, number>,
   nowMs: number
 ): void => {

@@ -9,7 +9,7 @@ import { SocketManager } from "@server/network/SocketManager";
 import { createIo } from "./createIo";
 
 /** 起動時に構築する実行コンテキスト */
-export type ServerRuntime = {
+type ServerRuntime = {
   socketManager: SocketManager;
 };
 

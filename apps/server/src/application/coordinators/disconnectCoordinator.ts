@@ -12,7 +12,7 @@ import { roomDisconnectUseCase } from "@server/domains/room/application/useCases
 import { resolveCoordinatorRuntime } from "./runtimeCoordinatorSupport";
 
 /** 切断調停で利用する入力ポートと出力ポートの契約 */
-export type DisconnectCoordinatorParams = {
+type DisconnectCoordinatorParams = {
   socketId: string;
 } & DisconnectCoordinatorDeps & {
   gameOutput: Pick<GameOutputPort, "publishPlayerRemovedToRoom">;

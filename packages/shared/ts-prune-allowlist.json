@@ -1,0 +1,7 @@
+{
+  "ignoreFiles": [
+    "packages/shared/src/index.ts",
+    "packages/shared/src/config/index.ts"
+  ],
+  "ignoreExports": []
+}

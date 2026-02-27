@@ -7,15 +7,8 @@
 export {
   createSocketRegistrationContext,
 } from "./createSocketRegistrationContext";
-export type {
-  SocketRegistrationContext,
-} from "./createSocketRegistrationContext";
 
 /** 接続イベント登録コンテキストを再公開する */
 export {
   createConnectionRegistrationContext,
-} from "./createConnectionRegistrationContext";
-export type {
-  ConnectionHandlerDeps,
-  ConnectionRegistrationContext,
 } from "./createConnectionRegistrationContext";
