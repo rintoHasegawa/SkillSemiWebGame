@@ -5,18 +5,26 @@ import { domain } from "@repo/shared";
 type Props = {
   // 入室実行時呼び出しコールバック
   onJoin: (payload: domain.room.JoinRoomPayload) => void;
+  // プレイヤー名の入力値
+  playerName: string;
+  // プレイヤー名の更新コールバック
+  onPlayerNameChange: (value: string) => void;
   // 入室失敗時の表示メッセージ
   joinErrorMessage: string | null;
   // 入室リクエスト送信中フラグ
   isJoining: boolean;
 };
 
-export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
+export const TitleScene = ({
+  onJoin,
+  playerName,
+  onPlayerNameChange,
+  joinErrorMessage,
+  isJoining,
+}: Props) => {
   // 🌟 追加：「TAP TO START」が押されてフォームを表示する状態かどうか
   const [showForm, setShowForm] = useState(false);
 
-  // プレイヤー名入力値
-  const [playerName, setPlayerName] = useState("");
   // ルームID入力値
   const [roomIdInput, setRoomIdInput] = useState("");
 
@@ -112,7 +120,7 @@ export const TitleScene = ({ onJoin, joinErrorMessage, isJoining }: Props) => {
               <input
                 placeholder="プレイヤー名を入力"
                 value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
+                onChange={(e) => onPlayerNameChange(e.target.value)}
                 style={{
                   padding: "12px",
                   fontSize: "clamp(1rem, 3vw, 1.2rem)",

@@ -20,8 +20,10 @@ type AppFlowState = {
   room: domain.room.Room | null;
   myId: string | null;
   gameResult: GameResultPayload | null;
+  playerName: string;
   joinErrorMessage: string | null;
   isJoining: boolean;
+  setPlayerName: (name: string) => void;
   requestJoin: (payload: domain.room.JoinRoomPayload) => void;
   returnToTitle: (options?: { leaveRoom?: boolean }) => void;
 };
@@ -38,6 +40,7 @@ type JoinFailureReason =
 type JoinFailure = {
   reason: JoinFailureReason;
   roomId?: string;
+  playerName?: string;
 };
 
 type JoinAction =
@@ -144,6 +147,7 @@ export const useAppFlow = (): AppFlowState => {
         completeJoinRequest({
           reason: payload.reason,
           roomId: payload.roomId,
+          playerName: payload.playerName,
         });
       };
 
@@ -155,9 +159,20 @@ export const useAppFlow = (): AppFlowState => {
       }, config.GAME_CONFIG.JOIN_REQUEST_TIMEOUT_MS);
 
       socketManager.title.joinRoom(payload);
+
+      if (payload.playerName.trim() !== "") {
+        dispatchAppFlow({
+          type: "setPlayerName",
+          playerName: payload.playerName,
+        });
+      }
     },
     [completeJoinRequest, joinState.isJoining],
   );
+
+  const setPlayerName = useCallback((name: string) => {
+    dispatchAppFlow({ type: "setPlayerName", playerName: name });
+  }, []);
 
   const returnToTitle = useCallback(
     (options?: { leaveRoom?: boolean }) => {
@@ -187,8 +202,10 @@ export const useAppFlow = (): AppFlowState => {
     room: appFlow.room,
     myId: appFlow.myId,
     gameResult: appFlow.gameResult,
+    playerName: appFlow.playerName,
     joinErrorMessage: getJoinErrorMessage(joinState.joinFailure),
     isJoining: joinState.isJoining,
+    setPlayerName,
     requestJoin,
     returnToTitle,
   };
