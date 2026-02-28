@@ -20,6 +20,7 @@ export type AppFlowAction =
   | { type: "setMyId"; myId: string | null }
   | { type: "setPlayerName"; playerName: string }
   | { type: "setRoomAndLobby"; room: domain.room.Room }
+  | { type: "updateRoom"; room: domain.room.Room }
   | { type: "setPlaying" }
   | { type: "setResult"; result: GameResultPayload }
   | { type: "resetToTitle"; clearMyId: boolean };
