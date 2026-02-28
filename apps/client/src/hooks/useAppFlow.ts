@@ -194,6 +194,7 @@ export const useAppFlow = (): AppFlowState => {
   useSocketSubscriptions({
     completeJoinRequest,
     dispatchAppFlow,
+    scenePhase: appFlow.scenePhase,
   });
 
   return {

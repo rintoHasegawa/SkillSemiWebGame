@@ -12,6 +12,7 @@ import type { AppFlowAction } from "./types/appFlowState";
 type UseSocketSubscriptionsParams = {
   completeJoinRequest: () => void;
   dispatchAppFlow: (action: AppFlowAction) => void;
+  scenePhase: domain.app.ScenePhaseType;
 };
 
 type AppSocketHandlers = {
@@ -65,6 +66,7 @@ const unregisterGameSubscriptions = ({
 export const useSocketSubscriptions = ({
   completeJoinRequest,
   dispatchAppFlow,
+  scenePhase,
 }: UseSocketSubscriptionsParams): void => {
   useEffect(() => {
     const handlers: AppSocketHandlers = {
@@ -74,7 +76,14 @@ export const useSocketSubscriptions = ({
 
       handleRoomUpdate: (updatedRoom: domain.room.Room) => {
         completeJoinRequest();
-        dispatchAppFlow({ type: "setRoomAndLobby", room: updatedRoom });
+        if (
+          scenePhase === domain.app.ScenePhase.PLAYING ||
+          scenePhase === domain.app.ScenePhase.RESULT
+        ) {
+          dispatchAppFlow({ type: "updateRoom", room: updatedRoom });
+        } else {
+          dispatchAppFlow({ type: "setRoomAndLobby", room: updatedRoom });
+        }
       },
 
       handleGameStart: () => {
@@ -96,5 +105,5 @@ export const useSocketSubscriptions = ({
       unregisterRoomSubscriptions(handlers);
       unregisterGameSubscriptions(handlers);
     };
-  }, [completeJoinRequest, dispatchAppFlow]);
+  }, [completeJoinRequest, dispatchAppFlow, scenePhase]);
 };

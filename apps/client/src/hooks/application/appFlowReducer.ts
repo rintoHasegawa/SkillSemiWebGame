@@ -42,6 +42,13 @@ export const appFlowReducer = (
     };
   }
 
+  if (action.type === "updateRoom") {
+    return {
+      ...state,
+      room: action.room,
+    };
+  }
+
   if (action.type === "setPlaying") {
     return {
       ...state,
