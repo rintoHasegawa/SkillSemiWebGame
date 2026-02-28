@@ -64,7 +64,6 @@ export interface FindRoomByOwnerPort {
 /** ゲーム開始調停で利用するルーム状態遷移ポート */
 export interface RoomPhaseTransitionPort {
   markRoomPlaying(roomId: string): RoomPhaseTransitionResult;
-  markRoomResult(roomId: string): RoomPhaseTransitionResult;
   markRoomWaiting(roomId: string): RoomPhaseTransitionResult;
 }
 
@@ -77,6 +76,11 @@ export type RoomPhaseTransitionResult = {
 /** ルームIDでの存在確認に利用する参照ポート */
 export interface FindRoomByIdPort {
   getRoomById(roomId: string): domain.room.Room | undefined;
+}
+
+/** ゲーム終了時にルームを削除する操作ポート */
+export interface DeleteRoomPort {
+  deleteRoom(roomId: string): boolean;
 }
 
 /** ルーム参加後にゲームランタイムを確保する操作ポート */

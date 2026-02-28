@@ -106,7 +106,8 @@ export const startGameCoordinator = ({
     gameSession: gameManager,
     bombStore: gameManager,
     onGameEnd: () => {
-      roomManager.markRoomResult(updatedRoom.roomId);
+      roomManager.deleteRoom(updatedRoom.roomId);
+      runtimeRegistry.cleanupGameManagerForRoom(updatedRoom.roomId);
     },
     output,
   });

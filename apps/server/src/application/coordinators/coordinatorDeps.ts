@@ -4,6 +4,7 @@
  */
 import type {
   CleanupGameRuntimePort,
+  DeleteRoomPort,
   DisconnectRoomPort,
   FindGameByRoomPort,
   FindRoomByIdPort,
@@ -14,8 +15,8 @@ import type { CoordinatorRuntimeDeps } from "./runtimeCoordinatorSupport";
 
 /** START_GAME調停で利用する依存集合 */
 export type StartGameCoordinatorDeps = {
-  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort;
-  runtimeRegistry: FindGameByRoomPort;
+  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort & DeleteRoomPort;
+  runtimeRegistry: FindGameByRoomPort & CleanupGameRuntimePort;
 };
 
 /** READY_FOR_GAME調停で利用する依存集合 */

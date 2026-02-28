@@ -35,7 +35,7 @@ type ConnectionRuntimePort =
 /** ゲームイベント調停で利用するルーム依存ポート */
 export type GameEventRoomUseCasePort = Pick<
   ConnectionRoomPort,
-  "getRoomByOwnerId" | "getRoomByPlayerId" | "markRoomPlaying" | "markRoomResult" | "markRoomWaiting"
+  "getRoomByOwnerId" | "getRoomByPlayerId" | "markRoomPlaying" | "markRoomWaiting"
 >;
 
 /** ゲームイベント調停で利用するランタイム依存ポート */

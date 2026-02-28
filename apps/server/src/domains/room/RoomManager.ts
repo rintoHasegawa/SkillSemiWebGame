@@ -58,13 +58,13 @@ export class RoomManager {
     return this.roomPhaseService.markRoomPlaying(roomId);
   }
 
-  // ルーム状態をRESULTへ更新する
-  public markRoomResult(roomId: string): RoomPhaseTransitionResult {
-    return this.roomPhaseService.markRoomResult(roomId);
-  }
-
   // ルーム状態をWAITINGへ更新する
   public markRoomWaiting(roomId: string): RoomPhaseTransitionResult {
     return this.roomPhaseService.markRoomWaiting(roomId);
+  }
+
+  // ルームを削除する
+  public deleteRoom(roomId: string): boolean {
+    return this.rooms.delete(roomId);
   }
 }
