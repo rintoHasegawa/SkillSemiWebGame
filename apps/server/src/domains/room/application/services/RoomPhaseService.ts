@@ -29,6 +29,26 @@ export class RoomPhaseService {
     };
   }
 
+  public markRoomResult(roomId: string): RoomPhaseTransitionResult {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      return { status: "not_found" };
+    }
+
+    if (room.status !== domain.room.RoomPhase.PLAYING) {
+      return {
+        status: "invalid_transition",
+        room,
+      };
+    }
+
+    room.status = domain.room.RoomPhase.RESULT;
+    return {
+      status: "updated",
+      room,
+    };
+  }
+
   public markRoomWaiting(roomId: string): RoomPhaseTransitionResult {
     const room = this.rooms.get(roomId);
     if (!room) {

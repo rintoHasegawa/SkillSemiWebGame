@@ -26,7 +26,7 @@ export type RoomScopedGamePort =
 /** ルーム参加処理の実行結果 */
 export type JoinRoomResult = {
   room: domain.room.Room;
-  status: "joined" | "duplicate" | "full";
+  status: "joined" | "duplicate" | "full" | "playing";
 };
 
 /** ルームユースケースが利用する出力ポート */
@@ -64,6 +64,7 @@ export interface FindRoomByOwnerPort {
 /** ゲーム開始調停で利用するルーム状態遷移ポート */
 export interface RoomPhaseTransitionPort {
   markRoomPlaying(roomId: string): RoomPhaseTransitionResult;
+  markRoomResult(roomId: string): RoomPhaseTransitionResult;
   markRoomWaiting(roomId: string): RoomPhaseTransitionResult;
 }
 

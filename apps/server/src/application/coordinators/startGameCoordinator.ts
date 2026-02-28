@@ -106,7 +106,7 @@ export const startGameCoordinator = ({
     gameSession: gameManager,
     bombStore: gameManager,
     onGameEnd: () => {
-      roomManager.markRoomWaiting(updatedRoom.roomId);
+      roomManager.markRoomResult(updatedRoom.roomId);
     },
     output,
   });

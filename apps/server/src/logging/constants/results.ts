@@ -28,6 +28,7 @@ export const logResults = {
   REJECTED: "rejected",
   REJECTED_DUPLICATE: "rejected_duplicate",
   REJECTED_ROOM_FULL: "rejected_room_full",
+  REJECTED_ROOM_PLAYING: "rejected_room_playing",
   REMOVED: "removed",
   SESSION_DISPOSED_EMPTY_ROOM: "session_disposed_empty_room",
   STARTED: "started",

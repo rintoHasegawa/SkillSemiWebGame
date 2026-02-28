@@ -31,7 +31,7 @@ export interface JoinRoomPayload {
 }
 
 /** ルーム参加拒否理由 */
-export type JoinRoomRejectedReason = "full" | "duplicate";
+export type JoinRoomRejectedReason = "full" | "duplicate" | "playing";
 
 /** ルーム参加拒否通知ペイロード */
 export interface JoinRoomRejectedPayload {

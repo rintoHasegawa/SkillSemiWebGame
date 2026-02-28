@@ -35,7 +35,8 @@ type JoinState = {
 
 type JoinFailureReason =
   | domain.room.JoinRoomRejectedPayload["reason"]
-  | "timeout";
+  | "timeout"
+  | "playing";
 
 type JoinFailure = {
   reason: JoinFailureReason;
@@ -117,6 +118,10 @@ export const useAppFlow = (): AppFlowState => {
 
       if (joinFailure.reason === "full") {
         return `ルーム ${joinFailure.roomId ?? ""} は満員です`;
+      }
+
+      if (joinFailure.reason === "playing") {
+        return `ルーム ${joinFailure.roomId ?? ""} はゲーム中のため参加できません`;
       }
 
       if (joinFailure.reason === "duplicate") {
