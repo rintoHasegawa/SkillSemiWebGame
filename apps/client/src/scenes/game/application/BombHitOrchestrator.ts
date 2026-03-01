@@ -3,7 +3,9 @@
  * 爆弾爆発イベントとローカルプレイヤー情報を橋渡しして当たり判定を実行する
  * 判定結果を呼び出し元へ返して後続処理へ接続しやすくする
  */
-import { checkBombHit } from "@client/scenes/game/entities/bomb/BombHitDetector";
+import { domain } from "@repo/shared";
+
+const { checkBombHit } = domain.game;
 import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
 import { BombHitContextProvider } from "./BombHitContextProvider";
 
