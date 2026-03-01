@@ -3,12 +3,12 @@
  * ゲーム進行イベントで利用するペイロード型を定義する
  * プレイヤー差分，マップ差分，開始終了系の契約を集約する
  */
-import type { PlayerPositionUpdate } from "../../domains/game/game.type";
-import type { CellUpdate } from "../../domains/gridMap/gridMap.type";
+import type { PlayerPositionUpdate } from "../../domains/game/tick/tick.type";
+import type { CellUpdate } from "../../domains/game/gridMap/gridMap.type";
 import type {
   MovePayload as PlayerMovePayload,
   PlayerData,
-} from "../../domains/player/player.type";
+} from "../../domains/game/player/player.type";
 
 /** game-result イベントで送受信するランキング1行 */
 export type GameResultRanking = {
@@ -106,7 +106,6 @@ export type BombPlacedAckPayload = {
 /** bomb-hit-report イベントで送受信する被弾報告 */
 export type BombHitReportPayload = {
   bombId: string;
-  targetPlayerId?: string;
 };
 
 /** player-dead イベントで送受信する死亡プレイヤー情報 */

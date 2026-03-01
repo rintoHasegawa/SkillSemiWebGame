@@ -6,7 +6,7 @@ import { domain } from "@repo/shared";
 
 type PaintCellParams = {
   gridColors: number[];
-  pendingUpdates: domain.gridMap.CellUpdate[];
+  pendingUpdates: domain.game.gridMap.CellUpdate[];
   index: number;
   teamId: number;
 };

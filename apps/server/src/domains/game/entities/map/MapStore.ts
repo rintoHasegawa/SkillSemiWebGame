@@ -12,7 +12,7 @@ export class MapStore {
   // 全マスの現在の色（teamId）を保持
   private gridColors: number[];
   // 次回の送信ループで送る差分リスト
-  private pendingUpdates: domain.gridMap.CellUpdate[];
+  private pendingUpdates: domain.game.gridMap.CellUpdate[];
 
   constructor() {
     // 初期状態は -1 (無色) などで初期化
@@ -35,7 +35,7 @@ export class MapStore {
   /**
     * 溜まっている差分を取得し，キューをクリアする（ループ送信時に使用）
    */
-  public getAndClearUpdates(): domain.gridMap.CellUpdate[] {
+  public getAndClearUpdates(): domain.game.gridMap.CellUpdate[] {
     return drainPendingUpdates(this.pendingUpdates);
   }
 

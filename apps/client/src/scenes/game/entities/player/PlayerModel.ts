@@ -18,7 +18,7 @@ export class PlayerModel {
   private targetGridY: number;
 
   /** 共有プレイヤー情報から初期状態を構築する */
-  constructor(data: domain.player.PlayerData) {
+  constructor(data: domain.game.player.PlayerData) {
     this.id = data.id;
     this.name = data.name;
     this.teamId = data.teamId;
@@ -29,12 +29,12 @@ export class PlayerModel {
   }
 
   /** 現在座標を取得する */
-  public getPosition(): domain.player.MovePayload {
+  public getPosition(): domain.game.player.MovePayload {
     return { x: this.gridX, y: this.gridY };
   }
 
   /** 送信用スナップショットを取得する */
-  public getSnapshot(): domain.player.PlayerData {
+  public getSnapshot(): domain.game.player.PlayerData {
     return {
       id: this.id,
       name: this.name,
@@ -64,7 +64,7 @@ export class PlayerModel {
   }
 
   /** リモート更新の目標座標を設定する */
-  public setRemoteTarget(update: Partial<domain.player.MovePayload>): void {
+  public setRemoteTarget(update: Partial<domain.game.player.MovePayload>): void {
     if (update.x !== undefined && this.isFiniteNumber(update.x))
       this.targetGridX = update.x;
     if (update.y !== undefined && this.isFiniteNumber(update.y))

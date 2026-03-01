@@ -30,13 +30,13 @@ export class GameMapController {
   }
 
   /** 全体マップ状態を反映する */
-  public updateMapState(state: domain.gridMap.MapState): void {
+  public updateMapState(state: domain.game.gridMap.MapState): void {
     this.model.applyMapState(state);
     this.view.renderAll(this.resolveAllCellColors(this.model.getAllTeamIds()));
   }
 
   /** 差分セル更新を反映する */
-  public updateCells(updates: domain.gridMap.CellUpdate[]): void {
+  public updateCells(updates: domain.game.gridMap.CellUpdate[]): void {
     this.model.applyUpdates(updates);
 
     updates.forEach(({ index }) => {

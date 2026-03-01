@@ -4,7 +4,7 @@
  */
 import type {
   BombPlacementPort,
-  PlaceBombOutputPort,
+  BombPlacementOutputPort,
   PlaceBombInput,
 } from "../ports/gameUseCasePorts";
 import {
@@ -17,7 +17,7 @@ type PlaceBombUseCaseParams = {
   roomId: string;
   bombStore: BombPlacementPort;
   input: PlaceBombInput;
-  output: PlaceBombOutputPort;
+  output: BombPlacementOutputPort;
 };
 
 /** 爆弾設置入力を重複排除と採番付きでルームへ配信する */
@@ -33,6 +33,14 @@ export const placeBombUseCase = ({
   }
 
   const bombId = bombStore.issueServerBombId();
+
+  bombStore.registerActiveBomb({
+    bombId,
+    ownerPlayerId: input.socketId,
+    x: input.payload.x,
+    y: input.payload.y,
+    explodeAtElapsedMs: input.payload.explodeAtElapsedMs,
+  });
 
   output.publishBombPlacedToOthersInRoom(
     roomId,

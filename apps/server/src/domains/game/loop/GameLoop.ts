@@ -6,7 +6,8 @@ import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@server/config";
-import type { domain, PlaceBombPayload } from "@repo/shared";
+import { domain } from "@repo/shared";
+import type { PlaceBombPayload } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import {
   gameDomainLogEvents,
@@ -19,6 +20,27 @@ import {
   type BotPlayerId,
 } from "../application/services/bot/index.js";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
+import type { ActiveBombRegistry } from "../entities/bomb/ActiveBombRegistry.js";
+
+const { checkBombHit } = domain.game.bombHit;
+
+/** GameLoop の初期化入力 */
+export type GameLoopOptions = {
+  roomId: string;
+  tickRate: number;
+  players: Map<string, Player>;
+  mapStore: MapStore;
+  activeBombRegistry: ActiveBombRegistry;
+  callbacks: GameLoopCallbacks;
+};
+
+/** GameLoop のコールバック集合 */
+export type GameLoopCallbacks = {
+  onTick: (data: domain.game.tick.TickData) => void;
+  onGameEnd: () => void;
+  onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void;
+  onBotBombHit?: (targetPlayerId: string, bombId: string) => void;
+};
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -28,24 +50,27 @@ export class GameLoop {
   private endMonotonicTimeMs: number = 0;
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
-  private lastSentPlayers: Map<string, domain.game.PlayerPositionUpdate> =
+  private lastSentPlayers: Map<string, domain.game.tick.PlayerPositionUpdate> =
     new Map();
   private disconnectedBotControlledPlayerIds: Set<string> = new Set();
   private botTurnOrchestrator: BotTurnOrchestrator =
     new BotTurnOrchestrator();
 
-  constructor(
-    private roomId: string,
-    private tickRate: number,
-    private players: Map<string, Player>,
-    private mapStore: MapStore,
-    private onTick: (data: domain.game.TickData) => void,
-    private onGameEnd: () => void,
-    private onBotPlaceBomb?: (
-      ownerId: string,
-      payload: PlaceBombPayload,
-    ) => void,
-  ) {}
+  private readonly roomId: string;
+  private readonly tickRate: number;
+  private readonly players: Map<string, Player>;
+  private readonly mapStore: MapStore;
+  private readonly activeBombRegistry: ActiveBombRegistry;
+  private readonly callbacks: GameLoopCallbacks;
+
+  constructor(options: GameLoopOptions) {
+    this.roomId = options.roomId;
+    this.tickRate = options.tickRate;
+    this.players = options.players;
+    this.mapStore = options.mapStore;
+    this.activeBombRegistry = options.activeBombRegistry;
+    this.callbacks = options.callbacks;
+  }
 
   start() {
     // 既にループが回っている場合は何もしない
@@ -84,7 +109,7 @@ export class GameLoop {
     let nowMs = performance.now();
     if (nowMs >= this.endMonotonicTimeMs) {
       this.stop();
-      this.onGameEnd();
+      this.callbacks.onGameEnd();
       return;
     }
 
@@ -101,7 +126,7 @@ export class GameLoop {
       nowMs = performance.now();
       if (nowMs >= this.endMonotonicTimeMs) {
         this.stop();
-        this.onGameEnd();
+        this.callbacks.onGameEnd();
         return;
       }
     }
@@ -122,8 +147,9 @@ export class GameLoop {
     );
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
     this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsSnapshot);
+    this.detectBotBombHits(elapsedMs, wallClockNowMs);
     const tickData = this.buildTickData();
-    this.onTick(tickData);
+    this.callbacks.onTick(tickData);
   }
 
   private updateBotPlayers(
@@ -145,27 +171,53 @@ export class GameLoop {
         );
         setPlayerPosition(player, decision.nextX, decision.nextY);
 
-        if (decision.placeBombPayload && this.onBotPlaceBomb) {
-          this.onBotPlaceBomb(player.id, decision.placeBombPayload);
+        if (decision.placeBombPayload && this.callbacks.onBotPlaceBomb) {
+          this.callbacks.onBotPlaceBomb(player.id, decision.placeBombPayload);
         }
       }
     });
   }
 
-  /** 指定プレイヤーがBotなら被弾硬直を適用する */
-  public applyBotHitStun(playerId: string, nowMs: number): boolean {
-    const player = this.players.get(playerId);
-    const isBotControlled =
-      !!player &&
-      (isBotPlayerId(player.id) ||
-        this.disconnectedBotControlledPlayerIds.has(player.id));
+  /** 爆発済み爆弾とBotプレイヤーの当たり判定を実行する */
+  private detectBotBombHits(elapsedMs: number, nowMs: number): void {
+    const onBotBombHit = this.callbacks.onBotBombHit;
+    if (!onBotBombHit) return;
 
-    if (!isBotControlled) {
-      return false;
-    }
+    const explodedBombs =
+      this.activeBombRegistry.collectExplodedBombs(elapsedMs);
+    if (explodedBombs.length === 0) return;
 
-    this.botTurnOrchestrator.applyHitStun(playerId as BotPlayerId, nowMs);
-    return true;
+    this.players.forEach((player) => {
+      const isBotControlled =
+        isBotPlayerId(player.id) ||
+        this.disconnectedBotControlledPlayerIds.has(player.id);
+      if (!isBotControlled) return;
+
+      for (const bomb of explodedBombs) {
+        const result = checkBombHit({
+          bomb: {
+            x: bomb.x,
+            y: bomb.y,
+            radius: config.GAME_CONFIG.BOMB_RADIUS_GRID,
+            teamId: bomb.ownerTeamId,
+          },
+          player: {
+            x: player.x,
+            y: player.y,
+            radius: config.GAME_CONFIG.PLAYER_RADIUS,
+            teamId: player.teamId,
+          },
+        });
+
+        if (result.isHit) {
+          this.botTurnOrchestrator.applyHitStun(
+            player.id as BotPlayerId,
+            nowMs,
+          );
+          onBotBombHit(player.id, bomb.bombId);
+        }
+      }
+    });
   }
 
   /** 切断プレイヤーをBot制御対象へ昇格する */
@@ -178,7 +230,7 @@ export class GameLoop {
     this.disconnectedBotControlledPlayerIds.delete(playerId);
   }
 
-  private buildTickData(): domain.game.TickData {
+  private buildTickData(): domain.game.tick.TickData {
     const activePlayerIds = new Set<string>();
     const playerUpdates = this.collectChangedPlayerUpdates(activePlayerIds);
     this.cleanupInactivePlayerSnapshots(activePlayerIds);
@@ -191,8 +243,8 @@ export class GameLoop {
 
   private collectChangedPlayerUpdates(
     activePlayerIds: Set<string>,
-  ): domain.game.TickData["playerUpdates"] {
-    const changedPlayers: domain.game.TickData["playerUpdates"] = [];
+  ): domain.game.tick.TickData["playerUpdates"] {
+    const changedPlayers: domain.game.tick.TickData["playerUpdates"] = [];
 
     this.players.forEach((player) => {
       activePlayerIds.add(player.id);
@@ -202,7 +254,7 @@ export class GameLoop {
       }
 
       // 送信用のプレイヤーデータを構築
-      const playerData: domain.game.PlayerPositionUpdate = {
+      const playerData: domain.game.tick.PlayerPositionUpdate = {
         id: player.id,
         x: player.x,
         y: player.y,

@@ -4,7 +4,7 @@
  */
 import { domain } from "@repo/shared";
 
-export class Player implements domain.player.PlayerData {
+export class Player implements domain.game.player.PlayerData {
   public id: string;
   public name: string;
   public x: number = 0;

@@ -8,9 +8,10 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import type { domain, GameResultPayload } from "@repo/shared";
+import type { domain, GameResultPayload, PlaceBombPayload } from "@repo/shared";
+import type { ActiveBombRegistration } from "../ports/gameUseCasePorts";
 import { config } from "@server/config";
-import { GameLoop } from "../../loop/GameLoop";
+import { GameLoop, type GameLoopCallbacks } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
 import { BombStateStore } from "../../entities/bomb/BombStateStore";
@@ -21,7 +22,14 @@ import {
 } from "../../entities/player/playerMovement.js";
 import { buildGameResultPayload } from "./gameResultCalculator.js";
 import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
-import type { PlaceBombPayload } from "@repo/shared";
+
+/** GameRoomSession のコールバック集合 */
+export type GameSessionCallbacks = {
+  onTick: (data: domain.game.tick.TickData) => void;
+  onGameEnd: (payload: GameResultPayload) => void;
+  onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void;
+  onBotBombHit?: (targetPlayerId: string, bombId: string) => void;
+};
 
 /** ルーム単位のゲーム状態とループ進行を保持するセッションクラス */
 export class GameRoomSession {
@@ -57,9 +65,7 @@ export class GameRoomSession {
 
   public start(
     tickRate: number,
-    onTick: (data: domain.game.TickData) => void,
-    onGameEnd: (payload: GameResultPayload) => void,
-    onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
+    callbacks: GameSessionCallbacks,
   ): void {
     if (this.gameLoop) {
       return;
@@ -72,21 +78,28 @@ export class GameRoomSession {
     ).GAME_START_DELAY_MS;
     const startDelayMs = Math.max(0, gameStartDelayMs ?? 0);
     this.startTime = Date.now() + startDelayMs;
-    this.gameLoop = new GameLoop(
-      this.roomId,
-      tickRate,
-      this.players,
-      this.mapStore,
-      onTick,
-      () => {
+
+    const loopCallbacks: GameLoopCallbacks = {
+      onTick: callbacks.onTick,
+      onGameEnd: () => {
         const resultPayload = buildGameResultPayload(
           this.mapStore.getGridColorsSnapshot(),
         );
         this.dispose();
-        onGameEnd(resultPayload);
+        callbacks.onGameEnd(resultPayload);
       },
-      onBotPlaceBomb,
-    );
+      onBotPlaceBomb: callbacks.onBotPlaceBomb,
+      onBotBombHit: callbacks.onBotBombHit,
+    };
+
+    this.gameLoop = new GameLoop({
+      roomId: this.roomId,
+      tickRate,
+      players: this.players,
+      mapStore: this.mapStore,
+      activeBombRegistry: this.bombStateStore.activeBombRegistry,
+      callbacks: loopCallbacks,
+    });
 
     if (startDelayMs === 0) {
       this.gameLoop.start();
@@ -176,13 +189,17 @@ export class GameRoomSession {
     return this.bombStateStore.issueServerBombId();
   }
 
-  /** 指定プレイヤーがBotなら被弾硬直を適用する */
-  public applyBotHitStun(playerId: string, nowMs: number): boolean {
-    if (!this.gameLoop) {
-      return false;
-    }
-
-    return this.gameLoop.applyBotHitStun(playerId, nowMs);
+  /** 設置済み爆弾をアクティブレジストリに登録する */
+  public registerActiveBomb(registration: ActiveBombRegistration): void {
+    const player = this.players.get(registration.ownerPlayerId);
+    const ownerTeamId = player?.teamId ?? -1;
+    this.bombStateStore.activeBombRegistry.registerBomb({
+      bombId: registration.bombId,
+      x: registration.x,
+      y: registration.y,
+      explodeAtElapsedMs: registration.explodeAtElapsedMs,
+      ownerTeamId,
+    });
   }
 
   public dispose(): void {

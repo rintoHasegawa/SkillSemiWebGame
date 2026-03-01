@@ -17,7 +17,7 @@ export class GameMapModel {
   }
 
   /** 全体マップ状態を適用する */
-  public applyMapState(state: domain.gridMap.MapState): void {
+  public applyMapState(state: domain.game.gridMap.MapState): void {
     const maxLength = Math.min(
       this.cellTeamIds.length,
       state.gridColors.length,
@@ -28,7 +28,7 @@ export class GameMapModel {
   }
 
   /** 差分セル更新を適用する */
-  public applyUpdates(updates: domain.gridMap.CellUpdate[]): void {
+  public applyUpdates(updates: domain.game.gridMap.CellUpdate[]): void {
     updates.forEach(({ index, teamId }) => {
       if (!this.isValidIndex(index)) return;
       this.cellTeamIds[index] = teamId;

@@ -17,22 +17,21 @@ import type {
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
+import type { GameSessionCallbacks } from "../services/GameRoomSession";
 
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */
 export interface StartGamePort {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
-    onTick: (data: domain.game.TickData) => void,
-    onGameEnd: (payload: GameResultPayload) => void,
-    onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
+    callbacks: GameSessionCallbacks,
   ): void;
   getRoomStartTime(): number | undefined;
 }
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
 export interface ReadyForGamePort {
-  getRoomPlayers(): domain.player.PlayerData[];
+  getRoomPlayers(): domain.game.player.PlayerData[];
   getRoomStartTime(): number | undefined;
 }
 
@@ -75,8 +74,8 @@ export interface GameOutputPort {
   ): void;
 }
 
-/** 爆弾ユースケースが利用する送信出力ポート */
-export interface BombOutputPort {
+/** 爆弾設置ユースケースが利用する送信出力ポート */
+export interface BombPlacementOutputPort {
   publishBombPlacedToOthersInRoom(
     roomId: domain.room.Room["roomId"],
     ownerSocketId: string,
@@ -86,18 +85,16 @@ export interface BombOutputPort {
     socketId: string,
     payload: BombPlacedAckPayload,
   ): void;
+}
+
+/** プレイヤー死亡通知の送信出力ポート */
+export interface PlayerDeadOutputPort {
   publishPlayerDeadToOthersInRoom(
     roomId: domain.room.Room["roomId"],
     deadPlayerId: string,
     payload: PlayerDeadPayload,
   ): void;
 }
-
-/** 爆弾設置ユースケースが利用する出力ポート */
-export type PlaceBombOutputPort = Pick<
-  BombOutputPort,
-  "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
->;
 
 /** start-game 系フローで利用する送信出力ポート */
 export type StartGameOutputPort = Pick<
@@ -108,25 +105,28 @@ export type StartGameOutputPort = Pick<
   | "publishGameResultToRoom"
   | "publishGameStartToRoom"
 > &
-  Pick<
-    BombOutputPort,
-    "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
-  >;
+  BombPlacementOutputPort &
+  PlayerDeadOutputPort;
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {
   shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
   issueServerBombId(): string;
+  registerActiveBomb(registration: ActiveBombRegistration): void;
 }
+
+/** registerActiveBomb に渡す爆弾登録情報 */
+export type ActiveBombRegistration = {
+  bombId: string;
+  ownerPlayerId: string;
+  x: number;
+  y: number;
+  explodeAtElapsedMs: number;
+};
 
 /** 被弾報告ユースケースが利用する重複排除入力ポート */
 export interface BombHitReportValidationPort {
   shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean;
-}
-
-/** 被弾報告ユースケースが利用するBot被弾反映入力ポート */
-export interface BotHitReactionPort {
-  applyBotHitStun(playerId: string, nowMs: number): boolean;
 }
 
 /** 爆弾設置ユースケースの入力値 */
@@ -142,9 +142,3 @@ export type ReportBombHitInput = {
   payload: BombHitReportPayload;
   nowMs: number;
 };
-
-/** 被弾報告ユースケースが利用する出力ポート */
-export type BombHitOutputPort = Pick<
-  BombOutputPort,
-  "publishPlayerDeadToOthersInRoom"
->;

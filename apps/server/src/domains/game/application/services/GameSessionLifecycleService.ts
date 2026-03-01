@@ -3,10 +3,10 @@
  * ゲームセッションの開始，参照，終了時クリーンアップを管理する
  */
 import { config } from "@server/config";
+import type { ActiveBombRegistration } from "../ports/gameUseCasePorts";
 import type {
   domain,
   GameResultPayload,
-  PlaceBombPayload,
 } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import {
@@ -14,7 +14,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import { GameRoomSession } from "./GameRoomSession";
+import { GameRoomSession, type GameSessionCallbacks } from "./GameRoomSession";
 
 type GameSessionRef = { current: GameRoomSession | null };
 type ActivePlayerIndex = Set<string>;
@@ -61,22 +61,15 @@ export class GameSessionLifecycleService {
     return session.issueServerBombId();
   }
 
-  /** 指定プレイヤーがBotなら被弾硬直を適用する */
-  public applyBotHitStun(playerId: string, nowMs: number): boolean {
-    const session = this.sessionRef.current;
-    if (!session) {
-      return false;
-    }
-
-    return session.applyBotHitStun(playerId, nowMs);
+  /** 設置済み爆弾をアクティブレジストリに登録する */
+  public registerActiveBomb(registration: ActiveBombRegistration): void {
+    this.sessionRef.current?.registerActiveBomb(registration);
   }
 
   public startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
-    onTick: (data: domain.game.TickData) => void,
-    onGameEnd: (payload: GameResultPayload) => void,
-    onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
+    callbacks: GameSessionCallbacks,
   ) {
     if (this.sessionRef.current) {
       logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
@@ -100,16 +93,14 @@ export class GameSessionLifecycleService {
     });
 
     this.sessionRef.current = session;
-    session.start(
-      tickRate,
-      onTick,
-      (payload) => {
+    session.start(tickRate, {
+      ...callbacks,
+      onGameEnd: (payload) => {
         this.activePlayerIds.clear();
         this.sessionRef.current = null;
-        onGameEnd(payload);
+        callbacks.onGameEnd(payload);
       },
-      onBotPlaceBomb,
-    );
+    });
 
     logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
       event: gameDomainLogEvents.SESSION_START,
