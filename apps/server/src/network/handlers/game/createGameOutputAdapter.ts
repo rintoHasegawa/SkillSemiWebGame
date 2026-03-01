@@ -18,7 +18,8 @@ import type {
   UpdatePlayersPayload,
 } from "@repo/shared";
 import type {
-  BombOutputPort,
+  BombPlacementOutputPort,
+  PlayerDeadOutputPort,
   GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { sanitizeUpdatePlayersPayload } from "@server/network/adapters/gamePayloadSanitizers";
@@ -32,7 +33,8 @@ export type GameOutputAdapter = Omit<
   GameOutputPort,
   "publishPlayerRemovedToRoom"
 > &
-  BombOutputPort;
+  BombPlacementOutputPort &
+  PlayerDeadOutputPort;
 
 /** ゲーム切断時の出力アダプターのインターフェース */
 export type GameDisconnectOutputAdapter = Pick<

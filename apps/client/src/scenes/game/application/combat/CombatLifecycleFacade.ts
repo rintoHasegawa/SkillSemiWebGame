@@ -6,19 +6,17 @@
 import { config } from "@client/config";
 import type { PlayerDeadPayload } from "@repo/shared";
 import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
-import { BombHitContextProvider } from "@client/scenes/game/application/BombHitContextProvider";
 import { BombHitOrchestrator } from "@client/scenes/game/application/BombHitOrchestrator";
 import { PlayerDeathPolicy } from "@client/scenes/game/application/PlayerDeathPolicy";
 import { PlayerHitEffectOrchestrator } from "@client/scenes/game/application/PlayerHitEffectOrchestrator";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
-import { HitReportPolicy } from "./HitReportPolicy";
 
 /** CombatLifecycleFacade の初期化入力 */
 export type CombatLifecycleFacadeOptions = {
   players: GamePlayers;
   myId: string;
   acquireInputLock: () => () => void;
-  onSendBombHitReport: (bombId: string, targetPlayerId: string) => void;
+  onSendBombHitReport: (bombId: string) => void;
 };
 
 /** 被弾関連ライフサイクルの制御を担当する */
@@ -26,12 +24,10 @@ export class CombatLifecycleFacade {
   private readonly myId: string;
   private readonly onSendBombHitReport: (
     bombId: string,
-    targetPlayerId: string,
   ) => void;
   private readonly bombHitOrchestrator: BombHitOrchestrator;
   private readonly playerDeathPolicy: PlayerDeathPolicy;
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
-  private readonly hitReportPolicy = new HitReportPolicy();
 
   constructor({
     players,
@@ -42,10 +38,8 @@ export class CombatLifecycleFacade {
     this.myId = myId;
     this.onSendBombHitReport = onSendBombHitReport;
     this.bombHitOrchestrator = new BombHitOrchestrator({
-      contextProvider: new BombHitContextProvider({
-        players,
-        myId,
-      }),
+      players,
+      myId,
     });
     this.playerDeathPolicy = new PlayerDeathPolicy({
       myId,
@@ -66,10 +60,7 @@ export class CombatLifecycleFacade {
 
     this.playerDeathPolicy.applyLocalHitStun();
     this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
-
-    if (this.hitReportPolicy.shouldSendReport(result.status, payload.bombId, result.hitPlayerId)) {
-      this.onSendBombHitReport(payload.bombId, result.hitPlayerId);
-    }
+    this.onSendBombHitReport(payload.bombId);
   }
 
   /** ネットワーク被弾通知を適用する */
@@ -82,6 +73,5 @@ export class CombatLifecycleFacade {
   public dispose(): void {
     this.bombHitOrchestrator.clear();
     this.playerDeathPolicy.dispose();
-    this.hitReportPolicy.clear();
   }
 }

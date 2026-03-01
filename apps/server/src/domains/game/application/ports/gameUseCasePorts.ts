@@ -74,8 +74,8 @@ export interface GameOutputPort {
   ): void;
 }
 
-/** 爆弾ユースケースが利用する送信出力ポート */
-export interface BombOutputPort {
+/** 爆弾設置ユースケースが利用する送信出力ポート */
+export interface BombPlacementOutputPort {
   publishBombPlacedToOthersInRoom(
     roomId: domain.room.Room["roomId"],
     ownerSocketId: string,
@@ -85,6 +85,10 @@ export interface BombOutputPort {
     socketId: string,
     payload: BombPlacedAckPayload,
   ): void;
+}
+
+/** プレイヤー死亡通知の送信出力ポート */
+export interface PlayerDeadOutputPort {
   publishPlayerDeadToOthersInRoom(
     roomId: domain.room.Room["roomId"],
     deadPlayerId: string,
@@ -93,10 +97,7 @@ export interface BombOutputPort {
 }
 
 /** 爆弾設置ユースケースが利用する出力ポート */
-export type PlaceBombOutputPort = Pick<
-  BombOutputPort,
-  "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
->;
+export type PlaceBombOutputPort = BombPlacementOutputPort;
 
 /** start-game 系フローで利用する送信出力ポート */
 export type StartGameOutputPort = Pick<
@@ -107,12 +108,8 @@ export type StartGameOutputPort = Pick<
   | "publishGameResultToRoom"
   | "publishGameStartToRoom"
 > &
-  Pick<
-    BombOutputPort,
-    | "publishBombPlacedToOthersInRoom"
-    | "publishBombPlacedAckToSocket"
-    | "publishPlayerDeadToOthersInRoom"
-  >;
+  BombPlacementOutputPort &
+  PlayerDeadOutputPort;
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {
@@ -150,7 +147,4 @@ export type ReportBombHitInput = {
 };
 
 /** 被弾報告ユースケースが利用する出力ポート */
-export type BombHitOutputPort = Pick<
-  BombOutputPort,
-  "publishPlayerDeadToOthersInRoom"
->;
+export type BombHitOutputPort = PlayerDeadOutputPort;
