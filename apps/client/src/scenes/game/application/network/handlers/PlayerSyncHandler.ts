@@ -29,11 +29,13 @@ export type PlayerSyncHandlerOptions = {
 export class PlayerSyncHandler {
   private readonly worldContainer: Container;
   private readonly playerRepository: PlayerRepository;
+  private readonly myId: string;
   private readonly playerControllerFactory: PlayerControllerFactory;
 
   constructor({ worldContainer, playerRepository, myId, appearanceResolver }: PlayerSyncHandlerOptions) {
     this.worldContainer = worldContainer;
     this.playerRepository = playerRepository;
+    this.myId = myId;
     this.playerControllerFactory = new PlayerControllerFactory({
       myId,
       appearanceResolver,
@@ -52,9 +54,13 @@ export class PlayerSyncHandler {
     this.replacePlayerController(payload.id, payload);
   };
 
-  /** プレイヤー差分更新を反映する */
+  /** プレイヤー差分更新を反映する（自分自身は除外する） */
   public handlePlayerUpdates = (changedPlayers: UpdatePlayersPayload): void => {
     changedPlayers.forEach((playerData) => {
+      if (playerData.id === this.myId) {
+        return;
+      }
+
       const target = this.playerRepository.getById(playerData.id);
       if (target && target instanceof RemotePlayerController) {
         target.applyRemoteUpdate({ x: playerData.x, y: playerData.y });

@@ -48,8 +48,8 @@ export interface DisconnectPlayerPort {
 /** ゲーム系ユースケースが利用する送信出力ポート */
 export interface GameOutputPort {
   publishPongToSocket(payload: PongPayload): void;
-  publishUpdatePlayersToSocket(
-    socketId: string,
+  publishUpdatePlayersToRoom(
+    roomId: domain.room.Room["roomId"],
     players: UpdatePlayersPayload,
   ): void;
   publishMapCellUpdatesToRoom(
@@ -98,7 +98,7 @@ export interface PlayerDeadOutputPort {
 /** start-game 系フローで利用する送信出力ポート */
 export type StartGameOutputPort = Pick<
   GameOutputPort,
-  | "publishUpdatePlayersToSocket"
+  | "publishUpdatePlayersToRoom"
   | "publishMapCellUpdatesToRoom"
   | "publishGameEndToRoom"
   | "publishGameResultToRoom"
