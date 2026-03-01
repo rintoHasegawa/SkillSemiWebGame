@@ -96,9 +96,6 @@ export interface PlayerDeadOutputPort {
   ): void;
 }
 
-/** 爆弾設置ユースケースが利用する出力ポート */
-export type PlaceBombOutputPort = BombPlacementOutputPort;
-
 /** start-game 系フローで利用する送信出力ポート */
 export type StartGameOutputPort = Pick<
   GameOutputPort,
@@ -145,6 +142,3 @@ export type ReportBombHitInput = {
   payload: BombHitReportPayload;
   nowMs: number;
 };
-
-/** 被弾報告ユースケースが利用する出力ポート */
-export type BombHitOutputPort = PlayerDeadOutputPort;

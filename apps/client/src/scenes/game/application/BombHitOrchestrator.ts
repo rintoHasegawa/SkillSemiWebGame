@@ -16,12 +16,6 @@ type BombHitOrchestratorOptions = {
   myId: string;
 };
 
-/** 爆弾爆発イベントの判定結果を表す型 */
-export type BombHitEvaluationResult = {
-  status: "duplicate" | "missing-local-player" | "no-hit" | "hit";
-  hitPlayerId: string | null;
-};
-
 /** 爆弾当たり判定の実行順序を制御する */
 export class BombHitOrchestrator {
   private readonly players: GamePlayers;
@@ -33,16 +27,19 @@ export class BombHitOrchestrator {
     this.myId = myId;
   }
 
-  /** 爆弾爆発イベントを受けて自プレイヤーの当たり判定を実行し結果を返す */
-  public handleBombExploded(payload: BombExplodedPayload): BombHitEvaluationResult {
+  /**
+   * 爆弾爆発イベントを受けて自プレイヤーの当たり判定を実行する
+   * @returns 被弾した場合は自プレイヤーID、それ以外は null
+   */
+  public evaluateHit(payload: BombExplodedPayload): string | null {
     if (this.handledBombIds.has(payload.bombId)) {
-      return { status: "duplicate", hitPlayerId: null };
+      return null;
     }
 
     this.handledBombIds.add(payload.bombId);
     const localCircle = this.getLocalPlayerCircle();
     if (!localCircle) {
-      return { status: "missing-local-player", hitPlayerId: null };
+      return null;
     }
 
     const result = checkBombHit({
@@ -55,11 +52,7 @@ export class BombHitOrchestrator {
       player: localCircle,
     });
 
-    if (!result.isHit) {
-      return { status: "no-hit", hitPlayerId: null };
-    }
-
-    return { status: "hit", hitPlayerId: this.myId };
+    return result.isHit ? this.myId : null;
   }
 
   /** 判定済み状態を初期化する */

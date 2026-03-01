@@ -55,8 +55,8 @@ export class CombatLifecycleFacade {
 
   /** 爆弾爆発時の判定と後続処理を実行する */
   public handleBombExploded(payload: BombExplodedPayload): void {
-    const result = this.bombHitOrchestrator.handleBombExploded(payload);
-    if (!result.hitPlayerId) return;
+    const hitPlayerId = this.bombHitOrchestrator.evaluateHit(payload);
+    if (!hitPlayerId) return;
 
     this.playerDeathPolicy.applyLocalHitStun();
     this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);

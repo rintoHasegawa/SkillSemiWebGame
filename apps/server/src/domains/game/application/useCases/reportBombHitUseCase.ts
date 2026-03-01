@@ -4,7 +4,7 @@
  * Bot被弾はサーバー側GameLoopで直接検知するため，自プレイヤーの報告のみ受け付ける
  */
 import type {
-  BombHitOutputPort,
+  PlayerDeadOutputPort,
   BombHitReportValidationPort,
   ReportBombHitInput,
 } from "../ports/gameUseCasePorts";
@@ -14,7 +14,7 @@ type ReportBombHitUseCaseParams = {
   roomId: string;
   validation: BombHitReportValidationPort;
   input: ReportBombHitInput;
-  output: BombHitOutputPort;
+  output: PlayerDeadOutputPort;
 };
 
 /** 被弾報告を受け取り，死亡通知を同一ルームへ配信する */

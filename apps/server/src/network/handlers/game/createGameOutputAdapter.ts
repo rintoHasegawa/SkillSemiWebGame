@@ -22,6 +22,7 @@ import type {
   PlayerDeadOutputPort,
   GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
+import { isBotPlayerId } from "@server/domains/game/application/services/bot/index.js";
 import { sanitizeUpdatePlayersPayload } from "@server/network/adapters/gamePayloadSanitizers";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
@@ -91,7 +92,7 @@ export const createGameOutputAdapter = (
       ownerSocketId: string,
       payload: BombPlacedPayload,
     ) => {
-      if (ownerSocketId.startsWith("bot:")) {
+      if (isBotPlayerId(ownerSocketId)) {
         common.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, payload);
         return;
       }
