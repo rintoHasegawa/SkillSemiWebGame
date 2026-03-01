@@ -246,11 +246,32 @@ export class GameLoop {
   ): domain.game.tick.TickData["playerUpdates"] {
     const changedPlayers: domain.game.tick.TickData["playerUpdates"] = [];
 
+    // パス1: 各セルにどのチームが存在するか集計する
+    // 値が -1 のセルは複数チームが競合していることを示す
+    const cellTeamMap = new Map<number, number>();
+    const CONTESTED = -1;
+
+    this.players.forEach((player) => {
+      const gridIndex = getPlayerGridIndex(player);
+      if (gridIndex === null) return;
+
+      const existing = cellTeamMap.get(gridIndex);
+      if (existing === undefined) {
+        cellTeamMap.set(gridIndex, player.teamId);
+      } else if (existing !== CONTESTED && existing !== player.teamId) {
+        cellTeamMap.set(gridIndex, CONTESTED);
+      }
+    });
+
+    // パス2: 競合のないセルのみ塗り，プレイヤー差分を収集する
     this.players.forEach((player) => {
       activePlayerIds.add(player.id);
       const gridIndex = getPlayerGridIndex(player);
       if (gridIndex !== null) {
-        this.mapStore.paintCell(gridIndex, player.teamId);
+        const ownerTeamId = cellTeamMap.get(gridIndex);
+        if (ownerTeamId !== undefined && ownerTeamId !== CONTESTED) {
+          this.mapStore.paintCell(gridIndex, player.teamId);
+        }
       }
 
       // 送信用のプレイヤーデータを構築
