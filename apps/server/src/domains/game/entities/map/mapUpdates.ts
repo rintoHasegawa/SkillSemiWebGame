@@ -4,11 +4,14 @@
  */
 import { domain } from "@repo/shared";
 
-/** 差分キューを配列として返却し，キューを空にする */
-export const drainPendingUpdates = (
-  pendingUpdates: domain.game.gridMap.CellUpdate[]
+/**
+ * 差分キューの参照をそのまま返却し，呼び出し元の配列を新しい空配列で差し替える
+ * スプレッドコピーを避けてゼロコピーで返却する
+ */
+export const swapPendingUpdates = (
+  owner: { pendingUpdates: domain.game.gridMap.CellUpdate[] },
 ): domain.game.gridMap.CellUpdate[] => {
-  const updates = [...pendingUpdates];
-  pendingUpdates.length = 0;
+  const updates = owner.pendingUpdates;
+  owner.pendingUpdates = [];
   return updates;
 };

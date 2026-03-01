@@ -14,7 +14,6 @@ import {
   logScopes,
 } from "@server/logging/index";
 import { createBotBombActionHandler } from "../services/bot/index.js";
-import { domain } from "@repo/shared";
 
 const excludeRecipientFromPlayerUpdates = <
   TPlayerUpdate extends { id: string },
@@ -84,10 +83,7 @@ export const startGameUseCase = ({
         }
 
         if (tickData.cellUpdates.length > 0) {
-          output.publishMapCellUpdatesToRoom(
-            roomId,
-            domain.game.gridMap.groupCellUpdates(tickData.cellUpdates),
-          );
+          output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
         }
       },
       onGameEnd: (resultPayload) => {

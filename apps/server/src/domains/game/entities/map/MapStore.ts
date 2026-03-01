@@ -5,14 +5,14 @@
 import { domain } from "@repo/shared";
 import { createInitialGridColors } from "./mapGrid.js";
 import { paintCellIfChanged } from "./mapPainting.js";
-import { drainPendingUpdates } from "./mapUpdates.js";
+import { swapPendingUpdates } from "./mapUpdates.js";
 
 /** ルーム内マップの塗り状態と更新差分を管理するストア */
 export class MapStore {
   // 全マスの現在の色（teamId）を保持
   private gridColors: number[];
   // 次回の送信ループで送る差分リスト
-  private pendingUpdates: domain.game.gridMap.CellUpdate[];
+  public pendingUpdates: domain.game.gridMap.CellUpdate[];
 
   constructor() {
     // 初期状態は -1 (無色) などで初期化
@@ -36,7 +36,7 @@ export class MapStore {
     * 溜まっている差分を取得し，キューをクリアする（ループ送信時に使用）
    */
   public getAndClearUpdates(): domain.game.gridMap.CellUpdate[] {
-    return drainPendingUpdates(this.pendingUpdates);
+    return swapPendingUpdates(this);
   }
 
   /** 現在のマップ塗り状態をスナップショットとして返す */

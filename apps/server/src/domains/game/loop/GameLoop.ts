@@ -5,6 +5,11 @@
 import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
+import {
+  resolveUncontestedCells,
+  isCellPaintable,
+  type PlayerGridEntry,
+} from "../entities/map/mapContestResolver.js";
 import { config } from "@server/config";
 import { domain } from "@repo/shared";
 import type { PlaceBombPayload } from "@repo/shared";
@@ -246,32 +251,26 @@ export class GameLoop {
   ): domain.game.tick.TickData["playerUpdates"] {
     const changedPlayers: domain.game.tick.TickData["playerUpdates"] = [];
 
-    // パス1: 各セルにどのチームが存在するか集計する
-    // 値が -1 のセルは複数チームが競合していることを示す
-    const cellTeamMap = new Map<number, number>();
-    const CONTESTED = -1;
-
+    // 全プレイヤーのグリッド位置を1度だけ計算してキャッシュする
+    const gridEntries: (PlayerGridEntry & { player: Player })[] = [];
     this.players.forEach((player) => {
-      const gridIndex = getPlayerGridIndex(player);
-      if (gridIndex === null) return;
-
-      const existing = cellTeamMap.get(gridIndex);
-      if (existing === undefined) {
-        cellTeamMap.set(gridIndex, player.teamId);
-      } else if (existing !== CONTESTED && existing !== player.teamId) {
-        cellTeamMap.set(gridIndex, CONTESTED);
-      }
+      gridEntries.push({
+        playerId: player.id,
+        gridIndex: getPlayerGridIndex(player),
+        teamId: player.teamId,
+        player,
+      });
     });
 
-    // パス2: 競合のないセルのみ塗り，プレイヤー差分を収集する
-    this.players.forEach((player) => {
-      activePlayerIds.add(player.id);
-      const gridIndex = getPlayerGridIndex(player);
-      if (gridIndex !== null) {
-        const ownerTeamId = cellTeamMap.get(gridIndex);
-        if (ownerTeamId !== undefined && ownerTeamId !== CONTESTED) {
-          this.mapStore.paintCell(gridIndex, player.teamId);
-        }
+    // 競合判定: 同一セルに異なるチームがいるかを解決する
+    const cellTeamMap = resolveUncontestedCells(gridEntries);
+
+    // 競合のないセルのみ塗り，プレイヤー差分を収集する
+    for (const { playerId, gridIndex, player } of gridEntries) {
+      activePlayerIds.add(playerId);
+
+      if (gridIndex !== null && isCellPaintable(cellTeamMap, gridIndex)) {
+        this.mapStore.paintCell(gridIndex, player.teamId);
       }
 
       // 送信用のプレイヤーデータを構築
@@ -291,7 +290,7 @@ export class GameLoop {
         changedPlayers.push(playerData);
         this.lastSentPlayers.set(player.id, playerData);
       }
-    });
+    }
 
     return changedPlayers;
   }
