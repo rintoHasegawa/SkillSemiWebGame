@@ -3,7 +3,7 @@
  * マップ同期イベントの受信処理を担当する
  * セル更新データをマップへ適用する
  */
-import type { UpdateMapCellsPayload } from "@repo/shared";
+import type { domain } from "@repo/shared";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 
 /** MapSyncHandler の初期化入力 */
@@ -20,7 +20,7 @@ export class MapSyncHandler {
   }
 
   /** マップセル更新を適用する */
-  public handleUpdateMapCells = (updates: UpdateMapCellsPayload): void => {
+  public handleUpdateMapCells = (updates: domain.game.gridMap.CellUpdate[]): void => {
     this.gameMap.updateCells(updates);
   };
 }

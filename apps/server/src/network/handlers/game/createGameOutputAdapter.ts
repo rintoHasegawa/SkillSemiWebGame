@@ -3,7 +3,7 @@
  * ゲーム系ユースケースから利用する送信関数群を生成する
  */
 import { Server } from "socket.io";
-import { contracts as protocol } from "@repo/shared";
+import { contracts as protocol, domain as domainNs } from "@repo/shared";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
@@ -14,7 +14,6 @@ import type {
   PongPayload,
   CurrentPlayersPayload,
   RemovePlayerPayload,
-  UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
 import type {
@@ -64,12 +63,13 @@ export const createGameOutputAdapter = (
     },
     publishMapCellUpdatesToRoom: (
       roomId: RoomId,
-      cellUpdates: UpdateMapCellsPayload,
+      cellUpdates: domainNs.game.gridMap.CellUpdate[],
     ) => {
+      const grouped = domainNs.game.gridMap.groupCellUpdates(cellUpdates);
       common.emitToRoom(
         roomId,
         protocol.SocketEvents.UPDATE_MAP_CELLS,
-        cellUpdates,
+        grouped,
       );
     },
     publishGameEndToRoom: (roomId: RoomId) => {

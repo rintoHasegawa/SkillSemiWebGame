@@ -14,3 +14,10 @@ export interface CellUpdate {
   index: number;
   teamId: number;
 }
+
+/**
+ * teamId別にグループ化したマップ差分更新
+ * キーは teamId（文字列），値は塗り替え対象セルの index 配列
+ * 帯域最適化のためキー名の重複を排除した形式で送受信する
+ */
+export type GroupedCellUpdates = Record<string, number[]>;

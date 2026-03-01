@@ -4,7 +4,7 @@
  * プレイヤー差分，マップ差分，開始終了系の契約を集約する
  */
 import type { PlayerPositionUpdate } from "../../domains/game/tick/tick.type";
-import type { CellUpdate } from "../../domains/game/gridMap/gridMap.type";
+import type { GroupedCellUpdates } from "../../domains/game/gridMap/gridMap.type";
 import type {
   MovePayload as PlayerMovePayload,
   PlayerData,
@@ -52,8 +52,8 @@ export type UpdatePlayersPayload = PlayerDeltaPayload;
 /** current-players イベントで送受信するプレイヤー一覧 */
 export type CurrentPlayersPayload = PlayerSnapshotPayload;
 
-/** update-map-cells イベントで送受信するマップ差分配列 */
-export type UpdateMapCellsPayload = CellUpdate[];
+/** update-map-cells イベントで送受信するグループ化マップ差分 */
+export type UpdateMapCellsPayload = GroupedCellUpdates;
 
 /**
  * new-player イベントで送受信するプレイヤー情報

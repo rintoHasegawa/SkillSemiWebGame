@@ -5,7 +5,6 @@
 import { domain } from "@repo/shared";
 import { createInitialGridColors } from "./mapGrid.js";
 import { paintCellIfChanged } from "./mapPainting.js";
-import { drainPendingUpdates } from "./mapUpdates.js";
 
 /** ルーム内マップの塗り状態と更新差分を管理するストア */
 export class MapStore {
@@ -34,9 +33,12 @@ export class MapStore {
 
   /**
     * 溜まっている差分を取得し，キューをクリアする（ループ送信時に使用）
+    * 参照をそのまま返却し新しい空配列で差し替えることでコピーを回避する
    */
   public getAndClearUpdates(): domain.game.gridMap.CellUpdate[] {
-    return drainPendingUpdates(this.pendingUpdates);
+    const updates = this.pendingUpdates;
+    this.pendingUpdates = [];
+    return updates;
   }
 
   /** 現在のマップ塗り状態をスナップショットとして返す */

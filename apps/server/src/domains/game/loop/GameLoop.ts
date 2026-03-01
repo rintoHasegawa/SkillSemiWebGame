@@ -5,6 +5,11 @@
 import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
+import {
+  resolveUncontestedCells,
+  isCellPaintable,
+  type PlayerGridEntry,
+} from "../entities/map/mapContestResolver.js";
 import { config } from "@server/config";
 import { domain } from "@repo/shared";
 import type { PlaceBombPayload } from "@repo/shared";
@@ -41,6 +46,9 @@ export type GameLoopCallbacks = {
   onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void;
   onBotBombHit?: (targetPlayerId: string, bombId: string) => void;
 };
+
+/** プレイヤーのグリッド位置キャッシュを含むエントリ */
+type PlayerGridCacheEntry = PlayerGridEntry & { player: Player };
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -246,14 +254,24 @@ export class GameLoop {
   ): domain.game.tick.TickData["playerUpdates"] {
     const changedPlayers: domain.game.tick.TickData["playerUpdates"] = [];
 
+    // 全プレイヤーのグリッド位置を1度だけ計算してキャッシュする
+    const gridEntries: PlayerGridCacheEntry[] = [];
     this.players.forEach((player) => {
-      activePlayerIds.add(player.id);
-      const gridIndex = getPlayerGridIndex(player);
-      if (gridIndex !== null) {
-        this.mapStore.paintCell(gridIndex, player.teamId);
-      }
+      gridEntries.push({
+        playerId: player.id,
+        gridIndex: getPlayerGridIndex(player),
+        teamId: player.teamId,
+        player,
+      });
+    });
 
-      // 送信用のプレイヤーデータを構築
+    // 競合判定を経てマップを塗る
+    this.paintUncontestedCells(gridEntries);
+
+    // プレイヤー差分を収集する
+    for (const { playerId, player } of gridEntries) {
+      activePlayerIds.add(playerId);
+
       const playerData: domain.game.tick.PlayerPositionUpdate = {
         id: player.id,
         x: player.x,
@@ -270,9 +288,20 @@ export class GameLoop {
         changedPlayers.push(playerData);
         this.lastSentPlayers.set(player.id, playerData);
       }
-    });
+    }
 
     return changedPlayers;
+  }
+
+  /** 競合判定を行い，単一チームが占有するセルのみを塗る */
+  private paintUncontestedCells(gridEntries: PlayerGridCacheEntry[]): void {
+    const cellTeamMap = resolveUncontestedCells(gridEntries);
+
+    for (const { gridIndex, player } of gridEntries) {
+      if (gridIndex !== null && isCellPaintable(cellTeamMap, gridIndex)) {
+        this.mapStore.paintCell(gridIndex, player.teamId);
+      }
+    }
   }
 
   private cleanupInactivePlayerSnapshots(activePlayerIds: Set<string>): void {

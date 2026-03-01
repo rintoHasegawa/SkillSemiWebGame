@@ -14,7 +14,6 @@ import type {
   GameStartPayload,
   PongPayload,
   RemovePlayerPayload,
-  UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
 import type { GameSessionCallbacks } from "../services/GameRoomSession";
@@ -55,7 +54,7 @@ export interface GameOutputPort {
   ): void;
   publishMapCellUpdatesToRoom(
     roomId: domain.room.Room["roomId"],
-    cellUpdates: UpdateMapCellsPayload,
+    cellUpdates: domain.game.gridMap.CellUpdate[],
   ): void;
   publishGameEndToRoom(roomId: domain.room.Room["roomId"]): void;
   publishGameResultToRoom(

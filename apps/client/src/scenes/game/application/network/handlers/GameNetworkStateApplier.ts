@@ -9,6 +9,7 @@ import type {
   BombPlacedPayload,
   PlayerDeadPayload,
 } from "@repo/shared";
+import { domain } from "@repo/shared";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
@@ -105,7 +106,8 @@ export class GameNetworkStateApplier {
         this.playerSyncHandler.handleRemovePlayer(payload);
       },
       onReceivedUpdateMapCells: (payload) => {
-        this.mapSyncHandler.handleUpdateMapCells(payload);
+        const updates = domain.game.gridMap.ungroupCellUpdates(payload);
+        this.mapSyncHandler.handleUpdateMapCells(updates);
       },
       onReceivedGameEnd: () => {
         this.onGameEnded();
