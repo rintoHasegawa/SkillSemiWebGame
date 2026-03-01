@@ -32,6 +32,17 @@ export class RoomJoinService {
       });
     }
 
+    // 待機中以外のルームへの参加を拒否する
+    if (room.status !== domain.room.RoomPhase.WAITING) {
+      logEvent(logScopes.ROOM_JOIN_SERVICE, {
+        event: roomDomainLogEvents.PLAYER_JOIN,
+        result: logResults.REJECTED_ROOM_PLAYING,
+        roomId,
+        socketId,
+      });
+      return { room, status: "playing" };
+    }
+
     // 同一ソケットの重複参加を防止する
     const alreadyJoined = room.players.some((player) => player.id === socketId);
     if (alreadyJoined) {

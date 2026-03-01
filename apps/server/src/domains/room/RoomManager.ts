@@ -62,4 +62,9 @@ export class RoomManager {
   public markRoomWaiting(roomId: string): RoomPhaseTransitionResult {
     return this.roomPhaseService.markRoomWaiting(roomId);
   }
+
+  // ルームを削除する
+  public deleteRoom(roomId: string): boolean {
+    return this.rooms.delete(roomId);
+  }
 }

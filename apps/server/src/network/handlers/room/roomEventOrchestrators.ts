@@ -49,6 +49,15 @@ export const handleJoinRoomEvent = async (
       });
       return;
 
+    case "playing":
+      logEvent(logScopes.NETWORK, {
+        event: roomUseCaseLogEvents.JOIN_ROOM,
+        result: logResults.REJECTED_ROOM_PLAYING,
+        roomId: payload.roomId,
+        socketId: deps.socketId,
+      });
+      return;
+
     case "duplicate":
       logEvent(logScopes.NETWORK, {
         event: roomUseCaseLogEvents.JOIN_ROOM,

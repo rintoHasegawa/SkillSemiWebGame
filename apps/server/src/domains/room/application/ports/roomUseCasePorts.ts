@@ -26,7 +26,7 @@ export type RoomScopedGamePort =
 /** ルーム参加処理の実行結果 */
 export type JoinRoomResult = {
   room: domain.room.Room;
-  status: "joined" | "duplicate" | "full";
+  status: "joined" | "duplicate" | "full" | "playing";
 };
 
 /** ルームユースケースが利用する出力ポート */
@@ -76,6 +76,11 @@ export type RoomPhaseTransitionResult = {
 /** ルームIDでの存在確認に利用する参照ポート */
 export interface FindRoomByIdPort {
   getRoomById(roomId: string): domain.room.Room | undefined;
+}
+
+/** ゲーム終了時にルームを削除する操作ポート */
+export interface DeleteRoomPort {
+  deleteRoom(roomId: string): boolean;
 }
 
 /** ルーム参加後にゲームランタイムを確保する操作ポート */
