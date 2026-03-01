@@ -23,7 +23,7 @@ export interface StartGamePort {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
-    onTick: (data: domain.game.TickData) => void,
+    onTick: (data: domain.game.tick.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ): void;
@@ -32,7 +32,7 @@ export interface StartGamePort {
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
 export interface ReadyForGamePort {
-  getRoomPlayers(): domain.player.PlayerData[];
+  getRoomPlayers(): domain.game.player.PlayerData[];
   getRoomStartTime(): number | undefined;
 }
 

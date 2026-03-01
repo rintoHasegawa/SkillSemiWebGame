@@ -28,7 +28,7 @@ export class GameLoop {
   private endMonotonicTimeMs: number = 0;
   private nextTickAtMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
-  private lastSentPlayers: Map<string, domain.game.PlayerPositionUpdate> =
+  private lastSentPlayers: Map<string, domain.game.tick.PlayerPositionUpdate> =
     new Map();
   private disconnectedBotControlledPlayerIds: Set<string> = new Set();
   private botTurnOrchestrator: BotTurnOrchestrator =
@@ -39,7 +39,7 @@ export class GameLoop {
     private tickRate: number,
     private players: Map<string, Player>,
     private mapStore: MapStore,
-    private onTick: (data: domain.game.TickData) => void,
+    private onTick: (data: domain.game.tick.TickData) => void,
     private onGameEnd: () => void,
     private onBotPlaceBomb?: (
       ownerId: string,
@@ -178,7 +178,7 @@ export class GameLoop {
     this.disconnectedBotControlledPlayerIds.delete(playerId);
   }
 
-  private buildTickData(): domain.game.TickData {
+  private buildTickData(): domain.game.tick.TickData {
     const activePlayerIds = new Set<string>();
     const playerUpdates = this.collectChangedPlayerUpdates(activePlayerIds);
     this.cleanupInactivePlayerSnapshots(activePlayerIds);
@@ -191,8 +191,8 @@ export class GameLoop {
 
   private collectChangedPlayerUpdates(
     activePlayerIds: Set<string>,
-  ): domain.game.TickData["playerUpdates"] {
-    const changedPlayers: domain.game.TickData["playerUpdates"] = [];
+  ): domain.game.tick.TickData["playerUpdates"] {
+    const changedPlayers: domain.game.tick.TickData["playerUpdates"] = [];
 
     this.players.forEach((player) => {
       activePlayerIds.add(player.id);
@@ -202,7 +202,7 @@ export class GameLoop {
       }
 
       // 送信用のプレイヤーデータを構築
-      const playerData: domain.game.PlayerPositionUpdate = {
+      const playerData: domain.game.tick.PlayerPositionUpdate = {
         id: player.id,
         x: player.x,
         y: player.y,

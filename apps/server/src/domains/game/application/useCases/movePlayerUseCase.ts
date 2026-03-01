@@ -8,7 +8,7 @@ import type { MovePlayerPort } from "../ports/gameUseCasePorts";
 type MovePlayerUseCaseParams = {
   gameManager: MovePlayerPort;
   playerId: string;
-  move: domain.player.MovePayload;
+  move: domain.game.player.MovePayload;
 };
 
 /** プレイヤー移動入力をゲーム管理へ委譲する */

@@ -57,7 +57,7 @@ export class GameRoomSession {
 
   public start(
     tickRate: number,
-    onTick: (data: domain.game.TickData) => void,
+    onTick: (data: domain.game.tick.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
   ): void {

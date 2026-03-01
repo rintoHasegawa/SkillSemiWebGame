@@ -26,7 +26,7 @@ export const isPingPayload = (value: unknown): value is PingPayload => {
 /** MOVEイベントのペイロードが移動座標であるか判定する */
 export const isMovePayload = (
   value: unknown,
-): value is domain.player.MovePayload => {
+): value is domain.game.player.MovePayload => {
   if (typeof value !== "object" || value === null) {
     return false;
   }

@@ -84,7 +84,7 @@ export const handleReadyForGameEvent = (
 /** MOVEイベントを調停して移動ユースケースを実行する */
 export const handleMoveEvent = (
   deps: GameEventOrchestratorDeps,
-  move: domain.player.MovePayload,
+  move: domain.game.player.MovePayload,
 ): void => {
   const resolved = runWithRuntimeByPlayerId(
     deps.roomManager,

@@ -7,5 +7,5 @@ import { Player } from "./Player.js";
 
 /** プレイヤー座標に対応するグリッドインデックスを返す */
 export const getPlayerGridIndex = (player: Player): number | null => {
-  return domain.gridMap.getGridIndexFromPosition(player.x, player.y);
+  return domain.game.gridMap.getGridIndexFromPosition(player.x, player.y);
 };

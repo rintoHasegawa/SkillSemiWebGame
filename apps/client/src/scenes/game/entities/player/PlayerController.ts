@@ -18,7 +18,7 @@ export type LocalInput = {
 };
 
 /** リモート移動更新を表す型 */
-export type RemoteUpdate = Partial<domain.player.MovePayload>;
+export type RemoteUpdate = Partial<domain.game.player.MovePayload>;
 
 /**
  * ローカル用コントローラーとリモート用コントローラーの共通基底
@@ -30,7 +30,7 @@ abstract class BasePlayerController {
 
   /** 共通初期化としてModelとViewを生成する */
   protected constructor(
-    data: domain.player.PlayerData,
+    data: domain.game.player.PlayerData,
     isLocal: boolean,
     appearanceResolver: AppearanceResolver,
   ) {
@@ -57,12 +57,12 @@ abstract class BasePlayerController {
   }
 
   /** 現在座標を取得する */
-  public getPosition(): domain.player.MovePayload {
+  public getPosition(): domain.game.player.MovePayload {
     return this.model.getPosition();
   }
 
   /** 外部送信用スナップショットを取得する */
-  public getSnapshot(): domain.player.PlayerData {
+  public getSnapshot(): domain.game.player.PlayerData {
     return this.model.getSnapshot();
   }
 
@@ -82,7 +82,7 @@ abstract class BasePlayerController {
 export class LocalPlayerController extends BasePlayerController {
   /** ローカルプレイヤー用コントローラーを初期化する */
   constructor(
-    data: domain.player.PlayerData,
+    data: domain.game.player.PlayerData,
     appearanceResolver: AppearanceResolver,
   ) {
     super(data, true, appearanceResolver);
@@ -104,7 +104,7 @@ export class LocalPlayerController extends BasePlayerController {
 export class RemotePlayerController extends BasePlayerController {
   /** リモートプレイヤー用コントローラーを初期化する */
   constructor(
-    data: domain.player.PlayerData,
+    data: domain.game.player.PlayerData,
     appearanceResolver: AppearanceResolver,
   ) {
     super(data, false, appearanceResolver);
