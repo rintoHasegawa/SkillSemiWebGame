@@ -55,6 +55,13 @@ export const startGameUseCase = ({
     output,
   });
 
+  /** Bot被弾検出時にPLAYER_DEADをルームへ配信する */
+  const handleBotBombHit = (targetPlayerId: string, _bombId: string): void => {
+    output.publishPlayerDeadToOthersInRoom(roomId, targetPlayerId, {
+      playerId: targetPlayerId,
+    });
+  };
+
   gameSession.startRoomSession(
     playerIds,
     playerNamesById,
@@ -90,6 +97,7 @@ export const startGameUseCase = ({
       onGameEnd();
     },
     handleBotBombAction,
+    handleBotBombHit,
   );
 
   const startTime = gameSession.getRoomStartTime() || Date.now();

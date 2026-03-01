@@ -69,6 +69,7 @@ export class GameManager {
     onTick: (data: domain.game.tick.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
+    onBotBombHit?: (targetPlayerId: string, bombId: string) => void,
   ) {
     this.lifecycleService.startRoomSession(
       playerIds,
@@ -76,6 +77,7 @@ export class GameManager {
       onTick,
       onGameEnd,
       onBotPlaceBomb,
+      onBotBombHit,
     );
   }
 
@@ -97,6 +99,23 @@ export class GameManager {
   // サーバー採番の爆弾IDを生成する
   issueServerBombId(): string {
     return this.lifecycleService.issueServerBombId();
+  }
+
+  /** 設置済み爆弾をアクティブレジストリに登録する */
+  registerActiveBomb(
+    bombId: string,
+    ownerPlayerId: string,
+    x: number,
+    y: number,
+    explodeAtElapsedMs: number,
+  ): void {
+    this.lifecycleService.registerActiveBomb(
+      bombId,
+      ownerPlayerId,
+      x,
+      y,
+      explodeAtElapsedMs,
+    );
   }
 
   /** 指定プレイヤーがBotなら被弾硬直を適用する */

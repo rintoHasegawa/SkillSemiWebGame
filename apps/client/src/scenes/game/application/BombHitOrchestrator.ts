@@ -1,7 +1,7 @@
 /**
  * BombHitOrchestrator
  * 爆弾爆発イベントとローカルプレイヤー情報を橋渡しして当たり判定を実行する
- * 判定結果を呼び出し元へ返して後続処理へ接続しやすくする
+ * 自プレイヤーのみを判定対象とし，Bot被弾はサーバー側で処理する
  */
 import { domain } from "@repo/shared";
 
@@ -29,7 +29,7 @@ export class BombHitOrchestrator {
     this.contextProvider = contextProvider;
   }
 
-  /** 爆弾爆発イベントを受けて当たり判定を実行し結果を返す */
+  /** 爆弾爆発イベントを受けて自プレイヤーの当たり判定を実行し結果を返す */
   public handleBombExploded(payload: BombExplodedPayload): BombHitEvaluationResult {
     if (this.handledBombIds.has(payload.bombId)) {
       return {
@@ -39,15 +39,14 @@ export class BombHitOrchestrator {
     }
 
     this.handledBombIds.add(payload.bombId);
-    const localPlayer = this.contextProvider.getLocalPlayerCircle();
-    if (!localPlayer) {
+    const reportablePlayers = this.contextProvider.getReportablePlayerCircles();
+    if (reportablePlayers.length === 0) {
       return {
         status: "missing-local-player",
         hitPlayerIds: [],
       };
     }
 
-    const reportablePlayers = this.contextProvider.getReportablePlayerCircles();
     const hitPlayerIds = reportablePlayers
       .filter((player) => {
         const result = checkBombHit({

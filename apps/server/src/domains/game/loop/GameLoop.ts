@@ -6,7 +6,8 @@ import { Player } from "../entities/player/Player.js";
 import { MapStore } from "../entities/map/MapStore";
 import { getPlayerGridIndex } from "../entities/player/playerPosition.js";
 import { config } from "@server/config";
-import type { domain, PlaceBombPayload } from "@repo/shared";
+import { domain } from "@repo/shared";
+import type { PlaceBombPayload } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import {
   gameDomainLogEvents,
@@ -19,6 +20,9 @@ import {
   type BotPlayerId,
 } from "../application/services/bot/index.js";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
+import type { ActiveBombRegistry } from "../entities/bomb/ActiveBombRegistry.js";
+
+const { checkBombHit } = domain.game.bombHit;
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -39,11 +43,16 @@ export class GameLoop {
     private tickRate: number,
     private players: Map<string, Player>,
     private mapStore: MapStore,
+    private activeBombRegistry: ActiveBombRegistry,
     private onTick: (data: domain.game.tick.TickData) => void,
     private onGameEnd: () => void,
     private onBotPlaceBomb?: (
       ownerId: string,
       payload: PlaceBombPayload,
+    ) => void,
+    private onBotBombHit?: (
+      targetPlayerId: string,
+      bombId: string,
     ) => void,
   ) {}
 
@@ -122,6 +131,7 @@ export class GameLoop {
     );
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
     this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsSnapshot);
+    this.detectBotBombHits(elapsedMs, wallClockNowMs);
     const tickData = this.buildTickData();
     this.onTick(tickData);
   }
@@ -166,6 +176,48 @@ export class GameLoop {
 
     this.botTurnOrchestrator.applyHitStun(playerId as BotPlayerId, nowMs);
     return true;
+  }
+
+  /** 爆発済み爆弾とBotプレイヤーの当たり判定を実行する */
+  private detectBotBombHits(elapsedMs: number, nowMs: number): void {
+    const onBotBombHit = this.onBotBombHit;
+    if (!onBotBombHit) return;
+
+    const explodedBombs =
+      this.activeBombRegistry.collectExplodedBombs(elapsedMs);
+    if (explodedBombs.length === 0) return;
+
+    this.players.forEach((player) => {
+      const isBotControlled =
+        isBotPlayerId(player.id) ||
+        this.disconnectedBotControlledPlayerIds.has(player.id);
+      if (!isBotControlled) return;
+
+      for (const bomb of explodedBombs) {
+        const result = checkBombHit({
+          bomb: {
+            x: bomb.x,
+            y: bomb.y,
+            radius: config.GAME_CONFIG.BOMB_RADIUS_GRID,
+            teamId: bomb.ownerTeamId,
+          },
+          player: {
+            x: player.x,
+            y: player.y,
+            radius: config.GAME_CONFIG.PLAYER_RADIUS,
+            teamId: player.teamId,
+          },
+        });
+
+        if (result.isHit) {
+          this.botTurnOrchestrator.applyHitStun(
+            player.id as BotPlayerId,
+            nowMs,
+          );
+          onBotBombHit(player.id, bomb.bombId);
+        }
+      }
+    });
   }
 
   /** 切断プレイヤーをBot制御対象へ昇格する */

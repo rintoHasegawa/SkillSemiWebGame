@@ -61,6 +61,23 @@ export class GameSessionLifecycleService {
     return session.issueServerBombId();
   }
 
+  /** 設置済み爆弾をアクティブレジストリに登録する */
+  public registerActiveBomb(
+    bombId: string,
+    ownerPlayerId: string,
+    x: number,
+    y: number,
+    explodeAtElapsedMs: number,
+  ): void {
+    this.sessionRef.current?.registerActiveBomb(
+      bombId,
+      ownerPlayerId,
+      x,
+      y,
+      explodeAtElapsedMs,
+    );
+  }
+
   /** 指定プレイヤーがBotなら被弾硬直を適用する */
   public applyBotHitStun(playerId: string, nowMs: number): boolean {
     const session = this.sessionRef.current;
@@ -77,6 +94,7 @@ export class GameSessionLifecycleService {
     onTick: (data: domain.game.tick.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
+    onBotBombHit?: (targetPlayerId: string, bombId: string) => void,
   ) {
     if (this.sessionRef.current) {
       logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
@@ -109,6 +127,7 @@ export class GameSessionLifecycleService {
         onGameEnd(payload);
       },
       onBotPlaceBomb,
+      onBotBombHit,
     );
 
     logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {

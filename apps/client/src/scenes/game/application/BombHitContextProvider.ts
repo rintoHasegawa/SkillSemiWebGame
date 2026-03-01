@@ -49,28 +49,22 @@ export class BombHitContextProvider {
     };
   }
 
-  /** 被弾報告対象として扱うプレイヤー円情報を取得する */
+  /** 被弾報告対象として自プレイヤーの円情報を取得する */
   public getReportablePlayerCircles(): ReportablePlayerCircle[] {
-    const reportablePlayers = Object.entries(this.players).filter(([playerId]) => {
-      return playerId === this.myId || this.isBotPlayerId(playerId);
-    });
+    const me = this.players[this.myId];
+    if (!me) return [];
 
-    return reportablePlayers.map(([playerId, controller]) => {
-      const position = controller.getPosition();
-      const snapshot = controller.getSnapshot();
+    const position = me.getPosition();
+    const snapshot = me.getSnapshot();
 
-      return {
-        playerId,
+    return [
+      {
+        playerId: this.myId,
         x: position.x,
         y: position.y,
         radius: config.GAME_CONFIG.PLAYER_RADIUS,
         teamId: snapshot.teamId,
-      };
-    });
-  }
-
-  /** BotプレイヤーIDかどうかを判定する */
-  private isBotPlayerId(playerId: string): boolean {
-    return playerId.startsWith("bot:");
+      },
+    ];
   }
 }

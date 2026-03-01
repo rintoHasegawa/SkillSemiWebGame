@@ -26,6 +26,7 @@ export interface StartGamePort {
     onTick: (data: domain.game.tick.TickData) => void,
     onGameEnd: (payload: GameResultPayload) => void,
     onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
+    onBotBombHit?: (targetPlayerId: string, bombId: string) => void,
   ): void;
   getRoomStartTime(): number | undefined;
 }
@@ -110,13 +111,22 @@ export type StartGameOutputPort = Pick<
 > &
   Pick<
     BombOutputPort,
-    "publishBombPlacedToOthersInRoom" | "publishBombPlacedAckToSocket"
+    | "publishBombPlacedToOthersInRoom"
+    | "publishBombPlacedAckToSocket"
+    | "publishPlayerDeadToOthersInRoom"
   >;
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {
   shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
   issueServerBombId(): string;
+  registerActiveBomb(
+    bombId: string,
+    ownerPlayerId: string,
+    x: number,
+    y: number,
+    explodeAtElapsedMs: number,
+  ): void;
 }
 
 /** 被弾報告ユースケースが利用する重複排除入力ポート */
