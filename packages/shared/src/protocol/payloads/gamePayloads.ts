@@ -65,7 +65,12 @@ export type NewPlayerPayload = PlayerData;
 export type RemovePlayerPayload = PlayerData["id"];
 
 /** game-start イベントで送受信するゲーム開始情報 */
-export type GameStartPayload = { startTime: number };
+export type GameStartPayload = {
+  /** ゲーム開始予定のUNIXタイムスタンプ（サーバー時計基準, ms） */
+  startTime: number;
+  /** ペイロード送信時のサーバー時刻（クライアント側クロックオフセット補正用, ms） */
+  serverNow: number;
+};
 
 /** start-game イベントで受信するゲーム開始要求 */
 export type StartGameRequestPayload = {

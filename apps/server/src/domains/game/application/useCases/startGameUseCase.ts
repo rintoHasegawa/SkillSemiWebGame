@@ -93,5 +93,5 @@ export const startGameUseCase = ({
   );
 
   const startTime = gameSession.getRoomStartTime() || Date.now();
-  output.publishGameStartToRoom(roomId, { startTime });
+  output.publishGameStartToRoom(roomId, { startTime, serverNow: Date.now() });
 };
