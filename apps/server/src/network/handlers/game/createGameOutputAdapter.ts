@@ -50,13 +50,13 @@ export const createGameOutputAdapter = (
     publishPongToSocket: (payload: PongPayload) => {
       common.emitToSocket(protocol.SocketEvents.PONG, payload);
     },
-    publishUpdatePlayersToSocket: (
-      socketId: string,
+    publishUpdatePlayersToRoom: (
+      roomId: RoomId,
       players: UpdatePlayersPayload,
     ) => {
       const sanitizedPlayers = sanitizeUpdatePlayersPayload(players);
-      common.emitToSocketById(
-        socketId,
+      common.emitToRoom(
+        roomId,
         protocol.SocketEvents.UPDATE_PLAYERS,
         sanitizedPlayers,
       );

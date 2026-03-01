@@ -102,7 +102,6 @@ export const startGameCoordinator = ({
     roomId: updatedRoom.roomId,
     playerIds: sessionPlayerIds,
     playerNamesById,
-    recipientPlayerIds: humanPlayerIds,
     gameSession: gameManager,
     bombStore: gameManager,
     onGameEnd: () => {

@@ -15,22 +15,10 @@ import {
 } from "@server/logging/index";
 import { createBotBombActionHandler } from "../services/bot/index.js";
 
-const excludeRecipientFromPlayerUpdates = <
-  TPlayerUpdate extends { id: string },
->(
-  playerUpdates: TPlayerUpdate[],
-  recipientId: string,
-): TPlayerUpdate[] => {
-  return playerUpdates.filter(
-    (playerUpdate) => playerUpdate.id !== recipientId,
-  );
-};
-
 type StartGameUseCaseParams = {
   roomId: string;
   playerIds: string[];
   playerNamesById: Record<string, string>;
-  recipientPlayerIds?: string[];
   gameSession: StartGamePort;
   bombStore: BombPlacementPort;
   onGameEnd: () => void;
@@ -42,13 +30,11 @@ export const startGameUseCase = ({
   roomId,
   playerIds,
   playerNamesById,
-  recipientPlayerIds,
   gameSession,
   bombStore,
   onGameEnd,
   output,
 }: StartGameUseCaseParams) => {
-  const updateRecipients = recipientPlayerIds ?? playerIds;
   const handleBotBombAction = createBotBombActionHandler({
     roomId,
     bombStore,
@@ -68,18 +54,7 @@ export const startGameUseCase = ({
     {
       onTick: (tickData) => {
         if (tickData.playerUpdates.length > 0) {
-          updateRecipients.forEach((playerId) => {
-            const updatesForPlayer = excludeRecipientFromPlayerUpdates(
-              tickData.playerUpdates,
-              playerId,
-            );
-
-            if (updatesForPlayer.length === 0) {
-              return;
-            }
-
-            output.publishUpdatePlayersToSocket(playerId, updatesForPlayer);
-          });
+          output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
         }
 
         if (tickData.cellUpdates.length > 0) {
