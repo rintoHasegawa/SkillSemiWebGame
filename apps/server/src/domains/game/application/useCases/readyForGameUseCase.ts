@@ -47,7 +47,7 @@ export const readyForGameUseCase = ({
     return;
   }
 
-  output.publishGameStartToSocket({ startTime });
+  output.publishGameStartToSocket({ startTime, serverNow: Date.now() });
   logEvent(logScopes.GAME_USE_CASE, {
     event: gameUseCaseLogEvents.GAME_START,
     result: logResults.EMITTED,
