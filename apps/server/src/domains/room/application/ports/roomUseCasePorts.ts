@@ -4,7 +4,6 @@
  */
 import { domain } from "@repo/shared";
 import type {
-  BotHitReactionPort,
   BombHitReportValidationPort,
   BombPlacementPort,
   DisconnectPlayerPort,
@@ -20,7 +19,6 @@ export type RoomScopedGamePort =
   & MovePlayerPort
   & BombPlacementPort
   & BombHitReportValidationPort
-  & BotHitReactionPort
   & DisconnectPlayerPort;
 
 /** ルーム参加処理の実行結果 */

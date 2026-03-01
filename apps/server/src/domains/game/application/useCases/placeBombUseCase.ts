@@ -34,13 +34,13 @@ export const placeBombUseCase = ({
 
   const bombId = bombStore.issueServerBombId();
 
-  bombStore.registerActiveBomb(
+  bombStore.registerActiveBomb({
     bombId,
-    input.socketId,
-    input.payload.x,
-    input.payload.y,
-    input.payload.explodeAtElapsedMs,
-  );
+    ownerPlayerId: input.socketId,
+    x: input.payload.x,
+    y: input.payload.y,
+    explodeAtElapsedMs: input.payload.explodeAtElapsedMs,
+  });
 
   output.publishBombPlacedToOthersInRoom(
     roomId,

@@ -5,10 +5,11 @@
 import type {
   domain,
   GameResultPayload,
-  PlaceBombPayload,
 } from "@repo/shared";
 import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
+import type { GameSessionCallbacks } from "./application/services/GameRoomSession";
+import type { ActiveBombRegistration } from "./application/ports/gameUseCasePorts";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
 import { GamePlayerOperationService } from "./application/services/GamePlayerOperationService";
 
@@ -66,18 +67,12 @@ export class GameManager {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
-    onTick: (data: domain.game.tick.TickData) => void,
-    onGameEnd: (payload: GameResultPayload) => void,
-    onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
-    onBotBombHit?: (targetPlayerId: string, bombId: string) => void,
+    callbacks: GameSessionCallbacks,
   ) {
     this.lifecycleService.startRoomSession(
       playerIds,
       playerNamesById,
-      onTick,
-      onGameEnd,
-      onBotPlaceBomb,
-      onBotBombHit,
+      callbacks,
     );
   }
 
@@ -102,25 +97,8 @@ export class GameManager {
   }
 
   /** 設置済み爆弾をアクティブレジストリに登録する */
-  registerActiveBomb(
-    bombId: string,
-    ownerPlayerId: string,
-    x: number,
-    y: number,
-    explodeAtElapsedMs: number,
-  ): void {
-    this.lifecycleService.registerActiveBomb(
-      bombId,
-      ownerPlayerId,
-      x,
-      y,
-      explodeAtElapsedMs,
-    );
-  }
-
-  /** 指定プレイヤーがBotなら被弾硬直を適用する */
-  applyBotHitStun(playerId: string, nowMs: number): boolean {
-    return this.lifecycleService.applyBotHitStun(playerId, nowMs);
+  registerActiveBomb(registration: ActiveBombRegistration): void {
+    this.lifecycleService.registerActiveBomb(registration);
   }
 
   dispose(): void {

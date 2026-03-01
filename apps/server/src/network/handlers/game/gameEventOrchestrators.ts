@@ -143,7 +143,6 @@ export const handleBombHitReportEvent = (
       reportBombHitUseCase({
         roomId,
         validation: gameManager,
-        botHitReaction: gameManager,
         input: {
           socketId: deps.socketId,
           payload,

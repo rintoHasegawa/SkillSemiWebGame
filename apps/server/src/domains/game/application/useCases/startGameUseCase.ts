@@ -65,39 +65,41 @@ export const startGameUseCase = ({
   gameSession.startRoomSession(
     playerIds,
     playerNamesById,
-    (tickData) => {
-      if (tickData.playerUpdates.length > 0) {
-        updateRecipients.forEach((playerId) => {
-          const updatesForPlayer = excludeRecipientFromPlayerUpdates(
-            tickData.playerUpdates,
-            playerId,
-          );
+    {
+      onTick: (tickData) => {
+        if (tickData.playerUpdates.length > 0) {
+          updateRecipients.forEach((playerId) => {
+            const updatesForPlayer = excludeRecipientFromPlayerUpdates(
+              tickData.playerUpdates,
+              playerId,
+            );
 
-          if (updatesForPlayer.length === 0) {
-            return;
-          }
+            if (updatesForPlayer.length === 0) {
+              return;
+            }
 
-          output.publishUpdatePlayersToSocket(playerId, updatesForPlayer);
+            output.publishUpdatePlayersToSocket(playerId, updatesForPlayer);
+          });
+        }
+
+        if (tickData.cellUpdates.length > 0) {
+          output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
+        }
+      },
+      onGameEnd: (resultPayload) => {
+        logEvent(logScopes.GAME_USE_CASE, {
+          event: gameUseCaseLogEvents.GAME_END,
+          result: logResults.EMITTED,
+          roomId,
+          reason: "duration_elapsed",
         });
-      }
-
-      if (tickData.cellUpdates.length > 0) {
-        output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
-      }
+        output.publishGameEndToRoom(roomId);
+        output.publishGameResultToRoom(roomId, resultPayload);
+        onGameEnd();
+      },
+      onBotPlaceBomb: handleBotBombAction,
+      onBotBombHit: handleBotBombHit,
     },
-    (resultPayload) => {
-      logEvent(logScopes.GAME_USE_CASE, {
-        event: gameUseCaseLogEvents.GAME_END,
-        result: logResults.EMITTED,
-        roomId,
-        reason: "duration_elapsed",
-      });
-      output.publishGameEndToRoom(roomId);
-      output.publishGameResultToRoom(roomId, resultPayload);
-      onGameEnd();
-    },
-    handleBotBombAction,
-    handleBotBombHit,
   );
 
   const startTime = gameSession.getRoomStartTime() || Date.now();

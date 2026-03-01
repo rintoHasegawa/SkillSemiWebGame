@@ -4,7 +4,6 @@
  * プレイヤー管理構造から最小の判定DTOへ変換して返す
  */
 import { config } from "@client/config";
-import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { domain } from "@repo/shared";
 
 type TeamCollisionCircle = domain.game.bombHit.TeamCollisionCircle;
@@ -31,40 +30,20 @@ export class BombHitContextProvider {
     this.myId = myId;
   }
 
-  /** ローカルプレイヤーの判定用DTOを取得する */
-  public getLocalPlayerCircle(): TeamCollisionCircle | null {
+  /** 自プレイヤーの被弾判定用円情報を取得する（不在ならnull） */
+  public getLocalReportableCircle(): ReportablePlayerCircle | null {
     const me = this.players[this.myId];
-    if (!me || !(me instanceof LocalPlayerController)) {
-      return null;
-    }
+    if (!me) return null;
 
     const position = me.getPosition();
     const snapshot = me.getSnapshot();
 
     return {
+      playerId: this.myId,
       x: position.x,
       y: position.y,
       radius: config.GAME_CONFIG.PLAYER_RADIUS,
       teamId: snapshot.teamId,
     };
-  }
-
-  /** 被弾報告対象として自プレイヤーの円情報を取得する */
-  public getReportablePlayerCircles(): ReportablePlayerCircle[] {
-    const me = this.players[this.myId];
-    if (!me) return [];
-
-    const position = me.getPosition();
-    const snapshot = me.getSnapshot();
-
-    return [
-      {
-        playerId: this.myId,
-        x: position.x,
-        y: position.y,
-        radius: config.GAME_CONFIG.PLAYER_RADIUS,
-        teamId: snapshot.teamId,
-      },
-    ];
   }
 }

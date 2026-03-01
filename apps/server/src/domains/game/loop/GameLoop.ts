@@ -24,6 +24,24 @@ import type { ActiveBombRegistry } from "../entities/bomb/ActiveBombRegistry.js"
 
 const { checkBombHit } = domain.game.bombHit;
 
+/** GameLoop の初期化入力 */
+export type GameLoopOptions = {
+  roomId: string;
+  tickRate: number;
+  players: Map<string, Player>;
+  mapStore: MapStore;
+  activeBombRegistry: ActiveBombRegistry;
+  callbacks: GameLoopCallbacks;
+};
+
+/** GameLoop のコールバック集合 */
+export type GameLoopCallbacks = {
+  onTick: (data: domain.game.tick.TickData) => void;
+  onGameEnd: () => void;
+  onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void;
+  onBotBombHit?: (targetPlayerId: string, bombId: string) => void;
+};
+
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
   private loopId: NodeJS.Timeout | null = null;
@@ -38,23 +56,21 @@ export class GameLoop {
   private botTurnOrchestrator: BotTurnOrchestrator =
     new BotTurnOrchestrator();
 
-  constructor(
-    private roomId: string,
-    private tickRate: number,
-    private players: Map<string, Player>,
-    private mapStore: MapStore,
-    private activeBombRegistry: ActiveBombRegistry,
-    private onTick: (data: domain.game.tick.TickData) => void,
-    private onGameEnd: () => void,
-    private onBotPlaceBomb?: (
-      ownerId: string,
-      payload: PlaceBombPayload,
-    ) => void,
-    private onBotBombHit?: (
-      targetPlayerId: string,
-      bombId: string,
-    ) => void,
-  ) {}
+  private readonly roomId: string;
+  private readonly tickRate: number;
+  private readonly players: Map<string, Player>;
+  private readonly mapStore: MapStore;
+  private readonly activeBombRegistry: ActiveBombRegistry;
+  private readonly callbacks: GameLoopCallbacks;
+
+  constructor(options: GameLoopOptions) {
+    this.roomId = options.roomId;
+    this.tickRate = options.tickRate;
+    this.players = options.players;
+    this.mapStore = options.mapStore;
+    this.activeBombRegistry = options.activeBombRegistry;
+    this.callbacks = options.callbacks;
+  }
 
   start() {
     // 既にループが回っている場合は何もしない
@@ -93,7 +109,7 @@ export class GameLoop {
     let nowMs = performance.now();
     if (nowMs >= this.endMonotonicTimeMs) {
       this.stop();
-      this.onGameEnd();
+      this.callbacks.onGameEnd();
       return;
     }
 
@@ -110,7 +126,7 @@ export class GameLoop {
       nowMs = performance.now();
       if (nowMs >= this.endMonotonicTimeMs) {
         this.stop();
-        this.onGameEnd();
+        this.callbacks.onGameEnd();
         return;
       }
     }
@@ -133,7 +149,7 @@ export class GameLoop {
     this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsSnapshot);
     this.detectBotBombHits(elapsedMs, wallClockNowMs);
     const tickData = this.buildTickData();
-    this.onTick(tickData);
+    this.callbacks.onTick(tickData);
   }
 
   private updateBotPlayers(
@@ -155,32 +171,16 @@ export class GameLoop {
         );
         setPlayerPosition(player, decision.nextX, decision.nextY);
 
-        if (decision.placeBombPayload && this.onBotPlaceBomb) {
-          this.onBotPlaceBomb(player.id, decision.placeBombPayload);
+        if (decision.placeBombPayload && this.callbacks.onBotPlaceBomb) {
+          this.callbacks.onBotPlaceBomb(player.id, decision.placeBombPayload);
         }
       }
     });
   }
 
-  /** 指定プレイヤーがBotなら被弾硬直を適用する */
-  public applyBotHitStun(playerId: string, nowMs: number): boolean {
-    const player = this.players.get(playerId);
-    const isBotControlled =
-      !!player &&
-      (isBotPlayerId(player.id) ||
-        this.disconnectedBotControlledPlayerIds.has(player.id));
-
-    if (!isBotControlled) {
-      return false;
-    }
-
-    this.botTurnOrchestrator.applyHitStun(playerId as BotPlayerId, nowMs);
-    return true;
-  }
-
   /** 爆発済み爆弾とBotプレイヤーの当たり判定を実行する */
   private detectBotBombHits(elapsedMs: number, nowMs: number): void {
-    const onBotBombHit = this.onBotBombHit;
+    const onBotBombHit = this.callbacks.onBotBombHit;
     if (!onBotBombHit) return;
 
     const explodedBombs =

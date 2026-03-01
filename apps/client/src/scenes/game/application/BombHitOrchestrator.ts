@@ -17,7 +17,7 @@ type BombHitOrchestratorOptions = {
 /** 爆弾爆発イベントの判定結果を表す型 */
 export type BombHitEvaluationResult = {
   status: "duplicate" | "missing-local-player" | "no-hit" | "hit";
-  hitPlayerIds: string[];
+  hitPlayerId: string | null;
 };
 
 /** 爆弾当たり判定の実行順序を制御する */
@@ -32,49 +32,30 @@ export class BombHitOrchestrator {
   /** 爆弾爆発イベントを受けて自プレイヤーの当たり判定を実行し結果を返す */
   public handleBombExploded(payload: BombExplodedPayload): BombHitEvaluationResult {
     if (this.handledBombIds.has(payload.bombId)) {
-      return {
-        status: "duplicate",
-        hitPlayerIds: [],
-      };
+      return { status: "duplicate", hitPlayerId: null };
     }
 
     this.handledBombIds.add(payload.bombId);
-    const reportablePlayers = this.contextProvider.getReportablePlayerCircles();
-    if (reportablePlayers.length === 0) {
-      return {
-        status: "missing-local-player",
-        hitPlayerIds: [],
-      };
+    const localPlayer = this.contextProvider.getLocalReportableCircle();
+    if (!localPlayer) {
+      return { status: "missing-local-player", hitPlayerId: null };
     }
 
-    const hitPlayerIds = reportablePlayers
-      .filter((player) => {
-        const result = checkBombHit({
-          bomb: {
-            x: payload.x,
-            y: payload.y,
-            radius: payload.radius,
-            teamId: payload.teamId,
-          },
-          player,
-        });
+    const result = checkBombHit({
+      bomb: {
+        x: payload.x,
+        y: payload.y,
+        radius: payload.radius,
+        teamId: payload.teamId,
+      },
+      player: localPlayer,
+    });
 
-        return result.isHit;
-      })
-      .map((player) => player.playerId);
-
-    if (hitPlayerIds.length === 0) {
-      return {
-        status: "no-hit",
-        hitPlayerIds: [],
-      };
+    if (!result.isHit) {
+      return { status: "no-hit", hitPlayerId: null };
     }
 
-    return {
-      status: "hit",
-      hitPlayerIds,
-    };
-
+    return { status: "hit", hitPlayerId: localPlayer.playerId };
   }
 
   /** 判定済み状態を初期化する */

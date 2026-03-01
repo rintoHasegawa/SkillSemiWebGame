@@ -17,16 +17,14 @@ import type {
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
+import type { GameSessionCallbacks } from "../services/GameRoomSession";
 
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */
 export interface StartGamePort {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
-    onTick: (data: domain.game.tick.TickData) => void,
-    onGameEnd: (payload: GameResultPayload) => void,
-    onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void,
-    onBotBombHit?: (targetPlayerId: string, bombId: string) => void,
+    callbacks: GameSessionCallbacks,
   ): void;
   getRoomStartTime(): number | undefined;
 }
@@ -120,23 +118,21 @@ export type StartGameOutputPort = Pick<
 export interface BombPlacementPort {
   shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
   issueServerBombId(): string;
-  registerActiveBomb(
-    bombId: string,
-    ownerPlayerId: string,
-    x: number,
-    y: number,
-    explodeAtElapsedMs: number,
-  ): void;
+  registerActiveBomb(registration: ActiveBombRegistration): void;
 }
+
+/** registerActiveBomb に渡す爆弾登録情報 */
+export type ActiveBombRegistration = {
+  bombId: string;
+  ownerPlayerId: string;
+  x: number;
+  y: number;
+  explodeAtElapsedMs: number;
+};
 
 /** 被弾報告ユースケースが利用する重複排除入力ポート */
 export interface BombHitReportValidationPort {
   shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean;
-}
-
-/** 被弾報告ユースケースが利用するBot被弾反映入力ポート */
-export interface BotHitReactionPort {
-  applyBotHitStun(playerId: string, nowMs: number): boolean;
 }
 
 /** 爆弾設置ユースケースの入力値 */

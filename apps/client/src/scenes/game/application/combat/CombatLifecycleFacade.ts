@@ -62,19 +62,14 @@ export class CombatLifecycleFacade {
   /** 爆弾爆発時の判定と後続処理を実行する */
   public handleBombExploded(payload: BombExplodedPayload): void {
     const result = this.bombHitOrchestrator.handleBombExploded(payload);
-    const hasLocalHit = result.hitPlayerIds.includes(this.myId);
-    if (hasLocalHit) {
-      this.playerDeathPolicy.applyLocalHitStun();
-      this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
+    if (!result.hitPlayerId) return;
+
+    this.playerDeathPolicy.applyLocalHitStun();
+    this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
+
+    if (this.hitReportPolicy.shouldSendReport(result.status, payload.bombId, result.hitPlayerId)) {
+      this.onSendBombHitReport(payload.bombId, result.hitPlayerId);
     }
-
-    result.hitPlayerIds.forEach((targetPlayerId) => {
-      if (!this.hitReportPolicy.shouldSendReport(result.status, payload.bombId, targetPlayerId)) {
-        return;
-      }
-
-      this.onSendBombHitReport(payload.bombId, targetPlayerId);
-    });
   }
 
   /** ネットワーク被弾通知を適用する */
