@@ -47,6 +47,9 @@ export type GameLoopCallbacks = {
   onBotBombHit?: (targetPlayerId: string, bombId: string) => void;
 };
 
+/** プレイヤーのグリッド位置キャッシュを含むエントリ */
+type PlayerGridCacheEntry = PlayerGridEntry & { player: Player };
+
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
   private loopId: NodeJS.Timeout | null = null;
@@ -252,7 +255,7 @@ export class GameLoop {
     const changedPlayers: domain.game.tick.TickData["playerUpdates"] = [];
 
     // 全プレイヤーのグリッド位置を1度だけ計算してキャッシュする
-    const gridEntries: (PlayerGridEntry & { player: Player })[] = [];
+    const gridEntries: PlayerGridCacheEntry[] = [];
     this.players.forEach((player) => {
       gridEntries.push({
         playerId: player.id,
@@ -262,18 +265,13 @@ export class GameLoop {
       });
     });
 
-    // 競合判定: 同一セルに異なるチームがいるかを解決する
-    const cellTeamMap = resolveUncontestedCells(gridEntries);
+    // 競合判定を経てマップを塗る
+    this.paintUncontestedCells(gridEntries);
 
-    // 競合のないセルのみ塗り，プレイヤー差分を収集する
-    for (const { playerId, gridIndex, player } of gridEntries) {
+    // プレイヤー差分を収集する
+    for (const { playerId, player } of gridEntries) {
       activePlayerIds.add(playerId);
 
-      if (gridIndex !== null && isCellPaintable(cellTeamMap, gridIndex)) {
-        this.mapStore.paintCell(gridIndex, player.teamId);
-      }
-
-      // 送信用のプレイヤーデータを構築
       const playerData: domain.game.tick.PlayerPositionUpdate = {
         id: player.id,
         x: player.x,
@@ -293,6 +291,17 @@ export class GameLoop {
     }
 
     return changedPlayers;
+  }
+
+  /** 競合判定を行い，単一チームが占有するセルのみを塗る */
+  private paintUncontestedCells(gridEntries: PlayerGridCacheEntry[]): void {
+    const cellTeamMap = resolveUncontestedCells(gridEntries);
+
+    for (const { gridIndex, player } of gridEntries) {
+      if (gridIndex !== null && isCellPaintable(cellTeamMap, gridIndex)) {
+        this.mapStore.paintCell(gridIndex, player.teamId);
+      }
+    }
   }
 
   private cleanupInactivePlayerSnapshots(activePlayerIds: Set<string>): void {
