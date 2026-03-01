@@ -5,6 +5,8 @@
  */
 
 /** グリッドマップ関連の型を再公開する */
-export type { MapState, CellUpdate } from "./gridMap.type";
+export type { MapState, CellUpdate, GroupedCellUpdates } from "./gridMap.type";
 /** グリッド座標変換ロジックを再公開する */
 export { getGridIndexFromPosition } from "./gridMap.logic";
+/** CellUpdate配列とGroupedCellUpdatesの相互変換を再公開する */
+export { groupCellUpdates, ungroupCellUpdates } from "./groupedCellUpdates";
