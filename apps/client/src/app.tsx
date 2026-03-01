@@ -58,7 +58,7 @@ export default function App() {
     scene = (
       <ResultScene
         result={gameResult}
-        onBackToTitle={() => returnToTitle({ leaveRoom: true })}
+        onBackToTitle={() => returnToTitle()}
       />
     );
   }
