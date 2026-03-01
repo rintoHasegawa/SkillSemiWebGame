@@ -1,4 +1,4 @@
-import { GAME_CONFIG } from "../../config/gameConfig";
+import { GAME_CONFIG } from "../../../config/gameConfig";
 
 /**
  * グリッド座標から1次元配列インデックスを取得する（中心点判定）

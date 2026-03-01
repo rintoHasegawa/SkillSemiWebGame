@@ -5,7 +5,7 @@
  */
 import { domain } from "@repo/shared";
 
-const { checkBombHit } = domain.game;
+const { checkBombHit } = domain.game.bombHit;
 import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
 import { BombHitContextProvider } from "./BombHitContextProvider";
 

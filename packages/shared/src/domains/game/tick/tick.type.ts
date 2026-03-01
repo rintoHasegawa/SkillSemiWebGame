@@ -1,6 +1,6 @@
 /**
- * game.type
- * ゲーム進行で利用する共有型を定義する
+ * tick.type
+ * ゲーム進行のtick同期で利用する共有型を定義する
  */
 import type { CellUpdate } from "../gridMap/gridMap.type";
 import type { PlayerData } from "../player/player.type";

@@ -10,13 +10,13 @@ export * as contracts from "./protocol";
 
 /** 既存互換のため，以下は従来どおり再公開する */
 /** グリッドマップ関連の型定義を再公開 */
-export * as gridMapTypes from "./domains/gridMap/gridMap.type";
+export * as gridMapTypes from "./domains/game/gridMap/gridMap.type";
 /** グリッドマップ関連のロジックを再公開 */
-export * as gridMapLogic from "./domains/gridMap/gridMap.logic";
+export * as gridMapLogic from "./domains/game/gridMap/gridMap.logic";
 /** プレイヤー関連の型定義を再公開 */
-export * as playerTypes from "./domains/player/player.type";
+export * as playerTypes from "./domains/game/player/player.type";
 /** ゲーム関連の型定義を再公開 */
-export * as gameTypes from "./domains/game/game.type";
+export * as gameTypes from "./domains/game/tick/tick.type";
 /** アプリ状態関連の型定義を再公開 */
 export * as appTypes from "./domains/app/app.type";
 /** アプリ状態関連の定数を再公開 */

@@ -7,7 +7,7 @@ import { config } from "@client/config";
 import { LocalPlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { domain } from "@repo/shared";
 
-type TeamCollisionCircle = domain.game.TeamCollisionCircle;
+type TeamCollisionCircle = domain.game.bombHit.TeamCollisionCircle;
 import type { GamePlayers } from "./game.types";
 
 /** 被弾判定と報告に利用するプレイヤー円情報 */
