@@ -92,6 +92,8 @@ export const useSocketSubscriptions = ({
 
       handleGameResult: (payload: GameResultPayload) => {
         dispatchAppFlow({ type: "setResult", result: payload });
+        socketManager.socket.disconnect();
+        socketManager.socket.connect();
       },
     };
 
