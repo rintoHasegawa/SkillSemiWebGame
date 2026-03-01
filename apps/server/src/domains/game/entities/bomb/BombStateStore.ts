@@ -7,10 +7,7 @@ import {
   shouldBroadcastBombHitReport,
   shouldBroadcastBombPlaced,
 } from "./bombDedup.js";
-import {
-  ActiveBombRegistry,
-  type ActiveBomb,
-} from "./ActiveBombRegistry.js";
+import { ActiveBombRegistry } from "./ActiveBombRegistry.js";
 
 /** セッション単位の爆弾重複排除状態と採番状態を保持するストア */
 export class BombStateStore {

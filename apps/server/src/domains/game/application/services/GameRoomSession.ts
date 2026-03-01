@@ -14,7 +14,6 @@ import { GameLoop } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
 import { BombStateStore } from "../../entities/bomb/BombStateStore";
-import { ActiveBombRegistry } from "../../entities/bomb/ActiveBombRegistry.js";
 import { createSpawnedPlayer } from "../../entities/player/playerSpawn.js";
 import {
   isValidPosition,
@@ -29,7 +28,6 @@ export class GameRoomSession {
   private players: Map<string, Player>;
   private mapStore: MapStore;
   private bombStateStore: BombStateStore;
-  private activeBombRegistry: ActiveBombRegistry;
   private gameLoop: GameLoop | null = null;
   private startTime: number | undefined;
   private startDelayTimer: NodeJS.Timeout | null = null;
@@ -42,7 +40,6 @@ export class GameRoomSession {
     this.players = new Map();
     this.mapStore = new MapStore();
     this.bombStateStore = new BombStateStore();
-    this.activeBombRegistry = new ActiveBombRegistry();
 
     playerIds.forEach((playerId) => {
       // 現在のプレイヤー構成から人数が最も少ないチームを算出する
@@ -81,7 +78,7 @@ export class GameRoomSession {
       tickRate,
       this.players,
       this.mapStore,
-      this.activeBombRegistry,
+      this.bombStateStore.activeBombRegistry,
       onTick,
       () => {
         const resultPayload = buildGameResultPayload(
@@ -192,7 +189,7 @@ export class GameRoomSession {
   ): void {
     const player = this.players.get(ownerPlayerId);
     const ownerTeamId = player?.teamId ?? -1;
-    this.activeBombRegistry.registerBomb({
+    this.bombStateStore.activeBombRegistry.registerBomb({
       bombId,
       x,
       y,
@@ -220,7 +217,6 @@ export class GameRoomSession {
       this.gameLoop.stop();
       this.gameLoop = null;
     }
-    this.activeBombRegistry.clear();
     this.players.clear();
   }
 }
