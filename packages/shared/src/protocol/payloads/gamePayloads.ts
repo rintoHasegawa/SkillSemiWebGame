@@ -18,11 +18,24 @@ export type GameResultRanking = {
   paintRate: number;
 };
 
+/** game-result イベントで送受信するプレイヤー個人スタッツ */
+export type PlayerGameStats = {
+  playerId: string;
+  playerName: string;
+  teamId: number;
+  /** セルの色を塗り替えた回数 */
+  paintCount: number;
+  /** 爆弾を敵に当てた回数 */
+  bombHitCount: number;
+};
+
 /** game-result イベントで送受信する最終結果 */
 export type GameResultPayload = {
   rankings: GameResultRanking[];
   /** ゲーム終了時点のマップ色配列，index はセル位置に対応する */
   finalGridColors?: number[];
+  /** プレイヤー個人スタッツ一覧 */
+  playerStats?: PlayerGameStats[];
 };
 
 /** current-players で配信するプレイヤー全体スナップショット */

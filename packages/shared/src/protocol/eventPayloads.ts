@@ -35,6 +35,7 @@ export type {
   PlayerDeadPayload,
   GameResultPayload,
   GameResultRanking,
+  PlayerGameStats,
 } from "./payloads/gamePayloads";
 
 /** 被弾演出イベントのペイロード型を再公開する */

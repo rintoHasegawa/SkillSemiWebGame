@@ -11,17 +11,18 @@ type PaintCellParams = {
   teamId: number;
 };
 
-/** マップセルの色が変わった場合のみ差分へ追加する */
+/** マップセルの色が変わった場合のみ差分へ追加し，変更の有無を返す */
 export const paintCellIfChanged = ({
   gridColors,
   pendingUpdates,
   index,
   teamId,
-}: PaintCellParams): void => {
+}: PaintCellParams): boolean => {
   if (gridColors[index] === teamId) {
-    return;
+    return false;
   }
 
   gridColors[index] = teamId;
   pendingUpdates.push({ index, teamId });
+  return true;
 };

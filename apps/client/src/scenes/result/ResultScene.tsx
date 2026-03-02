@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { config } from "../../config";
 import { ResultActionBar } from "./components/ResultActionBar";
 import { ResultBackground } from "./components/ResultBackground";
+import { ResultPlayerStatsTable } from "./components/ResultPlayerStatsTable";
 import { ResultRankingTable } from "./components/ResultRankingTable";
 import {
   RESULT_BACKGROUND_DARK_OVERLAY_STYLE,
@@ -99,6 +100,10 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
             rankings={result.rankings}
             formatPaintRate={formatPaintRate}
           />
+        )}
+
+        {isRankingVisible && result.playerStats && result.playerStats.length > 0 && (
+          <ResultPlayerStatsTable playerStats={result.playerStats} />
         )}
       </div>
     </div>

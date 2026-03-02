@@ -209,6 +209,49 @@ export const getResultBodyRowStyle = (index: number): CSSProperties => ({
   background: index % 2 === 0 ? "#171717" : "#1d1d1d",
 });
 
+/** プレイヤースタッツ表のグリッド列定義 */
+export const RESULT_PLAYER_STATS_ROW_GRID_TEMPLATE = "1fr 120px 120px";
+
+/** プレイヤースタッツセクションタイトルのスタイル */
+export const RESULT_PLAYER_STATS_SECTION_TITLE_STYLE: CSSProperties = {
+  margin: "24px 0 10px 0",
+  fontSize: "clamp(1rem, 2.6vw, 1.3rem)",
+  fontWeight: 700,
+  letterSpacing: "0.08em",
+  color: "rgba(255, 255, 255, 0.88)",
+  textShadow: "0 2px 8px rgba(0, 0, 0, 0.4)",
+};
+
+/** プレイヤースタッツ表ヘッダー行のスタイル */
+export const RESULT_PLAYER_STATS_HEADER_ROW_STYLE: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: RESULT_PLAYER_STATS_ROW_GRID_TEMPLATE,
+  background: "#222",
+  padding: "12px 16px",
+  fontWeight: "bold",
+};
+
+/** プレイヤースタッツ表本文スクロール領域のスタイル */
+export const RESULT_PLAYER_STATS_SCROLL_BODY_STYLE: CSSProperties = {
+  maxHeight: "min(36dvh, 320px)",
+  overflowY: "auto",
+};
+
+/** プレイヤースタッツ数値セルのスタイル */
+export const RESULT_PLAYER_STATS_VALUE_STYLE: CSSProperties = {
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+};
+
+/** プレイヤースタッツ表本文行のスタイルを返す */
+export const getResultPlayerStatsBodyRowStyle = (index: number): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: RESULT_PLAYER_STATS_ROW_GRID_TEMPLATE,
+  padding: "12px 16px",
+  borderTop: "1px solid #333",
+  background: index % 2 === 0 ? "#171717" : "#1d1d1d",
+});
+
 /** 紙吹雪1片のスタイルを返す */
 export const getResultConfettiStyle = (
   index: number,

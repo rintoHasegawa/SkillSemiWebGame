@@ -101,6 +101,11 @@ export class GameManager {
     this.lifecycleService.registerActiveBomb(registration);
   }
 
+  /** 指定爆弾の所有者の bombHitCount を加算する */
+  recordBombHitForOwner(bombId: string): void {
+    this.lifecycleService.recordBombHitForOwner(bombId);
+  }
+
   dispose(): void {
     this.lifecycleService.dispose();
   }

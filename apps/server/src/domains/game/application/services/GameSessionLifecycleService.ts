@@ -66,6 +66,11 @@ export class GameSessionLifecycleService {
     this.sessionRef.current?.registerActiveBomb(registration);
   }
 
+  /** 指定爆弾の所有者の bombHitCount を加算する */
+  public recordBombHitForOwner(bombId: string): void {
+    this.sessionRef.current?.recordBombHitForOwner(bombId);
+  }
+
   public startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
