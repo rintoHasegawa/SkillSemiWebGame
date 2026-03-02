@@ -6,6 +6,7 @@
 import type {
   PlayerDeadOutputPort,
   BombHitReportValidationPort,
+  BombHitStatsPort,
   ReportBombHitInput,
 } from "../ports/gameUseCasePorts";
 import { shouldPublishPlayerDeadFromBombHit } from "./reportBombHitValidation";
@@ -13,6 +14,7 @@ import { shouldPublishPlayerDeadFromBombHit } from "./reportBombHitValidation";
 type ReportBombHitUseCaseParams = {
   roomId: string;
   validation: BombHitReportValidationPort;
+  stats: BombHitStatsPort;
   input: ReportBombHitInput;
   output: PlayerDeadOutputPort;
 };
@@ -21,12 +23,15 @@ type ReportBombHitUseCaseParams = {
 export const reportBombHitUseCase = ({
   roomId,
   validation,
+  stats,
   input,
   output,
 }: ReportBombHitUseCaseParams): void => {
   if (!shouldPublishPlayerDeadFromBombHit(validation, input)) {
     return;
   }
+
+  stats.recordBombHitForOwner(input.payload.bombId);
 
   const deadPlayerId = input.socketId;
 

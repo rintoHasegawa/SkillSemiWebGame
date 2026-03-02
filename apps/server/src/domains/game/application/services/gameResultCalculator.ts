@@ -4,11 +4,21 @@
  * 塗り率計算，同率順位付け，チーム名解決を一箇所で扱う
  */
 import { config } from "@server/config";
-import type { GameResultPayload } from "@repo/shared";
+import type { GameResultPayload, PlayerGameStats } from "@repo/shared";
 
-/** グリッド色配列からゲーム結果ペイロードを生成する */
+/** プレイヤースタッツ構築に必要な最小情報 */
+type PlayerStatsSource = {
+  id: string;
+  name: string;
+  teamId: number;
+  paintCount: number;
+  bombHitCount: number;
+};
+
+/** グリッド色配列とプレイヤー情報からゲーム結果ペイロードを生成する */
 export const buildGameResultPayload = (
   gridColors: number[],
+  players?: PlayerStatsSource[],
 ): GameResultPayload => {
   const { TEAM_COUNT } = config.GAME_CONFIG;
   const totalCells = gridColors.length;
@@ -53,8 +63,17 @@ export const buildGameResultPayload = (
     item.rank = currentRank;
   });
 
+  const playerStats: PlayerGameStats[] | undefined = players?.map((p) => ({
+    playerId: p.id,
+    playerName: p.name,
+    teamId: p.teamId,
+    paintCount: p.paintCount,
+    bombHitCount: p.bombHitCount,
+  }));
+
   return {
     rankings,
     finalGridColors: [...gridColors],
+    ...(playerStats ? { playerStats } : {}),
   };
 };

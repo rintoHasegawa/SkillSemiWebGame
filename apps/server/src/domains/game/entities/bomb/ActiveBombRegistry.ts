@@ -7,6 +7,7 @@
 /** アクティブ爆弾の状態表現 */
 export type ActiveBomb = {
   bombId: string;
+  ownerPlayerId: string;
   x: number;
   y: number;
   explodeAtElapsedMs: number;

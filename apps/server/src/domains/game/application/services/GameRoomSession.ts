@@ -84,6 +84,7 @@ export class GameRoomSession {
       onGameEnd: () => {
         const resultPayload = buildGameResultPayload(
           this.mapStore.getGridColorsSnapshot(),
+          Array.from(this.players.values()),
         );
         this.dispose();
         callbacks.onGameEnd(resultPayload);
@@ -195,11 +196,26 @@ export class GameRoomSession {
     const ownerTeamId = player?.teamId ?? -1;
     this.bombStateStore.activeBombRegistry.registerBomb({
       bombId: registration.bombId,
+      ownerPlayerId: registration.ownerPlayerId,
       x: registration.x,
       y: registration.y,
       explodeAtElapsedMs: registration.explodeAtElapsedMs,
       ownerTeamId,
     });
+    this.bombStateStore.registerBombOwner(
+      registration.bombId,
+      registration.ownerPlayerId,
+    );
+  }
+
+  /** 指定爆弾の所有者の bombHitCount を加算する */
+  public recordBombHitForOwner(bombId: string): void {
+    const ownerPlayerId = this.bombStateStore.getBombOwnerPlayerId(bombId);
+    if (!ownerPlayerId) return;
+    const owner = this.players.get(ownerPlayerId);
+    if (owner) {
+      owner.bombHitCount += 1;
+    }
   }
 
   public dispose(): void {

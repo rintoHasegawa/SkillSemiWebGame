@@ -18,6 +18,9 @@ export class BombStateStore {
   /** アクティブ爆弾のライフサイクルを追跡するレジストリ */
   public readonly activeBombRegistry = new ActiveBombRegistry();
 
+  /** 爆弾IDから設置者プレイヤーIDを引くためのマップ（爆発後も保持する） */
+  private bombOwnerMap = new Map<string, string>();
+
   /** 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する */
   public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
     return shouldBroadcastBombPlaced({
@@ -43,5 +46,15 @@ export class BombStateStore {
     });
     this.bombSerial = nextSerial;
     return bombId;
+  }
+
+  /** 爆弾IDと設置者プレイヤーIDを紐づけて記録する */
+  public registerBombOwner(bombId: string, ownerPlayerId: string): void {
+    this.bombOwnerMap.set(bombId, ownerPlayerId);
+  }
+
+  /** 爆弾IDから設置者プレイヤーIDを取得する */
+  public getBombOwnerPlayerId(bombId: string): string | undefined {
+    return this.bombOwnerMap.get(bombId);
   }
 }

@@ -222,6 +222,13 @@ export class GameLoop {
             player.id as BotPlayerId,
             nowMs,
           );
+
+          // 爆弾所有者の bombHitCount を加算する
+          const owner = this.players.get(bomb.ownerPlayerId);
+          if (owner) {
+            owner.bombHitCount += 1;
+          }
+
           onBotBombHit(player.id, bomb.bombId);
         }
       }
@@ -299,7 +306,10 @@ export class GameLoop {
 
     for (const { gridIndex, player } of gridEntries) {
       if (gridIndex !== null && isCellPaintable(cellTeamMap, gridIndex)) {
-        this.mapStore.paintCell(gridIndex, player.teamId);
+        const changed = this.mapStore.paintCell(gridIndex, player.teamId);
+        if (changed) {
+          player.paintCount += 1;
+        }
       }
     }
   }

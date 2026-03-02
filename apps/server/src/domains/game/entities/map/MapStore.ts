@@ -21,9 +21,10 @@ export class MapStore {
 
   /**
     * マスを塗り，色が変化した場合のみ差分キューに追加する
+    * @returns 色が実際に変わった場合 true
    */
-  public paintCell(index: number, teamId: number): void {
-    paintCellIfChanged({
+  public paintCell(index: number, teamId: number): boolean {
+    return paintCellIfChanged({
       gridColors: this.gridColors,
       pendingUpdates: this.pendingUpdates,
       index,

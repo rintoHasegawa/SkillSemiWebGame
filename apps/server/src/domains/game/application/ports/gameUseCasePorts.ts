@@ -128,6 +128,11 @@ export interface BombHitReportValidationPort {
   shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean;
 }
 
+/** 被弾時に爆弾所有者のスタッツを更新するポート */
+export interface BombHitStatsPort {
+  recordBombHitForOwner(bombId: string): void;
+}
+
 /** 爆弾設置ユースケースの入力値 */
 export type PlaceBombInput = {
   socketId: string;
