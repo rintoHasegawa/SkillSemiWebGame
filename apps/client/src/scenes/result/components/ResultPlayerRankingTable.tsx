@@ -4,6 +4,7 @@
  * 塗り回数またはヒット数でソートして順位表示を担当する
  */
 import type { PlayerGameStats } from "@repo/shared";
+import { useMemo } from "react";
 import { config } from "@client/config";
 import {
   RESULT_PLAYER_RANKING_HEADER_ROW_STYLE,
@@ -29,7 +30,10 @@ export const ResultPlayerRankingTable = ({
   sortKey,
   valueLabel,
 }: Props) => {
-  const sorted = [...playerStats].sort((a, b) => b[sortKey] - a[sortKey]);
+  const sorted = useMemo(
+    () => [...playerStats].sort((a, b) => b[sortKey] - a[sortKey]),
+    [playerStats, sortKey],
+  );
 
   return (
     <div style={RESULT_TABLE_STYLE}>
