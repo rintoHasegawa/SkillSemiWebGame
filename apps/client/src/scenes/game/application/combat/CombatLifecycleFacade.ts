@@ -20,6 +20,8 @@ export type CombatLifecycleFacadeOptions = {
   onLocalBombHitCountChanged: (count: number) => void;
 };
 
+type RespawnState = "idle" | "counting" | "pendingRespawn";
+
 /** 被弾関連ライフサイクルの制御を担当する */
 export class CombatLifecycleFacade {
   private readonly players: GamePlayers;
@@ -30,7 +32,7 @@ export class CombatLifecycleFacade {
   private readonly playerHitPolicy: PlayerHitPolicy;
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
   private localBombHitCount = 0;
-  private isRespawnPending = false;
+  private respawnState: RespawnState = "idle";
   private respawnTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor({
@@ -64,7 +66,7 @@ export class CombatLifecycleFacade {
   public handleBombExploded(payload: BombExplodedPayload): void {
     const hitPlayerId = this.bombHitOrchestrator.evaluateHit(payload);
     if (!hitPlayerId) return;
-    if (this.isRespawnPending) return;
+    if (this.respawnState === "pendingRespawn") return;
 
     this.handleLocalBombHit();
     this.playerHitPolicy.applyLocalHitStun();
@@ -97,6 +99,10 @@ export class CombatLifecycleFacade {
   }
 
   private handleLocalBombHit(): void {
+    if (this.respawnState === "idle") {
+      this.respawnState = "counting";
+    }
+
     this.localBombHitCount += 1;
     this.onLocalBombHitCountChanged(this.localBombHitCount);
 
@@ -104,7 +110,7 @@ export class CombatLifecycleFacade {
       return;
     }
 
-    this.isRespawnPending = true;
+    this.respawnState = "pendingRespawn";
     if (this.respawnTimer) {
       clearTimeout(this.respawnTimer);
       this.respawnTimer = null;
@@ -119,7 +125,7 @@ export class CombatLifecycleFacade {
       }
 
       this.localBombHitCount = 0;
-      this.isRespawnPending = false;
+      this.respawnState = "idle";
       this.onLocalBombHitCountChanged(this.localBombHitCount);
     }, config.GAME_CONFIG.PLAYER_HIT_STUN_MS);
   }

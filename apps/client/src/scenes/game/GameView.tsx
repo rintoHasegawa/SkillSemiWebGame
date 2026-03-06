@@ -16,6 +16,7 @@ import {
   GAME_VIEW_TIMER_STYLE,
 } from "./styles/GameView.styles";
 import { config } from "@client/config";
+import { buildRespawnHeartGauge } from "./input/presentation/GameUiPresenter";
 
 /** 表示と入力に必要なプロパティ */
 type Props = {
@@ -91,17 +92,6 @@ const TeamPaintRateOverlay = ({
   );
 };
 
-const buildHeartGauge = (localBombHitCount: number): string => {
-  const maxHearts = Math.max(
-    1,
-    Math.floor(config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT),
-  );
-  const clampedHitCount = Math.min(Math.max(localBombHitCount, 0), maxHearts);
-  const remainingHearts = maxHearts - clampedHitCount;
-
-  return `${"❤️".repeat(remainingHearts)}${"🤍".repeat(clampedHitCount)}`;
-};
-
 /** 画面描画と入力UIをまとめて描画する */
 export const GameView = ({
   timeLeft,
@@ -116,7 +106,7 @@ export const GameView = ({
   const remainingSeconds = parseRemainingSeconds(timeLeft);
   const isFeverTime =
     remainingSeconds <= config.GAME_CONFIG.BOMB_FEVER_START_REMAINING_SEC;
-  const heartGauge = buildHeartGauge(localBombHitCount);
+  const heartGauge = buildRespawnHeartGauge(localBombHitCount);
 
   return (
     <div style={GAME_VIEW_ROOT_STYLE}>
