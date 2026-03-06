@@ -7,7 +7,7 @@ import { Container } from "pixi.js";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
 } from "@repo/shared";
 import { AppearanceResolver } from "./AppearanceResolver";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
@@ -27,7 +27,7 @@ type GameNetworkSyncOptions = {
   onGameEnded: () => void;
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
-  onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
+  onRemotePlayerHit: (payload: PlayerHitPayload) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -53,7 +53,7 @@ export class GameNetworkSync {
     onGameEnded,
     onRemoteBombPlaced,
     onBombPlacementAcknowledged,
-    onRemotePlayerDead,
+    onRemotePlayerHit,
   }: GameNetworkSyncOptions) {
     this.stateApplier = new GameNetworkStateApplier({
       worldContainer,
@@ -65,7 +65,7 @@ export class GameNetworkSync {
       onGameEnded,
       onRemoteBombPlaced,
       onBombPlacementAcknowledged,
-      onRemotePlayerDead,
+      onRemotePlayerHit,
       onDebugLog: this.debugLog,
     });
 

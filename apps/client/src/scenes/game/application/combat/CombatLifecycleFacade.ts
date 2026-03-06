@@ -4,10 +4,10 @@
  * ゲームマネージャーから被弾関連の責務を分離する
  */
 import { config } from "@client/config";
-import type { PlayerDeadPayload } from "@repo/shared";
+import type { PlayerHitPayload } from "@repo/shared";
 import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
 import { BombHitOrchestrator } from "@client/scenes/game/application/BombHitOrchestrator";
-import { PlayerDeathPolicy } from "@client/scenes/game/application/PlayerDeathPolicy";
+import { PlayerHitPolicy } from "@client/scenes/game/application/PlayerHitPolicy";
 import { PlayerHitEffectOrchestrator } from "@client/scenes/game/application/PlayerHitEffectOrchestrator";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
 
@@ -26,7 +26,7 @@ export class CombatLifecycleFacade {
     bombId: string,
   ) => void;
   private readonly bombHitOrchestrator: BombHitOrchestrator;
-  private readonly playerDeathPolicy: PlayerDeathPolicy;
+  private readonly playerHitPolicy: PlayerHitPolicy;
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
 
   constructor({
@@ -41,7 +41,7 @@ export class CombatLifecycleFacade {
       players,
       myId,
     });
-    this.playerDeathPolicy = new PlayerDeathPolicy({
+    this.playerHitPolicy = new PlayerHitPolicy({
       myId,
       hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
       acquireInputLock,
@@ -58,20 +58,20 @@ export class CombatLifecycleFacade {
     const hitPlayerId = this.bombHitOrchestrator.evaluateHit(payload);
     if (!hitPlayerId) return;
 
-    this.playerDeathPolicy.applyLocalHitStun();
+    this.playerHitPolicy.applyLocalHitStun();
     this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
     this.onSendBombHitReport(payload.bombId);
   }
 
   /** ネットワーク被弾通知を適用する */
-  public handleNetworkPlayerDead(payload: PlayerDeadPayload): void {
-    this.playerDeathPolicy.applyPlayerDeadEvent(payload);
-    this.playerHitEffectOrchestrator.handleNetworkPlayerDead(payload.playerId, this.myId);
+  public handleNetworkPlayerHit(payload: PlayerHitPayload): void {
+    this.playerHitPolicy.applyPlayerHitEvent(payload);
+    this.playerHitEffectOrchestrator.handleNetworkPlayerHit(payload.playerId, this.myId);
   }
 
   /** 管理中リソースを破棄する */
   public dispose(): void {
     this.bombHitOrchestrator.clear();
-    this.playerDeathPolicy.dispose();
+    this.playerHitPolicy.dispose();
   }
 }

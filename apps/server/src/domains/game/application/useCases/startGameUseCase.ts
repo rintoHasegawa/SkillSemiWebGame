@@ -41,9 +41,9 @@ export const startGameUseCase = ({
     output,
   });
 
-  /** Bot被弾検出時にPLAYER_DEADをルームへ配信する */
+  /** Bot被弾検出時にPLAYER_HITをルームへ配信する */
   const handleBotBombHit = (targetPlayerId: string, _bombId: string): void => {
-    output.publishPlayerDeadToOthersInRoom(roomId, targetPlayerId, {
+    output.publishPlayerHitToOthersInRoom(roomId, targetPlayerId, {
       playerId: targetPlayerId,
     });
   };

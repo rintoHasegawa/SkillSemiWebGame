@@ -10,7 +10,7 @@ import type {
   domain,
   GameStartPayload,
   GameResultPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
   PongPayload,
   CurrentPlayersPayload,
   RemovePlayerPayload,
@@ -18,7 +18,7 @@ import type {
 } from "@repo/shared";
 import type {
   BombPlacementOutputPort,
-  PlayerDeadOutputPort,
+  PlayerHitOutputPort,
   GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { isBotPlayerId } from "@server/domains/game/application/services/bot/index.js";
@@ -34,7 +34,7 @@ export type GameOutputAdapter = Omit<
   "publishPlayerRemovedToRoom"
 > &
   BombPlacementOutputPort &
-  PlayerDeadOutputPort;
+  PlayerHitOutputPort;
 
 /** ゲーム切断時の出力アダプターのインターフェース */
 export type GameDisconnectOutputAdapter = Pick<
@@ -114,15 +114,15 @@ export const createGameOutputAdapter = (
         payload,
       );
     },
-    publishPlayerDeadToOthersInRoom: (
+    publishPlayerHitToOthersInRoom: (
       roomId: RoomId,
       deadPlayerId: string,
-      payload: PlayerDeadPayload,
+      payload: PlayerHitPayload,
     ) => {
       common.emitToRoomExceptSocket(
         roomId,
         deadPlayerId,
-        protocol.SocketEvents.PLAYER_DEAD,
+        protocol.SocketEvents.PLAYER_HIT,
         payload,
       );
     },

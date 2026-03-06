@@ -7,7 +7,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   GameStartPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
 } from "@repo/shared";
 
 /** ゲーム開始受信ペイロードから開始時刻を抽出する
@@ -38,9 +38,9 @@ export const toBombPlacementAcknowledgedPayload = (
   return payload;
 };
 
-/** プレイヤー死亡受信ペイロードを内部ペイロードへ正規化する */
-export const toRemotePlayerDeadPayload = (
-  payload: PlayerDeadPayload,
-): PlayerDeadPayload => {
+/** プレイヤー被弾受信ペイロードを内部ペイロードへ正規化する */
+export const toRemotePlayerHitPayload = (
+  payload: PlayerHitPayload,
+): PlayerHitPayload => {
   return payload;
 };

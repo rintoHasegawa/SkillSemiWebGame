@@ -6,30 +6,30 @@
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
 } from "@repo/shared";
 
 /** CombatSyncHandler の初期化入力 */
 export type CombatSyncHandlerOptions = {
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
-  onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
+  onRemotePlayerHit: (payload: PlayerHitPayload) => void;
 };
 
 /** 戦闘関連イベントの橋渡しを担当する */
 export class CombatSyncHandler {
   private readonly onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   private readonly onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
-  private readonly onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
+  private readonly onRemotePlayerHit: (payload: PlayerHitPayload) => void;
 
   constructor({
     onRemoteBombPlaced,
     onBombPlacementAcknowledged,
-    onRemotePlayerDead,
+    onRemotePlayerHit,
   }: CombatSyncHandlerOptions) {
     this.onRemoteBombPlaced = onRemoteBombPlaced;
     this.onBombPlacementAcknowledged = onBombPlacementAcknowledged;
-    this.onRemotePlayerDead = onRemotePlayerDead;
+    this.onRemotePlayerHit = onRemotePlayerHit;
   }
 
   /** 他プレイヤーの爆弾設置受信イベントを橋渡しする */
@@ -42,8 +42,8 @@ export class CombatSyncHandler {
     this.onBombPlacementAcknowledged(payload);
   };
 
-  /** プレイヤー死亡受信イベントを橋渡しする */
-  public handleReceivedPlayerDead = (payload: PlayerDeadPayload): void => {
-    this.onRemotePlayerDead(payload);
+  /** プレイヤー被弾受信イベントを橋渡しする */
+  public handleReceivedPlayerHit = (payload: PlayerHitPayload): void => {
+    this.onRemotePlayerHit(payload);
   };
 }

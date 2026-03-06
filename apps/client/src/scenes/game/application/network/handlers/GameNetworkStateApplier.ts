@@ -7,7 +7,7 @@ import { Container } from "pixi.js";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
 } from "@repo/shared";
 import { domain } from "@repo/shared";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
@@ -17,7 +17,7 @@ import {
   toBombPlacementAcknowledgedPayload,
   toGameStartedAt,
   toRemoteBombPlacedPayload,
-  toRemotePlayerDeadPayload,
+  toRemotePlayerHitPayload,
 } from "@client/scenes/game/application/network/adapters/GameNetworkEventAdapter";
 import { CombatSyncHandler } from "./CombatSyncHandler";
 import { MapSyncHandler } from "./MapSyncHandler";
@@ -35,7 +35,7 @@ export type GameNetworkStateApplierOptions = {
   onGameEnded: () => void;
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
-  onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
+  onRemotePlayerHit: (payload: PlayerHitPayload) => void;
   onDebugLog?: (message: string) => void;
 };
 
@@ -59,7 +59,7 @@ export class GameNetworkStateApplier {
     onGameEnded,
     onRemoteBombPlaced,
     onBombPlacementAcknowledged,
-    onRemotePlayerDead,
+    onRemotePlayerHit,
     onDebugLog,
   }: GameNetworkStateApplierOptions) {
     this.playerSyncHandler = new PlayerSyncHandler({
@@ -76,8 +76,8 @@ export class GameNetworkStateApplier {
       onBombPlacementAcknowledged: (payload) => {
         onBombPlacementAcknowledged(toBombPlacementAcknowledgedPayload(payload));
       },
-      onRemotePlayerDead: (payload) => {
-        onRemotePlayerDead(toRemotePlayerDeadPayload(payload));
+      onRemotePlayerHit: (payload) => {
+        onRemotePlayerHit(toRemotePlayerHitPayload(payload));
       },
     });
     this.onGameStarted = onGameStarted;
@@ -118,8 +118,8 @@ export class GameNetworkStateApplier {
       onReceivedBombPlacedAck: (payload) => {
         this.combatSyncHandler.handleReceivedBombPlacedAck(payload);
       },
-      onReceivedPlayerDead: (payload) => {
-        this.combatSyncHandler.handleReceivedPlayerDead(payload);
+      onReceivedPlayerHit: (payload) => {
+        this.combatSyncHandler.handleReceivedPlayerHit(payload);
       },
     };
   }

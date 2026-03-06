@@ -17,7 +17,7 @@ import type {
   MovePayload,
   NewPlayerPayload,
   PlaceBombPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
@@ -47,8 +47,8 @@ export type GameHandler = {
   offBombPlaced: (callback: (payload: BombPlacedPayload) => void) => void;
   onBombPlacedAck: (callback: (payload: BombPlacedAckPayload) => void) => void;
   offBombPlacedAck: (callback: (payload: BombPlacedAckPayload) => void) => void;
-  onPlayerDead: (callback: (payload: PlayerDeadPayload) => void) => void;
-  offPlayerDead: (callback: (payload: PlayerDeadPayload) => void) => void;
+  onPlayerHit: (callback: (payload: PlayerHitPayload) => void) => void;
+  offPlayerHit: (callback: (payload: PlayerHitPayload) => void) => void;
   sendMove: (x: number, y: number) => void;
   sendPlaceBomb: (payload: PlaceBombPayload) => void;
   sendBombHitReport: (payload: BombHitReportPayload) => void;
@@ -111,8 +111,8 @@ export const createGameHandler = (socket: Socket): GameHandler => {
   const bombPlacedAckSubscription = createSubscriptionPair(
     protocol.SocketEvents.BOMB_PLACED_ACK
   );
-  const playerDeadSubscription = createSubscriptionPair(
-    protocol.SocketEvents.PLAYER_DEAD
+  const playerHitSubscription = createSubscriptionPair(
+    protocol.SocketEvents.PLAYER_HIT
   );
   const sendMovePayload = createPayloadSender(protocol.SocketEvents.MOVE);
   const sendPlaceBombPayload = createPayloadSender(protocol.SocketEvents.PLACE_BOMB);
@@ -185,11 +185,11 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     offBombPlacedAck: (callback) => {
       bombPlacedAckSubscription.off(callback);
     },
-    onPlayerDead: (callback) => {
-      playerDeadSubscription.on(callback);
+    onPlayerHit: (callback) => {
+      playerHitSubscription.on(callback);
     },
-    offPlayerDead: (callback) => {
-      playerDeadSubscription.off(callback);
+    offPlayerHit: (callback) => {
+      playerHitSubscription.off(callback);
     },
     sendMove: (x, y) => {
       const payload: MovePayload = { x, y };

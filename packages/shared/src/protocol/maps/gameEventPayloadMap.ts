@@ -19,7 +19,7 @@ import type {
   MovePayload,
   NewPlayerPayload,
   PlaceBombPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
@@ -45,7 +45,7 @@ export type GameServerToClientEventPayloadMap = {
   [SocketEvents.UPDATE_MAP_CELLS_SYNC]: UpdateMapCellsPayload;
   [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
   [SocketEvents.BOMB_PLACED_ACK]: BombPlacedAckPayload;
-  [SocketEvents.PLAYER_DEAD]: PlayerDeadPayload;
+  [SocketEvents.PLAYER_HIT]: PlayerHitPayload;
   [SocketEvents.PONG]: PongPayload;
   [SocketEvents.GAME_END]: undefined;
   [SocketEvents.GAME_RESULT]: GameResultPayload;

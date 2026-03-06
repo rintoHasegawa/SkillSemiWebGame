@@ -6,7 +6,7 @@ import type {
   BombHitReportPayload,
   BombPlacedAckPayload,
   BombPlacedPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
   domain,
   PlaceBombPayload,
   CurrentPlayersPayload,
@@ -86,12 +86,12 @@ export interface BombPlacementOutputPort {
   ): void;
 }
 
-/** プレイヤー死亡通知の送信出力ポート */
-export interface PlayerDeadOutputPort {
-  publishPlayerDeadToOthersInRoom(
+/** プレイヤー被弾通知の送信出力ポート */
+export interface PlayerHitOutputPort {
+  publishPlayerHitToOthersInRoom(
     roomId: domain.room.Room["roomId"],
     deadPlayerId: string,
-    payload: PlayerDeadPayload,
+    payload: PlayerHitPayload,
   ): void;
 }
 
@@ -105,7 +105,7 @@ export type StartGameOutputPort = Pick<
   | "publishGameStartToRoom"
 > &
   BombPlacementOutputPort &
-  PlayerDeadOutputPort;
+  PlayerHitOutputPort;
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {

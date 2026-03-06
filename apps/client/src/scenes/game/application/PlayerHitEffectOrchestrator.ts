@@ -54,9 +54,9 @@ export class PlayerHitEffectOrchestrator {
   }
 
   /** ネットワーク通知の被弾時に必要な点滅演出を発火する */
-  public handleNetworkPlayerDead(playerId: string, localPlayerId: string): void {
+  public handleNetworkPlayerHit(playerId: string, localPlayerId: string): void {
     this.dispatch({
-      name: "network-player-dead",
+      name: "network-player-hit",
       payload: {
         playerId,
         localPlayerId,
@@ -67,7 +67,7 @@ export class PlayerHitEffectOrchestrator {
   /** 被弾演出イベント名に応じて処理を分岐する */
   public dispatch(event: PlayerHitEffectEvent): void {
     if (
-      event.name === "network-player-dead"
+      event.name === "network-player-hit"
       && event.payload.playerId === event.payload.localPlayerId
     ) {
       return;

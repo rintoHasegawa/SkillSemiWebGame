@@ -36,7 +36,7 @@ export const SocketEvents = {
   UPDATE_MAP_CELLS: "update-map-cells",
   BOMB_PLACED: "bomb-placed",
   BOMB_PLACED_ACK: "bomb-placed-ack",
-  PLAYER_DEAD: "player-dead",
+  PLAYER_HIT: "player-hit",
 
   // 時間同期・ゲーム進行関連
   PING: "ping",

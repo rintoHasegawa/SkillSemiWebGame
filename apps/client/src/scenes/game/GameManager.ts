@@ -134,8 +134,8 @@ export class GameManager {
         onBombPlacementAcknowledged: (payload) => {
           this.gameEventFacade.applyBombPlacementAcknowledged(payload);
         },
-        onRemotePlayerDead: (payload) => {
-          this.combatFacade.handleNetworkPlayerDead(payload);
+        onRemotePlayerHit: (payload) => {
+          this.combatFacade.handleNetworkPlayerHit(payload);
         },
         onBombExploded: (payload) => {
           this.combatFacade.handleBombExploded(payload);

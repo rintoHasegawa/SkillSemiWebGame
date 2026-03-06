@@ -121,7 +121,7 @@ export type BombHitReportPayload = {
   bombId: string;
 };
 
-/** player-dead イベントで送受信する死亡プレイヤー情報 */
-export type PlayerDeadPayload = {
+/** player-hit イベントで送受信する被弾プレイヤー情報 */
+export type PlayerHitPayload = {
   playerId: string;
 };
