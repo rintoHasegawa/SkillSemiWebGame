@@ -28,6 +28,7 @@ export const useGameSceneController = (myId: string | null) => {
   const [teamPaintRates, setTeamPaintRates] = useState<number[]>(
     DEFAULT_TEAM_PAINT_RATES,
   );
+  const [localBombHitCount, setLocalBombHitCount] = useState(0);
 
   useEffect(() => {
     if (!pixiContainerRef.current || !myId) return;
@@ -51,6 +52,7 @@ export const useGameSceneController = (myId: string | null) => {
       );
 
       setTeamPaintRates(state.teamPaintRates);
+      setLocalBombHitCount(state.localBombHitCount);
     });
 
     return () => {
@@ -60,6 +62,7 @@ export const useGameSceneController = (myId: string | null) => {
       setStartCountdownText(null);
       setIsInputEnabled(false);
       setTeamPaintRates(DEFAULT_TEAM_PAINT_RATES);
+      setLocalBombHitCount(0);
     };
   }, [myId]);
 
@@ -77,6 +80,7 @@ export const useGameSceneController = (myId: string | null) => {
     startCountdownText,
     isInputEnabled,
     teamPaintRates,
+    localBombHitCount,
     handleInput,
     handlePlaceBomb,
   };

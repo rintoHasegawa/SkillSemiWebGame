@@ -11,6 +11,8 @@ export class PlayerModel {
   public readonly id: string;
   public readonly name: string;
   public readonly teamId: number;
+  private readonly initialGridX: number;
+  private readonly initialGridY: number;
 
   private gridX: number;
   private gridY: number;
@@ -22,6 +24,8 @@ export class PlayerModel {
     this.id = data.id;
     this.name = data.name;
     this.teamId = data.teamId;
+    this.initialGridX = data.x;
+    this.initialGridY = data.y;
     this.gridX = data.x;
     this.gridY = data.y;
     this.targetGridX = data.x;
@@ -64,11 +68,22 @@ export class PlayerModel {
   }
 
   /** リモート更新の目標座標を設定する */
-  public setRemoteTarget(update: Partial<domain.game.player.MovePayload>): void {
+  public setRemoteTarget(
+    update: Partial<domain.game.player.MovePayload>,
+  ): void {
     if (update.x !== undefined && this.isFiniteNumber(update.x))
       this.targetGridX = update.x;
     if (update.y !== undefined && this.isFiniteNumber(update.y))
       this.targetGridY = update.y;
+  }
+
+  /** 初期位置へ座標を戻す */
+  public resetToInitialPosition(): void {
+    this.gridX = this.initialGridX;
+    this.gridY = this.initialGridY;
+    this.targetGridX = this.initialGridX;
+    this.targetGridY = this.initialGridY;
+    this.clampToBounds();
   }
 
   /** 目標座標に向けて補間更新する */

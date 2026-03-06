@@ -4,11 +4,17 @@ const sharedBombRenderScale =
   (sharedConfig.GAME_CONFIG as { BOMB_RENDER_SCALE?: number })
     .BOMB_RENDER_SCALE ?? 1;
 
+const sharedRespawnHitCount =
+  (sharedConfig.GAME_CONFIG as { PLAYER_RESPAWN_HIT_COUNT?: number })
+    .PLAYER_RESPAWN_HIT_COUNT ?? 5;
+
 const CLIENT_GAME_CONFIG = {
   TIMER_DISPLAY_UPDATE_MS: 250,
   JOIN_REQUEST_TIMEOUT_MS: 8000,
 
   FRAME_DELTA_MAX_MS: 50,
+
+  PLAYER_RESPAWN_HIT_COUNT: sharedRespawnHitCount,
 
   PLAYER_LERP_SMOOTHNESS: 18,
   PLAYER_LERP_SNAP_THRESHOLD: 0.005,

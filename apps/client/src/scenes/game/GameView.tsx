@@ -5,6 +5,7 @@
  */
 import { GameInputOverlay } from "./input/GameInputOverlay";
 import {
+  GAME_VIEW_BOMB_HIT_DEBUG_STYLE,
   GAME_VIEW_FEVER_TEXT_STYLE,
   GAME_VIEW_PAINT_RATE_ITEM_STYLE,
   GAME_VIEW_PAINT_RATE_PANEL_STYLE,
@@ -15,6 +16,7 @@ import {
   GAME_VIEW_TIMER_STYLE,
 } from "./styles/GameView.styles";
 import { config } from "@client/config";
+import { buildRespawnHeartGauge } from "./input/presentation/GameUiPresenter";
 
 /** 表示と入力に必要なプロパティ */
 type Props = {
@@ -22,6 +24,7 @@ type Props = {
   startCountdownText: string | null;
   isInputEnabled: boolean;
   teamPaintRates: number[];
+  localBombHitCount: number;
   pixiContainerRef: React.RefObject<HTMLDivElement>;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
@@ -95,6 +98,7 @@ export const GameView = ({
   startCountdownText,
   isInputEnabled,
   teamPaintRates,
+  localBombHitCount,
   pixiContainerRef,
   onJoystickInput,
   onPlaceBomb,
@@ -102,12 +106,14 @@ export const GameView = ({
   const remainingSeconds = parseRemainingSeconds(timeLeft);
   const isFeverTime =
     remainingSeconds <= config.GAME_CONFIG.BOMB_FEVER_START_REMAINING_SEC;
+  const heartGauge = buildRespawnHeartGauge(localBombHitCount);
 
   return (
     <div style={GAME_VIEW_ROOT_STYLE}>
       <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } } @keyframes feverPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }`}</style>
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
+      <div style={GAME_VIEW_BOMB_HIT_DEBUG_STYLE}>HP: {heartGauge}</div>
       <TeamPaintRateOverlay
         teamPaintRates={teamPaintRates}
         remainingSeconds={remainingSeconds}

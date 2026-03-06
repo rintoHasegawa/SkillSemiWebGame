@@ -19,6 +19,7 @@ export function GameScene({ myId }: GameSceneProps) {
     startCountdownText,
     isInputEnabled,
     teamPaintRates,
+    localBombHitCount,
     handleInput,
     handlePlaceBomb,
   } = useGameSceneController(myId);
@@ -29,6 +30,7 @@ export function GameScene({ myId }: GameSceneProps) {
       startCountdownText={startCountdownText}
       isInputEnabled={isInputEnabled}
       teamPaintRates={teamPaintRates}
+      localBombHitCount={localBombHitCount}
       pixiContainerRef={pixiContainerRef}
       onJoystickInput={handleInput}
       onPlaceBomb={handlePlaceBomb}

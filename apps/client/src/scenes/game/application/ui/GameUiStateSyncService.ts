@@ -16,6 +16,7 @@ export type GameUiState = {
   startCountdownSec: number;
   isInputEnabled: boolean;
   teamPaintRates: number[];
+  localBombHitCount: number;
 };
 
 const isSamePaintRates = (a: number[], b: number[]): boolean => {
@@ -72,6 +73,7 @@ export class GameUiStateSyncService {
       this.lastState.remainingTimeSec === snapshot.remainingTimeSec &&
       this.lastState.startCountdownSec === snapshot.startCountdownSec &&
       this.lastState.isInputEnabled === snapshot.isInputEnabled &&
+      this.lastState.localBombHitCount === snapshot.localBombHitCount &&
       isSamePaintRates(this.lastState.teamPaintRates, snapshot.teamPaintRates)
     ) {
       return;

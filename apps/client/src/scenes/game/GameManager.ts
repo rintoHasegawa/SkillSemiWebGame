@@ -53,6 +53,7 @@ export class GameManager {
   private lifecycleState: SceneLifecycleState;
   private uiStateSyncService: GameUiStateSyncService;
   private disposableRegistry: DisposableRegistry;
+  private localBombHitCount = 0;
 
   public getStartCountdownSec(): number {
     return this.sessionFacade.getStartCountdownSec();
@@ -112,6 +113,10 @@ export class GameManager {
       acquireInputLock: this.lockInput.bind(this),
       onSendBombHitReport: (bombId) => {
         gameActionSender.sendBombHitReport(bombId);
+      },
+      onLocalBombHitCountChanged: (count) => {
+        this.localBombHitCount = count;
+        this.uiStateSyncService.emitIfChanged();
       },
     });
     this.runtime = new GameSceneRuntime({
@@ -208,6 +213,7 @@ export class GameManager {
       startCountdownSec: this.sessionFacade.getStartCountdownSec(),
       isInputEnabled: this.runtime.isInputEnabled(),
       teamPaintRates: this.runtime.getPaintRatesByTeam(),
+      localBombHitCount: this.localBombHitCount,
     };
   }
 

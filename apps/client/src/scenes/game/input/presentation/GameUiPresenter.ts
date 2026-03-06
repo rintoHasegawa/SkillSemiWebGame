@@ -23,3 +23,15 @@ export const buildStartCountdownText = (
 export const getInitialTimeDisplay = (): string => {
   return formatRemainingTime(config.GAME_CONFIG.GAME_DURATION_SEC);
 };
+
+/** 被弾回数からハートゲージ表示を生成する */
+export const buildRespawnHeartGauge = (localBombHitCount: number): string => {
+  const maxHearts = Math.max(
+    1,
+    Math.floor(config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT),
+  );
+  const clampedHitCount = Math.min(Math.max(localBombHitCount, 0), maxHearts);
+  const remainingHearts = maxHearts - clampedHitCount;
+
+  return `${"❤️".repeat(remainingHearts)}${"🤍".repeat(clampedHitCount)}`;
+};
