@@ -4,12 +4,12 @@
  * 背景演出と順位表の切り替え表示を制御する
  */
 import type { GameResultPayload } from "@repo/shared";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { config } from "../../config";
 import { ResultActionBar } from "./components/ResultActionBar";
 import { ResultBackground } from "./components/ResultBackground";
-import { ResultPlayerStatsTable } from "./components/ResultPlayerStatsTable";
-import { ResultRankingTable } from "./components/ResultRankingTable";
+import { ResultTabContent } from "./components/ResultTabContent";
+import { ResultTabBar } from "./components/ResultTabBar";
 import {
   RESULT_BACKGROUND_DARK_OVERLAY_STYLE,
   RESULT_CONTENT_STYLE,
@@ -19,23 +19,22 @@ import {
   RESULT_TITLE_STYLE,
   getResultTitleTextStyle,
 } from "./styles/resultStyles";
-import type { ResultViewMode } from "./types/resultViewMode";
+import { useResultView } from "./hooks/useResultView";
 
 type Props = {
   result: GameResultPayload | null;
   onBackToTitle: () => void;
 };
 
-const formatPaintRate = (value: number): string => `${value.toFixed(1)}%`;
-
 /** 最終結果データを受け取り，順位一覧を表示する */
 export const ResultScene = ({ result, onBackToTitle }: Props) => {
-  const [viewMode, setViewMode] = useState<ResultViewMode>("mapPreview");
-  const isRankingVisible = viewMode === "ranking";
-
-  useEffect(() => {
-    setViewMode("mapPreview");
-  }, [result]);
+  const {
+    activeTab,
+    isRankingVisible,
+    showMapPreview,
+    showRanking,
+    setActiveTab,
+  } = useResultView(result);
 
   if (!result) {
     return (
@@ -43,18 +42,27 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
     );
   }
 
-  const winnerTeamId =
-    result.rankings.find((row) => row.rank === 1)?.teamId ??
-    result.rankings[0]?.teamId;
-  const winnerColor =
-    config.GAME_CONFIG.TEAM_COLORS[winnerTeamId ?? -1] ?? "#888888";
+  const winnerTeamId = useMemo(
+    () =>
+      result.rankings.find((row) => row.rank === 1)?.teamId ??
+      result.rankings[0]?.teamId,
+    [result.rankings],
+  );
+  const winnerColor = useMemo(
+    () => config.GAME_CONFIG.TEAM_COLORS[winnerTeamId ?? -1] ?? "#888888",
+    [winnerTeamId],
+  );
   const gridCols = config.GAME_CONFIG.GRID_COLS;
   const gridRows = config.GAME_CONFIG.GRID_ROWS;
   const totalCells = gridCols * gridRows;
-  const finalGridColors = Array.from({ length: totalCells }, (_, index) => {
-    const teamId = result.finalGridColors?.[index];
-    return typeof teamId === "number" ? teamId : -1;
-  });
+  const finalGridColors = useMemo(
+    () =>
+      Array.from({ length: totalCells }, (_, index) => {
+        const teamId = result.finalGridColors?.[index];
+        return typeof teamId === "number" ? teamId : -1;
+      }),
+    [result.finalGridColors, totalCells],
+  );
 
   return (
     <div
@@ -67,7 +75,7 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
           return;
         }
 
-        setViewMode("ranking");
+        showRanking();
       }}
     >
       <style>{RESULT_KEYFRAMES_CSS}</style>
@@ -83,7 +91,7 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
         {isRankingVisible && (
           <ResultActionBar
             onBackToTitle={onBackToTitle}
-            onShowMapPreview={() => setViewMode("mapPreview")}
+            onShowMapPreview={showMapPreview}
           />
         )}
 
@@ -96,14 +104,15 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
         )}
 
         {isRankingVisible && (
-          <ResultRankingTable
-            rankings={result.rankings}
-            formatPaintRate={formatPaintRate}
-          />
+          <ResultTabBar activeTab={activeTab} onTabChange={setActiveTab} />
         )}
 
-        {isRankingVisible && result.playerStats && result.playerStats.length > 0 && (
-          <ResultPlayerStatsTable playerStats={result.playerStats} />
+        {isRankingVisible && (
+          <ResultTabContent
+            activeTab={activeTab}
+            rankings={result.rankings}
+            playerStats={result.playerStats ?? []}
+          />
         )}
       </div>
     </div>

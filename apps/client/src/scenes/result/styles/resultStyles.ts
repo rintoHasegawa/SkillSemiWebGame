@@ -244,13 +244,96 @@ export const RESULT_PLAYER_STATS_VALUE_STYLE: CSSProperties = {
 };
 
 /** プレイヤースタッツ表本文行のスタイルを返す */
-export const getResultPlayerStatsBodyRowStyle = (index: number): CSSProperties => ({
+export const getResultPlayerStatsBodyRowStyle = (
+  index: number,
+): CSSProperties => ({
   display: "grid",
   gridTemplateColumns: RESULT_PLAYER_STATS_ROW_GRID_TEMPLATE,
   padding: "12px 16px",
   borderTop: "1px solid #333",
   background: index % 2 === 0 ? "#171717" : "#1d1d1d",
 });
+
+/** タブバーコンテナのスタイル */
+export const RESULT_TAB_BAR_CONTAINER_STYLE: CSSProperties = {
+  display: "flex",
+  width: "100%",
+  maxWidth: "720px",
+  gap: "4px",
+  marginBottom: "16px",
+};
+
+/** タブボタンのスタイルを返す */
+export const getResultTabButtonStyle = (isActive: boolean): CSSProperties => ({
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "4px",
+  padding: "12px 8px",
+  background: isActive ? "rgba(80, 80, 80, 0.9)" : "rgba(50, 50, 50, 0.6)",
+  border: "none",
+  borderBottom: isActive ? "3px solid #FFD95A" : "3px solid transparent",
+  borderRadius: "8px 8px 0 0",
+  color: isActive ? "#fff" : "#aaa",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+  fontWeight: isActive ? 700 : 400,
+  backdropFilter: "blur(2px)",
+});
+
+/** タブアイコンのスタイル */
+export const RESULT_TAB_ICON_STYLE: CSSProperties = {
+  fontSize: "1.4rem",
+  lineHeight: 1,
+};
+
+/** タブラベルのスタイル */
+export const RESULT_TAB_LABEL_STYLE: CSSProperties = {
+  fontSize: "clamp(0.75rem, 2vw, 0.9rem)",
+  letterSpacing: "0.05em",
+  whiteSpace: "nowrap",
+};
+
+/** プレイヤーランキング表のグリッド列定義 */
+export const RESULT_PLAYER_RANKING_ROW_GRID_TEMPLATE = "100px 1fr 140px";
+
+/** プレイヤーランキング表ヘッダー行のスタイル */
+export const RESULT_PLAYER_RANKING_HEADER_ROW_STYLE: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: RESULT_PLAYER_RANKING_ROW_GRID_TEMPLATE,
+  background: "#222",
+  padding: "12px 16px",
+  fontWeight: "bold",
+};
+
+/** プレイヤーランキング表本文スクロール領域のスタイル */
+export const RESULT_PLAYER_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
+  maxHeight: "min(52dvh, 460px)",
+  overflowY: "auto",
+};
+
+/** プレイヤーランキング数値セルのスタイル */
+export const RESULT_PLAYER_RANKING_VALUE_STYLE: CSSProperties = {
+  textAlign: "right",
+  fontVariantNumeric: "tabular-nums",
+};
+
+/** プレイヤーランキング表本文行のスタイルを返す */
+export const getResultPlayerRankingBodyRowStyle = (
+  index: number,
+): CSSProperties => ({
+  display: "grid",
+  gridTemplateColumns: RESULT_PLAYER_RANKING_ROW_GRID_TEMPLATE,
+  padding: "12px 16px",
+  borderTop: "1px solid #333",
+  background: index % 2 === 0 ? "#171717" : "#1d1d1d",
+});
+
+/** タブコンテンツのフェードアニメーション用スタイル */
+export const RESULT_CONTENT_FADE_STYLE: CSSProperties = {
+  animation: "tabContentFadeIn 0.2s ease-in",
+};
 
 /** 紙吹雪1片のスタイルを返す */
 export const getResultConfettiStyle = (
@@ -313,4 +396,8 @@ export const RESULT_KEYFRAMES_CSS = `@keyframes confettiFall {
 @keyframes titleGleam {
   0%, 100% { transform: scale(1); filter: brightness(1); }
   50% { transform: scale(1.03); filter: brightness(1.1); }
+}
+@keyframes tabContentFadeIn {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
 }`;
