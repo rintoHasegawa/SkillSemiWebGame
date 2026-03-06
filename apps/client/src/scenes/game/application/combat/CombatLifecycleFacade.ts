@@ -17,26 +17,33 @@ export type CombatLifecycleFacadeOptions = {
   myId: string;
   acquireInputLock: () => () => void;
   onSendBombHitReport: (bombId: string) => void;
+  onLocalBombHitCountChanged: (count: number) => void;
 };
 
 /** 被弾関連ライフサイクルの制御を担当する */
 export class CombatLifecycleFacade {
+  private readonly players: GamePlayers;
   private readonly myId: string;
-  private readonly onSendBombHitReport: (
-    bombId: string,
-  ) => void;
+  private readonly onSendBombHitReport: (bombId: string) => void;
+  private readonly onLocalBombHitCountChanged: (count: number) => void;
   private readonly bombHitOrchestrator: BombHitOrchestrator;
   private readonly playerHitPolicy: PlayerHitPolicy;
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
+  private localBombHitCount = 0;
+  private isRespawnPending = false;
+  private respawnTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor({
     players,
     myId,
     acquireInputLock,
     onSendBombHitReport,
+    onLocalBombHitCountChanged,
   }: CombatLifecycleFacadeOptions) {
+    this.players = players;
     this.myId = myId;
     this.onSendBombHitReport = onSendBombHitReport;
+    this.onLocalBombHitCountChanged = onLocalBombHitCountChanged;
     this.bombHitOrchestrator = new BombHitOrchestrator({
       players,
       myId,
@@ -57,7 +64,9 @@ export class CombatLifecycleFacade {
   public handleBombExploded(payload: BombExplodedPayload): void {
     const hitPlayerId = this.bombHitOrchestrator.evaluateHit(payload);
     if (!hitPlayerId) return;
+    if (this.isRespawnPending) return;
 
+    this.handleLocalBombHit();
     this.playerHitPolicy.applyLocalHitStun();
     this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
     this.onSendBombHitReport(payload.bombId);
@@ -66,12 +75,52 @@ export class CombatLifecycleFacade {
   /** ネットワーク被弾通知を適用する */
   public handleNetworkPlayerHit(payload: PlayerHitPayload): void {
     this.playerHitPolicy.applyPlayerHitEvent(payload);
-    this.playerHitEffectOrchestrator.handleNetworkPlayerHit(payload.playerId, this.myId);
+    this.playerHitEffectOrchestrator.handleNetworkPlayerHit(
+      payload.playerId,
+      this.myId,
+    );
   }
 
   /** 管理中リソースを破棄する */
   public dispose(): void {
     this.bombHitOrchestrator.clear();
     this.playerHitPolicy.dispose();
+    if (this.respawnTimer) {
+      clearTimeout(this.respawnTimer);
+      this.respawnTimer = null;
+    }
+  }
+
+  /** ローカル被弾回数を返す */
+  public getLocalBombHitCount(): number {
+    return this.localBombHitCount;
+  }
+
+  private handleLocalBombHit(): void {
+    this.localBombHitCount += 1;
+    this.onLocalBombHitCountChanged(this.localBombHitCount);
+
+    if (this.localBombHitCount < config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
+      return;
+    }
+
+    this.isRespawnPending = true;
+    if (this.respawnTimer) {
+      clearTimeout(this.respawnTimer);
+      this.respawnTimer = null;
+    }
+
+    this.respawnTimer = setTimeout(() => {
+      this.respawnTimer = null;
+
+      const me = this.players[this.myId];
+      if (me) {
+        me.respawnToInitialPosition();
+      }
+
+      this.localBombHitCount = 0;
+      this.isRespawnPending = false;
+      this.onLocalBombHitCountChanged(this.localBombHitCount);
+    }, config.GAME_CONFIG.PLAYER_HIT_STUN_MS);
   }
 }

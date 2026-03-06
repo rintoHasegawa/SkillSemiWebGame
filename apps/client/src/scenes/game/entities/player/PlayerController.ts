@@ -66,6 +66,13 @@ abstract class BasePlayerController {
     return this.model.getSnapshot();
   }
 
+  /** 初期位置へリスポーンし描画位置を同期する */
+  public respawnToInitialPosition(): void {
+    this.model.resetToInitialPosition();
+    const position = this.model.getPosition();
+    this.view.syncPosition(position.x, position.y);
+  }
+
   /** 爆弾被弾時の点滅演出を再生する */
   public playBombHitBlink(durationMs: number): void {
     this.bombHitBlinkRenderer.play(durationMs);

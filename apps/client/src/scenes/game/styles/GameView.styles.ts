@@ -65,6 +65,22 @@ export const GAME_VIEW_PAINT_RATE_SQUARE_STYLE: CSSProperties = {
   fontSize: "14px",
 };
 
+/** 左上の被弾回数デバッグ表示スタイル */
+export const GAME_VIEW_BOMB_HIT_DEBUG_STYLE: CSSProperties = {
+  position: "absolute",
+  top: "20px",
+  left: "16px",
+  zIndex: 12,
+  color: "white",
+  fontSize: "14px",
+  fontWeight: 700,
+  textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
+  fontFamily: "monospace",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  pointerEvents: "none",
+};
+
 /** Pixi描画レイヤーの配置スタイル */
 export const GAME_VIEW_PIXI_LAYER_STYLE: CSSProperties = {
   position: "absolute",
