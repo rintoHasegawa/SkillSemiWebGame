@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { domain } from "@repo/shared";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
+import { LobbyRuleModal } from "./components/LobbyRuleModal";
 
 type Props = {
   room: domain.room.Room | null;
@@ -45,6 +46,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   const [selectedStartPlayerCount, setSelectedStartPlayerCount] = useState(
     minimumStartPlayerCount,
   );
+  const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
 
   useEffect(() => {
     setSelectedStartPlayerCount((prev) => {
@@ -222,22 +224,54 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                   >
                     ゲームスタート
                   </button>
+
+                  <button
+                    onClick={() => {
+                      setIsRuleModalOpen(true);
+                    }}
+                    style={{
+                      ...OVERLAY_BUTTON_STYLE,
+                      width: "100%",
+                    }}
+                  >
+                    ルールを見る
+                  </button>
                 </div>
               ) : (
                 <div
                   style={{
                     width: "100%",
                     maxWidth: "350px",
-                    padding: "20px",
-                    fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
-                    backgroundColor: "#555",
-                    color: "#ccc",
-                    borderRadius: "8px",
-                    textAlign: "center",
-                    boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
                   }}
                 >
-                  ホストの開始を待っています...
+                  <div
+                    style={{
+                      padding: "20px",
+                      fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
+                      backgroundColor: "#555",
+                      color: "#ccc",
+                      borderRadius: "8px",
+                      textAlign: "center",
+                      boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    ホストの開始を待っています...
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setIsRuleModalOpen(true);
+                    }}
+                    style={{
+                      ...OVERLAY_BUTTON_STYLE,
+                      width: "100%",
+                    }}
+                  >
+                    ルールを見る
+                  </button>
                 </div>
               )}
             </div>
@@ -309,6 +343,14 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           </div>
         </div>
       </div>
+
+      {isRuleModalOpen && (
+        <LobbyRuleModal
+          onClose={() => {
+            setIsRuleModalOpen(false);
+          }}
+        />
+      )}
     </>
   );
 };
