@@ -3,13 +3,11 @@ import {
   LOBBY_RULE_MODAL_BODY_STYLE,
   LOBBY_RULE_MODAL_FOOTER_STYLE,
   LOBBY_RULE_MODAL_HEADER_STYLE,
-  LOBBY_RULE_MODAL_LIST_STYLE,
   LOBBY_RULE_MODAL_OVERLAY_STYLE,
   LOBBY_RULE_MODAL_PANEL_STYLE,
-  LOBBY_RULE_MODAL_SECTION_STYLE,
-  LOBBY_RULE_MODAL_SECTION_TITLE_STYLE,
 } from "./LobbyRuleModal.styles";
 import { LOBBY_RULE_SECTIONS } from "../presentation/lobbyRuleContent";
+import { LobbyRuleSectionList } from "./LobbyRuleSectionList";
 
 type LobbyRuleModalProps = {
   onClose: () => void;
@@ -22,18 +20,7 @@ export const LobbyRuleModal = ({ onClose }: LobbyRuleModalProps) => {
         <div style={LOBBY_RULE_MODAL_HEADER_STYLE}>ルール</div>
 
         <div style={LOBBY_RULE_MODAL_BODY_STYLE}>
-          {LOBBY_RULE_SECTIONS.map((section) => (
-            <section key={section.title} style={LOBBY_RULE_MODAL_SECTION_STYLE}>
-              <h3 style={LOBBY_RULE_MODAL_SECTION_TITLE_STYLE}>
-                {section.title}
-              </h3>
-              <ul style={LOBBY_RULE_MODAL_LIST_STYLE}>
-                {section.lines.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </section>
-          ))}
+          <LobbyRuleSectionList sections={LOBBY_RULE_SECTIONS} />
         </div>
 
         <div style={LOBBY_RULE_MODAL_FOOTER_STYLE}>

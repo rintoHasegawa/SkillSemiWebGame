@@ -1,4 +1,9 @@
 import type { CSSProperties } from "react";
+import {
+  OVERLAY_PANEL_BASE_STYLE,
+  OVERLAY_PANEL_FOOTER_BASE_STYLE,
+  OVERLAY_PANEL_HEADER_BASE_STYLE,
+} from "@client/scenes/shared/styles/overlayStyles";
 
 export const LOBBY_RULE_MODAL_OVERLAY_STYLE: CSSProperties = {
   position: "fixed",
@@ -12,20 +17,15 @@ export const LOBBY_RULE_MODAL_OVERLAY_STYLE: CSSProperties = {
 };
 
 export const LOBBY_RULE_MODAL_PANEL_STYLE: CSSProperties = {
+  ...OVERLAY_PANEL_BASE_STYLE,
   width: "min(760px, 100%)",
   maxHeight: "min(78dvh, 820px)",
-  borderRadius: "12px",
-  background: "rgba(20, 20, 20, 0.95)",
-  border: "1px solid rgba(255, 255, 255, 0.15)",
-  boxShadow: "0 12px 28px rgba(0, 0, 0, 0.45)",
-  color: "white",
   display: "flex",
   flexDirection: "column",
 };
 
 export const LOBBY_RULE_MODAL_HEADER_STYLE: CSSProperties = {
-  padding: "16px 18px",
-  borderBottom: "1px solid rgba(255, 255, 255, 0.16)",
+  ...OVERLAY_PANEL_HEADER_BASE_STYLE,
   fontSize: "1.1rem",
   fontWeight: 800,
 };
@@ -59,8 +59,7 @@ export const LOBBY_RULE_MODAL_LIST_STYLE: CSSProperties = {
 };
 
 export const LOBBY_RULE_MODAL_FOOTER_STYLE: CSSProperties = {
-  padding: "14px 18px",
-  borderTop: "1px solid rgba(255, 255, 255, 0.16)",
+  ...OVERLAY_PANEL_FOOTER_BASE_STYLE,
   display: "flex",
   justifyContent: "flex-end",
 };
