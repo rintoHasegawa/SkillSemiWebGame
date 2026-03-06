@@ -41,6 +41,9 @@ export const RESULT_TITLE_STYLE: CSSProperties = {
 /** リザルト画面本文レイヤーのスタイル */
 export const RESULT_CONTENT_STYLE: CSSProperties = {
   width: "100%",
+  flex: 1,
+  minHeight: 0,
+  overflowY: "auto",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
