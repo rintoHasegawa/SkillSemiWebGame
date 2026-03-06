@@ -11,7 +11,7 @@ export type LocalBombHitEffectPayload = {
 };
 
 /** ネットワーク通知由来の被弾演出イベントのペイロード型 */
-export type NetworkPlayerDeadEffectPayload = {
+export type NetworkPlayerHitEffectPayload = {
   playerId: string;
   localPlayerId: string;
 };
@@ -19,7 +19,7 @@ export type NetworkPlayerDeadEffectPayload = {
 /** 被弾演出イベント名ごとのペイロード対応表 */
 export type PlayerHitEffectEventPayloadMap = {
   "local-bomb-hit": LocalBombHitEffectPayload;
-  "network-player-dead": NetworkPlayerDeadEffectPayload;
+  "network-player-hit": NetworkPlayerHitEffectPayload;
 };
 
 /** 被弾演出イベント名を表す型 */

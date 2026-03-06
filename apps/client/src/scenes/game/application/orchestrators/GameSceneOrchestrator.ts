@@ -7,7 +7,7 @@ import { Application, Container } from "pixi.js";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
 } from "@repo/shared";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
@@ -29,7 +29,7 @@ export type CreateNetworkSyncOptions = {
   onGameEnded: () => void;
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
-  onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
+  onRemotePlayerHit: (payload: PlayerHitPayload) => void;
 };
 
 /** BombManager 生成入力型 */
@@ -48,7 +48,7 @@ export type GameSceneEventPorts = {
   onGameEnded: () => void;
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
-  onRemotePlayerDead: (payload: PlayerDeadPayload) => void;
+  onRemotePlayerHit: (payload: PlayerHitPayload) => void;
   onBombExploded: (payload: BombExplodedPayload) => void;
 };
 
@@ -171,7 +171,7 @@ export class GameSceneOrchestrator {
       onGameEnded: this.eventPorts.onGameEnded,
       onRemoteBombPlaced: this.eventPorts.onRemoteBombPlaced,
       onBombPlacementAcknowledged: this.eventPorts.onBombPlacementAcknowledged,
-      onRemotePlayerDead: this.eventPorts.onRemotePlayerDead,
+      onRemotePlayerHit: this.eventPorts.onRemotePlayerHit,
     });
     networkSync.bind();
     return networkSync;

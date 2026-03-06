@@ -9,7 +9,7 @@ import type {
   CurrentPlayersPayload,
   GameStartPayload,
   NewPlayerPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
@@ -30,7 +30,7 @@ export type ReceivedGameEventHandlers = {
   onReceivedGameEnd: () => void;
   onReceivedBombPlaced: (payload: BombPlacedPayload) => void;
   onReceivedBombPlacedAck: (payload: BombPlacedAckPayload) => void;
-  onReceivedPlayerDead: (payload: PlayerDeadPayload) => void;
+  onReceivedPlayerHit: (payload: PlayerHitPayload) => void;
 };
 
 /** 受信イベント購読の管理を担当する */
@@ -49,7 +49,7 @@ export class GameNetworkEventReceiver {
       onGameEnd: handlers.onReceivedGameEnd,
       onBombPlaced: handlers.onReceivedBombPlaced,
       onBombPlacedAck: handlers.onReceivedBombPlacedAck,
-      onPlayerDead: handlers.onReceivedPlayerDead,
+      onPlayerHit: handlers.onReceivedPlayerHit,
     });
   }
 

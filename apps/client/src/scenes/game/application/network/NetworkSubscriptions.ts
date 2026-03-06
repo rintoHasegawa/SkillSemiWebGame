@@ -10,7 +10,7 @@ import type {
   CurrentPlayersPayload,
   GameStartPayload,
   NewPlayerPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
@@ -33,7 +33,7 @@ export type SocketSubscriptionDictionary = {
   gameEnd: SocketSubscription;
   bombPlaced: SocketSubscription;
   bombPlacedAck: SocketSubscription;
-  playerDead: SocketSubscription;
+  playerHit: SocketSubscription;
 };
 
 /** 購読辞書生成に必要なハンドラ群 */
@@ -47,7 +47,7 @@ export type NetworkSubscriptionHandlers = {
   onGameEnd: () => void;
   onBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacedAck: (payload: BombPlacedAckPayload) => void;
-  onPlayerDead: (payload: PlayerDeadPayload) => void;
+  onPlayerHit: (payload: PlayerHitPayload) => void;
 };
 
 type SubscriptionDefinition = {
@@ -120,10 +120,10 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
     }),
   },
   {
-    key: "playerDead",
+    key: "playerHit",
     create: (handlers) => ({
-      bind: () => socketManager.game.onPlayerDead(handlers.onPlayerDead),
-      unbind: () => socketManager.game.offPlayerDead(handlers.onPlayerDead),
+      bind: () => socketManager.game.onPlayerHit(handlers.onPlayerHit),
+      unbind: () => socketManager.game.offPlayerHit(handlers.onPlayerHit),
     }),
   },
 ];

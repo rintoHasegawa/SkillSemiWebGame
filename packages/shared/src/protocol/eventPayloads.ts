@@ -32,7 +32,7 @@ export type {
   BombPlacedPayload,
   BombPlacedAckPayload,
   BombHitReportPayload,
-  PlayerDeadPayload,
+  PlayerHitPayload,
   GameResultPayload,
   GameResultRanking,
   PlayerGameStats,
@@ -41,7 +41,7 @@ export type {
 /** 被弾演出イベントのペイロード型を再公開する */
 export type {
   LocalBombHitEffectPayload,
-  NetworkPlayerDeadEffectPayload,
+  NetworkPlayerHitEffectPayload,
   PlayerHitEffectEventPayloadMap,
   PlayerHitEffectEventName,
   PlayerHitEffectPayloadOf,

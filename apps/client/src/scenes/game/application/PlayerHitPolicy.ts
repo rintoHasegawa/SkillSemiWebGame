@@ -1,27 +1,27 @@
-import type { PlayerDeadPayload } from "@repo/shared";
+import type { PlayerHitPayload } from "@repo/shared";
 
-type PlayerDeathPolicyParams = {
+type PlayerHitPolicyParams = {
   myId: string;
   hitStunMs: number;
   acquireInputLock: () => () => void;
 };
 
 /** 被弾後のローカルプレイヤー処理ポリシーを管理する */
-export class PlayerDeathPolicy {
+export class PlayerHitPolicy {
   private myId: string;
   private hitStunMs: number;
   private acquireInputLock: () => () => void;
   private activeLockRelease: (() => void) | null = null;
   private unlockTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor({ myId, hitStunMs, acquireInputLock }: PlayerDeathPolicyParams) {
+  constructor({ myId, hitStunMs, acquireInputLock }: PlayerHitPolicyParams) {
     this.myId = myId;
     this.hitStunMs = hitStunMs;
     this.acquireInputLock = acquireInputLock;
   }
 
-  /** サーバーからの死亡通知に応じてローカル被弾後処理を適用する */
-  public applyPlayerDeadEvent(payload: PlayerDeadPayload): void {
+  /** サーバーからの被弾通知に応じてローカル被弾後処理を適用する */
+  public applyPlayerHitEvent(payload: PlayerHitPayload): void {
     if (payload.playerId !== this.myId) {
       return;
     }
