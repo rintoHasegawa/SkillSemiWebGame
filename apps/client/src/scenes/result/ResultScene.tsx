@@ -8,10 +8,12 @@ import { useEffect, useState } from "react";
 import { config } from "../../config";
 import { ResultActionBar } from "./components/ResultActionBar";
 import { ResultBackground } from "./components/ResultBackground";
-import { ResultPlayerStatsTable } from "./components/ResultPlayerStatsTable";
+import { ResultPlayerRankingTable } from "./components/ResultPlayerRankingTable";
 import { ResultRankingTable } from "./components/ResultRankingTable";
+import { ResultTabBar } from "./components/ResultTabBar";
 import {
   RESULT_BACKGROUND_DARK_OVERLAY_STYLE,
+  RESULT_CONTENT_FADE_STYLE,
   RESULT_CONTENT_STYLE,
   RESULT_KEYFRAMES_CSS,
   RESULT_ROOT_STYLE,
@@ -19,6 +21,7 @@ import {
   RESULT_TITLE_STYLE,
   getResultTitleTextStyle,
 } from "./styles/resultStyles";
+import type { ResultTabMode } from "./types/resultTabMode";
 import type { ResultViewMode } from "./types/resultViewMode";
 
 type Props = {
@@ -31,10 +34,12 @@ const formatPaintRate = (value: number): string => `${value.toFixed(1)}%`;
 /** 最終結果データを受け取り，順位一覧を表示する */
 export const ResultScene = ({ result, onBackToTitle }: Props) => {
   const [viewMode, setViewMode] = useState<ResultViewMode>("mapPreview");
+  const [activeTab, setActiveTab] = useState<ResultTabMode>("teamRanking");
   const isRankingVisible = viewMode === "ranking";
 
   useEffect(() => {
     setViewMode("mapPreview");
+    setActiveTab("teamRanking");
   }, [result]);
 
   if (!result) {
@@ -96,15 +101,43 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
         )}
 
         {isRankingVisible && (
-          <ResultRankingTable
-            rankings={result.rankings}
-            formatPaintRate={formatPaintRate}
-          />
+          <ResultTabBar activeTab={activeTab} onTabChange={setActiveTab} />
         )}
 
-        {isRankingVisible && result.playerStats && result.playerStats.length > 0 && (
-          <ResultPlayerStatsTable playerStats={result.playerStats} />
+        {isRankingVisible && activeTab === "teamRanking" && (
+          <div style={RESULT_CONTENT_FADE_STYLE}>
+            <ResultRankingTable
+              rankings={result.rankings}
+              formatPaintRate={formatPaintRate}
+            />
+          </div>
         )}
+
+        {isRankingVisible &&
+          activeTab === "paintCount" &&
+          result.playerStats &&
+          result.playerStats.length > 0 && (
+            <div style={RESULT_CONTENT_FADE_STYLE}>
+              <ResultPlayerRankingTable
+                playerStats={result.playerStats}
+                sortKey="paintCount"
+                valueLabel="塗り回数"
+              />
+            </div>
+          )}
+
+        {isRankingVisible &&
+          activeTab === "bombHits" &&
+          result.playerStats &&
+          result.playerStats.length > 0 && (
+            <div style={RESULT_CONTENT_FADE_STYLE}>
+              <ResultPlayerRankingTable
+                playerStats={result.playerStats}
+                sortKey="bombHitCount"
+                valueLabel="ヒット数"
+              />
+            </div>
+          )}
       </div>
     </div>
   );
