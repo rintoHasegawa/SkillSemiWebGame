@@ -26,6 +26,7 @@ import {
   GameUiStateSyncService,
   type GameUiState,
 } from "./application/ui/GameUiStateSyncService";
+import { loadRespawnEffectTexture } from "./entities/player/RespawnEffectTextureCache";
 
 /** GameManager の依存注入オプション型 */
 export type GameManagerDependencies = {
@@ -102,6 +103,10 @@ export class GameManager {
     this.worldContainer.sortableChildren = true;
     this.gameEventFacade = new GameEventFacade({
       onGameStarted: (startTime) => {
+        // ゲーム開始カウントダウン中に先読みして初回被弾時の負荷を抑える
+        void loadRespawnEffectTexture(
+          `${import.meta.env.BASE_URL}bakuhatueffe.svg`,
+        );
         this.sessionFacade.setGameStart(startTime);
         this.uiStateSyncService.emitIfChanged();
       },
