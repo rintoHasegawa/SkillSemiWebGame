@@ -44,5 +44,9 @@ export const createSpawnedPlayer = (
   player.x = Math.max(1, Math.min(GRID_COLS - 1, baseX + scatterX));
   player.y = Math.max(1, Math.min(GRID_ROWS - 1, baseY + scatterY));
 
+  // リスポーン時に戻る座標として初期位置を保持する
+  player.initialX = player.x;
+  player.initialY = player.y;
+
   return player;
 };

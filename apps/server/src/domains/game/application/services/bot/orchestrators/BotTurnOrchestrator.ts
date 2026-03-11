@@ -22,6 +22,7 @@ export class BotTurnOrchestrator {
   private readonly hitStunPolicy = new BotHitStunPolicy({
     hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
   });
+  private readonly respawnAtMsByBotId = new Map<BotPlayerId, number>();
 
   public decide(
     botPlayerId: BotPlayerId,
@@ -41,6 +42,22 @@ export class BotTurnOrchestrator {
       bombSeq: 0,
       stunUntilMs: Number.NEGATIVE_INFINITY,
     });
+
+    // リスポーン時刻に達していたら初期位置へ座標をリセットする
+    const respawnAtMs = this.respawnAtMsByBotId.get(botPlayerId);
+    if (respawnAtMs !== undefined && nowMs >= respawnAtMs) {
+      this.respawnAtMsByBotId.delete(botPlayerId);
+      this.stateStore.update(botPlayerId, (state) => ({
+        ...state,
+        targetCol: clamp(Math.floor(player.initialX), 0, GRID_COLS - 1),
+        targetRow: clamp(Math.floor(player.initialY), 0, GRID_ROWS - 1),
+      }));
+      return {
+        nextX: player.initialX,
+        nextY: player.initialY,
+        placeBombPayload: null,
+      };
+    }
 
     if (this.hitStunPolicy.isStunned(nowMs, currentState.stunUntilMs)) {
       this.stateStore.set(botPlayerId, {
@@ -109,7 +126,19 @@ export class BotTurnOrchestrator {
     });
   }
 
+  /** 指定Botへリスポーン用硬直と位置リセットタイマーを適用する */
+  public applyRespawnStun(botPlayerId: BotPlayerId, nowMs: number): void {
+    const respawnStunMs = config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS;
+    const respawnAtMs = nowMs + respawnStunMs;
+    this.respawnAtMsByBotId.set(botPlayerId, respawnAtMs);
+    this.stateStore.update(botPlayerId, (state) => ({
+      ...state,
+      stunUntilMs: Math.max(state.stunUntilMs, respawnAtMs),
+    }));
+  }
+
   public clear(): void {
     this.stateStore.clear();
+    this.respawnAtMsByBotId.clear();
   }
 }

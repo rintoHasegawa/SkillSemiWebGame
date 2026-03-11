@@ -11,6 +11,11 @@ export class Player implements domain.game.player.PlayerData {
   public y: number = 0;
   public teamId: number;
 
+  /** スポーン時の初期X座標（リスポーン位置として参照する） */
+  public initialX: number = 0;
+  /** スポーン時の初期Y座標（リスポーン位置として参照する） */
+  public initialY: number = 0;
+
   /** セルの色を塗り替えた回数 */
   public paintCount: number = 0;
   /** 爆弾を敵に当てた回数 */
