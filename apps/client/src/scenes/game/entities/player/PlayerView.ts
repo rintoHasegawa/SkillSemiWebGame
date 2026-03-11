@@ -6,13 +6,12 @@
 import { Assets, Sprite, Texture } from "pixi.js";
 import { config } from "@client/config";
 import { Container, Text, TextStyle } from "pixi.js";
+import { loadRespawnEffectTexture } from "./RespawnEffectTextureCache";
 
 const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 
 export class PlayerView {
   public readonly displayObject: Container;
-  private static respawnEffectTexturePromise: Promise<Texture> | null = null;
-  private static respawnEffectTexture: Texture | null = null;
   private readonly respawnEffectSprite: Sprite;
   private readonly sprite: Sprite;
   private readonly nameText: Text;
@@ -25,6 +24,7 @@ export class PlayerView {
     this.respawnEffectSprite = new Sprite(Texture.WHITE);
     this.respawnEffectSprite.anchor.set(0.5, 0.5);
     this.respawnEffectSprite.visible = false;
+    this.applyRespawnEffectSize();
 
     // 🌟 2. スプライト（画像）の生成（初期は1x1テクスチャ）
     this.sprite = new Sprite(Texture.WHITE);
@@ -38,11 +38,6 @@ export class PlayerView {
 
     // ローカルプレイヤーだけ少し視認性を上げる（未使用引数対策を兼ねる）
     this.sprite.alpha = isLocal ? 1 : 0.95;
-
-    this.respawnEffectSprite.width =
-      config.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SIZE_PX;
-    this.respawnEffectSprite.height =
-      config.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SIZE_PX;
 
     this.nameText = new Text({
       text: playerName,
@@ -71,32 +66,19 @@ export class PlayerView {
   private async applyRespawnEffectTexture(): Promise<void> {
     try {
       const imageUrl = `${import.meta.env.BASE_URL}bakuhatueffe.svg`;
-      const texture = await PlayerView.loadRespawnEffectTexture(imageUrl);
+      const texture = await loadRespawnEffectTexture(imageUrl);
       this.respawnEffectSprite.texture = texture;
-      this.respawnEffectSprite.width =
-        config.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SIZE_PX;
-      this.respawnEffectSprite.height =
-        config.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SIZE_PX;
+      this.applyRespawnEffectSize();
     } catch (error) {
       console.error("[PlayerView] bakuhatueffe.svg の読み込みに失敗", error);
     }
   }
 
-  /** リスポーン演出テクスチャを共有キャッシュ経由で取得する */
-  private static async loadRespawnEffectTexture(
-    imageUrl: string,
-  ): Promise<Texture> {
-    if (PlayerView.respawnEffectTexture) {
-      return PlayerView.respawnEffectTexture;
-    }
-
-    if (!PlayerView.respawnEffectTexturePromise) {
-      PlayerView.respawnEffectTexturePromise = Assets.load<Texture>(imageUrl);
-    }
-
-    const loadedTexture = await PlayerView.respawnEffectTexturePromise;
-    PlayerView.respawnEffectTexture = loadedTexture;
-    return loadedTexture;
+  /** リスポーン演出スプライトに設定サイズを適用する */
+  private applyRespawnEffectSize(): void {
+    const size = config.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SIZE_PX;
+    this.respawnEffectSprite.width = size;
+    this.respawnEffectSprite.height = size;
   }
 
   /** BASE_URL対応のURLで画像を読み込み、スプライトに反映する */
@@ -110,10 +92,6 @@ export class PlayerView {
 
       this.sprite.width = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
       this.sprite.height = PLAYER_RADIUS_PX * 2 * PLAYER_RENDER_SCALE;
-      this.respawnEffectSprite.width =
-        config.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SIZE_PX;
-      this.respawnEffectSprite.height =
-        config.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SIZE_PX;
       this.nameText.y = PLAYER_RADIUS_PX * PLAYER_RENDER_SCALE + 8;
 
       if (ENABLE_DEBUG_LOG) {
