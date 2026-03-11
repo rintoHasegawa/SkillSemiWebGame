@@ -33,7 +33,11 @@ export class CombatLifecycleFacade {
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
   private localBombHitCount = 0;
   private respawnState: RespawnState = "idle";
-  private respawnTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly hitCountByPlayerId = new Map<string, number>();
+  private readonly respawnTimersByPlayerId = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
 
   constructor({
     players,
@@ -60,6 +64,7 @@ export class CombatLifecycleFacade {
       blinkDurationMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_DURATION_MS,
       dedupWindowMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.DEDUP_WINDOW_MS,
     });
+    this.hitCountByPlayerId.set(this.myId, 0);
   }
 
   /** 爆弾爆発時の判定と後続処理を実行する */
@@ -68,29 +73,47 @@ export class CombatLifecycleFacade {
     if (!hitPlayerId) return;
     if (this.respawnState === "pendingRespawn") return;
 
-    this.handleLocalBombHit();
-    this.playerHitPolicy.applyLocalHitStun();
+    const shouldStartRespawn = this.handleLocalBombHit();
     this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
+
+    if (shouldStartRespawn) {
+      this.playerHitPolicy.applyLocalHitStun(
+        config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS,
+      );
+      this.startRespawnSequence(this.myId, true);
+    } else {
+      this.playerHitPolicy.applyLocalHitStun();
+    }
     this.onSendBombHitReport(payload.bombId);
   }
 
   /** ネットワーク被弾通知を適用する */
   public handleNetworkPlayerHit(payload: PlayerHitPayload): void {
     this.playerHitPolicy.applyPlayerHitEvent(payload);
+
+    const shouldStartRespawn =
+      this.incrementHitCount(payload.playerId) >=
+      config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT;
+
     this.playerHitEffectOrchestrator.handleNetworkPlayerHit(
       payload.playerId,
       this.myId,
     );
+
+    if (shouldStartRespawn) {
+      this.startRespawnSequence(payload.playerId, false);
+      return;
+    }
   }
 
   /** 管理中リソースを破棄する */
   public dispose(): void {
     this.bombHitOrchestrator.clear();
     this.playerHitPolicy.dispose();
-    if (this.respawnTimer) {
-      clearTimeout(this.respawnTimer);
-      this.respawnTimer = null;
-    }
+    this.respawnTimersByPlayerId.forEach((timerId) => {
+      clearTimeout(timerId);
+    });
+    this.respawnTimersByPlayerId.clear();
   }
 
   /** ローカル被弾回数を返す */
@@ -98,35 +121,60 @@ export class CombatLifecycleFacade {
     return this.localBombHitCount;
   }
 
-  private handleLocalBombHit(): void {
+  private handleLocalBombHit(): boolean {
     if (this.respawnState === "idle") {
       this.respawnState = "counting";
     }
 
-    this.localBombHitCount += 1;
+    this.localBombHitCount = this.incrementHitCount(this.myId);
     this.onLocalBombHitCountChanged(this.localBombHitCount);
 
     if (this.localBombHitCount < config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
-      return;
+      return false;
     }
 
     this.respawnState = "pendingRespawn";
-    if (this.respawnTimer) {
-      clearTimeout(this.respawnTimer);
-      this.respawnTimer = null;
+    return true;
+  }
+
+  private startRespawnSequence(playerId: string, isLocalPlayer: boolean): void {
+    const existingTimer = this.respawnTimersByPlayerId.get(playerId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      this.respawnTimersByPlayerId.delete(playerId);
     }
 
-    this.respawnTimer = setTimeout(() => {
-      this.respawnTimer = null;
+    const target = this.players[playerId];
+    if (target) {
+      target.setRespawnEffectVisible(true);
+    }
 
-      const me = this.players[this.myId];
-      if (me) {
-        me.respawnToInitialPosition();
+    const timerId = setTimeout(() => {
+      this.respawnTimersByPlayerId.delete(playerId);
+
+      const player = this.players[playerId];
+      if (player) {
+        player.respawnToInitialPosition();
+        player.setRespawnEffectVisible(false);
+      }
+
+      this.hitCountByPlayerId.set(playerId, 0);
+
+      if (!isLocalPlayer) {
+        return;
       }
 
       this.localBombHitCount = 0;
       this.respawnState = "idle";
       this.onLocalBombHitCountChanged(this.localBombHitCount);
-    }, config.GAME_CONFIG.PLAYER_HIT_STUN_MS);
+    }, config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS);
+
+    this.respawnTimersByPlayerId.set(playerId, timerId);
+  }
+
+  private incrementHitCount(playerId: string): number {
+    const nextCount = (this.hitCountByPlayerId.get(playerId) ?? 0) + 1;
+    this.hitCountByPlayerId.set(playerId, nextCount);
+    return nextCount;
   }
 }

@@ -8,6 +8,14 @@ const sharedRespawnHitCount =
   (sharedConfig.GAME_CONFIG as { PLAYER_RESPAWN_HIT_COUNT?: number })
     .PLAYER_RESPAWN_HIT_COUNT ?? 5;
 
+const sharedRespawnStunMs =
+  (sharedConfig.GAME_CONFIG as { PLAYER_RESPAWN_STUN_MS?: number })
+    .PLAYER_RESPAWN_STUN_MS ?? sharedConfig.GAME_CONFIG.PLAYER_HIT_STUN_MS;
+
+const sharedRespawnEffectScale =
+  (sharedConfig.GAME_CONFIG as { PLAYER_RESPAWN_EFFECT_SCALE?: number })
+    .PLAYER_RESPAWN_EFFECT_SCALE ?? 2.4;
+
 const CLIENT_GAME_CONFIG = {
   TIMER_DISPLAY_UPDATE_MS: 250,
   JOIN_REQUEST_TIMEOUT_MS: 8000,
@@ -15,6 +23,8 @@ const CLIENT_GAME_CONFIG = {
   FRAME_DELTA_MAX_MS: 50,
 
   PLAYER_RESPAWN_HIT_COUNT: sharedRespawnHitCount,
+  PLAYER_RESPAWN_STUN_MS: sharedRespawnStunMs,
+  PLAYER_RESPAWN_EFFECT_SCALE: sharedRespawnEffectScale,
 
   PLAYER_LERP_SMOOTHNESS: 18,
   PLAYER_LERP_SNAP_THRESHOLD: 0.005,
@@ -49,6 +59,9 @@ const GAME_CONFIG = {
   },
   get BOMB_RENDER_RADIUS_PX(): number {
     return this.GRID_CELL_SIZE * 0.2 * sharedBombRenderScale;
+  },
+  get PLAYER_RESPAWN_EFFECT_SIZE_PX(): number {
+    return this.PLAYER_RADIUS_PX * 2 * this.PLAYER_RESPAWN_EFFECT_SCALE;
   },
 } as const;
 
