@@ -9,6 +9,7 @@ import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/Bomb
 import { BombHitOrchestrator } from "@client/scenes/game/application/BombHitOrchestrator";
 import { PlayerHitPolicy } from "@client/scenes/game/application/PlayerHitPolicy";
 import { PlayerHitEffectOrchestrator } from "@client/scenes/game/application/PlayerHitEffectOrchestrator";
+import { RespawnManager } from "./RespawnManager";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
 
 /** CombatLifecycleFacade の初期化入力 */
@@ -20,20 +21,16 @@ export type CombatLifecycleFacadeOptions = {
   onLocalBombHitCountChanged: (count: number) => void;
 };
 
-type RespawnState = "idle" | "counting" | "pendingRespawn";
-
 /** 被弾関連ライフサイクルの制御を担当する */
 export class CombatLifecycleFacade {
-  private readonly players: GamePlayers;
   private readonly myId: string;
   private readonly onSendBombHitReport: (bombId: string) => void;
   private readonly onLocalBombHitCountChanged: (count: number) => void;
   private readonly bombHitOrchestrator: BombHitOrchestrator;
   private readonly playerHitPolicy: PlayerHitPolicy;
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
+  private readonly respawnManager: RespawnManager;
   private localBombHitCount = 0;
-  private respawnState: RespawnState = "idle";
-  private respawnTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor({
     players,
@@ -42,7 +39,6 @@ export class CombatLifecycleFacade {
     onSendBombHitReport,
     onLocalBombHitCountChanged,
   }: CombatLifecycleFacadeOptions) {
-    this.players = players;
     this.myId = myId;
     this.onSendBombHitReport = onSendBombHitReport;
     this.onLocalBombHitCountChanged = onLocalBombHitCountChanged;
@@ -60,37 +56,59 @@ export class CombatLifecycleFacade {
       blinkDurationMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.BLINK_DURATION_MS,
       dedupWindowMs: config.GAME_CONFIG.PLAYER_HIT_EFFECT.DEDUP_WINDOW_MS,
     });
+    this.respawnManager = new RespawnManager({
+      players,
+      respawnStunMs: config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS,
+      onRespawnComplete: (playerId) => {
+        if (playerId !== this.myId) return;
+        this.localBombHitCount = 0;
+        this.onLocalBombHitCountChanged(this.localBombHitCount);
+      },
+    });
   }
 
   /** 爆弾爆発時の判定と後続処理を実行する */
   public handleBombExploded(payload: BombExplodedPayload): void {
     const hitPlayerId = this.bombHitOrchestrator.evaluateHit(payload);
     if (!hitPlayerId) return;
-    if (this.respawnState === "pendingRespawn") return;
+    if (this.respawnManager.isRespawning(this.myId)) return;
 
-    this.handleLocalBombHit();
-    this.playerHitPolicy.applyLocalHitStun();
+    const shouldStartRespawn = this.handleLocalBombHit();
     this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
+
+    if (shouldStartRespawn) {
+      this.playerHitPolicy.applyLocalHitStun(
+        config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS,
+      );
+      this.respawnManager.startSequence(this.myId);
+    } else {
+      this.playerHitPolicy.applyLocalHitStun();
+    }
     this.onSendBombHitReport(payload.bombId);
   }
 
   /** ネットワーク被弾通知を適用する */
   public handleNetworkPlayerHit(payload: PlayerHitPayload): void {
     this.playerHitPolicy.applyPlayerHitEvent(payload);
+
+    if (this.respawnManager.isRespawning(payload.playerId)) return;
+
+    const hitCount = this.respawnManager.incrementHitCount(payload.playerId);
     this.playerHitEffectOrchestrator.handleNetworkPlayerHit(
       payload.playerId,
       this.myId,
     );
+
+    if (hitCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
+      this.respawnManager.startSequence(payload.playerId);
+    }
   }
 
   /** 管理中リソースを破棄する */
   public dispose(): void {
     this.bombHitOrchestrator.clear();
     this.playerHitPolicy.dispose();
-    if (this.respawnTimer) {
-      clearTimeout(this.respawnTimer);
-      this.respawnTimer = null;
-    }
+    this.respawnManager.dispose();
   }
 
   /** ローカル被弾回数を返す */
@@ -98,35 +116,11 @@ export class CombatLifecycleFacade {
     return this.localBombHitCount;
   }
 
-  private handleLocalBombHit(): void {
-    if (this.respawnState === "idle") {
-      this.respawnState = "counting";
-    }
-
-    this.localBombHitCount += 1;
+  private handleLocalBombHit(): boolean {
+    this.localBombHitCount = this.respawnManager.incrementHitCount(this.myId);
     this.onLocalBombHitCountChanged(this.localBombHitCount);
-
-    if (this.localBombHitCount < config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
-      return;
-    }
-
-    this.respawnState = "pendingRespawn";
-    if (this.respawnTimer) {
-      clearTimeout(this.respawnTimer);
-      this.respawnTimer = null;
-    }
-
-    this.respawnTimer = setTimeout(() => {
-      this.respawnTimer = null;
-
-      const me = this.players[this.myId];
-      if (me) {
-        me.respawnToInitialPosition();
-      }
-
-      this.localBombHitCount = 0;
-      this.respawnState = "idle";
-      this.onLocalBombHitCountChanged(this.localBombHitCount);
-    }, config.GAME_CONFIG.PLAYER_HIT_STUN_MS);
+    return (
+      this.localBombHitCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT
+    );
   }
 }

@@ -61,8 +61,8 @@ export class GameLoop {
   private lastSentPlayers: Map<string, domain.game.tick.PlayerPositionUpdate> =
     new Map();
   private disconnectedBotControlledPlayerIds: Set<string> = new Set();
-  private botTurnOrchestrator: BotTurnOrchestrator =
-    new BotTurnOrchestrator();
+  private botTurnOrchestrator: BotTurnOrchestrator = new BotTurnOrchestrator();
+  private readonly botReceivedHitCountById = new Map<string, number>();
 
   private readonly roomId: string;
   private readonly tickRate: number;
@@ -218,10 +218,23 @@ export class GameLoop {
         });
 
         if (result.isHit) {
-          this.botTurnOrchestrator.applyHitStun(
-            player.id as BotPlayerId,
-            nowMs,
-          );
+          // 被弾カウントを更新し，閾値到達でリスポーンスタン，それ以外は通常スタンを適用する
+          const prevCount = this.botReceivedHitCountById.get(player.id) ?? 0;
+          const nextCount = prevCount + 1;
+
+          if (nextCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
+            this.botReceivedHitCountById.set(player.id, 0);
+            this.botTurnOrchestrator.applyRespawnStun(
+              player.id as BotPlayerId,
+              nowMs,
+            );
+          } else {
+            this.botReceivedHitCountById.set(player.id, nextCount);
+            this.botTurnOrchestrator.applyHitStun(
+              player.id as BotPlayerId,
+              nowMs,
+            );
+          }
 
           // 爆弾所有者の bombHitCount を加算する
           const owner = this.players.get(bomb.ownerPlayerId);

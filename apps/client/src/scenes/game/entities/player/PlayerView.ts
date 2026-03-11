@@ -6,11 +6,13 @@
 import { Assets, Sprite, Texture } from "pixi.js";
 import { config } from "@client/config";
 import { Container, Text, TextStyle } from "pixi.js";
+import { loadRespawnEffectTexture } from "./RespawnEffectTextureCache";
 
 const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 
 export class PlayerView {
   public readonly displayObject: Container;
+  private readonly respawnEffectSprite: Sprite;
   private readonly sprite: Sprite;
   private readonly nameText: Text;
 
@@ -18,6 +20,11 @@ export class PlayerView {
     const { PLAYER_RADIUS_PX, PLAYER_RENDER_SCALE } = config.GAME_CONFIG;
 
     this.displayObject = new Container();
+
+    this.respawnEffectSprite = new Sprite(Texture.WHITE);
+    this.respawnEffectSprite.anchor.set(0.5, 0.5);
+    this.respawnEffectSprite.visible = false;
+    this.applyRespawnEffectSize();
 
     // 🌟 2. スプライト（画像）の生成（初期は1x1テクスチャ）
     this.sprite = new Sprite(Texture.WHITE);
@@ -44,10 +51,34 @@ export class PlayerView {
     this.nameText.anchor.set(0.5, 0);
     this.nameText.y = PLAYER_RADIUS_PX * PLAYER_RENDER_SCALE + 8;
 
-    this.displayObject.addChild(this.sprite, this.nameText);
+    this.displayObject.addChild(
+      this.respawnEffectSprite,
+      this.sprite,
+      this.nameText,
+    );
 
     // 非同期で画像テクスチャを読み込んで差し替える
     void this.applyTexture(imageFileName);
+    void this.applyRespawnEffectTexture();
+  }
+
+  /** リスポーン演出画像を読み込んで背面スプライトへ反映する */
+  private async applyRespawnEffectTexture(): Promise<void> {
+    try {
+      const imageUrl = `${import.meta.env.BASE_URL}bakuhatueffe.svg`;
+      const texture = await loadRespawnEffectTexture(imageUrl);
+      this.respawnEffectSprite.texture = texture;
+      this.applyRespawnEffectSize();
+    } catch (error) {
+      console.error("[PlayerView] bakuhatueffe.svg の読み込みに失敗", error);
+    }
+  }
+
+  /** リスポーン演出スプライトに設定サイズを適用する */
+  private applyRespawnEffectSize(): void {
+    const size = config.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SIZE_PX;
+    this.respawnEffectSprite.width = size;
+    this.respawnEffectSprite.height = size;
   }
 
   /** BASE_URL対応のURLで画像を読み込み、スプライトに反映する */
@@ -75,6 +106,12 @@ export class PlayerView {
       );
     }
   }
+
+  /** リスポーン演出の表示状態を更新する */
+  public setRespawnEffectVisible(visible: boolean): void {
+    this.respawnEffectSprite.visible = visible;
+  }
+
   /** グリッド座標を描画座標へ反映する */
   public syncPosition(gridX: number, gridY: number): void {
     const { GRID_CELL_SIZE } = config.GAME_CONFIG;

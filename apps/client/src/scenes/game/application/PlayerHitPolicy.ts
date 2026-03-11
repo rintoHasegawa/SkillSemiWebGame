@@ -30,8 +30,8 @@ export class PlayerHitPolicy {
   }
 
   /** ローカル被弾判定時に硬直を適用する */
-  public applyLocalHitStun(): void {
-    this.applyHitStun();
+  public applyLocalHitStun(durationMs?: number): void {
+    this.applyHitStun(durationMs);
   }
 
   /** ポリシーが保持するタイマーと入力ロックを解放する */
@@ -47,7 +47,7 @@ export class PlayerHitPolicy {
     }
   }
 
-  private applyHitStun(): void {
+  private applyHitStun(durationMs = this.hitStunMs): void {
     if (!this.activeLockRelease) {
       this.activeLockRelease = this.acquireInputLock();
     }
@@ -63,6 +63,6 @@ export class PlayerHitPolicy {
         this.activeLockRelease();
         this.activeLockRelease = null;
       }
-    }, this.hitStunMs);
+    }, durationMs);
   }
 }

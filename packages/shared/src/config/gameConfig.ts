@@ -22,6 +22,8 @@ export const GAME_CONFIG = {
   PLAYER_RENDER_SCALE: 1, // プレイヤー見た目サイズ倍率（1=等倍）
   PLAYER_HIT_STUN_MS: 1000, // 被弾時に入力を停止する時間（ms）
   PLAYER_RESPAWN_HIT_COUNT: 5, // この回数被弾したら初期位置へリスポーンする
+  PLAYER_RESPAWN_STUN_MS: 2000, // リスポーン前にスタンする時間（ms）
+  PLAYER_RESPAWN_EFFECT_SCALE: 2.4, // bakuhatueffe演出の見た目サイズ倍率（1=等倍）
 
   // 爆弾設定（内部座標はグリッド単位、時間はms、契約値）
   BOMB_RADIUS_GRID: 1.5, // 爆風半径（グリッド単位、円形当たり判定）

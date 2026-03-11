@@ -78,6 +78,11 @@ abstract class BasePlayerController {
     this.bombHitBlinkRenderer.play(durationMs);
   }
 
+  /** リスポーン演出の表示状態を切り替える */
+  public setRespawnEffectVisible(visible: boolean): void {
+    this.view.setRespawnEffectVisible(visible);
+  }
+
   /** 管理中の描画リソースを破棄する */
   public destroy(): void {
     this.bombHitBlinkRenderer.destroy();
