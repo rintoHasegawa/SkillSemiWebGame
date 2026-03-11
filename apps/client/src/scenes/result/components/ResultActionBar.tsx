@@ -3,6 +3,7 @@
  * リザルト画面の操作ボタンを表示する
  * タイトル遷移と最終マップ表示への切り替えを担当する
  */
+import type { CSSProperties } from "react";
 import {
   OVERLAY_BUTTON_ROW_STYLE,
   OVERLAY_BUTTON_STYLE,
@@ -11,12 +12,17 @@ import {
 type Props = {
   onBackToTitle: () => void;
   onShowMapPreview: () => void;
+  style?: CSSProperties;
 };
 
 /** リザルト画面の操作ボタン行を描画するコンポーネント */
-export const ResultActionBar = ({ onBackToTitle, onShowMapPreview }: Props) => {
+export const ResultActionBar = ({
+  onBackToTitle,
+  onShowMapPreview,
+  style,
+}: Props) => {
   return (
-    <div style={OVERLAY_BUTTON_ROW_STYLE}>
+    <div style={{ ...OVERLAY_BUTTON_ROW_STYLE, ...style }}>
       <button onClick={onBackToTitle} style={OVERLAY_BUTTON_STYLE}>
         タイトルへ戻る
       </button>

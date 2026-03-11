@@ -12,6 +12,8 @@ import { ResultTabContent } from "./components/ResultTabContent";
 import { ResultTabBar } from "./components/ResultTabBar";
 import {
   RESULT_BACKGROUND_DARK_OVERLAY_STYLE,
+  RESULT_RANKING_ACTION_BAR_STYLE,
+  RESULT_RANKING_HEADER_STYLE,
   RESULT_CONTENT_STYLE,
   RESULT_KEYFRAMES_CSS,
   RESULT_ROOT_STYLE,
@@ -88,16 +90,22 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
       <div style={RESULT_BACKGROUND_DARK_OVERLAY_STYLE} />
 
       <div style={RESULT_CONTENT_STYLE}>
-        {isRankingVisible && (
-          <ResultActionBar
-            onBackToTitle={onBackToTitle}
-            onShowMapPreview={showMapPreview}
-          />
+        {isRankingVisible ? (
+          <div style={RESULT_RANKING_HEADER_STYLE}>
+            <h2 style={RESULT_TITLE_STYLE}>
+              <span style={getResultTitleTextStyle(winnerColor)}>結果発表</span>
+            </h2>
+            <ResultActionBar
+              onBackToTitle={onBackToTitle}
+              onShowMapPreview={showMapPreview}
+              style={RESULT_RANKING_ACTION_BAR_STYLE}
+            />
+          </div>
+        ) : (
+          <h2 style={RESULT_TITLE_STYLE}>
+            <span style={getResultTitleTextStyle(winnerColor)}>結果発表</span>
+          </h2>
         )}
-
-        <h2 style={RESULT_TITLE_STYLE}>
-          <span style={getResultTitleTextStyle(winnerColor)}>結果発表</span>
-        </h2>
 
         {!isRankingVisible && (
           <div style={RESULT_TAP_GUIDE_STYLE}>Tap To Result</div>
