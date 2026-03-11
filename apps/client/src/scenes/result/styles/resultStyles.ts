@@ -29,13 +29,34 @@ export const RESULT_ROOT_STYLE: CSSProperties = {
 
 /** 結果発表タイトルのスタイル */
 export const RESULT_TITLE_STYLE: CSSProperties = {
-  margin: "0 0 20px 0",
+  margin: "0 0 10px 0",
   fontSize: "clamp(1.8rem, 4.4vw, 2.6rem)",
   fontFamily: "'Yu Mincho', 'Hiragino Mincho ProN', serif",
   letterSpacing: "0.14em",
   fontWeight: 800,
   textShadow: "0 4px 14px rgba(0, 0, 0, 0.5)",
   animation: "titleGleam 3.6s ease-in-out infinite",
+};
+
+/** リザルト表示時のヘッダー領域スタイル */
+export const RESULT_RANKING_HEADER_STYLE: CSSProperties = {
+  width: "100%",
+  maxWidth: "960px",
+  minHeight: "44px",
+  position: "relative",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "flex-start",
+  marginBottom: "6px",
+};
+
+/** リザルト表示時の右上操作ボタン行スタイル */
+export const RESULT_RANKING_ACTION_BAR_STYLE: CSSProperties = {
+  width: "auto",
+  position: "absolute",
+  top: 0,
+  right: 0,
+  marginBottom: 0,
 };
 
 /** リザルト画面本文レイヤーのスタイル */
@@ -263,7 +284,7 @@ export const RESULT_TAB_BAR_CONTAINER_STYLE: CSSProperties = {
   width: "100%",
   maxWidth: "720px",
   gap: "4px",
-  marginBottom: "16px",
+  marginBottom: "10px",
 };
 
 /** タブボタンのスタイルを返す */
