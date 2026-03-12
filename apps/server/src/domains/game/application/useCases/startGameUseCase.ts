@@ -48,34 +48,37 @@ export const startGameUseCase = ({
     });
   };
 
-  gameSession.startRoomSession(
-    playerIds,
-    playerNamesById,
-    {
-      onTick: (tickData) => {
-        if (tickData.playerUpdates.length > 0) {
-          output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
-        }
+  gameSession.startRoomSession(playerIds, playerNamesById, {
+    onTick: (tickData) => {
+      if (tickData.playerUpdates.length > 0) {
+        output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
+      }
 
-        if (tickData.cellUpdates.length > 0) {
-          output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
-        }
-      },
-      onGameEnd: (resultPayload) => {
-        logEvent(logScopes.GAME_USE_CASE, {
-          event: gameUseCaseLogEvents.GAME_END,
-          result: logResults.EMITTED,
-          roomId,
-          reason: "duration_elapsed",
-        });
-        output.publishGameEndToRoom(roomId);
-        output.publishGameResultToRoom(roomId, resultPayload);
-        onGameEnd();
-      },
-      onBotPlaceBomb: handleBotBombAction,
-      onBotBombHit: handleBotBombHit,
+      if (tickData.cellUpdates.length > 0) {
+        output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
+      }
+
+      output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
     },
-  );
+    onGameEnd: (resultPayload) => {
+      logEvent(logScopes.GAME_USE_CASE, {
+        event: gameUseCaseLogEvents.GAME_END,
+        result: logResults.EMITTED,
+        roomId,
+        reason: "duration_elapsed",
+      });
+      output.publishGameEndToRoom(roomId);
+      output.publishGameResultToRoom(roomId, resultPayload);
+      onGameEnd();
+    },
+    onBotPlaceBomb: handleBotBombAction,
+    onBotBombHit: handleBotBombHit,
+    onHurricanePlayerHit: (targetPlayerId) => {
+      output.publishHurricaneHitToRoom(roomId, {
+        playerId: targetPlayerId,
+      });
+    },
+  });
 
   const startTime = gameSession.getRoomStartTime() || Date.now();
   output.publishGameStartToRoom(roomId, { startTime, serverNow: Date.now() });

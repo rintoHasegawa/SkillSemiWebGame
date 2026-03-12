@@ -29,6 +29,7 @@ export type GameSessionCallbacks = {
   onGameEnd: (payload: GameResultPayload) => void;
   onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void;
   onBotBombHit?: (targetPlayerId: string, bombId: string) => void;
+  onHurricanePlayerHit?: (targetPlayerId: string) => void;
 };
 
 /** ルーム単位のゲーム状態とループ進行を保持するセッションクラス */
@@ -63,10 +64,7 @@ export class GameRoomSession {
     });
   }
 
-  public start(
-    tickRate: number,
-    callbacks: GameSessionCallbacks,
-  ): void {
+  public start(tickRate: number, callbacks: GameSessionCallbacks): void {
     if (this.gameLoop) {
       return;
     }
@@ -91,6 +89,7 @@ export class GameRoomSession {
       },
       onBotPlaceBomb: callbacks.onBotPlaceBomb,
       onBotBombHit: callbacks.onBotBombHit,
+      onHurricanePlayerHit: callbacks.onHurricanePlayerHit,
     };
 
     this.gameLoop = new GameLoop({

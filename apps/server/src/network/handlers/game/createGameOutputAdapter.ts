@@ -10,10 +10,12 @@ import type {
   domain,
   GameStartPayload,
   GameResultPayload,
+  HurricaneHitPayload,
   PlayerHitPayload,
   PongPayload,
   CurrentPlayersPayload,
   RemovePlayerPayload,
+  UpdateHurricanesPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
 import type {
@@ -72,6 +74,16 @@ export const createGameOutputAdapter = (
         grouped,
       );
     },
+    publishUpdateHurricanesToRoom: (
+      roomId: RoomId,
+      hurricanes: UpdateHurricanesPayload,
+    ) => {
+      common.emitToRoom(
+        roomId,
+        protocol.SocketEvents.UPDATE_HURRICANES,
+        hurricanes,
+      );
+    },
     publishGameEndToRoom: (roomId: RoomId) => {
       common.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
     },
@@ -125,6 +137,15 @@ export const createGameOutputAdapter = (
         protocol.SocketEvents.PLAYER_HIT,
         payload,
       );
+    },
+    publishPlayerHitToRoom: (roomId: RoomId, payload: PlayerHitPayload) => {
+      common.emitToRoom(roomId, protocol.SocketEvents.PLAYER_HIT, payload);
+    },
+    publishHurricaneHitToRoom: (
+      roomId: RoomId,
+      payload: HurricaneHitPayload,
+    ) => {
+      common.emitToRoom(roomId, protocol.SocketEvents.HURRICANE_HIT, payload);
     },
   };
 };

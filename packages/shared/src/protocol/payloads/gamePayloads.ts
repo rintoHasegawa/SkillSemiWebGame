@@ -68,6 +68,18 @@ export type CurrentPlayersPayload = PlayerSnapshotPayload;
 /** update-map-cells イベントで送受信するグループ化マップ差分 */
 export type UpdateMapCellsPayload = GroupedCellUpdates;
 
+/** update-hurricanes イベントで送受信するハリケーン状態 */
+export type HurricaneStatePayload = {
+  id: string;
+  x: number;
+  y: number;
+  radius: number;
+  rotationRad: number;
+};
+
+/** update-hurricanes イベントで送受信するハリケーン状態配列 */
+export type UpdateHurricanesPayload = HurricaneStatePayload[];
+
 /**
  * new-player イベントで送受信するプレイヤー情報
  * 初回参加通知のため teamId を含む完全な PlayerData を配信する
@@ -123,5 +135,10 @@ export type BombHitReportPayload = {
 
 /** player-hit イベントで送受信する被弾プレイヤー情報 */
 export type PlayerHitPayload = {
+  playerId: string;
+};
+
+/** hurricane-hit イベントで送受信する被弾プレイヤー情報 */
+export type HurricaneHitPayload = {
   playerId: string;
 };

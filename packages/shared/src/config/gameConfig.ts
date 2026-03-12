@@ -35,6 +35,15 @@ export const GAME_CONFIG = {
   BOMB_FEVER_START_REMAINING_SEC: 60, // フィーバー開始の残り時間しきい値（秒）
   BOMB_DEDUP_EXTRA_TTL_MS: 1000, // 重複排除保持時間の追加分（ms）
 
+  // ハリケーンイベント設定（クライアント/サーバー契約）
+  HURRICANE_ENABLED: true, // ハリケーンイベント有効フラグ
+  HURRICANE_SPAWN_REMAINING_SEC: 120, // ハリケーン出現開始の残り時間しきい値（秒）
+  HURRICANE_COUNT: 5, // 同時出現数
+  HURRICANE_DIAMETER_GRID: 2.2, // 見た目と判定に共通で利用する直径（グリッド単位）
+  HURRICANE_MOVE_SPEED: 1.5, // 1秒あたりの移動速度（グリッド単位）
+  HURRICANE_HIT_COOLDOWN_MS: 3000, // 同一対象への連続被弾クールダウン（ms）
+  HURRICANE_VISUAL_ROTATION_SPEED: 2.6, // 描画回転速度（rad/s）
+
   // チーム設定（クライアント/サーバー契約）
   TEAM_COUNT: 4,
 } as const;

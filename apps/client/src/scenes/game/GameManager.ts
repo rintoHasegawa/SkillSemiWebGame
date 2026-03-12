@@ -22,11 +22,13 @@ import {
   type MoveSender,
 } from "./application/network/PlayerMoveSender";
 import type { GamePlayers } from "./application/game.types";
+import type { HurricaneHitPayload } from "@repo/shared";
 import {
   GameUiStateSyncService,
   type GameUiState,
 } from "./application/ui/GameUiStateSyncService";
 import { loadRespawnEffectTexture } from "./entities/player/RespawnEffectTextureCache";
+import { loadHurricaneTexture } from "./entities/hurricane/HurricaneTextureCache";
 
 /** GameManager の依存注入オプション型 */
 export type GameManagerDependencies = {
@@ -107,6 +109,7 @@ export class GameManager {
         void loadRespawnEffectTexture(
           `${import.meta.env.BASE_URL}bakuhatueffe.svg`,
         );
+        void loadHurricaneTexture(`${import.meta.env.BASE_URL}hurricane.svg`);
         this.sessionFacade.setGameStart(startTime);
         this.uiStateSyncService.emitIfChanged();
       },
@@ -146,6 +149,9 @@ export class GameManager {
         },
         onRemotePlayerHit: (payload) => {
           this.combatFacade.handleNetworkPlayerHit(payload);
+        },
+        onRemoteHurricaneHit: (payload: HurricaneHitPayload) => {
+          this.combatFacade.handleNetworkHurricaneHit(payload);
         },
         onBombExploded: (payload) => {
           this.combatFacade.handleBombExploded(payload);

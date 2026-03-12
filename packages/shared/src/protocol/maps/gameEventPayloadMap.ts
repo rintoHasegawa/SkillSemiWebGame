@@ -4,10 +4,7 @@
  * 開始進行終了，入力，同期の契約を集約する
  */
 import { SocketEvents } from "../socketEvents";
-import type {
-  PingPayload,
-  PongPayload,
-} from "../payloads/commonPayloads";
+import type { PingPayload, PongPayload } from "../payloads/commonPayloads";
 import type {
   BombHitReportPayload,
   BombPlacedAckPayload,
@@ -15,6 +12,7 @@ import type {
   CurrentPlayersPayload,
   GameResultPayload,
   GameStartPayload,
+  HurricaneHitPayload,
   StartGameRequestPayload,
   MovePayload,
   NewPlayerPayload,
@@ -22,6 +20,7 @@ import type {
   PlayerHitPayload,
   RemovePlayerPayload,
   UpdateMapCellsPayload,
+  UpdateHurricanesPayload,
   UpdatePlayersPayload,
 } from "../payloads/gamePayloads";
 
@@ -43,9 +42,11 @@ export type GameServerToClientEventPayloadMap = {
   [SocketEvents.UPDATE_PLAYERS_SYNC]: UpdatePlayersPayload;
   [SocketEvents.REMOVE_PLAYER_SYNC]: RemovePlayerPayload;
   [SocketEvents.UPDATE_MAP_CELLS_SYNC]: UpdateMapCellsPayload;
+  [SocketEvents.UPDATE_HURRICANES_SYNC]: UpdateHurricanesPayload;
   [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
   [SocketEvents.BOMB_PLACED_ACK]: BombPlacedAckPayload;
   [SocketEvents.PLAYER_HIT]: PlayerHitPayload;
+  [SocketEvents.HURRICANE_HIT]: HurricaneHitPayload;
   [SocketEvents.PONG]: PongPayload;
   [SocketEvents.GAME_END]: undefined;
   [SocketEvents.GAME_RESULT]: GameResultPayload;

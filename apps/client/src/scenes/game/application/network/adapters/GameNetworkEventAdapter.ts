@@ -7,6 +7,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   GameStartPayload,
+  HurricaneHitPayload,
   PlayerHitPayload,
 } from "@repo/shared";
 
@@ -42,5 +43,12 @@ export const toBombPlacementAcknowledgedPayload = (
 export const toRemotePlayerHitPayload = (
   payload: PlayerHitPayload,
 ): PlayerHitPayload => {
+  return payload;
+};
+
+/** ハリケーン被弾受信ペイロードを内部ペイロードへ正規化する */
+export const toRemoteHurricaneHitPayload = (
+  payload: HurricaneHitPayload,
+): HurricaneHitPayload => {
   return payload;
 };

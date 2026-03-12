@@ -45,10 +45,21 @@ export type GameLoopCallbacks = {
   onGameEnd: () => void;
   onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void;
   onBotBombHit?: (targetPlayerId: string, bombId: string) => void;
+  onHurricanePlayerHit?: (targetPlayerId: string) => void;
 };
 
 /** プレイヤーのグリッド位置キャッシュを含むエントリ */
 type PlayerGridCacheEntry = PlayerGridEntry & { player: Player };
+
+type HurricaneState = {
+  id: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  rotationRad: number;
+};
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -63,6 +74,9 @@ export class GameLoop {
   private disconnectedBotControlledPlayerIds: Set<string> = new Set();
   private botTurnOrchestrator: BotTurnOrchestrator = new BotTurnOrchestrator();
   private readonly botReceivedHitCountById = new Map<string, number>();
+  private hasSpawnedHurricanes = false;
+  private hurricanes: HurricaneState[] = [];
+  private readonly lastHurricaneHitAtMsByTargetId = new Map<string, number>();
 
   private readonly roomId: string;
   private readonly tickRate: number;
@@ -153,6 +167,9 @@ export class GameLoop {
       0,
       Math.round(monotonicNowMs - this.startMonotonicTimeMs),
     );
+    this.ensureHurricanesSpawned(elapsedMs);
+    this.updateHurricanes(this.tickRate / 1000);
+    this.detectHurricaneHits(wallClockNowMs, elapsedMs);
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
     this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsSnapshot);
     this.detectBotBombHits(elapsedMs, wallClockNowMs);
@@ -266,7 +283,149 @@ export class GameLoop {
     return {
       playerUpdates,
       cellUpdates: this.mapStore.getAndClearUpdates(),
+      hurricaneUpdates: this.hurricanes.map((hurricane) => ({
+        id: hurricane.id,
+        x: hurricane.x,
+        y: hurricane.y,
+        radius: hurricane.radius,
+        rotationRad: hurricane.rotationRad,
+      })),
     };
+  }
+
+  /** 残り時間しきい値到達時にハリケーンを一度だけ生成する */
+  private ensureHurricanesSpawned(elapsedMs: number): void {
+    if (!config.GAME_CONFIG.HURRICANE_ENABLED || this.hasSpawnedHurricanes) {
+      return;
+    }
+
+    const remainingSec =
+      config.GAME_CONFIG.GAME_DURATION_SEC - elapsedMs / 1000;
+    if (remainingSec > config.GAME_CONFIG.HURRICANE_SPAWN_REMAINING_SEC) {
+      return;
+    }
+
+    this.hasSpawnedHurricanes = true;
+    this.hurricanes = Array.from(
+      { length: config.GAME_CONFIG.HURRICANE_COUNT },
+      (_, index) => this.createHurricane(index),
+    );
+  }
+
+  /** ハリケーンを直線移動させ，境界で反射させる */
+  private updateHurricanes(deltaSec: number): void {
+    if (this.hurricanes.length === 0) {
+      return;
+    }
+
+    const maxX = config.GAME_CONFIG.GRID_COLS;
+    const maxY = config.GAME_CONFIG.GRID_ROWS;
+
+    this.hurricanes.forEach((hurricane) => {
+      hurricane.x += hurricane.vx * deltaSec;
+      hurricane.y += hurricane.vy * deltaSec;
+      hurricane.rotationRad +=
+        config.GAME_CONFIG.HURRICANE_VISUAL_ROTATION_SPEED * deltaSec;
+
+      if (hurricane.x - hurricane.radius < 0) {
+        hurricane.x = hurricane.radius;
+        hurricane.vx *= -1;
+      } else if (hurricane.x + hurricane.radius > maxX) {
+        hurricane.x = maxX - hurricane.radius;
+        hurricane.vx *= -1;
+      }
+
+      if (hurricane.y - hurricane.radius < 0) {
+        hurricane.y = hurricane.radius;
+        hurricane.vy *= -1;
+      } else if (hurricane.y + hurricane.radius > maxY) {
+        hurricane.y = maxY - hurricane.radius;
+        hurricane.vy *= -1;
+      }
+    });
+  }
+
+  /** ハリケーン接触を検知し，クールダウン付きで被弾通知を配信する */
+  private detectHurricaneHits(nowMs: number, _elapsedMs: number): void {
+    if (this.hurricanes.length === 0) {
+      return;
+    }
+
+    const hitCooldownMs = config.GAME_CONFIG.HURRICANE_HIT_COOLDOWN_MS;
+
+    this.players.forEach((player) => {
+      const lastHitAtMs = this.lastHurricaneHitAtMsByTargetId.get(player.id);
+      if (lastHitAtMs !== undefined && nowMs - lastHitAtMs < hitCooldownMs) {
+        return;
+      }
+
+      const isHit = this.hurricanes.some((hurricane) => {
+        const result = checkBombHit({
+          bomb: {
+            x: hurricane.x,
+            y: hurricane.y,
+            radius: hurricane.radius,
+            teamId: -1,
+          },
+          player: {
+            x: player.x,
+            y: player.y,
+            radius: config.GAME_CONFIG.PLAYER_RADIUS,
+            teamId: player.teamId,
+          },
+        });
+
+        return result.isHit;
+      });
+
+      if (!isHit) {
+        return;
+      }
+
+      this.lastHurricaneHitAtMsByTargetId.set(player.id, nowMs);
+
+      if (
+        isBotPlayerId(player.id) ||
+        this.disconnectedBotControlledPlayerIds.has(player.id)
+      ) {
+        const botPlayerId = player.id as BotPlayerId;
+        const prevCount = this.botReceivedHitCountById.get(player.id) ?? 0;
+        const nextCount = prevCount + 1;
+
+        if (nextCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
+          this.botReceivedHitCountById.set(player.id, 0);
+          this.botTurnOrchestrator.applyRespawnStun(botPlayerId, nowMs);
+        } else {
+          this.botReceivedHitCountById.set(player.id, nextCount);
+          this.botTurnOrchestrator.applyHitStun(botPlayerId, nowMs);
+        }
+      }
+
+      this.callbacks.onHurricanePlayerHit?.(player.id);
+    });
+  }
+
+  /** ハリケーン初期状態を生成する */
+  private createHurricane(index: number): HurricaneState {
+    const radius = config.GAME_CONFIG.HURRICANE_DIAMETER_GRID / 2;
+    const x = this.randomInRange(radius, config.GAME_CONFIG.GRID_COLS - radius);
+    const y = this.randomInRange(radius, config.GAME_CONFIG.GRID_ROWS - radius);
+    const directionRad = this.randomInRange(0, Math.PI * 2);
+    const speed = config.GAME_CONFIG.HURRICANE_MOVE_SPEED;
+
+    return {
+      id: `hurricane-${index + 1}`,
+      x,
+      y,
+      vx: Math.cos(directionRad) * speed,
+      vy: Math.sin(directionRad) * speed,
+      radius,
+      rotationRad: directionRad,
+    };
+  }
+
+  private randomInRange(min: number, max: number): number {
+    return min + Math.random() * Math.max(0, max - min);
   }
 
   private collectChangedPlayerUpdates(
@@ -342,6 +501,9 @@ export class GameLoop {
     this.botTurnOrchestrator.clear();
     this.disconnectedBotControlledPlayerIds.clear();
     this.lastSentPlayers.clear();
+    this.hasSpawnedHurricanes = false;
+    this.hurricanes = [];
+    this.lastHurricaneHitAtMsByTargetId.clear();
 
     if (this.loopId) {
       clearTimeout(this.loopId);

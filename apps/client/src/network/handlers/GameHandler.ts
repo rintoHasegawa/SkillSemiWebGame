@@ -14,11 +14,13 @@ import type {
   CurrentPlayersPayload,
   GameResultPayload,
   GameStartPayload,
+  HurricaneHitPayload,
   MovePayload,
   NewPlayerPayload,
   PlaceBombPayload,
   PlayerHitPayload,
   RemovePlayerPayload,
+  UpdateHurricanesPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
@@ -26,16 +28,30 @@ import { createClientSocketEventBridge } from "./socketEventBridge";
 
 /** ゲームシーンが利用するソケット操作の契約 */
 export type GameHandler = {
-  onCurrentPlayers: (callback: (players: CurrentPlayersPayload) => void) => void;
-  offCurrentPlayers: (callback: (players: CurrentPlayersPayload) => void) => void;
+  onCurrentPlayers: (
+    callback: (players: CurrentPlayersPayload) => void,
+  ) => void;
+  offCurrentPlayers: (
+    callback: (players: CurrentPlayersPayload) => void,
+  ) => void;
   onNewPlayer: (callback: (player: NewPlayerPayload) => void) => void;
   offNewPlayer: (callback: (player: NewPlayerPayload) => void) => void;
   onUpdatePlayers: (callback: (players: UpdatePlayersPayload) => void) => void;
   offUpdatePlayers: (callback: (players: UpdatePlayersPayload) => void) => void;
   onRemovePlayer: (callback: (id: RemovePlayerPayload) => void) => void;
   offRemovePlayer: (callback: (id: RemovePlayerPayload) => void) => void;
-  onUpdateMapCells: (callback: (updates: UpdateMapCellsPayload) => void) => void;
-  offUpdateMapCells: (callback: (updates: UpdateMapCellsPayload) => void) => void;
+  onUpdateMapCells: (
+    callback: (updates: UpdateMapCellsPayload) => void,
+  ) => void;
+  offUpdateMapCells: (
+    callback: (updates: UpdateMapCellsPayload) => void,
+  ) => void;
+  onUpdateHurricanes: (
+    callback: (payload: UpdateHurricanesPayload) => void,
+  ) => void;
+  offUpdateHurricanes: (
+    callback: (payload: UpdateHurricanesPayload) => void,
+  ) => void;
   onGameStart: (callback: (data: GameStartPayload) => void) => void;
   onceGameStart: (callback: (data: GameStartPayload) => void) => void;
   offGameStart: (callback: (data: GameStartPayload) => void) => void;
@@ -49,6 +65,8 @@ export type GameHandler = {
   offBombPlacedAck: (callback: (payload: BombPlacedAckPayload) => void) => void;
   onPlayerHit: (callback: (payload: PlayerHitPayload) => void) => void;
   offPlayerHit: (callback: (payload: PlayerHitPayload) => void) => void;
+  onHurricaneHit: (callback: (payload: HurricaneHitPayload) => void) => void;
+  offHurricaneHit: (callback: (payload: HurricaneHitPayload) => void) => void;
   sendMove: (x: number, y: number) => void;
   sendPlaceBomb: (payload: PlaceBombPayload) => void;
   sendBombHitReport: (payload: BombHitReportPayload) => void;
@@ -57,16 +75,23 @@ export type GameHandler = {
 
 /** ソケットインスタンスからゲーム向けハンドラを生成する */
 export const createGameHandler = (socket: Socket): GameHandler => {
-  const { onEvent, onceEvent, offEvent, emitEvent } = createClientSocketEventBridge(socket);
+  const { onEvent, onceEvent, offEvent, emitEvent } =
+    createClientSocketEventBridge(socket);
   type ReceiveEventName = Extract<keyof ServerToClientEventPayloadMap, string>;
   type SendEventName = Extract<keyof ClientToServerEventPayloadMap, string>;
 
-  const createSubscriptionPair = <TEvent extends ReceiveEventName>(event: TEvent) => {
+  const createSubscriptionPair = <TEvent extends ReceiveEventName>(
+    event: TEvent,
+  ) => {
     return {
-      on: (callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void) => {
+      on: (
+        callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void,
+      ) => {
         onEvent(event, callback);
       },
-      off: (callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void) => {
+      off: (
+        callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void,
+      ) => {
         offEvent(event, callback);
       },
     };
@@ -85,41 +110,51 @@ export const createGameHandler = (socket: Socket): GameHandler => {
   };
 
   const currentPlayersSubscription = createSubscriptionPair(
-    protocol.SocketEvents.CURRENT_PLAYERS
+    protocol.SocketEvents.CURRENT_PLAYERS,
   );
   const newPlayerSubscription = createSubscriptionPair(
-    protocol.SocketEvents.NEW_PLAYER
+    protocol.SocketEvents.NEW_PLAYER,
   );
   const updatePlayersSubscription = createSubscriptionPair(
-    protocol.SocketEvents.UPDATE_PLAYERS
+    protocol.SocketEvents.UPDATE_PLAYERS,
   );
   const removePlayerSubscription = createSubscriptionPair(
-    protocol.SocketEvents.REMOVE_PLAYER
+    protocol.SocketEvents.REMOVE_PLAYER,
   );
   const updateMapCellsSubscription = createSubscriptionPair(
-    protocol.SocketEvents.UPDATE_MAP_CELLS
+    protocol.SocketEvents.UPDATE_MAP_CELLS,
+  );
+  const updateHurricanesSubscription = createSubscriptionPair(
+    protocol.SocketEvents.UPDATE_HURRICANES,
   );
   const gameEndSubscription = createSubscriptionPair(
-    protocol.SocketEvents.GAME_END
+    protocol.SocketEvents.GAME_END,
   );
   const gameResultSubscription = createSubscriptionPair(
-    protocol.SocketEvents.GAME_RESULT
+    protocol.SocketEvents.GAME_RESULT,
   );
   const bombPlacedSubscription = createSubscriptionPair(
-    protocol.SocketEvents.BOMB_PLACED
+    protocol.SocketEvents.BOMB_PLACED,
   );
   const bombPlacedAckSubscription = createSubscriptionPair(
-    protocol.SocketEvents.BOMB_PLACED_ACK
+    protocol.SocketEvents.BOMB_PLACED_ACK,
   );
   const playerHitSubscription = createSubscriptionPair(
-    protocol.SocketEvents.PLAYER_HIT
+    protocol.SocketEvents.PLAYER_HIT,
+  );
+  const hurricaneHitSubscription = createSubscriptionPair(
+    protocol.SocketEvents.HURRICANE_HIT,
   );
   const sendMovePayload = createPayloadSender(protocol.SocketEvents.MOVE);
-  const sendPlaceBombPayload = createPayloadSender(protocol.SocketEvents.PLACE_BOMB);
-  const sendBombHitReportPayload = createPayloadSender(
-    protocol.SocketEvents.BOMB_HIT_REPORT
+  const sendPlaceBombPayload = createPayloadSender(
+    protocol.SocketEvents.PLACE_BOMB,
   );
-  const sendReadyForGame = createVoidSender(protocol.SocketEvents.READY_FOR_GAME);
+  const sendBombHitReportPayload = createPayloadSender(
+    protocol.SocketEvents.BOMB_HIT_REPORT,
+  );
+  const sendReadyForGame = createVoidSender(
+    protocol.SocketEvents.READY_FOR_GAME,
+  );
 
   return {
     onCurrentPlayers: (callback) => {
@@ -151,6 +186,12 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     },
     offUpdateMapCells: (callback) => {
       updateMapCellsSubscription.off(callback);
+    },
+    onUpdateHurricanes: (callback) => {
+      updateHurricanesSubscription.on(callback);
+    },
+    offUpdateHurricanes: (callback) => {
+      updateHurricanesSubscription.off(callback);
     },
     onGameStart: (callback) => {
       onEvent(protocol.SocketEvents.GAME_START, callback);
@@ -191,6 +232,12 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     offPlayerHit: (callback) => {
       playerHitSubscription.off(callback);
     },
+    onHurricaneHit: (callback) => {
+      hurricaneHitSubscription.on(callback);
+    },
+    offHurricaneHit: (callback) => {
+      hurricaneHitSubscription.off(callback);
+    },
     sendMove: (x, y) => {
       const payload: MovePayload = { x, y };
       sendMovePayload(payload);
@@ -203,6 +250,6 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     },
     readyForGame: () => {
       sendReadyForGame();
-    }
+    },
   };
 };

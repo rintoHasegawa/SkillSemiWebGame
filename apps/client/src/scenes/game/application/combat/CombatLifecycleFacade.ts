@@ -4,7 +4,7 @@
  * ゲームマネージャーから被弾関連の責務を分離する
  */
 import { config } from "@client/config";
-import type { PlayerHitPayload } from "@repo/shared";
+import type { HurricaneHitPayload, PlayerHitPayload } from "@repo/shared";
 import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
 import { BombHitOrchestrator } from "@client/scenes/game/application/BombHitOrchestrator";
 import { PlayerHitPolicy } from "@client/scenes/game/application/PlayerHitPolicy";
@@ -101,6 +101,38 @@ export class CombatLifecycleFacade {
 
     if (hitCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
       this.respawnManager.startSequence(payload.playerId);
+    }
+  }
+
+  /** ハリケーン被弾通知を適用する（リスポーンは行わずハートのみ減少する） */
+  public handleNetworkHurricaneHit(payload: HurricaneHitPayload): void {
+    if (this.respawnManager.isRespawning(payload.playerId)) return;
+
+    const hitCount = this.respawnManager.incrementHitCount(payload.playerId);
+
+    if (payload.playerId === this.myId) {
+      this.localBombHitCount = hitCount;
+      this.onLocalBombHitCountChanged(this.localBombHitCount);
+      this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
+    } else {
+      this.playerHitEffectOrchestrator.handleNetworkPlayerHit(
+        payload.playerId,
+        this.myId,
+      );
+    }
+
+    if (hitCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
+      if (payload.playerId === this.myId) {
+        this.playerHitPolicy.applyLocalHitStun(
+          config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS,
+        );
+      }
+      this.respawnManager.startSequence(payload.playerId);
+      return;
+    }
+
+    if (payload.playerId === this.myId) {
+      this.playerHitPolicy.applyLocalHitStun();
     }
   }
 
