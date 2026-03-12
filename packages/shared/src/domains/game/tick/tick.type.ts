@@ -4,6 +4,7 @@
  */
 import type { CellUpdate } from "../gridMap/gridMap.type";
 import type { PlayerData } from "../player/player.type";
+import type { HurricaneStatePayload } from "../../../protocol/payloads/gamePayloads";
 
 /** 1ティックで配信するプレイヤー座標差分 */
 export type PlayerPositionUpdate = Pick<PlayerData, "id" | "x" | "y">;
@@ -12,4 +13,5 @@ export type PlayerPositionUpdate = Pick<PlayerData, "id" | "x" | "y">;
 export interface TickData {
   playerUpdates: PlayerPositionUpdate[];
   cellUpdates: CellUpdate[];
+  hurricaneUpdates: HurricaneStatePayload[];
 }

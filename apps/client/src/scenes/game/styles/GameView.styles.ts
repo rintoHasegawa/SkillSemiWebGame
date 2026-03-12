@@ -127,3 +127,25 @@ export const GAME_VIEW_FEVER_TEXT_STYLE: CSSProperties = {
   pointerEvents: "none",
   animation: "feverPulse 0.9s ease-in-out infinite",
 };
+
+/** 画面中央のハリケーン警告表示スタイル */
+export const GAME_VIEW_HURRICANE_WARNING_STYLE: CSSProperties = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  zIndex: 32,
+  color: "#ff2a2a",
+  fontSize: "clamp(1.1rem, 5.6vw, 2.8rem)",
+  fontWeight: 900,
+  letterSpacing: "0.04em",
+  WebkitTextStroke: "1px rgba(60, 0, 0, 0.9)",
+  textShadow:
+    "0 0 8px rgba(255,120,120,0.92), 0 0 18px rgba(255,40,40,0.96), 0 0 32px rgba(180,0,0,0.85)",
+  fontFamily: "monospace",
+  whiteSpace: "nowrap",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  pointerEvents: "none",
+  animation: "hurricaneWarningBlink 0.6s step-end infinite",
+};

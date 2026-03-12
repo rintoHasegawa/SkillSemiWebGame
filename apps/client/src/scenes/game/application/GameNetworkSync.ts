@@ -7,6 +7,7 @@ import { Container } from "pixi.js";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
+  HurricaneHitPayload,
   PlayerHitPayload,
 } from "@repo/shared";
 import { AppearanceResolver } from "./AppearanceResolver";
@@ -28,6 +29,7 @@ type GameNetworkSyncOptions = {
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
+  onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -54,6 +56,7 @@ export class GameNetworkSync {
     onRemoteBombPlaced,
     onBombPlacementAcknowledged,
     onRemotePlayerHit,
+    onRemoteHurricaneHit,
   }: GameNetworkSyncOptions) {
     this.stateApplier = new GameNetworkStateApplier({
       worldContainer,
@@ -66,6 +69,7 @@ export class GameNetworkSync {
       onRemoteBombPlaced,
       onBombPlacementAcknowledged,
       onRemotePlayerHit,
+      onRemoteHurricaneHit,
       onDebugLog: this.debugLog,
     });
 
@@ -80,5 +84,6 @@ export class GameNetworkSync {
 
   public unbind() {
     this.eventReceiver.unbind();
+    this.stateApplier.dispose();
   }
 }

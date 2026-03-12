@@ -4,7 +4,7 @@
  * ゲームマネージャーから被弾関連の責務を分離する
  */
 import { config } from "@client/config";
-import type { PlayerHitPayload } from "@repo/shared";
+import type { HurricaneHitPayload, PlayerHitPayload } from "@repo/shared";
 import type { BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
 import { BombHitOrchestrator } from "@client/scenes/game/application/BombHitOrchestrator";
 import { PlayerHitPolicy } from "@client/scenes/game/application/PlayerHitPolicy";
@@ -20,6 +20,8 @@ export type CombatLifecycleFacadeOptions = {
   onSendBombHitReport: (bombId: string) => void;
   onLocalBombHitCountChanged: (count: number) => void;
 };
+
+type NetworkDamageSource = "bomb" | "hurricane";
 
 /** 被弾関連ライフサイクルの制御を担当する */
 export class CombatLifecycleFacade {
@@ -89,19 +91,12 @@ export class CombatLifecycleFacade {
 
   /** ネットワーク被弾通知を適用する */
   public handleNetworkPlayerHit(payload: PlayerHitPayload): void {
-    this.playerHitPolicy.applyPlayerHitEvent(payload);
+    this.applyNetworkDamage(payload.playerId, "bomb");
+  }
 
-    if (this.respawnManager.isRespawning(payload.playerId)) return;
-
-    const hitCount = this.respawnManager.incrementHitCount(payload.playerId);
-    this.playerHitEffectOrchestrator.handleNetworkPlayerHit(
-      payload.playerId,
-      this.myId,
-    );
-
-    if (hitCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
-      this.respawnManager.startSequence(payload.playerId);
-    }
+  /** ハリケーン被弾通知を適用する */
+  public handleNetworkHurricaneHit(payload: HurricaneHitPayload): void {
+    this.applyNetworkDamage(payload.playerId, "hurricane");
   }
 
   /** 管理中リソースを破棄する */
@@ -122,5 +117,48 @@ export class CombatLifecycleFacade {
     return (
       this.localBombHitCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT
     );
+  }
+
+  /** ネットワーク由来のダメージ適用を統一して実行する */
+  private applyNetworkDamage(
+    targetPlayerId: string,
+    source: NetworkDamageSource,
+  ): void {
+    const isLocalTarget = targetPlayerId === this.myId;
+
+    if (source === "bomb") {
+      this.playerHitPolicy.applyPlayerHitEvent({ playerId: targetPlayerId });
+    }
+
+    if (this.respawnManager.isRespawning(targetPlayerId)) {
+      return;
+    }
+
+    const hitCount = this.respawnManager.incrementHitCount(targetPlayerId);
+
+    if (isLocalTarget) {
+      this.localBombHitCount = hitCount;
+      this.onLocalBombHitCountChanged(this.localBombHitCount);
+      this.playerHitEffectOrchestrator.handleLocalBombHit(this.myId);
+    } else {
+      this.playerHitEffectOrchestrator.handleNetworkPlayerHit(
+        targetPlayerId,
+        this.myId,
+      );
+    }
+
+    if (hitCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
+      if (isLocalTarget) {
+        this.playerHitPolicy.applyLocalHitStun(
+          config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS,
+        );
+      }
+      this.respawnManager.startSequence(targetPlayerId);
+      return;
+    }
+
+    if (source === "hurricane" && isLocalTarget) {
+      this.playerHitPolicy.applyLocalHitStun();
+    }
   }
 }

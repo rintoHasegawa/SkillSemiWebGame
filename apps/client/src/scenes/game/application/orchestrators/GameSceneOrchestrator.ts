@@ -7,12 +7,16 @@ import { Application, Container } from "pixi.js";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
+  HurricaneHitPayload,
   PlayerHitPayload,
 } from "@repo/shared";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import { GameNetworkSync } from "@client/scenes/game/application/GameNetworkSync";
-import { BombManager, type BombExplodedPayload } from "@client/scenes/game/entities/bomb/BombManager";
+import {
+  BombManager,
+  type BombExplodedPayload,
+} from "@client/scenes/game/entities/bomb/BombManager";
 import { GameLoop } from "@client/scenes/game/application/GameLoop";
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
@@ -30,6 +34,7 @@ export type CreateNetworkSyncOptions = {
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
+  onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
 };
 
 /** BombManager 生成入力型 */
@@ -49,6 +54,7 @@ export type GameSceneEventPorts = {
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
+  onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
   onBombExploded: (payload: BombExplodedPayload) => void;
 };
 
@@ -105,8 +111,12 @@ export class GameSceneOrchestrator {
   private readonly getJoystickInput: () => { x: number; y: number };
   private readonly moveSender: MoveSender;
   private readonly eventPorts: GameSceneEventPorts;
-  private readonly createNetworkSync: (options: CreateNetworkSyncOptions) => GameNetworkSync;
-  private readonly createBombManager: (options: CreateBombManagerOptions) => BombManager;
+  private readonly createNetworkSync: (
+    options: CreateNetworkSyncOptions,
+  ) => GameNetworkSync;
+  private readonly createBombManager: (
+    options: CreateBombManagerOptions,
+  ) => BombManager;
   private readonly createGameLoop: (options: CreateGameLoopOptions) => GameLoop;
 
   constructor({
@@ -132,9 +142,13 @@ export class GameSceneOrchestrator {
     this.getJoystickInput = getJoystickInput;
     this.moveSender = moveSender;
     this.eventPorts = eventPorts;
-    this.createNetworkSync = factories?.createNetworkSync ?? ((options) => new GameNetworkSync(options));
-    this.createBombManager = factories?.createBombManager ?? ((options) => new BombManager(options));
-    this.createGameLoop = factories?.createGameLoop ?? ((options) => new GameLoop(options));
+    this.createNetworkSync =
+      factories?.createNetworkSync ??
+      ((options) => new GameNetworkSync(options));
+    this.createBombManager =
+      factories?.createBombManager ?? ((options) => new BombManager(options));
+    this.createGameLoop =
+      factories?.createGameLoop ?? ((options) => new GameLoop(options));
   }
 
   /** シーン配線を順序どおり初期化し，参照を返す */
@@ -172,6 +186,7 @@ export class GameSceneOrchestrator {
       onRemoteBombPlaced: this.eventPorts.onRemoteBombPlaced,
       onBombPlacementAcknowledged: this.eventPorts.onBombPlacementAcknowledged,
       onRemotePlayerHit: this.eventPorts.onRemotePlayerHit,
+      onRemoteHurricaneHit: this.eventPorts.onRemoteHurricaneHit,
     });
     networkSync.bind();
     return networkSync;

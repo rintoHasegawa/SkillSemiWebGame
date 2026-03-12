@@ -7,6 +7,7 @@ import { Container } from "pixi.js";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
+  HurricaneHitPayload,
   PlayerHitPayload,
 } from "@repo/shared";
 import { domain } from "@repo/shared";
@@ -17,9 +18,11 @@ import {
   toBombPlacementAcknowledgedPayload,
   toGameStartedAt,
   toRemoteBombPlacedPayload,
+  toRemoteHurricaneHitPayload,
   toRemotePlayerHitPayload,
 } from "@client/scenes/game/application/network/adapters/GameNetworkEventAdapter";
 import { CombatSyncHandler } from "./CombatSyncHandler";
+import { HurricaneSyncHandler } from "./HurricaneSyncHandler";
 import { MapSyncHandler } from "./MapSyncHandler";
 import { PlayerSyncHandler } from "./PlayerSyncHandler";
 import type { ReceivedGameEventHandlers } from "../receivers/GameNetworkEventReceiver";
@@ -36,6 +39,7 @@ export type GameNetworkStateApplierOptions = {
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
+  onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
   onDebugLog?: (message: string) => void;
 };
 
@@ -44,6 +48,7 @@ export class GameNetworkStateApplier {
   private readonly playerSyncHandler: PlayerSyncHandler;
   private readonly mapSyncHandler: MapSyncHandler;
   private readonly combatSyncHandler: CombatSyncHandler;
+  private readonly hurricaneSyncHandler: HurricaneSyncHandler;
   private readonly onGameStarted: (startTime: number) => void;
   private readonly onGameEnded: () => void;
   private readonly onDebugLog: (message: string) => void;
@@ -60,6 +65,7 @@ export class GameNetworkStateApplier {
     onRemoteBombPlaced,
     onBombPlacementAcknowledged,
     onRemotePlayerHit,
+    onRemoteHurricaneHit,
     onDebugLog,
   }: GameNetworkStateApplierOptions) {
     this.playerSyncHandler = new PlayerSyncHandler({
@@ -69,21 +75,63 @@ export class GameNetworkStateApplier {
       appearanceResolver,
     });
     this.mapSyncHandler = new MapSyncHandler({ gameMap });
-    this.combatSyncHandler = new CombatSyncHandler({
-      onRemoteBombPlaced: (payload) => {
-        onRemoteBombPlaced(toRemoteBombPlacedPayload(payload));
-      },
-      onBombPlacementAcknowledged: (payload) => {
-        onBombPlacementAcknowledged(toBombPlacementAcknowledgedPayload(payload));
-      },
-      onRemotePlayerHit: (payload) => {
-        onRemotePlayerHit(toRemotePlayerHitPayload(payload));
-      },
+    this.hurricaneSyncHandler = new HurricaneSyncHandler({ worldContainer });
+    this.combatSyncHandler = this.createCombatSyncHandler({
+      onRemoteBombPlaced,
+      onBombPlacementAcknowledged,
+      onRemotePlayerHit,
+      onRemoteHurricaneHit,
     });
     this.onGameStarted = onGameStarted;
     this.onGameEnded = onGameEnded;
     this.onDebugLog = onDebugLog ?? (() => undefined);
-    this.receivedEventHandlers = {
+    this.receivedEventHandlers = this.createReceivedEventHandlers();
+  }
+
+  /** 受信イベント配信先ハンドラ群を返す */
+  public getReceivedEventHandlers(): ReceivedGameEventHandlers {
+    return this.receivedEventHandlers;
+  }
+
+  /** 状態反映層が保持するリソースを破棄する */
+  public dispose(): void {
+    this.hurricaneSyncHandler.destroy();
+  }
+
+  /** 戦闘イベント橋渡しハンドラを生成する */
+  private createCombatSyncHandler({
+    onRemoteBombPlaced,
+    onBombPlacementAcknowledged,
+    onRemotePlayerHit,
+    onRemoteHurricaneHit,
+  }: Pick<
+    GameNetworkStateApplierOptions,
+    | "onRemoteBombPlaced"
+    | "onBombPlacementAcknowledged"
+    | "onRemotePlayerHit"
+    | "onRemoteHurricaneHit"
+  >): CombatSyncHandler {
+    return new CombatSyncHandler({
+      onRemoteBombPlaced: (payload) => {
+        onRemoteBombPlaced(toRemoteBombPlacedPayload(payload));
+      },
+      onBombPlacementAcknowledged: (payload) => {
+        onBombPlacementAcknowledged(
+          toBombPlacementAcknowledgedPayload(payload),
+        );
+      },
+      onRemotePlayerHit: (payload) => {
+        onRemotePlayerHit(toRemotePlayerHitPayload(payload));
+      },
+      onRemoteHurricaneHit: (payload) => {
+        onRemoteHurricaneHit(toRemoteHurricaneHitPayload(payload));
+      },
+    });
+  }
+
+  /** 受信イベントハンドラをまとめて生成する */
+  private createReceivedEventHandlers(): ReceivedGameEventHandlers {
+    return {
       onReceivedCurrentPlayers: (payload) => {
         this.playerSyncHandler.handleCurrentPlayers(payload);
       },
@@ -97,7 +145,9 @@ export class GameNetworkStateApplier {
         }
 
         this.onGameStarted(startTime);
-        this.onDebugLog(`[GameNetworkSync] ゲーム開始時刻同期完了: ${startTime}`);
+        this.onDebugLog(
+          `[GameNetworkSync] ゲーム開始時刻同期完了: ${startTime}`,
+        );
       },
       onReceivedUpdatePlayers: (payload) => {
         this.playerSyncHandler.handlePlayerUpdates(payload);
@@ -108,6 +158,9 @@ export class GameNetworkStateApplier {
       onReceivedUpdateMapCells: (payload) => {
         const updates = domain.game.gridMap.ungroupCellUpdates(payload);
         this.mapSyncHandler.handleUpdateMapCells(updates);
+      },
+      onReceivedUpdateHurricanes: (payload) => {
+        this.hurricaneSyncHandler.handleUpdateHurricanes(payload);
       },
       onReceivedGameEnd: () => {
         this.onGameEnded();
@@ -121,11 +174,9 @@ export class GameNetworkStateApplier {
       onReceivedPlayerHit: (payload) => {
         this.combatSyncHandler.handleReceivedPlayerHit(payload);
       },
+      onReceivedHurricaneHit: (payload) => {
+        this.combatSyncHandler.handleReceivedHurricaneHit(payload);
+      },
     };
-  }
-
-  /** 受信イベント配信先ハンドラ群を返す */
-  public getReceivedEventHandlers(): ReceivedGameEventHandlers {
-    return this.receivedEventHandlers;
   }
 }

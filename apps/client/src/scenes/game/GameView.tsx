@@ -7,6 +7,7 @@ import { GameInputOverlay } from "./input/GameInputOverlay";
 import {
   GAME_VIEW_BOMB_HIT_DEBUG_STYLE,
   GAME_VIEW_FEVER_TEXT_STYLE,
+  GAME_VIEW_HURRICANE_WARNING_STYLE,
   GAME_VIEW_PAINT_RATE_ITEM_STYLE,
   GAME_VIEW_PAINT_RATE_PANEL_STYLE,
   GAME_VIEW_PAINT_RATE_SQUARE_STYLE,
@@ -110,7 +111,7 @@ export const GameView = ({
 
   return (
     <div style={GAME_VIEW_ROOT_STYLE}>
-      <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } } @keyframes feverPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }`}</style>
+      <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } } @keyframes feverPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } } @keyframes hurricaneWarningBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.5; } }`}</style>
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
       <div style={GAME_VIEW_BOMB_HIT_DEBUG_STYLE}>HP: {heartGauge}</div>
@@ -122,6 +123,14 @@ export const GameView = ({
       {remainingSeconds === 60 && (
         <div style={GAME_VIEW_FEVER_TEXT_STYLE}>！Fever Tieme！</div>
       )}
+
+      {config.GAME_CONFIG.HURRICANE_ENABLED &&
+        remainingSeconds ===
+          config.GAME_CONFIG.HURRICANE_SPAWN_REMAINING_SEC && (
+          <div style={GAME_VIEW_HURRICANE_WARNING_STYLE}>
+            WARNING：ハリケーン出現
+          </div>
+        )}
 
       {startCountdownText && (
         <div style={GAME_VIEW_START_COUNTDOWN_STYLE}>{startCountdownText}</div>

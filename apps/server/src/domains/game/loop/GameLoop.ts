@@ -26,6 +26,7 @@ import {
 } from "../application/services/bot/index.js";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 import type { ActiveBombRegistry } from "../entities/bomb/ActiveBombRegistry.js";
+import { HurricaneSystem } from "./HurricaneSystem";
 
 const { checkBombHit } = domain.game.bombHit;
 
@@ -45,10 +46,13 @@ export type GameLoopCallbacks = {
   onGameEnd: () => void;
   onBotPlaceBomb?: (ownerId: string, payload: PlaceBombPayload) => void;
   onBotBombHit?: (targetPlayerId: string, bombId: string) => void;
+  onHurricanePlayerHit?: (targetPlayerId: string) => void;
 };
 
 /** プレイヤーのグリッド位置キャッシュを含むエントリ */
 type PlayerGridCacheEntry = PlayerGridEntry & { player: Player };
+
+type DamageSource = "bomb" | "hurricane";
 
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
@@ -63,6 +67,7 @@ export class GameLoop {
   private disconnectedBotControlledPlayerIds: Set<string> = new Set();
   private botTurnOrchestrator: BotTurnOrchestrator = new BotTurnOrchestrator();
   private readonly botReceivedHitCountById = new Map<string, number>();
+  private readonly hurricaneSystem = new HurricaneSystem();
 
   private readonly roomId: string;
   private readonly tickRate: number;
@@ -153,6 +158,9 @@ export class GameLoop {
       0,
       Math.round(monotonicNowMs - this.startMonotonicTimeMs),
     );
+    this.hurricaneSystem.ensureSpawned(elapsedMs);
+    this.hurricaneSystem.update(this.tickRate / 1000);
+    this.detectHurricaneHits(wallClockNowMs);
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
     this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsSnapshot);
     this.detectBotBombHits(elapsedMs, wallClockNowMs);
@@ -218,23 +226,7 @@ export class GameLoop {
         });
 
         if (result.isHit) {
-          // 被弾カウントを更新し，閾値到達でリスポーンスタン，それ以外は通常スタンを適用する
-          const prevCount = this.botReceivedHitCountById.get(player.id) ?? 0;
-          const nextCount = prevCount + 1;
-
-          if (nextCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
-            this.botReceivedHitCountById.set(player.id, 0);
-            this.botTurnOrchestrator.applyRespawnStun(
-              player.id as BotPlayerId,
-              nowMs,
-            );
-          } else {
-            this.botReceivedHitCountById.set(player.id, nextCount);
-            this.botTurnOrchestrator.applyHitStun(
-              player.id as BotPlayerId,
-              nowMs,
-            );
-          }
+          this.applyBotDamage(player.id, nowMs, "bomb");
 
           // 爆弾所有者の bombHitCount を加算する
           const owner = this.players.get(bomb.ownerPlayerId);
@@ -266,7 +258,47 @@ export class GameLoop {
     return {
       playerUpdates,
       cellUpdates: this.mapStore.getAndClearUpdates(),
+      hurricaneUpdates: this.hurricaneSystem.getUpdatePayload(),
     };
+  }
+
+  /** ハリケーン接触を検知し，被弾通知を配信する */
+  private detectHurricaneHits(nowMs: number): void {
+    const hitPlayerIds = this.hurricaneSystem.collectHitPlayerIds(
+      this.players,
+      nowMs,
+    );
+
+    hitPlayerIds.forEach((playerId) => {
+      if (
+        isBotPlayerId(playerId) ||
+        this.disconnectedBotControlledPlayerIds.has(playerId)
+      ) {
+        this.applyBotDamage(playerId, nowMs, "hurricane");
+      }
+
+      this.callbacks.onHurricanePlayerHit?.(playerId);
+    });
+  }
+
+  /** Bot被弾時のスタン適用とカウント更新を行う */
+  private applyBotDamage(
+    playerId: string,
+    nowMs: number,
+    _source: DamageSource,
+  ): void {
+    const botPlayerId = playerId as BotPlayerId;
+    const prevCount = this.botReceivedHitCountById.get(playerId) ?? 0;
+    const nextCount = prevCount + 1;
+
+    if (nextCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
+      this.botReceivedHitCountById.set(playerId, 0);
+      this.botTurnOrchestrator.applyRespawnStun(botPlayerId, nowMs);
+      return;
+    }
+
+    this.botReceivedHitCountById.set(playerId, nextCount);
+    this.botTurnOrchestrator.applyHitStun(botPlayerId, nowMs);
   }
 
   private collectChangedPlayerUpdates(
@@ -342,6 +374,7 @@ export class GameLoop {
     this.botTurnOrchestrator.clear();
     this.disconnectedBotControlledPlayerIds.clear();
     this.lastSentPlayers.clear();
+    this.hurricaneSystem.clear();
 
     if (this.loopId) {
       clearTimeout(this.loopId);

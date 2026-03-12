@@ -9,9 +9,11 @@ import type {
   BombPlacedPayload,
   CurrentPlayersPayload,
   GameStartPayload,
+  HurricaneHitPayload,
   NewPlayerPayload,
   PlayerHitPayload,
   RemovePlayerPayload,
+  UpdateHurricanesPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
@@ -30,10 +32,12 @@ export type SocketSubscriptionDictionary = {
   updatePlayers: SocketSubscription;
   removePlayer: SocketSubscription;
   updateMapCells: SocketSubscription;
+  updateHurricanes: SocketSubscription;
   gameEnd: SocketSubscription;
   bombPlaced: SocketSubscription;
   bombPlacedAck: SocketSubscription;
   playerHit: SocketSubscription;
+  hurricaneHit: SocketSubscription;
 };
 
 /** 購読辞書生成に必要なハンドラ群 */
@@ -44,10 +48,12 @@ export type NetworkSubscriptionHandlers = {
   onUpdatePlayers: (payload: UpdatePlayersPayload) => void;
   onRemovePlayer: (payload: RemovePlayerPayload) => void;
   onUpdateMapCells: (payload: UpdateMapCellsPayload) => void;
+  onUpdateHurricanes: (payload: UpdateHurricanesPayload) => void;
   onGameEnd: () => void;
   onBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacedAck: (payload: BombPlacedAckPayload) => void;
   onPlayerHit: (payload: PlayerHitPayload) => void;
+  onHurricaneHit: (payload: HurricaneHitPayload) => void;
 };
 
 type SubscriptionDefinition = {
@@ -59,8 +65,10 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
   {
     key: "currentPlayers",
     create: (handlers) => ({
-      bind: () => socketManager.game.onCurrentPlayers(handlers.onCurrentPlayers),
-      unbind: () => socketManager.game.offCurrentPlayers(handlers.onCurrentPlayers),
+      bind: () =>
+        socketManager.game.onCurrentPlayers(handlers.onCurrentPlayers),
+      unbind: () =>
+        socketManager.game.offCurrentPlayers(handlers.onCurrentPlayers),
     }),
   },
   {
@@ -81,7 +89,8 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
     key: "updatePlayers",
     create: (handlers) => ({
       bind: () => socketManager.game.onUpdatePlayers(handlers.onUpdatePlayers),
-      unbind: () => socketManager.game.offUpdatePlayers(handlers.onUpdatePlayers),
+      unbind: () =>
+        socketManager.game.offUpdatePlayers(handlers.onUpdatePlayers),
     }),
   },
   {
@@ -94,8 +103,19 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
   {
     key: "updateMapCells",
     create: (handlers) => ({
-      bind: () => socketManager.game.onUpdateMapCells(handlers.onUpdateMapCells),
-      unbind: () => socketManager.game.offUpdateMapCells(handlers.onUpdateMapCells),
+      bind: () =>
+        socketManager.game.onUpdateMapCells(handlers.onUpdateMapCells),
+      unbind: () =>
+        socketManager.game.offUpdateMapCells(handlers.onUpdateMapCells),
+    }),
+  },
+  {
+    key: "updateHurricanes",
+    create: (handlers) => ({
+      bind: () =>
+        socketManager.game.onUpdateHurricanes(handlers.onUpdateHurricanes),
+      unbind: () =>
+        socketManager.game.offUpdateHurricanes(handlers.onUpdateHurricanes),
     }),
   },
   {
@@ -116,7 +136,8 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
     key: "bombPlacedAck",
     create: (handlers) => ({
       bind: () => socketManager.game.onBombPlacedAck(handlers.onBombPlacedAck),
-      unbind: () => socketManager.game.offBombPlacedAck(handlers.onBombPlacedAck),
+      unbind: () =>
+        socketManager.game.offBombPlacedAck(handlers.onBombPlacedAck),
     }),
   },
   {
@@ -126,14 +147,24 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
       unbind: () => socketManager.game.offPlayerHit(handlers.onPlayerHit),
     }),
   },
+  {
+    key: "hurricaneHit",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onHurricaneHit(handlers.onHurricaneHit),
+      unbind: () => socketManager.game.offHurricaneHit(handlers.onHurricaneHit),
+    }),
+  },
 ];
 
 /** ソケット購読辞書を生成する */
 export const createNetworkSubscriptions = (
   handlers: NetworkSubscriptionHandlers,
 ): SocketSubscriptionDictionary => {
-  return SUBSCRIPTION_DEFINITIONS.reduce<SocketSubscriptionDictionary>((dictionary, definition) => {
-    dictionary[definition.key] = definition.create(handlers);
-    return dictionary;
-  }, {} as SocketSubscriptionDictionary);
+  return SUBSCRIPTION_DEFINITIONS.reduce<SocketSubscriptionDictionary>(
+    (dictionary, definition) => {
+      dictionary[definition.key] = definition.create(handlers);
+      return dictionary;
+    },
+    {} as SocketSubscriptionDictionary,
+  );
 };

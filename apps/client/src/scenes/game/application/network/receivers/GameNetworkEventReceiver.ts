@@ -8,9 +8,11 @@ import type {
   BombPlacedPayload,
   CurrentPlayersPayload,
   GameStartPayload,
+  HurricaneHitPayload,
   NewPlayerPayload,
   PlayerHitPayload,
   RemovePlayerPayload,
+  UpdateHurricanesPayload,
   UpdateMapCellsPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
@@ -27,10 +29,12 @@ export type ReceivedGameEventHandlers = {
   onReceivedUpdatePlayers: (payload: UpdatePlayersPayload) => void;
   onReceivedRemovePlayer: (payload: RemovePlayerPayload) => void;
   onReceivedUpdateMapCells: (payload: UpdateMapCellsPayload) => void;
+  onReceivedUpdateHurricanes: (payload: UpdateHurricanesPayload) => void;
   onReceivedGameEnd: () => void;
   onReceivedBombPlaced: (payload: BombPlacedPayload) => void;
   onReceivedBombPlacedAck: (payload: BombPlacedAckPayload) => void;
   onReceivedPlayerHit: (payload: PlayerHitPayload) => void;
+  onReceivedHurricaneHit: (payload: HurricaneHitPayload) => void;
 };
 
 /** 受信イベント購読の管理を担当する */
@@ -46,10 +50,12 @@ export class GameNetworkEventReceiver {
       onUpdatePlayers: handlers.onReceivedUpdatePlayers,
       onRemovePlayer: handlers.onReceivedRemovePlayer,
       onUpdateMapCells: handlers.onReceivedUpdateMapCells,
+      onUpdateHurricanes: handlers.onReceivedUpdateHurricanes,
       onGameEnd: handlers.onReceivedGameEnd,
       onBombPlaced: handlers.onReceivedBombPlaced,
       onBombPlacedAck: handlers.onReceivedBombPlacedAck,
       onPlayerHit: handlers.onReceivedPlayerHit,
+      onHurricaneHit: handlers.onReceivedHurricaneHit,
     });
   }
 
