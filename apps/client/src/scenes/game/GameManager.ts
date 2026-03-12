@@ -27,8 +27,7 @@ import {
   GameUiStateSyncService,
   type GameUiState,
 } from "./application/ui/GameUiStateSyncService";
-import { loadRespawnEffectTexture } from "./entities/player/RespawnEffectTextureCache";
-import { loadHurricaneTexture } from "./entities/hurricane/HurricaneTextureCache";
+import { preloadGameStartAssets } from "./application/assets/GameAssetPreloader";
 
 /** GameManager の依存注入オプション型 */
 export type GameManagerDependencies = {
@@ -106,10 +105,7 @@ export class GameManager {
     this.gameEventFacade = new GameEventFacade({
       onGameStarted: (startTime) => {
         // ゲーム開始カウントダウン中に先読みして初回被弾時の負荷を抑える
-        void loadRespawnEffectTexture(
-          `${import.meta.env.BASE_URL}bakuhatueffe.svg`,
-        );
-        void loadHurricaneTexture(`${import.meta.env.BASE_URL}hurricane.svg`);
+        preloadGameStartAssets();
         this.sessionFacade.setGameStart(startTime);
         this.uiStateSyncService.emitIfChanged();
       },

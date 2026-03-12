@@ -11,6 +11,7 @@ import { loadHurricaneTexture } from "./HurricaneTextureCache";
 type HurricaneDisplay = {
   container: Container;
   sprite: Sprite;
+  radiusGrid: number;
 };
 
 /** ハリケーン描画オーバーレイを管理する */
@@ -40,7 +41,10 @@ export class HurricaneOverlayController {
         target = created;
       }
 
-      this.applySpriteSize(target.sprite, state.radius);
+      if (Math.abs(target.radiusGrid - state.radius) > 0.0001) {
+        this.applySpriteSize(target.sprite, state.radius);
+        target.radiusGrid = state.radius;
+      }
 
       target.container.x = state.x * config.GAME_CONFIG.GRID_CELL_SIZE;
       target.container.y = state.y * config.GAME_CONFIG.GRID_CELL_SIZE;
@@ -72,6 +76,7 @@ export class HurricaneOverlayController {
     const container = new Container();
     const sprite = new Sprite(Texture.WHITE);
     sprite.anchor.set(0.5, 0.5);
+    this.applySpriteSize(sprite, 0);
     container.addChild(sprite);
 
     void this.applyTexture(sprite);
@@ -79,6 +84,7 @@ export class HurricaneOverlayController {
     return {
       container,
       sprite,
+      radiusGrid: 0,
     };
   }
 
@@ -94,8 +100,13 @@ export class HurricaneOverlayController {
 
   /** 当たり判定半径に一致する見た目サイズを適用する */
   private applySpriteSize(sprite: Sprite, radiusGrid: number): void {
-    const sizePx = radiusGrid * 2 * config.GAME_CONFIG.GRID_CELL_SIZE;
+    const sizePx = this.toSpriteSizePx(radiusGrid);
     sprite.width = sizePx;
     sprite.height = sizePx;
+  }
+
+  /** 半径グリッド値をスプライト直径ピクセルへ変換する */
+  private toSpriteSizePx(radiusGrid: number): number {
+    return radiusGrid * 2 * config.GAME_CONFIG.GRID_CELL_SIZE;
   }
 }

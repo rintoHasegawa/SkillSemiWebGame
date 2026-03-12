@@ -76,7 +76,42 @@ export class GameNetworkStateApplier {
     });
     this.mapSyncHandler = new MapSyncHandler({ gameMap });
     this.hurricaneSyncHandler = new HurricaneSyncHandler({ worldContainer });
-    this.combatSyncHandler = new CombatSyncHandler({
+    this.combatSyncHandler = this.createCombatSyncHandler({
+      onRemoteBombPlaced,
+      onBombPlacementAcknowledged,
+      onRemotePlayerHit,
+      onRemoteHurricaneHit,
+    });
+    this.onGameStarted = onGameStarted;
+    this.onGameEnded = onGameEnded;
+    this.onDebugLog = onDebugLog ?? (() => undefined);
+    this.receivedEventHandlers = this.createReceivedEventHandlers();
+  }
+
+  /** 受信イベント配信先ハンドラ群を返す */
+  public getReceivedEventHandlers(): ReceivedGameEventHandlers {
+    return this.receivedEventHandlers;
+  }
+
+  /** 状態反映層が保持するリソースを破棄する */
+  public dispose(): void {
+    this.hurricaneSyncHandler.destroy();
+  }
+
+  /** 戦闘イベント橋渡しハンドラを生成する */
+  private createCombatSyncHandler({
+    onRemoteBombPlaced,
+    onBombPlacementAcknowledged,
+    onRemotePlayerHit,
+    onRemoteHurricaneHit,
+  }: Pick<
+    GameNetworkStateApplierOptions,
+    | "onRemoteBombPlaced"
+    | "onBombPlacementAcknowledged"
+    | "onRemotePlayerHit"
+    | "onRemoteHurricaneHit"
+  >): CombatSyncHandler {
+    return new CombatSyncHandler({
       onRemoteBombPlaced: (payload) => {
         onRemoteBombPlaced(toRemoteBombPlacedPayload(payload));
       },
@@ -92,10 +127,11 @@ export class GameNetworkStateApplier {
         onRemoteHurricaneHit(toRemoteHurricaneHitPayload(payload));
       },
     });
-    this.onGameStarted = onGameStarted;
-    this.onGameEnded = onGameEnded;
-    this.onDebugLog = onDebugLog ?? (() => undefined);
-    this.receivedEventHandlers = {
+  }
+
+  /** 受信イベントハンドラをまとめて生成する */
+  private createReceivedEventHandlers(): ReceivedGameEventHandlers {
+    return {
       onReceivedCurrentPlayers: (payload) => {
         this.playerSyncHandler.handleCurrentPlayers(payload);
       },
@@ -142,15 +178,5 @@ export class GameNetworkStateApplier {
         this.combatSyncHandler.handleReceivedHurricaneHit(payload);
       },
     };
-  }
-
-  /** 受信イベント配信先ハンドラ群を返す */
-  public getReceivedEventHandlers(): ReceivedGameEventHandlers {
-    return this.receivedEventHandlers;
-  }
-
-  /** 状態反映層が保持するリソースを破棄する */
-  public dispose(): void {
-    this.hurricaneSyncHandler.destroy();
   }
 }
