@@ -40,9 +40,10 @@ export const MINIMAP_FRAME_STYLE: CSSProperties = {
   border: "2px solid rgba(255,255,255,0.65)",
   borderRadius: "10px",
   background:
-    "linear-gradient(160deg, rgba(34,34,34,0.92), rgba(12,12,12,0.92))",
+    "linear-gradient(160deg, rgba(34,34,34,0.5), rgba(12,12,12,0.5))",
   boxShadow: "0 0 8px rgba(0,0,0,0.45)",
   overflow: "hidden",
+  opacity: 0.82,
 };
 
 /** ミニマップ描画キャンバスのスタイル */

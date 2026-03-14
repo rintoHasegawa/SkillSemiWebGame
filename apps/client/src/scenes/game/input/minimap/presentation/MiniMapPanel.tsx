@@ -33,6 +33,28 @@ export const MiniMapPanel = ({
   const [isOpen, setIsOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const handleToggle = () => {
+    setIsOpen((prev) => !prev);
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handleToggle();
+  };
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handleToggle();
+  };
+
+  const handleMouseDown = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handleToggle();
+  };
+
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -96,8 +118,12 @@ export const MiniMapPanel = ({
       <button
         type="button"
         style={buttonStyle}
-        onClick={() => {
-          setIsOpen((prev) => !prev);
+        onPointerDown={handlePointerDown}
+        onTouchStart={handleTouchStart}
+        onMouseDown={handleMouseDown}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
         }}
       >
         {isOpen ? "閉じる" : "ミニマップ"}
