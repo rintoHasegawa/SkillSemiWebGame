@@ -8,6 +8,7 @@ import {
   buildBombButtonHitAreaStyle,
   buildBombButtonStyle,
 } from "./BombButton.styles";
+import { useImmediatePressHandlers } from "@client/scenes/game/input/presentation/useImmediatePressHandlers";
 
 /** 爆弾設置ボタンの入力プロパティ */
 export type BombButtonProps = {
@@ -38,39 +39,24 @@ export const BombButton = ({
     onPress();
   };
 
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    handleActivate();
-  };
-
-  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    handleActivate();
-  };
-
-  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    handleActivate();
-  };
+  const { onPointerDown: onHitAreaPointerDown, onClick: onHitAreaClick } =
+    useImmediatePressHandlers<HTMLDivElement>(handleActivate, {
+      stopPropagation: false,
+    });
+  const { onPointerDown: onButtonPointerDown, onClick: onButtonClick } =
+    useImmediatePressHandlers<HTMLButtonElement>(handleActivate);
 
   return (
     <div
       style={hitAreaStyle}
-      onPointerDown={handlePointerDown}
-      onTouchStart={handleTouchStart}
-      onMouseDown={handleMouseDown}
+      onPointerDown={onHitAreaPointerDown}
+      onClick={onHitAreaClick}
     >
       <div style={frameStyle}>
         <button
           style={buttonStyle}
-          onPointerDown={(event) => {
-            event.stopPropagation();
-            handleActivate();
-          }}
-          onClick={(event) => {
-            event.stopPropagation();
-            handleActivate();
-          }}
+          onPointerDown={onButtonPointerDown}
+          onClick={onButtonClick}
           type="button"
           disabled={!isReady}
         >

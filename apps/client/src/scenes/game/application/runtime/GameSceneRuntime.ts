@@ -60,6 +60,12 @@ export class GameSceneRuntime {
   private joystickInput = { x: 0, y: 0 };
   private tickerHandler: ((ticker: Ticker) => void) | null = null;
   private lifecycleState: RuntimeLifecycleState = "created";
+  private miniMapCache = {
+    revision: -1,
+    teamIds: new Array<number>(
+      config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS,
+    ).fill(-1),
+  };
 
   constructor({
     app,
@@ -196,11 +202,23 @@ export class GameSceneRuntime {
   /** ミニマップ描画用の全セルteamId配列を返す */
   public getMiniMapTeamIds(): number[] {
     if (!this.gameMap) {
-      const totalCells = config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS;
-      return new Array<number>(totalCells).fill(-1);
+      return this.miniMapCache.teamIds;
     }
 
-    return this.gameMap.getAllCellTeamIds();
+    const revision = this.gameMap.getMapRevision();
+    if (revision !== this.miniMapCache.revision) {
+      this.miniMapCache = {
+        revision,
+        teamIds: this.gameMap.getAllCellTeamIds(),
+      };
+    }
+
+    return this.miniMapCache.teamIds;
+  }
+
+  /** ミニマップ描画用のマップ更新リビジョンを返す */
+  public getMiniMapRevision(): number {
+    return this.miniMapCache.revision;
   }
 
   /** ローカルプレイヤーの現在座標を返す */

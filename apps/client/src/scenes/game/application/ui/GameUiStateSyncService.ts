@@ -11,28 +11,25 @@ import {
 const UI_STATE_SECOND_MS = 1000;
 
 /** ゲーム画面UIへ通知する状態スナップショット */
-export type GameUiState = {
+export type GameHudState = {
   remainingTimeSec: number;
   startCountdownSec: number;
   isInputEnabled: boolean;
   teamPaintRates: number[];
-  miniMapTeamIds: number[];
   localBombHitCount: number;
+};
+
+/** ミニマップへ通知する状態スナップショット */
+export type MiniMapState = {
+  mapRevision: number;
+  teamIds: number[];
   localPlayerPosition: { x: number; y: number } | null;
 };
 
-const isSameMiniMapTeamIds = (a: number[], b: number[]): boolean => {
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  for (let index = 0; index < a.length; index += 1) {
-    if (a[index] !== b[index]) {
-      return false;
-    }
-  }
-
-  return true;
+/** ゲーム画面UIへ通知する状態スナップショット */
+export type GameUiState = {
+  hud: GameHudState;
+  miniMap: MiniMapState;
 };
 
 const isSameLocalPlayerPosition = (
@@ -101,18 +98,18 @@ export class GameUiStateSyncService {
     if (
       !force &&
       this.lastState &&
-      this.lastState.remainingTimeSec === snapshot.remainingTimeSec &&
-      this.lastState.startCountdownSec === snapshot.startCountdownSec &&
-      this.lastState.isInputEnabled === snapshot.isInputEnabled &&
-      this.lastState.localBombHitCount === snapshot.localBombHitCount &&
-      isSamePaintRates(this.lastState.teamPaintRates, snapshot.teamPaintRates) &&
-      isSameMiniMapTeamIds(
-        this.lastState.miniMapTeamIds,
-        snapshot.miniMapTeamIds,
+      this.lastState.hud.remainingTimeSec === snapshot.hud.remainingTimeSec &&
+      this.lastState.hud.startCountdownSec === snapshot.hud.startCountdownSec &&
+      this.lastState.hud.isInputEnabled === snapshot.hud.isInputEnabled &&
+      this.lastState.hud.localBombHitCount === snapshot.hud.localBombHitCount &&
+      isSamePaintRates(
+        this.lastState.hud.teamPaintRates,
+        snapshot.hud.teamPaintRates,
       ) &&
+      this.lastState.miniMap.mapRevision === snapshot.miniMap.mapRevision &&
       isSameLocalPlayerPosition(
-        this.lastState.localPlayerPosition,
-        snapshot.localPlayerPosition,
+        this.lastState.miniMap.localPlayerPosition,
+        snapshot.miniMap.localPlayerPosition,
       )
     ) {
       return;
