@@ -102,12 +102,15 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
       <div
         className="lobby-container"
         style={{
+          position: "fixed",
+          inset: 0,
           padding: "20px",
           color: "white",
           // 🌟 変更：元の "#222" (真っ黒) から "transparent" (透明) に変更！
           background: "transparent",
           height: "100dvh",
           width: "100vw",
+          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",

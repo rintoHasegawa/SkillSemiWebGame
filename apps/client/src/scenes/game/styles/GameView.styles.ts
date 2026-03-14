@@ -8,7 +8,7 @@ import type { CSSProperties } from "react";
 /** ゲーム画面全体のルートスタイル */
 export const GAME_VIEW_ROOT_STYLE: CSSProperties = {
   width: "100vw",
-  height: "100vh",
+  height: "100dvh",
   overflow: "hidden",
   position: "relative",
   backgroundColor: "#000",
