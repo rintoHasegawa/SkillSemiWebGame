@@ -71,7 +71,7 @@ const NETWORK_CONFIG = {
   get DEV_SERVER_URL() {
     return `${this.DEV_SERVER_HOST}:${this.DEV_SERVER_PORT}`;
   },
-  PROD_SERVER_URL: "https://skillsemiwebgame.onrender.com",
+  PROD_SERVER_URL: import.meta.env?.VITE_PROD_SERVER_URL,
   SOCKET_TRANSPORTS: ["websocket", "polling"],
   SOCKET_IO_PATH: sharedConfig.NETWORK_CONFIG.SOCKET_IO_PATH,
 } as const;
