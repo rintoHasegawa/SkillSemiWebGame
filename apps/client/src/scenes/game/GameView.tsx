@@ -8,10 +8,6 @@ import {
   GAME_VIEW_BOMB_HIT_DEBUG_STYLE,
   GAME_VIEW_FEVER_TEXT_STYLE,
   GAME_VIEW_HURRICANE_WARNING_STYLE,
-  GAME_VIEW_TOP_RIGHT_OVERLAY_STYLE,
-  GAME_VIEW_PAINT_RATE_ITEM_STYLE,
-  GAME_VIEW_PAINT_RATE_PANEL_STYLE,
-  GAME_VIEW_PAINT_RATE_SQUARE_STYLE,
   GAME_VIEW_PIXI_LAYER_STYLE,
   GAME_VIEW_ROOT_STYLE,
   GAME_VIEW_START_COUNTDOWN_STYLE,
@@ -19,7 +15,7 @@ import {
 } from "./styles/GameView.styles";
 import { config } from "@client/config";
 import { buildRespawnHeartGauge } from "./input/presentation/GameUiPresenter";
-import { MiniMapPanel } from "./input/minimap/presentation/MiniMapPanel";
+import { TopRightHud } from "./presentation/TopRightHud";
 
 /** 表示と入力に必要なプロパティ */
 type Props = {
@@ -66,37 +62,6 @@ const TimerOverlay = ({ timeLeft }: { timeLeft: string }) => {
   );
 };
 
-const TeamPaintRateOverlay = ({
-  teamPaintRates,
-  remainingSeconds,
-}: {
-  teamPaintRates: number[];
-  remainingSeconds: number;
-}) => {
-  const shouldMaskPaintRate = remainingSeconds <= 30;
-
-  return (
-    <div style={GAME_VIEW_PAINT_RATE_PANEL_STYLE}>
-      {teamPaintRates.map((rate, index) => (
-        <div
-          key={`team-paint-rate-${index}`}
-          style={GAME_VIEW_PAINT_RATE_ITEM_STYLE}
-        >
-          <span
-            style={{
-              ...GAME_VIEW_PAINT_RATE_SQUARE_STYLE,
-              color: config.GAME_CONFIG.TEAM_COLORS[index] ?? "#ffffff",
-            }}
-          >
-            ■
-          </span>
-          <span>{shouldMaskPaintRate ? "???%" : `${Math.round(rate)}%`}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
 /** 画面描画と入力UIをまとめて描画する */
 export const GameView = ({
   timeLeft,
@@ -121,16 +86,12 @@ export const GameView = ({
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
       <div style={GAME_VIEW_BOMB_HIT_DEBUG_STYLE}>HP: {heartGauge}</div>
-      <div style={GAME_VIEW_TOP_RIGHT_OVERLAY_STYLE}>
-        <MiniMapPanel
-          miniMapTeamIds={miniMapTeamIds}
-          localPlayerPosition={localPlayerPosition}
-        />
-        <TeamPaintRateOverlay
-          teamPaintRates={teamPaintRates}
-          remainingSeconds={remainingSeconds}
-        />
-      </div>
+      <TopRightHud
+        teamPaintRates={teamPaintRates}
+        remainingSeconds={remainingSeconds}
+        miniMapTeamIds={miniMapTeamIds}
+        localPlayerPosition={localPlayerPosition}
+      />
 
       {remainingSeconds === 60 && (
         <div style={GAME_VIEW_FEVER_TEXT_STYLE}>！Fever Tieme！</div>

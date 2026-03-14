@@ -215,14 +215,21 @@ export class GameManager {
   }
 
   private getUiStateSnapshot(): GameUiState {
+    const miniMapTeamIds = this.runtime.getMiniMapTeamIds();
+
     return {
-      remainingTimeSec: Math.floor(this.sessionFacade.getRemainingTime()),
-      startCountdownSec: this.sessionFacade.getStartCountdownSec(),
-      isInputEnabled: this.runtime.isInputEnabled(),
-      teamPaintRates: this.runtime.getPaintRatesByTeam(),
-      miniMapTeamIds: this.runtime.getMiniMapTeamIds(),
-      localBombHitCount: this.localBombHitCount,
-      localPlayerPosition: this.runtime.getLocalPlayerPosition(),
+      hud: {
+        remainingTimeSec: Math.floor(this.sessionFacade.getRemainingTime()),
+        startCountdownSec: this.sessionFacade.getStartCountdownSec(),
+        isInputEnabled: this.runtime.isInputEnabled(),
+        teamPaintRates: this.runtime.getPaintRatesByTeam(),
+        localBombHitCount: this.localBombHitCount,
+      },
+      miniMap: {
+        mapRevision: this.runtime.getMiniMapRevision(),
+        teamIds: miniMapTeamIds,
+        localPlayerPosition: this.runtime.getLocalPlayerPosition(),
+      },
     };
   }
 

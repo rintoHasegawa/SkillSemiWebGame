@@ -61,6 +61,11 @@ export class GameMapController {
     return this.model.getAllTeamIds();
   }
 
+  /** 現在のマップ更新リビジョンを取得する */
+  public getMapRevision(): number {
+    return this.model.getRevision();
+  }
+
   /** すべてのセルteamIdを描画色へ変換する */
   private resolveAllCellColors(teamIds: number[]): Array<number | null> {
     return teamIds.map((teamId) => this.resolveCellColor(teamId));

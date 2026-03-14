@@ -4,6 +4,7 @@
  * トグルボタンとマップ表示の見た目を定義する
  */
 import type { CSSProperties } from "react";
+import { MINIMAP_UI_CONFIG } from "./minimapUiConfig";
 
 /** ミニマップコンテナのスタイル */
 export const MINIMAP_PANEL_ROOT_STYLE: CSSProperties = {
@@ -18,8 +19,8 @@ export const MINIMAP_PANEL_ROOT_STYLE: CSSProperties = {
 export const buildMiniMapToggleButtonStyle = (
   isOpen: boolean,
 ): CSSProperties => ({
-  minWidth: "84px",
-  height: "32px",
+  minWidth: `${MINIMAP_UI_CONFIG.BUTTON_MIN_WIDTH_PX}px`,
+  height: `${MINIMAP_UI_CONFIG.BUTTON_HEIGHT_PX}px`,
   padding: "0 10px",
   borderRadius: "999px",
   border: "1px solid rgba(255,255,255,0.55)",
@@ -35,15 +36,14 @@ export const buildMiniMapToggleButtonStyle = (
 /** ミニマップ表示領域のスタイル */
 export const MINIMAP_FRAME_STYLE: CSSProperties = {
   position: "relative",
-  width: "128px",
-  height: "128px",
-  border: "2px solid rgba(255,255,255,0.65)",
-  borderRadius: "10px",
-  background:
-    "linear-gradient(160deg, rgba(34,34,34,0.5), rgba(12,12,12,0.5))",
+  width: `${MINIMAP_UI_CONFIG.FRAME_SIZE_PX}px`,
+  height: `${MINIMAP_UI_CONFIG.FRAME_SIZE_PX}px`,
+  border: `2px solid ${MINIMAP_UI_CONFIG.FRAME_BORDER_COLOR}`,
+  borderRadius: `${MINIMAP_UI_CONFIG.FRAME_BORDER_RADIUS_PX}px`,
+  background: MINIMAP_UI_CONFIG.FRAME_BACKGROUND_GRADIENT,
   boxShadow: "0 0 8px rgba(0,0,0,0.45)",
   overflow: "hidden",
-  opacity: 0.82,
+  opacity: MINIMAP_UI_CONFIG.FRAME_OPACITY,
 };
 
 /** ミニマップ描画キャンバスのスタイル */
@@ -63,8 +63,8 @@ export const buildMiniMapDotStyle = (
   position: "absolute",
   left: `${leftPx}px`,
   top: `${topPx}px`,
-  width: "10px",
-  height: "10px",
+  width: `${MINIMAP_UI_CONFIG.DOT_SIZE_PX}px`,
+  height: `${MINIMAP_UI_CONFIG.DOT_SIZE_PX}px`,
   borderRadius: "50%",
   border: "2px solid rgba(0,0,0,0.7)",
   background: "#ffffff",

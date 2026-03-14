@@ -48,23 +48,23 @@ export const useGameSceneController = (myId: string | null) => {
 
     gameManagerRef.current = manager;
     const unsubscribeUiState = manager.subscribeUiState((state) => {
-      const nextDisplay = formatRemainingTime(state.remainingTimeSec);
+      const nextDisplay = formatRemainingTime(state.hud.remainingTimeSec);
       setTimeLeft((prev) => (prev === nextDisplay ? prev : nextDisplay));
 
-      const nextCountdown = buildStartCountdownText(state.startCountdownSec);
+      const nextCountdown = buildStartCountdownText(state.hud.startCountdownSec);
       setStartCountdownText((prev) =>
         prev === nextCountdown ? prev : nextCountdown,
       );
 
-      const nextInputEnabled = state.isInputEnabled;
+      const nextInputEnabled = state.hud.isInputEnabled;
       setIsInputEnabled((prev) =>
         prev === nextInputEnabled ? prev : nextInputEnabled,
       );
 
-      setTeamPaintRates(state.teamPaintRates);
-      setMiniMapTeamIds(state.miniMapTeamIds);
-      setLocalBombHitCount(state.localBombHitCount);
-      setLocalPlayerPosition(state.localPlayerPosition);
+      setTeamPaintRates(state.hud.teamPaintRates);
+      setMiniMapTeamIds(state.miniMap.teamIds);
+      setLocalBombHitCount(state.hud.localBombHitCount);
+      setLocalPlayerPosition(state.miniMap.localPlayerPosition);
     });
 
     return () => {

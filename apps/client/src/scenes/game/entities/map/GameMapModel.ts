@@ -9,6 +9,7 @@ import type { domain } from "@repo/shared";
 /** マップセル状態の計算責務を担うモデル */
 export class GameMapModel {
   private readonly cellTeamIds: number[];
+  private revision = 0;
 
   /** 設定値に基づいて初期セル状態を構築する */
   constructor() {
@@ -18,21 +19,42 @@ export class GameMapModel {
 
   /** 全体マップ状態を適用する */
   public applyMapState(state: domain.game.gridMap.MapState): void {
+    let hasChanged = false;
     const maxLength = Math.min(
       this.cellTeamIds.length,
       state.gridColors.length,
     );
     for (let index = 0; index < maxLength; index++) {
-      this.cellTeamIds[index] = state.gridColors[index];
+      const nextTeamId = state.gridColors[index];
+      if (this.cellTeamIds[index] === nextTeamId) {
+        continue;
+      }
+
+      this.cellTeamIds[index] = nextTeamId;
+      hasChanged = true;
+    }
+
+    if (hasChanged) {
+      this.revision += 1;
     }
   }
 
   /** 差分セル更新を適用する */
   public applyUpdates(updates: domain.game.gridMap.CellUpdate[]): void {
+    let hasChanged = false;
     updates.forEach(({ index, teamId }) => {
       if (!this.isValidIndex(index)) return;
+      if (this.cellTeamIds[index] === teamId) {
+        return;
+      }
+
       this.cellTeamIds[index] = teamId;
+      hasChanged = true;
     });
+
+    if (hasChanged) {
+      this.revision += 1;
+    }
   }
 
   /** 指定セルのチームIDを取得する */
@@ -44,6 +66,11 @@ export class GameMapModel {
   /** 描画用の全セル状態を取得する */
   public getAllTeamIds(): number[] {
     return [...this.cellTeamIds];
+  }
+
+  /** 現在のマップ更新リビジョンを返す */
+  public getRevision(): number {
+    return this.revision;
   }
 
   /** チームごとの塗り率配列を取得する */
