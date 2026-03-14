@@ -65,7 +65,7 @@ export const RESULT_CONTENT_STYLE: CSSProperties = {
   width: "100%",
   flex: 1,
   minHeight: 0,
-  overflowY: "auto",
+  overflow: "hidden",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -127,7 +127,7 @@ export const RESULT_TABLE_STYLE: CSSProperties = {
 
 /** 順位表本文スクロール領域のスタイル */
 export const RESULT_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
-  maxHeight: "min(52dvh, 420px)",
+  maxHeight: "min(44dvh, 360px)",
   overflowY: "auto",
 };
 
@@ -258,7 +258,7 @@ export const RESULT_PLAYER_STATS_HEADER_ROW_STYLE: CSSProperties = {
 
 /** プレイヤースタッツ表本文スクロール領域のスタイル */
 export const RESULT_PLAYER_STATS_SCROLL_BODY_STYLE: CSSProperties = {
-  maxHeight: "min(36dvh, 320px)",
+  maxHeight: "min(40dvh, 320px)",
   overflowY: "auto",
 };
 
@@ -334,7 +334,7 @@ export const RESULT_PLAYER_RANKING_HEADER_ROW_STYLE: CSSProperties = {
 
 /** プレイヤーランキング表本文スクロール領域のスタイル */
 export const RESULT_PLAYER_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
-  maxHeight: "min(52dvh, 460px)",
+  maxHeight: "min(44dvh, 360px)",
   overflowY: "auto",
 };
 
