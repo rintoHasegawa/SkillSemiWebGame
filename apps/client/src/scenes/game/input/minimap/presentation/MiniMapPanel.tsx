@@ -31,9 +31,8 @@ export const MiniMapPanel = ({
   const handleToggle = () => {
     setIsOpen((prev) => !prev);
   };
-  const { onPointerDown, onClick } = useImmediatePressHandlers<HTMLButtonElement>(
-    handleToggle,
-  );
+  const { onPointerDown, onClick, onKeyDown, onKeyUp } =
+    useImmediatePressHandlers<HTMLButtonElement>(handleToggle);
   const { canvasRef, markerPosition } = useMiniMapCanvas({
     isOpen,
     frameSizePx: MINIMAP_UI_CONFIG.FRAME_SIZE_PX,
@@ -50,6 +49,8 @@ export const MiniMapPanel = ({
         style={buttonStyle}
         onPointerDown={onPointerDown}
         onClick={onClick}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
       >
         {isOpen ? "閉じる" : "ミニマップ"}
       </button>

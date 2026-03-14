@@ -43,8 +43,12 @@ export const BombButton = ({
     useImmediatePressHandlers<HTMLDivElement>(handleActivate, {
       stopPropagation: false,
     });
-  const { onPointerDown: onButtonPointerDown, onClick: onButtonClick } =
-    useImmediatePressHandlers<HTMLButtonElement>(handleActivate);
+  const {
+    onPointerDown: onButtonPointerDown,
+    onClick: onButtonClick,
+    onKeyDown: onButtonKeyDown,
+    onKeyUp: onButtonKeyUp,
+  } = useImmediatePressHandlers<HTMLButtonElement>(handleActivate);
 
   return (
     <div
@@ -57,6 +61,8 @@ export const BombButton = ({
           style={buttonStyle}
           onPointerDown={onButtonPointerDown}
           onClick={onButtonClick}
+          onKeyDown={onButtonKeyDown}
+          onKeyUp={onButtonKeyUp}
           type="button"
           disabled={!isReady}
         >

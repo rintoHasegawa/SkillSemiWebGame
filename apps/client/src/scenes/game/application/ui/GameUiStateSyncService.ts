@@ -71,6 +71,8 @@ export class GameUiStateSyncService {
   private readonly getSnapshot: () => GameUiState;
   private readonly timeProvider: TimeProvider;
   private readonly listeners = new Set<(state: GameUiState) => void>();
+  private readonly hudListeners = new Set<(state: GameHudState) => void>();
+  private readonly miniMapListeners = new Set<(state: MiniMapState) => void>();
   private lastState: GameUiState | null = null;
   private alignTimeoutId: number | null = null;
   private timerId: number | null = null;
@@ -89,33 +91,76 @@ export class GameUiStateSyncService {
     };
   }
 
+  /** HUD状態の購読を登録し，解除関数を返す */
+  public subscribeHud(listener: (state: GameHudState) => void): () => void {
+    this.hudListeners.add(listener);
+    listener(this.getSnapshot().hud);
+
+    return () => {
+      this.hudListeners.delete(listener);
+    };
+  }
+
+  /** ミニマップ状態の購読を登録し，解除関数を返す */
+  public subscribeMiniMap(listener: (state: MiniMapState) => void): () => void {
+    this.miniMapListeners.add(listener);
+    listener(this.getSnapshot().miniMap);
+
+    return () => {
+      this.miniMapListeners.delete(listener);
+    };
+  }
+
+  private hasAnyListeners(): boolean {
+    return this.listeners.size > 0
+      || this.hudListeners.size > 0
+      || this.miniMapListeners.size > 0;
+  }
+
+  private isSameHudState(a: GameHudState, b: GameHudState): boolean {
+    return a.remainingTimeSec === b.remainingTimeSec
+      && a.startCountdownSec === b.startCountdownSec
+      && a.isInputEnabled === b.isInputEnabled
+      && a.localBombHitCount === b.localBombHitCount
+      && isSamePaintRates(a.teamPaintRates, b.teamPaintRates);
+  }
+
+  private isSameMiniMapState(a: MiniMapState, b: MiniMapState): boolean {
+    return a.mapRevision === b.mapRevision
+      && isSameLocalPlayerPosition(a.localPlayerPosition, b.localPlayerPosition);
+  }
+
   public emitIfChanged(force = false): void {
-    if (this.listeners.size === 0 && !force) {
+    if (!this.hasAnyListeners() && !force) {
       return;
     }
 
     const snapshot = this.getSnapshot();
-    if (
-      !force &&
-      this.lastState &&
-      this.lastState.hud.remainingTimeSec === snapshot.hud.remainingTimeSec &&
-      this.lastState.hud.startCountdownSec === snapshot.hud.startCountdownSec &&
-      this.lastState.hud.isInputEnabled === snapshot.hud.isInputEnabled &&
-      this.lastState.hud.localBombHitCount === snapshot.hud.localBombHitCount &&
-      isSamePaintRates(
-        this.lastState.hud.teamPaintRates,
-        snapshot.hud.teamPaintRates,
-      ) &&
-      this.lastState.miniMap.mapRevision === snapshot.miniMap.mapRevision &&
-      isSameLocalPlayerPosition(
-        this.lastState.miniMap.localPlayerPosition,
-        snapshot.miniMap.localPlayerPosition,
-      )
-    ) {
+    const hudChanged = force
+      || !this.lastState
+      || !this.isSameHudState(this.lastState.hud, snapshot.hud);
+    const miniMapChanged = force
+      || !this.lastState
+      || !this.isSameMiniMapState(this.lastState.miniMap, snapshot.miniMap);
+
+    if (!hudChanged && !miniMapChanged) {
       return;
     }
 
     this.lastState = snapshot;
+
+    if (hudChanged) {
+      this.hudListeners.forEach((listener) => {
+        listener(snapshot.hud);
+      });
+    }
+
+    if (miniMapChanged) {
+      this.miniMapListeners.forEach((listener) => {
+        listener(snapshot.miniMap);
+      });
+    }
+
     this.listeners.forEach((listener) => {
       listener(snapshot);
     });
@@ -154,6 +199,8 @@ export class GameUiStateSyncService {
 
   public clear(): void {
     this.listeners.clear();
+    this.hudListeners.clear();
+    this.miniMapListeners.clear();
     this.lastState = null;
   }
 }

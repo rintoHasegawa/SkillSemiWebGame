@@ -10,6 +10,10 @@ export type UseImmediatePressHandlersOptions = {
   stopPropagation?: boolean;
 };
 
+const isActivationKey = (key: string): boolean => {
+  return key === "Enter" || key === " " || key === "Spacebar";
+};
+
 /** pointerdown と click 抑止のハンドラを生成する */
 export const useImmediatePressHandlers = <T extends HTMLElement>(
   onPress: () => void,
@@ -38,8 +42,39 @@ export const useImmediatePressHandlers = <T extends HTMLElement>(
     [stopPropagation],
   );
 
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent<T>) => {
+      if (!isActivationKey(event.key) || event.repeat) {
+        return;
+      }
+
+      event.preventDefault();
+      if (stopPropagation) {
+        event.stopPropagation();
+      }
+      onPress();
+    },
+    [onPress, stopPropagation],
+  );
+
+  const onKeyUp = useCallback(
+    (event: React.KeyboardEvent<T>) => {
+      if (!isActivationKey(event.key)) {
+        return;
+      }
+
+      event.preventDefault();
+      if (stopPropagation) {
+        event.stopPropagation();
+      }
+    },
+    [stopPropagation],
+  );
+
   return {
     onPointerDown,
     onClick,
+    onKeyDown,
+    onKeyUp,
   };
 };

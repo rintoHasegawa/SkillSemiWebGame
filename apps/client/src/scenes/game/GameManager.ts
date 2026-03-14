@@ -25,6 +25,8 @@ import type { GamePlayers } from "./application/game.types";
 import type { HurricaneHitPayload } from "@repo/shared";
 import {
   GameUiStateSyncService,
+  type GameHudState,
+  type MiniMapState,
   type GameUiState,
 } from "./application/ui/GameUiStateSyncService";
 import { preloadGameStartAssets } from "./application/assets/GameAssetPreloader";
@@ -39,7 +41,11 @@ export type GameManagerDependencies = {
 };
 
 /** GameScene の UI 表示状態型を外部参照向けに再公開する */
-export type { GameUiState } from "./application/ui/GameUiStateSyncService";
+export type {
+  GameUiState,
+  GameHudState,
+  MiniMapState,
+} from "./application/ui/GameUiStateSyncService";
 
 /** ゲームシーンの実行ライフサイクルを管理するマネージャー */
 export class GameManager {
@@ -212,6 +218,20 @@ export class GameManager {
   /** UI状態購読を登録し，解除関数を返す */
   public subscribeUiState(listener: (state: GameUiState) => void): () => void {
     return this.uiStateSyncService.subscribe(listener);
+  }
+
+  /** HUD状態購読を登録し，解除関数を返す */
+  public subscribeHudState(
+    listener: (state: GameHudState) => void,
+  ): () => void {
+    return this.uiStateSyncService.subscribeHud(listener);
+  }
+
+  /** ミニマップ状態購読を登録し，解除関数を返す */
+  public subscribeMiniMapState(
+    listener: (state: MiniMapState) => void,
+  ): () => void {
+    return this.uiStateSyncService.subscribeMiniMap(listener);
   }
 
   private getUiStateSnapshot(): GameUiState {
