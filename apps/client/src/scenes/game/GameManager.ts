@@ -221,6 +221,7 @@ export class GameManager {
       isInputEnabled: this.runtime.isInputEnabled(),
       teamPaintRates: this.runtime.getPaintRatesByTeam(),
       localBombHitCount: this.localBombHitCount,
+      localPlayerPosition: this.runtime.getLocalPlayerPosition(),
     };
   }
 

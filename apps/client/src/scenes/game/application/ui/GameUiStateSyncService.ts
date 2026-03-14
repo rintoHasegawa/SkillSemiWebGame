@@ -17,6 +17,22 @@ export type GameUiState = {
   isInputEnabled: boolean;
   teamPaintRates: number[];
   localBombHitCount: number;
+  localPlayerPosition: { x: number; y: number } | null;
+};
+
+const isSameLocalPlayerPosition = (
+  a: { x: number; y: number } | null,
+  b: { x: number; y: number } | null,
+): boolean => {
+  if (a === null && b === null) {
+    return true;
+  }
+
+  if (a === null || b === null) {
+    return false;
+  }
+
+  return a.x === b.x && a.y === b.y;
 };
 
 const isSamePaintRates = (a: number[], b: number[]): boolean => {
@@ -74,7 +90,11 @@ export class GameUiStateSyncService {
       this.lastState.startCountdownSec === snapshot.startCountdownSec &&
       this.lastState.isInputEnabled === snapshot.isInputEnabled &&
       this.lastState.localBombHitCount === snapshot.localBombHitCount &&
-      isSamePaintRates(this.lastState.teamPaintRates, snapshot.teamPaintRates)
+      isSamePaintRates(this.lastState.teamPaintRates, snapshot.teamPaintRates) &&
+      isSameLocalPlayerPosition(
+        this.lastState.localPlayerPosition,
+        snapshot.localPlayerPosition,
+      )
     ) {
       return;
     }

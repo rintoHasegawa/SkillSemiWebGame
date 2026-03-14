@@ -8,6 +8,7 @@ import {
   GAME_VIEW_BOMB_HIT_DEBUG_STYLE,
   GAME_VIEW_FEVER_TEXT_STYLE,
   GAME_VIEW_HURRICANE_WARNING_STYLE,
+  GAME_VIEW_TOP_RIGHT_OVERLAY_STYLE,
   GAME_VIEW_PAINT_RATE_ITEM_STYLE,
   GAME_VIEW_PAINT_RATE_PANEL_STYLE,
   GAME_VIEW_PAINT_RATE_SQUARE_STYLE,
@@ -18,6 +19,7 @@ import {
 } from "./styles/GameView.styles";
 import { config } from "@client/config";
 import { buildRespawnHeartGauge } from "./input/presentation/GameUiPresenter";
+import { MiniMapPanel } from "./input/minimap/presentation/MiniMapPanel";
 
 /** 表示と入力に必要なプロパティ */
 type Props = {
@@ -26,6 +28,7 @@ type Props = {
   isInputEnabled: boolean;
   teamPaintRates: number[];
   localBombHitCount: number;
+  localPlayerPosition: { x: number; y: number } | null;
   pixiContainerRef: React.RefObject<HTMLDivElement>;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
@@ -100,6 +103,7 @@ export const GameView = ({
   isInputEnabled,
   teamPaintRates,
   localBombHitCount,
+  localPlayerPosition,
   pixiContainerRef,
   onJoystickInput,
   onPlaceBomb,
@@ -115,10 +119,13 @@ export const GameView = ({
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
       <div style={GAME_VIEW_BOMB_HIT_DEBUG_STYLE}>HP: {heartGauge}</div>
-      <TeamPaintRateOverlay
-        teamPaintRates={teamPaintRates}
-        remainingSeconds={remainingSeconds}
-      />
+      <div style={GAME_VIEW_TOP_RIGHT_OVERLAY_STYLE}>
+        <TeamPaintRateOverlay
+          teamPaintRates={teamPaintRates}
+          remainingSeconds={remainingSeconds}
+        />
+        <MiniMapPanel localPlayerPosition={localPlayerPosition} />
+      </div>
 
       {remainingSeconds === 60 && (
         <div style={GAME_VIEW_FEVER_TEXT_STYLE}>！Fever Tieme！</div>

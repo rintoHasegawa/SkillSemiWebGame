@@ -20,6 +20,7 @@ export function GameScene({ myId }: GameSceneProps) {
     isInputEnabled,
     teamPaintRates,
     localBombHitCount,
+    localPlayerPosition,
     handleInput,
     handlePlaceBomb,
   } = useGameSceneController(myId);
@@ -31,6 +32,7 @@ export function GameScene({ myId }: GameSceneProps) {
       isInputEnabled={isInputEnabled}
       teamPaintRates={teamPaintRates}
       localBombHitCount={localBombHitCount}
+      localPlayerPosition={localPlayerPosition}
       pixiContainerRef={pixiContainerRef}
       onJoystickInput={handleInput}
       onPlaceBomb={handlePlaceBomb}

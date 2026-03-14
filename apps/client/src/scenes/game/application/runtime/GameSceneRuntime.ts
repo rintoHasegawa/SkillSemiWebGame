@@ -193,6 +193,20 @@ export class GameSceneRuntime {
     return this.gameMap.getPaintRatesByTeam();
   }
 
+  /** ローカルプレイヤーの現在座標を返す */
+  public getLocalPlayerPosition(): { x: number; y: number } | null {
+    const localPlayer = this.playerRepository.getById(this.myId);
+    if (!localPlayer) {
+      return null;
+    }
+
+    const position = localPlayer.getPosition();
+    return {
+      x: Math.round(position.x * 10) / 10,
+      y: Math.round(position.y * 10) / 10,
+    };
+  }
+
   /** 実行系サブシステムを破棄する */
   public destroy(): void {
     if (this.lifecycleState === "destroyed") {

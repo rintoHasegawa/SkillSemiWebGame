@@ -32,12 +32,19 @@ export const GAME_VIEW_TIMER_STYLE: CSSProperties = {
   WebkitUserSelect: "none",
 };
 
-/** 右上のチーム塗り率パネルスタイル */
-export const GAME_VIEW_PAINT_RATE_PANEL_STYLE: CSSProperties = {
+/** 右上オーバーレイのコンテナスタイル */
+export const GAME_VIEW_TOP_RIGHT_OVERLAY_STYLE: CSSProperties = {
   position: "absolute",
   top: "20px",
   right: "16px",
   zIndex: 12,
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "12px",
+};
+
+/** 右上のチーム塗り率パネルスタイル */
+export const GAME_VIEW_PAINT_RATE_PANEL_STYLE: CSSProperties = {
   color: "white",
   fontSize: "14px",
   fontWeight: 700,

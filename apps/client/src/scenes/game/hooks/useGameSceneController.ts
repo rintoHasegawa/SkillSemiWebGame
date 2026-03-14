@@ -29,6 +29,10 @@ export const useGameSceneController = (myId: string | null) => {
     DEFAULT_TEAM_PAINT_RATES,
   );
   const [localBombHitCount, setLocalBombHitCount] = useState(0);
+  const [localPlayerPosition, setLocalPlayerPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!pixiContainerRef.current || !myId) return;
@@ -53,6 +57,7 @@ export const useGameSceneController = (myId: string | null) => {
 
       setTeamPaintRates(state.teamPaintRates);
       setLocalBombHitCount(state.localBombHitCount);
+      setLocalPlayerPosition(state.localPlayerPosition);
     });
 
     return () => {
@@ -63,6 +68,7 @@ export const useGameSceneController = (myId: string | null) => {
       setIsInputEnabled(false);
       setTeamPaintRates(DEFAULT_TEAM_PAINT_RATES);
       setLocalBombHitCount(0);
+      setLocalPlayerPosition(null);
     };
   }, [myId]);
 
@@ -81,6 +87,7 @@ export const useGameSceneController = (myId: string | null) => {
     isInputEnabled,
     teamPaintRates,
     localBombHitCount,
+    localPlayerPosition,
     handleInput,
     handlePlaceBomb,
   };
