@@ -23,7 +23,10 @@ export const RESULT_ROOT_STYLE: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  padding: "clamp(12px, 3.5vw, 24px)",
+  paddingTop: "clamp(12px, 3.5vw, 24px)",
+  paddingLeft: "clamp(12px, 3.5vw, 24px)",
+  paddingRight: "clamp(12px, 3.5vw, 24px)",
+  paddingBottom: "calc(clamp(12px, 3.5vw, 24px) + env(safe-area-inset-bottom))",
   boxSizing: "border-box",
   overscrollBehaviorX: "none",
   overscrollBehaviorY: "none",
@@ -136,7 +139,7 @@ export const RESULT_TABLE_STYLE: CSSProperties = {
 
 /** 順位表本文スクロール領域のスタイル */
 export const RESULT_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
-  maxHeight: "min(44dvh, 360px)",
+  maxHeight: "min(40dvh, 320px)",
   overflowY: "auto",
   overscrollBehaviorY: "contain",
   WebkitOverflowScrolling: "touch",
@@ -269,7 +272,7 @@ export const RESULT_PLAYER_STATS_HEADER_ROW_STYLE: CSSProperties = {
 
 /** プレイヤースタッツ表本文スクロール領域のスタイル */
 export const RESULT_PLAYER_STATS_SCROLL_BODY_STYLE: CSSProperties = {
-  maxHeight: "min(40dvh, 320px)",
+  maxHeight: "min(36dvh, 300px)",
   overflowY: "auto",
   overscrollBehaviorY: "contain",
   WebkitOverflowScrolling: "touch",
@@ -348,7 +351,7 @@ export const RESULT_PLAYER_RANKING_HEADER_ROW_STYLE: CSSProperties = {
 
 /** プレイヤーランキング表本文スクロール領域のスタイル */
 export const RESULT_PLAYER_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
-  maxHeight: "min(44dvh, 360px)",
+  maxHeight: "min(40dvh, 320px)",
   overflowY: "auto",
   overscrollBehaviorY: "contain",
   WebkitOverflowScrolling: "touch",
