@@ -125,7 +125,10 @@ export const TitleScene = ({
                   padding: "12px",
                   fontSize: "clamp(1rem, 3vw, 1.2rem)",
                   borderRadius: "5px",
-                  border: "none",
+                  border: "1px solid rgba(0, 0, 0, 0.28)",
+                  backgroundColor: "rgba(255, 255, 255, 0.96)",
+                  color: "#111",
+                  caretColor: "#111",
                   width: "100%",
                   fontFamily: "monospace",
                 }}
@@ -138,7 +141,10 @@ export const TitleScene = ({
                   padding: "12px",
                   fontSize: "clamp(1rem, 3vw, 1.2rem)",
                   borderRadius: "5px",
-                  border: "none",
+                  border: "1px solid rgba(0, 0, 0, 0.28)",
+                  backgroundColor: "rgba(255, 255, 255, 0.96)",
+                  color: "#111",
+                  caretColor: "#111",
                   width: "100%",
                   fontFamily: "monospace",
                 }}

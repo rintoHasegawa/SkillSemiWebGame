@@ -114,7 +114,8 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           backgroundImage: "url('/LobbyAni2.webp')", // ここで画像を読み込み
           backgroundSize: "cover",
           backgroundPosition: "center",
-          zIndex: -1, // UIの一番後ろに配置
+          zIndex: 0, // UIの背面レイヤーとして表示する
+          pointerEvents: "none",
           filter: "brightness(0.4)", // UIの文字を見やすくするために画像を少し暗くする
         }}
       />
@@ -136,6 +137,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          zIndex: 1,
         }}
       >
         <h2
