@@ -43,18 +43,6 @@ export const MiniMapPanel = ({
     handleToggle();
   };
 
-  const handleTouchStart = (event: React.TouchEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    handleToggle();
-  };
-
-  const handleMouseDown = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    handleToggle();
-  };
-
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -119,8 +107,6 @@ export const MiniMapPanel = ({
         type="button"
         style={buttonStyle}
         onPointerDown={handlePointerDown}
-        onTouchStart={handleTouchStart}
-        onMouseDown={handleMouseDown}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
