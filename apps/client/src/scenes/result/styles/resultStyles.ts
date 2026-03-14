@@ -50,13 +50,15 @@ export const RESULT_RANKING_HEADER_STYLE: CSSProperties = {
   marginBottom: "6px",
 };
 
-/** リザルト表示時の右上操作ボタン行スタイル */
+/** リザルト表示時の左右対称操作ボタン行スタイル */
 export const RESULT_RANKING_ACTION_BAR_STYLE: CSSProperties = {
-  width: "auto",
+  width: "100%",
   position: "absolute",
   top: 0,
+  left: 0,
   right: 0,
   marginBottom: 0,
+  paddingInline: "8px",
 };
 
 /** リザルト画面本文レイヤーのスタイル */
