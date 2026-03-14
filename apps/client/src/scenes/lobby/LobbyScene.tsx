@@ -93,13 +93,6 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           min-height: 0;
         }
 
-        @media (max-width: 900px) {
-          .lobby-main-layout {
-            flex-direction: column;
-            gap: 12px;
-          }
-        }
-
         /* スクロールバーの見た目をスマホ・PCでスッキリさせる */
         ::-webkit-scrollbar {
           width: 8px;
@@ -161,6 +154,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           <div
             style={{
               flex: 1,
+              minWidth: 0,
               display: "flex",
               flexDirection: "column",
               padding: "10px",
@@ -304,6 +298,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           <div
             style={{
               flex: 1,
+              minWidth: 0,
               // 🌟 変更：ベタ塗りのグレーから、後ろの動画がうっすら透ける黒に変更！
               background: "rgba(0, 0, 0, 0.6)",
               padding: "20px",
