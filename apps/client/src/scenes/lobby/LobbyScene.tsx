@@ -73,6 +73,33 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
         * {
           box-sizing: border-box;
         }
+
+        .lobby-main-layout {
+          display: flex;
+          flex-direction: row;
+          width: 100%;
+          flex-grow: 1;
+          gap: 20px;
+          min-height: 0;
+        }
+
+        .lobby-player-list {
+          list-style: none;
+          padding: 0 10px 0 0;
+          margin: 0;
+          font-size: 1.1rem;
+          overflow-y: auto;
+          flex-grow: 1;
+          min-height: 0;
+        }
+
+        @media (max-width: 900px) {
+          .lobby-main-layout {
+            flex-direction: column;
+            gap: 12px;
+          }
+        }
+
         /* スクロールバーの見た目をスマホ・PCでスッキリさせる */
         ::-webkit-scrollbar {
           width: 8px;
@@ -110,7 +137,9 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           background: "transparent",
           height: "100dvh",
           width: "100vw",
-          overflow: "hidden",
+          overflowX: "hidden",
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -127,16 +156,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           ルーム: {room.roomId} (待機中)
         </h2>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            width: "100%",
-            flexGrow: 1,
-            gap: "20px",
-            minHeight: 0,
-          }}
-        >
+        <div className="lobby-main-layout">
           {/* 左半分: スタートボタン or 待機メッセージ */}
           <div
             style={{
@@ -307,16 +327,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
               参加プレイヤー ({room.players.length}/{room.maxPlayers})
             </h3>
             <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                fontSize: "1.1rem",
-                overflowY: "auto",
-                flexGrow: 1,
-                minHeight: "320px",
-                paddingRight: "10px",
-              }}
+              className="lobby-player-list"
             >
               {room.players.map((p: domain.room.RoomMember) => (
                 <li

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node --loader ts-node/esm load-bot.ts"
+    "start": "node --env-file=.env.local --loader ts-node/esm load-bot.ts"
   },
   "dependencies": {
     "@repo/shared": "workspace:*",

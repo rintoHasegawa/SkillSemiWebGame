@@ -1,11 +1,12 @@
 import { config as sharedConfig } from "@repo/shared";
-import { config as clientConfig } from "../apps/client/src/config/index.ts";
 
-const { GAME_CONFIG } = sharedConfig;
-const { NETWORK_CONFIG } = clientConfig;
+const { GAME_CONFIG, NETWORK_CONFIG } = sharedConfig;
 
-export const URL = NETWORK_CONFIG.PROD_SERVER_URL;
-export const DEV_URL = NETWORK_CONFIG.DEV_SERVER_URL;
+const DEFAULT_SERVER_HOST = "http://localhost";
+const DEFAULT_SERVER_PORT = "3000";
+const DEFAULT_SERVER_URL = `${DEFAULT_SERVER_HOST}:${DEFAULT_SERVER_PORT}`;
+export const URL = process.env.LOAD_TEST_SERVER_URL || DEFAULT_SERVER_URL;
+export const DEV_URL = process.env.LOAD_TEST_DEV_SERVER_URL || DEFAULT_SERVER_URL;
 export const BOTS = 99;
 export const DURATION_MS = Infinity;
 export const JOIN_DELAY_MS = 25;
@@ -22,4 +23,4 @@ export const BOT_CAN_PLACE_BOMB = true;
 export const ROOM_ID = "1";
 export const START_GAME = true;
 export const SOCKET_PATH = NETWORK_CONFIG.SOCKET_IO_PATH;
-export const SOCKET_TRANSPORTS = [...NETWORK_CONFIG.SOCKET_TRANSPORTS];
+export const SOCKET_TRANSPORTS = ["websocket", "polling"];
