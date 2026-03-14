@@ -52,13 +52,12 @@ export const RESULT_RANKING_HEADER_STYLE: CSSProperties = {
 
 /** リザルト表示時の左右対称操作ボタン行スタイル */
 export const RESULT_RANKING_ACTION_BAR_STYLE: CSSProperties = {
-  width: "100%",
+  width: "auto",
   position: "absolute",
   top: 0,
-  left: 0,
-  right: 0,
+  left: "8px",
+  right: "8px",
   marginBottom: 0,
-  paddingInline: "8px",
 };
 
 /** リザルト画面本文レイヤーのスタイル */
