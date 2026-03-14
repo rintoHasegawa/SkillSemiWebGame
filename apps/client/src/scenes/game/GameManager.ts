@@ -220,6 +220,7 @@ export class GameManager {
       startCountdownSec: this.sessionFacade.getStartCountdownSec(),
       isInputEnabled: this.runtime.isInputEnabled(),
       teamPaintRates: this.runtime.getPaintRatesByTeam(),
+      miniMapTeamIds: this.runtime.getMiniMapTeamIds(),
       localBombHitCount: this.localBombHitCount,
       localPlayerPosition: this.runtime.getLocalPlayerPosition(),
     };

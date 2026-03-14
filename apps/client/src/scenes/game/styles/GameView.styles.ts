@@ -37,7 +37,7 @@ export const GAME_VIEW_TOP_RIGHT_OVERLAY_STYLE: CSSProperties = {
   position: "absolute",
   top: "20px",
   right: "16px",
-  zIndex: 12,
+  zIndex: 24,
   display: "flex",
   alignItems: "flex-start",
   gap: "12px",

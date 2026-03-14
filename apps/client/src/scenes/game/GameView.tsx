@@ -27,6 +27,7 @@ type Props = {
   startCountdownText: string | null;
   isInputEnabled: boolean;
   teamPaintRates: number[];
+  miniMapTeamIds: number[];
   localBombHitCount: number;
   localPlayerPosition: { x: number; y: number } | null;
   pixiContainerRef: React.RefObject<HTMLDivElement>;
@@ -102,6 +103,7 @@ export const GameView = ({
   startCountdownText,
   isInputEnabled,
   teamPaintRates,
+  miniMapTeamIds,
   localBombHitCount,
   localPlayerPosition,
   pixiContainerRef,
@@ -120,11 +122,14 @@ export const GameView = ({
       <TimerOverlay timeLeft={timeLeft} />
       <div style={GAME_VIEW_BOMB_HIT_DEBUG_STYLE}>HP: {heartGauge}</div>
       <div style={GAME_VIEW_TOP_RIGHT_OVERLAY_STYLE}>
+        <MiniMapPanel
+          miniMapTeamIds={miniMapTeamIds}
+          localPlayerPosition={localPlayerPosition}
+        />
         <TeamPaintRateOverlay
           teamPaintRates={teamPaintRates}
           remainingSeconds={remainingSeconds}
         />
-        <MiniMapPanel localPlayerPosition={localPlayerPosition} />
       </div>
 
       {remainingSeconds === 60 && (

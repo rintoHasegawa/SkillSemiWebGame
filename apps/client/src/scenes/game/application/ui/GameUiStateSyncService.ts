@@ -16,8 +16,23 @@ export type GameUiState = {
   startCountdownSec: number;
   isInputEnabled: boolean;
   teamPaintRates: number[];
+  miniMapTeamIds: number[];
   localBombHitCount: number;
   localPlayerPosition: { x: number; y: number } | null;
+};
+
+const isSameMiniMapTeamIds = (a: number[], b: number[]): boolean => {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  for (let index = 0; index < a.length; index += 1) {
+    if (a[index] !== b[index]) {
+      return false;
+    }
+  }
+
+  return true;
 };
 
 const isSameLocalPlayerPosition = (
@@ -91,6 +106,10 @@ export class GameUiStateSyncService {
       this.lastState.isInputEnabled === snapshot.isInputEnabled &&
       this.lastState.localBombHitCount === snapshot.localBombHitCount &&
       isSamePaintRates(this.lastState.teamPaintRates, snapshot.teamPaintRates) &&
+      isSameMiniMapTeamIds(
+        this.lastState.miniMapTeamIds,
+        snapshot.miniMapTeamIds,
+      ) &&
       isSameLocalPlayerPosition(
         this.lastState.localPlayerPosition,
         snapshot.localPlayerPosition,

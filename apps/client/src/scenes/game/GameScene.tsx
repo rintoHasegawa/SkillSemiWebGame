@@ -19,6 +19,7 @@ export function GameScene({ myId }: GameSceneProps) {
     startCountdownText,
     isInputEnabled,
     teamPaintRates,
+    miniMapTeamIds,
     localBombHitCount,
     localPlayerPosition,
     handleInput,
@@ -31,6 +32,7 @@ export function GameScene({ myId }: GameSceneProps) {
       startCountdownText={startCountdownText}
       isInputEnabled={isInputEnabled}
       teamPaintRates={teamPaintRates}
+      miniMapTeamIds={miniMapTeamIds}
       localBombHitCount={localBombHitCount}
       localPlayerPosition={localPlayerPosition}
       pixiContainerRef={pixiContainerRef}

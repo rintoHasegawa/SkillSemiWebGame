@@ -56,6 +56,11 @@ export class GameMapController {
     return this.model.getPaintRatesByTeam(config.GAME_CONFIG.TEAM_COUNT);
   }
 
+  /** 現在の全セルteamId配列を取得する */
+  public getAllCellTeamIds(): number[] {
+    return this.model.getAllTeamIds();
+  }
+
   /** すべてのセルteamIdを描画色へ変換する */
   private resolveAllCellColors(teamIds: number[]): Array<number | null> {
     return teamIds.map((teamId) => this.resolveCellColor(teamId));

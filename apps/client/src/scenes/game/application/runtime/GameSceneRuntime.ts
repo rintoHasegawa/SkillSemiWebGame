@@ -193,6 +193,16 @@ export class GameSceneRuntime {
     return this.gameMap.getPaintRatesByTeam();
   }
 
+  /** ミニマップ描画用の全セルteamId配列を返す */
+  public getMiniMapTeamIds(): number[] {
+    if (!this.gameMap) {
+      const totalCells = config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS;
+      return new Array<number>(totalCells).fill(-1);
+    }
+
+    return this.gameMap.getAllCellTeamIds();
+  }
+
   /** ローカルプレイヤーの現在座標を返す */
   public getLocalPlayerPosition(): { x: number; y: number } | null {
     const localPlayer = this.playerRepository.getById(this.myId);
@@ -202,8 +212,8 @@ export class GameSceneRuntime {
 
     const position = localPlayer.getPosition();
     return {
-      x: Math.round(position.x * 10) / 10,
-      y: Math.round(position.y * 10) / 10,
+      x: position.x,
+      y: position.y,
     };
   }
 

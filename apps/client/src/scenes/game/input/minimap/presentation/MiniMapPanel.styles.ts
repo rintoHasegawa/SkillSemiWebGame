@@ -45,6 +45,15 @@ export const MINIMAP_FRAME_STYLE: CSSProperties = {
   overflow: "hidden",
 };
 
+/** ミニマップ描画キャンバスのスタイル */
+export const MINIMAP_CANVAS_STYLE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  width: "100%",
+  height: "100%",
+  imageRendering: "pixelated",
+};
+
 /** ミニマップ内の現在地ドットスタイルを返す */
 export const buildMiniMapDotStyle = (
   leftPx: number,

@@ -15,6 +15,9 @@ import {
 const DEFAULT_TEAM_PAINT_RATES = new Array<number>(
   config.GAME_CONFIG.TEAM_COUNT,
 ).fill(0);
+const DEFAULT_MINIMAP_TEAM_IDS = new Array<number>(
+  config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS,
+).fill(-1);
 
 /** ゲーム画面の状態と入力ハンドラを提供するフック */
 export const useGameSceneController = (myId: string | null) => {
@@ -27,6 +30,9 @@ export const useGameSceneController = (myId: string | null) => {
   const [isInputEnabled, setIsInputEnabled] = useState(false);
   const [teamPaintRates, setTeamPaintRates] = useState<number[]>(
     DEFAULT_TEAM_PAINT_RATES,
+  );
+  const [miniMapTeamIds, setMiniMapTeamIds] = useState<number[]>(
+    DEFAULT_MINIMAP_TEAM_IDS,
   );
   const [localBombHitCount, setLocalBombHitCount] = useState(0);
   const [localPlayerPosition, setLocalPlayerPosition] = useState<{
@@ -56,6 +62,7 @@ export const useGameSceneController = (myId: string | null) => {
       );
 
       setTeamPaintRates(state.teamPaintRates);
+      setMiniMapTeamIds(state.miniMapTeamIds);
       setLocalBombHitCount(state.localBombHitCount);
       setLocalPlayerPosition(state.localPlayerPosition);
     });
@@ -67,6 +74,7 @@ export const useGameSceneController = (myId: string | null) => {
       setStartCountdownText(null);
       setIsInputEnabled(false);
       setTeamPaintRates(DEFAULT_TEAM_PAINT_RATES);
+      setMiniMapTeamIds(DEFAULT_MINIMAP_TEAM_IDS);
       setLocalBombHitCount(0);
       setLocalPlayerPosition(null);
     };
@@ -86,6 +94,7 @@ export const useGameSceneController = (myId: string | null) => {
     startCountdownText,
     isInputEnabled,
     teamPaintRates,
+    miniMapTeamIds,
     localBombHitCount,
     localPlayerPosition,
     handleInput,
