@@ -23,8 +23,11 @@ export const RESULT_ROOT_STYLE: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  padding: "24px",
+  padding: "clamp(12px, 3.5vw, 24px)",
   boxSizing: "border-box",
+  overscrollBehaviorX: "none",
+  overscrollBehaviorY: "none",
+  touchAction: "pan-y",
 };
 
 /** 結果発表タイトルのスタイル */
@@ -42,6 +45,7 @@ export const RESULT_TITLE_STYLE: CSSProperties = {
 export const RESULT_RANKING_HEADER_STYLE: CSSProperties = {
   width: "100%",
   maxWidth: "960px",
+  minWidth: 0,
   minHeight: "44px",
   position: "relative",
   display: "flex",
@@ -63,14 +67,18 @@ export const RESULT_RANKING_ACTION_BAR_STYLE: CSSProperties = {
 /** リザルト画面本文レイヤーのスタイル */
 export const RESULT_CONTENT_STYLE: CSSProperties = {
   width: "100%",
+  maxWidth: "960px",
   flex: 1,
   minHeight: 0,
-  overflow: "hidden",
+  overflowX: "hidden",
+  overflowY: "hidden",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   position: "relative",
   zIndex: 1,
+  overscrollBehaviorX: "none",
+  overscrollBehaviorY: "none",
 };
 
 /** 背景エフェクト共通レイヤーの基底スタイル */
@@ -116,19 +124,22 @@ export const RESULT_TAP_GUIDE_STYLE: CSSProperties = {
 
 /** 順位表コンテナのスタイル */
 export const RESULT_TABLE_STYLE: CSSProperties = {
-  width: "100%",
+  width: "min(100%, 720px)",
   maxWidth: "720px",
   border: "1px solid rgba(255, 255, 255, 0.18)",
   borderRadius: "8px",
   overflow: "hidden",
   backdropFilter: "blur(2px)",
   background: "rgba(16, 16, 16, 0.62)",
+  boxSizing: "border-box",
 };
 
 /** 順位表本文スクロール領域のスタイル */
 export const RESULT_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
   maxHeight: "min(44dvh, 360px)",
   overflowY: "auto",
+  overscrollBehaviorY: "contain",
+  WebkitOverflowScrolling: "touch",
 };
 
 /** 順位表ヘッダー行のスタイル */
@@ -260,6 +271,8 @@ export const RESULT_PLAYER_STATS_HEADER_ROW_STYLE: CSSProperties = {
 export const RESULT_PLAYER_STATS_SCROLL_BODY_STYLE: CSSProperties = {
   maxHeight: "min(40dvh, 320px)",
   overflowY: "auto",
+  overscrollBehaviorY: "contain",
+  WebkitOverflowScrolling: "touch",
 };
 
 /** プレイヤースタッツ数値セルのスタイル */
@@ -282,8 +295,9 @@ export const getResultPlayerStatsBodyRowStyle = (
 /** タブバーコンテナのスタイル */
 export const RESULT_TAB_BAR_CONTAINER_STYLE: CSSProperties = {
   display: "flex",
-  width: "100%",
+  width: "min(100%, 720px)",
   maxWidth: "720px",
+  minWidth: 0,
   gap: "4px",
   marginBottom: "10px",
 };
@@ -336,6 +350,8 @@ export const RESULT_PLAYER_RANKING_HEADER_ROW_STYLE: CSSProperties = {
 export const RESULT_PLAYER_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
   maxHeight: "min(44dvh, 360px)",
   overflowY: "auto",
+  overscrollBehaviorY: "contain",
+  WebkitOverflowScrolling: "touch",
 };
 
 /** プレイヤーランキング数値セルのスタイル */
@@ -358,6 +374,10 @@ export const getResultPlayerRankingBodyRowStyle = (
 /** タブコンテンツのフェードアニメーション用スタイル */
 export const RESULT_CONTENT_FADE_STYLE: CSSProperties = {
   animation: "tabContentFadeIn 0.2s ease-in",
+  width: "100%",
+  minWidth: 0,
+  display: "flex",
+  justifyContent: "center",
 };
 
 /** 紙吹雪1片のスタイルを返す */
