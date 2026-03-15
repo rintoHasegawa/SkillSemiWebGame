@@ -3,8 +3,12 @@
  * ゲーム画面の状態管理と GameManager 連携を担うフック
  * Pixi描画領域，残り時間表示，入力橋渡しを提供する
  */
-import { useCallback, useEffect, useRef, useState } from "react";
-import { GameManager } from "@client/scenes/game/GameManager";
+import { useCallback, useEffect, useReducer, useRef } from "react";
+import {
+  GameManager,
+  type GameHudState,
+  type MiniMapState,
+} from "@client/scenes/game/GameManager";
 import { config } from "@client/config";
 import {
   buildStartCountdownText,
@@ -19,26 +23,72 @@ const DEFAULT_MINIMAP_TEAM_IDS = new Array<number>(
   config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS,
 ).fill(-1);
 
+type SceneControllerState = {
+  timeLeft: string;
+  startCountdownText: string | null;
+  isInputEnabled: boolean;
+  teamPaintRates: number[];
+  miniMapTeamIds: number[];
+  localBombHitCount: number;
+  localPlayerPosition: { x: number; y: number } | null;
+};
+
+type SceneControllerAction =
+  | { type: "syncHud"; payload: GameHudState }
+  | { type: "syncMiniMap"; payload: MiniMapState }
+  | { type: "reset" };
+
+const INITIAL_SCENE_CONTROLLER_STATE: SceneControllerState = {
+  timeLeft: getInitialTimeDisplay(),
+  startCountdownText: null,
+  isInputEnabled: false,
+  teamPaintRates: DEFAULT_TEAM_PAINT_RATES,
+  miniMapTeamIds: DEFAULT_MINIMAP_TEAM_IDS,
+  localBombHitCount: 0,
+  localPlayerPosition: null,
+};
+
+const sceneControllerReducer = (
+  state: SceneControllerState,
+  action: SceneControllerAction,
+): SceneControllerState => {
+  switch (action.type) {
+    case "syncHud": {
+      const hud = action.payload;
+      return {
+        ...state,
+        timeLeft: formatRemainingTime(hud.remainingTimeSec),
+        startCountdownText: buildStartCountdownText(hud.startCountdownSec),
+        isInputEnabled: hud.isInputEnabled,
+        teamPaintRates: hud.teamPaintRates,
+        localBombHitCount: hud.localBombHitCount,
+      };
+    }
+    case "syncMiniMap": {
+      const miniMap = action.payload;
+      return {
+        ...state,
+        miniMapTeamIds: miniMap.teamIds,
+        localPlayerPosition: miniMap.localPlayerPosition,
+      };
+    }
+    case "reset": {
+      return INITIAL_SCENE_CONTROLLER_STATE;
+    }
+    default: {
+      return state;
+    }
+  }
+};
+
 /** ゲーム画面の状態と入力ハンドラを提供するフック */
 export const useGameSceneController = (myId: string | null) => {
   const pixiContainerRef = useRef<HTMLDivElement>(null);
   const gameManagerRef = useRef<GameManager | null>(null);
-  const [timeLeft, setTimeLeft] = useState(getInitialTimeDisplay());
-  const [startCountdownText, setStartCountdownText] = useState<string | null>(
-    null,
+  const [state, dispatch] = useReducer(
+    sceneControllerReducer,
+    INITIAL_SCENE_CONTROLLER_STATE,
   );
-  const [isInputEnabled, setIsInputEnabled] = useState(false);
-  const [teamPaintRates, setTeamPaintRates] = useState<number[]>(
-    DEFAULT_TEAM_PAINT_RATES,
-  );
-  const [miniMapTeamIds, setMiniMapTeamIds] = useState<number[]>(
-    DEFAULT_MINIMAP_TEAM_IDS,
-  );
-  const [localBombHitCount, setLocalBombHitCount] = useState(0);
-  const [localPlayerPosition, setLocalPlayerPosition] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
 
   useEffect(() => {
     if (!pixiContainerRef.current || !myId) return;
@@ -47,36 +97,19 @@ export const useGameSceneController = (myId: string | null) => {
     manager.init();
 
     gameManagerRef.current = manager;
-    const unsubscribeUiState = manager.subscribeUiState((state) => {
-      const nextDisplay = formatRemainingTime(state.hud.remainingTimeSec);
-      setTimeLeft((prev) => (prev === nextDisplay ? prev : nextDisplay));
-
-      const nextCountdown = buildStartCountdownText(state.hud.startCountdownSec);
-      setStartCountdownText((prev) =>
-        prev === nextCountdown ? prev : nextCountdown,
-      );
-
-      const nextInputEnabled = state.hud.isInputEnabled;
-      setIsInputEnabled((prev) =>
-        prev === nextInputEnabled ? prev : nextInputEnabled,
-      );
-
-      setTeamPaintRates(state.hud.teamPaintRates);
-      setMiniMapTeamIds(state.miniMap.teamIds);
-      setLocalBombHitCount(state.hud.localBombHitCount);
-      setLocalPlayerPosition(state.miniMap.localPlayerPosition);
+    const unsubscribeHud = manager.subscribeHudState((hudState) => {
+      dispatch({ type: "syncHud", payload: hudState });
+    });
+    const unsubscribeMiniMap = manager.subscribeMiniMapState((miniMapState) => {
+      dispatch({ type: "syncMiniMap", payload: miniMapState });
     });
 
     return () => {
-      unsubscribeUiState();
+      unsubscribeHud();
+      unsubscribeMiniMap();
       manager.destroy();
       gameManagerRef.current = null;
-      setStartCountdownText(null);
-      setIsInputEnabled(false);
-      setTeamPaintRates(DEFAULT_TEAM_PAINT_RATES);
-      setMiniMapTeamIds(DEFAULT_MINIMAP_TEAM_IDS);
-      setLocalBombHitCount(0);
-      setLocalPlayerPosition(null);
+      dispatch({ type: "reset" });
     };
   }, [myId]);
 
@@ -90,13 +123,13 @@ export const useGameSceneController = (myId: string | null) => {
 
   return {
     pixiContainerRef,
-    timeLeft,
-    startCountdownText,
-    isInputEnabled,
-    teamPaintRates,
-    miniMapTeamIds,
-    localBombHitCount,
-    localPlayerPosition,
+    timeLeft: state.timeLeft,
+    startCountdownText: state.startCountdownText,
+    isInputEnabled: state.isInputEnabled,
+    teamPaintRates: state.teamPaintRates,
+    miniMapTeamIds: state.miniMapTeamIds,
+    localBombHitCount: state.localBombHitCount,
+    localPlayerPosition: state.localPlayerPosition,
     handleInput,
     handlePlaceBomb,
   };

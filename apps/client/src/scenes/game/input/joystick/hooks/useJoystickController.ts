@@ -12,15 +12,75 @@ import type {
 } from "../common";
 import {
   JOYSTICK_MIN_MOVEMENT_DELTA,
-  JOYSTICK_SEND_ZERO_ON_END,
 } from "../common";
 import { useJoystickState } from "./useJoystickState";
+
+const isJoystickDebugEnabled = (): boolean => {
+  if (import.meta.env.DEV) {
+    try {
+      return window.localStorage.getItem("debug:joystick") !== "0";
+    } catch {
+      return true;
+    }
+  }
+
+  try {
+    return window.localStorage.getItem("debug:joystick") === "1";
+  } catch {
+    return false;
+  }
+};
+
+const debugJoystick = (label: string, payload?: unknown): void => {
+  if (!isJoystickDebugEnabled()) {
+    return;
+  }
+
+  if (payload === undefined) {
+    console.log(`[joystick-controller] ${label}`);
+    return;
+  }
+
+  console.log(`[joystick-controller] ${label}`, payload);
+};
 
 /** 入力イベントと通知処理を仲介するフック */
 export const useJoystickController = ({
   onInput,
   maxDist,
 }: UseJoystickControllerProps): UseJoystickControllerReturn => {
+  const lastEmittedRef = useRef<NormalizedInput | null>(null);
+
+  const emitInput = useCallback(
+    (normalized: NormalizedInput) => {
+      debugJoystick("emit", normalized);
+      onInput(normalized.x, normalized.y);
+    },
+    [onInput],
+  );
+
+  const emitInputIfChanged = useCallback(
+    (normalized: NormalizedInput) => {
+      const last = lastEmittedRef.current;
+      if (last) {
+        const delta = Math.hypot(normalized.x - last.x, normalized.y - last.y);
+        if (delta < JOYSTICK_MIN_MOVEMENT_DELTA) {
+          debugJoystick("skip-small-delta", {
+            normalized,
+            last,
+            delta,
+            threshold: JOYSTICK_MIN_MOVEMENT_DELTA,
+          });
+          return;
+        }
+      }
+
+      emitInput(normalized);
+      lastEmittedRef.current = normalized;
+    },
+    [emitInput],
+  );
+
   const {
     isMoving,
     center,
@@ -30,56 +90,26 @@ export const useJoystickController = ({
     handleMove: baseHandleMove,
     handleEnd: baseHandleEnd,
     reset: baseReset,
-  } = useJoystickState({ maxDist });
-
-  const lastEmittedRef = useRef<NormalizedInput | null>(null);
-
-  const emitInput = useCallback(
-    (normalized: NormalizedInput) => {
-      onInput(normalized.x, normalized.y);
-    },
-    [onInput],
-  );
+  } = useJoystickState({ maxDist, onNormalizedInput: emitInputIfChanged });
 
   const handleMove = useCallback(
     (e: JoystickPointerEvent) => {
-      const normalized = baseHandleMove(e);
-      if (!normalized) return;
-
-      const last = lastEmittedRef.current;
-      if (last) {
-        const delta = Math.hypot(normalized.x - last.x, normalized.y - last.y);
-        if (delta < JOYSTICK_MIN_MOVEMENT_DELTA) {
-          return;
-        }
-      }
-
-      emitInput(normalized);
-      lastEmittedRef.current = normalized;
+      baseHandleMove(e);
     },
-    [baseHandleMove, emitInput],
+    [baseHandleMove],
   );
 
   const handleEnd = useCallback(
     (e: JoystickPointerEvent) => {
       baseHandleEnd(e);
-
-      if (JOYSTICK_SEND_ZERO_ON_END) {
-        emitInput({ x: 0, y: 0 });
-        lastEmittedRef.current = { x: 0, y: 0 };
-        return;
-      }
-
-      lastEmittedRef.current = null;
     },
-    [baseHandleEnd, emitInput],
+    [baseHandleEnd],
   );
 
   const reset = useCallback(() => {
     baseReset();
-    emitInput({ x: 0, y: 0 });
-    lastEmittedRef.current = { x: 0, y: 0 };
-  }, [baseReset, emitInput]);
+    emitInputIfChanged({ x: 0, y: 0 });
+  }, [baseReset, emitInputIfChanged]);
 
   return {
     isMoving,

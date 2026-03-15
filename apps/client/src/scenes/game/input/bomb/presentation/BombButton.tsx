@@ -9,6 +9,7 @@ import {
   buildBombButtonStyle,
 } from "./BombButton.styles";
 import { useImmediatePressHandlers } from "@client/scenes/game/input/presentation/useImmediatePressHandlers";
+import { useCallback } from "react";
 
 /** 爆弾設置ボタンの入力プロパティ */
 export type BombButtonProps = {
@@ -31,13 +32,13 @@ export const BombButton = ({
   const buttonStyle = buildBombButtonStyle(isReady, isFeverTime);
   const hitAreaStyle = buildBombButtonHitAreaStyle(isReady);
 
-  const handleActivate = () => {
+  const handleActivate = useCallback(() => {
     if (!isReady) {
       return;
     }
 
     onPress();
-  };
+  }, [isReady, onPress]);
 
   const { onPointerDown: onHitAreaPointerDown, onClick: onHitAreaClick } =
     useImmediatePressHandlers<HTMLDivElement>(handleActivate, {

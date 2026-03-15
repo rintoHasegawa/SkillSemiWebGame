@@ -8,6 +8,7 @@ import { JoystickInputPresenter } from "./joystick/presentation/JoystickInputPre
 import { BombButton } from "./bomb/presentation/BombButton";
 import { useBombCooldownClock } from "./bomb/hooks/useBombCooldownClock";
 import { buildGameInputOverlayLayerStyle } from "./GameInputOverlay.styles";
+import { useCallback } from "react";
 
 /** 入力UIレイヤーの入力プロパティ */
 type GameInputOverlayProps = {
@@ -30,7 +31,7 @@ export const GameInputOverlay = ({
   const { cooldownState, markTriggered } = useBombCooldownClock(bombCooldownMs);
   const layerStyle = buildGameInputOverlayLayerStyle();
 
-  const handlePressBomb = () => {
+  const handlePressBomb = useCallback(() => {
     if (!isInputEnabled || !cooldownState.isReady) {
       return;
     }
@@ -41,7 +42,7 @@ export const GameInputOverlay = ({
     }
 
     markTriggered();
-  };
+  }, [cooldownState.isReady, isInputEnabled, markTriggered, onPlaceBomb]);
 
   return (
     <div style={layerStyle}>

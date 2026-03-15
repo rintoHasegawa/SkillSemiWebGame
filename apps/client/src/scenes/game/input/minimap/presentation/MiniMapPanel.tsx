@@ -3,7 +3,7 @@
  * ミニマップの開閉操作と表示を担うプレゼンテーションコンポーネント
  * 全体マップ枠とローカルプレイヤー現在地のみを描画する
  */
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   buildMiniMapDotStyle,
   MINIMAP_CANVAS_STYLE,
@@ -28,12 +28,12 @@ export const MiniMapPanel = ({
 }: MiniMapPanelProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleToggle = () => {
+  const handleToggle = useCallback(() => {
     setIsOpen((prev) => !prev);
-  };
-  const { onPointerDown, onClick } = useImmediatePressHandlers<HTMLButtonElement>(
-    handleToggle,
-  );
+  }, []);
+  const { onPointerDown, onClick } =
+    useImmediatePressHandlers<HTMLButtonElement>(handleToggle);
+
   const { canvasRef, markerPosition } = useMiniMapCanvas({
     isOpen,
     frameSizePx: MINIMAP_UI_CONFIG.FRAME_SIZE_PX,
