@@ -24,6 +24,8 @@ export type {
   CurrentPlayersPayload,
   UpdateMapCellsPayload,
   HurricaneStatePayload,
+  HurricaneSnapshotPayload,
+  HurricaneDeltaPayload,
   UpdateHurricanesPayload,
   NewPlayerPayload,
   RemovePlayerPayload,

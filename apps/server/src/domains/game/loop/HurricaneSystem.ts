@@ -4,6 +4,7 @@
  * GameLoop からハリケーン専用責務を分離する
  */
 import { config } from "@server/config";
+import { collectSyncDeltaEntries } from "@server/common/syncDelta";
 import { domain, type HurricaneStatePayload } from "@repo/shared";
 import { Player } from "../entities/player/Player.js";
 
@@ -26,9 +27,6 @@ type HurricaneSyncSnapshot = {
   rotationRad: number;
 };
 
-const HURRICANE_POSITION_SYNC_SCALE = 10;
-const HURRICANE_ROTATION_SYNC_SCALE = 4;
-
 const quantizeValue = (value: number, scale: number): number => {
   return Math.round(value * scale) / scale;
 };
@@ -37,10 +35,22 @@ const toHurricaneSyncSnapshot = (
   state: HurricaneState,
 ): HurricaneSyncSnapshot => {
   return {
-    x: quantizeValue(state.x, HURRICANE_POSITION_SYNC_SCALE),
-    y: quantizeValue(state.y, HURRICANE_POSITION_SYNC_SCALE),
-    radius: quantizeValue(state.radius, HURRICANE_POSITION_SYNC_SCALE),
-    rotationRad: quantizeValue(state.rotationRad, HURRICANE_ROTATION_SYNC_SCALE),
+    x: quantizeValue(
+      state.x,
+      config.GAME_CONFIG.NETWORK_SYNC.HURRICANE_POSITION_QUANTIZE_SCALE,
+    ),
+    y: quantizeValue(
+      state.y,
+      config.GAME_CONFIG.NETWORK_SYNC.HURRICANE_POSITION_QUANTIZE_SCALE,
+    ),
+    radius: quantizeValue(
+      state.radius,
+      config.GAME_CONFIG.NETWORK_SYNC.HURRICANE_POSITION_QUANTIZE_SCALE,
+    ),
+    rotationRad: quantizeValue(
+      state.rotationRad,
+      config.GAME_CONFIG.NETWORK_SYNC.HURRICANE_ROTATION_QUANTIZE_SCALE,
+    ),
   };
 };
 
@@ -120,27 +130,25 @@ export class HurricaneSystem {
 
   /** 同期配信用のハリケーン状態配列を返す */
   public getUpdatePayload(): HurricaneStatePayload[] {
-    const changedPayloads: HurricaneStatePayload[] = [];
-
-    this.hurricanes.forEach((hurricane) => {
-      const nextSnapshot = toHurricaneSyncSnapshot(hurricane);
-      const lastSnapshot = this.lastSentSnapshotByHurricaneId.get(hurricane.id);
-
-      if (lastSnapshot && isSameHurricaneSyncSnapshot(lastSnapshot, nextSnapshot)) {
-        return;
-      }
-
-      this.lastSentSnapshotByHurricaneId.set(hurricane.id, nextSnapshot);
-      changedPayloads.push({
-        id: hurricane.id,
-        x: nextSnapshot.x,
-        y: nextSnapshot.y,
-        radius: nextSnapshot.radius,
-        rotationRad: nextSnapshot.rotationRad,
-      });
+    return collectSyncDeltaEntries(
+      this.hurricanes,
+      this.lastSentSnapshotByHurricaneId,
+      {
+        selectId: (hurricane) => hurricane.id,
+        toSnapshot: (hurricane) => toHurricaneSyncSnapshot(hurricane),
+        isSameSnapshot: (left, right) =>
+          isSameHurricaneSyncSnapshot(left, right),
+      },
+    ).map((entry) => {
+      const { item, snapshot } = entry;
+      return {
+        id: item.id,
+        x: snapshot.x,
+        y: snapshot.y,
+        radius: snapshot.radius,
+        rotationRad: snapshot.rotationRad,
+      };
     });
-
-    return changedPayloads;
   }
 
   /** クールダウン付きで被弾プレイヤーID配列を返す */

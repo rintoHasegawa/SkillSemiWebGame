@@ -78,7 +78,13 @@ export type HurricaneStatePayload = {
 };
 
 /** update-hurricanes イベントで送受信するハリケーン状態配列 */
-export type UpdateHurricanesPayload = HurricaneStatePayload[];
+export type HurricaneSnapshotPayload = HurricaneStatePayload[];
+
+/** update-hurricanes イベントで送受信するハリケーン差分配列 */
+export type HurricaneDeltaPayload = HurricaneStatePayload[];
+
+/** update-hurricanes イベントで送受信するハリケーン差分配列（互換名） */
+export type UpdateHurricanesPayload = HurricaneDeltaPayload;
 
 /**
  * new-player イベントで送受信するプレイヤー情報
