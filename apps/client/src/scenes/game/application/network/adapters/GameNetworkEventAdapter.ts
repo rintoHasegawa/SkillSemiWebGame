@@ -12,17 +12,14 @@ import type {
 } from "@repo/shared";
 
 /** ゲーム開始受信ペイロードから開始時刻を抽出する
- * serverNow を用いてクライアントとサーバーの時計差を補正し，
- * クライアント時計基準の開始時刻を返す
+ * サーバー時刻基準の開始時刻を返す
  */
 export const toGameStartedAt = (payload: GameStartPayload): number | null => {
-  if (!payload || !payload.startTime) {
+  if (!payload || payload.startTime == null) {
     return null;
   }
 
-  // clockOffset > 0: サーバーがクライアントより進んでいる
-  const clockOffset = payload.serverNow - Date.now();
-  return payload.startTime - clockOffset;
+  return payload.startTime;
 };
 
 /** 爆弾設置受信ペイロードを内部ペイロードへ正規化する */

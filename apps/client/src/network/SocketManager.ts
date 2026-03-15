@@ -4,6 +4,10 @@ import { createCommonHandler, type CommonHandler } from "./handlers/CommonHandle
 import { createTitleHandler, type TitleHandler } from "./handlers/TitleHandler";
 import { createLobbyHandler, type LobbyHandler } from "./handlers/LobbyHandler";
 import { createGameHandler, type GameHandler } from "./handlers/GameHandler";
+import {
+  createGameSyncHandler,
+  type GameSyncHandler,
+} from "./handlers/GameSyncHandler";
 
 export class SocketManager {
   public socket: Socket;
@@ -11,6 +15,7 @@ export class SocketManager {
   public title: TitleHandler;
   public lobby: LobbyHandler;
   public game: GameHandler;
+  public gameSync: GameSyncHandler;
 
   constructor() {
     const serverUrl = import.meta.env.PROD
@@ -26,6 +31,7 @@ export class SocketManager {
     this.title = createTitleHandler(this.socket);
     this.lobby = createLobbyHandler(this.socket);
     this.game = createGameHandler(this.socket);
+    this.gameSync = createGameSyncHandler(this.socket);
   }
 }
 

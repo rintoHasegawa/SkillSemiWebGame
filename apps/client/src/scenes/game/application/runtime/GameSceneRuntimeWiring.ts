@@ -14,6 +14,7 @@ import {
 import type { GamePlayers } from "../game.types";
 import type { MoveSender } from "../network/PlayerMoveSender";
 import type { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
+import type { PongPayload } from "@repo/shared";
 
 /** Runtime配線処理の入力型 */
 export type GameSceneRuntimeWiringOptions = {
@@ -27,6 +28,8 @@ export type GameSceneRuntimeWiringOptions = {
   getJoystickInput: () => { x: number; y: number };
   moveSender: MoveSender;
   eventPorts: GameSceneEventPorts;
+  onPongReceived: (payload: PongPayload) => void;
+  onGameStartClockHint: (serverNowMs: number) => void;
   sceneFactories?: GameSceneFactoryOptions;
 };
 
@@ -51,6 +54,8 @@ export class GameSceneRuntimeWiring {
       getJoystickInput: this.options.getJoystickInput,
       moveSender: this.options.moveSender,
       eventPorts: this.options.eventPorts,
+      onPongReceived: this.options.onPongReceived,
+      onGameStartClockHint: this.options.onGameStartClockHint,
       factories: this.options.sceneFactories,
     });
 

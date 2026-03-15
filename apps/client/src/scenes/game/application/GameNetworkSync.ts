@@ -8,6 +8,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   HurricaneHitPayload,
+  PongPayload,
   PlayerHitPayload,
 } from "@repo/shared";
 import { AppearanceResolver } from "./AppearanceResolver";
@@ -30,6 +31,8 @@ type GameNetworkSyncOptions = {
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
   onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
+  onPongReceived: (payload: PongPayload) => void;
+  onGameStartClockHint: (serverNowMs: number) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */
@@ -57,6 +60,8 @@ export class GameNetworkSync {
     onBombPlacementAcknowledged,
     onRemotePlayerHit,
     onRemoteHurricaneHit,
+    onPongReceived,
+    onGameStartClockHint,
   }: GameNetworkSyncOptions) {
     this.stateApplier = new GameNetworkStateApplier({
       worldContainer,
@@ -70,6 +75,8 @@ export class GameNetworkSync {
       onBombPlacementAcknowledged,
       onRemotePlayerHit,
       onRemoteHurricaneHit,
+      onPongReceived,
+      onGameStartClockHint,
       onDebugLog: this.debugLog,
     });
 
