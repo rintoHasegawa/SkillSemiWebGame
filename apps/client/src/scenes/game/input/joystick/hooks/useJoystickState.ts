@@ -8,6 +8,7 @@ import { JOYSTICK_DEADZONE, MAX_DIST } from "../common";
 import { computeJoystick } from "../model/JoystickModel";
 import type {
   JoystickPointerEvent,
+  NormalizedInput,
   Point,
   UseJoystickStateProps,
   UseJoystickStateReturn,
@@ -17,84 +18,332 @@ const getClientPoint = (e: JoystickPointerEvent): Point | null => {
   return { x: e.clientX, y: e.clientY };
 };
 
+const getPointerPoint = (event: PointerEvent): Point => {
+  return { x: event.clientX, y: event.clientY };
+};
+
+const DEADZONE_STREAK_THRESHOLD = 3;
+const POINTER_END_CONFIRM_MS = 80;
+const DIRECT_END_CONFIRM_MS = 0;
+
 /** ジョイスティック入力状態と入力ハンドラを提供する */
 export const useJoystickState = ({
   maxDist,
+  onNormalizedInput,
 }: UseJoystickStateProps): UseJoystickStateReturn => {
   const [isMoving, setIsMoving] = useState(false);
   const [center, setCenter] = useState<Point>({ x: 0, y: 0 });
   const [knobOffset, setKnobOffset] = useState<Point>({ x: 0, y: 0 });
   const activePointerIdRef = useRef<number | null>(null);
-  const activePointerTargetRef = useRef<HTMLDivElement | null>(null);
+  const activePointerTypeRef = useRef<string | null>(null);
+  const capturedElementRef = useRef<HTMLDivElement | null>(null);
+  const deadzoneStreakRef = useRef(0);
+  const pendingEndTimerIdRef = useRef<number | null>(null);
+  const pendingEndPointerIdRef = useRef<number | null>(null);
   const radius = maxDist ?? MAX_DIST;
 
-  const reset = useCallback(() => {
-    const pointerId = activePointerIdRef.current;
-    const pointerTarget = activePointerTargetRef.current;
-    if (
-      pointerId !== null
-      && pointerTarget
-      && pointerTarget.hasPointerCapture(pointerId)
-    ) {
-      pointerTarget.releasePointerCapture(pointerId);
+  const clearPendingEnd = useCallback(() => {
+    if (pendingEndTimerIdRef.current !== null) {
+      window.clearTimeout(pendingEndTimerIdRef.current);
+      pendingEndTimerIdRef.current = null;
     }
-
-    activePointerIdRef.current = null;
-    activePointerTargetRef.current = null;
-    setIsMoving(false);
-    setKnobOffset({ x: 0, y: 0 });
+    pendingEndPointerIdRef.current = null;
   }, []);
 
+  const reset = useCallback(() => {
+    clearPendingEnd();
+    if (
+      capturedElementRef.current !== null &&
+      activePointerIdRef.current !== null &&
+      capturedElementRef.current.hasPointerCapture(activePointerIdRef.current)
+    ) {
+      try {
+        capturedElementRef.current.releasePointerCapture(activePointerIdRef.current);
+      } catch {
+        // capture の解放失敗時も入力状態リセットを優先する
+      }
+    }
+    capturedElementRef.current = null;
+    activePointerIdRef.current = null;
+    activePointerTypeRef.current = null;
+    deadzoneStreakRef.current = 0;
+    setIsMoving(false);
+    setKnobOffset({ x: 0, y: 0 });
+  }, [clearPendingEnd]);
+
+  const confirmPointerEnd = useCallback(
+    (pointerId: number) => {
+      if (activePointerIdRef.current !== pointerId) {
+        return;
+      }
+
+      onNormalizedInput?.({ x: 0, y: 0 });
+      reset();
+    },
+    [onNormalizedInput, reset],
+  );
+
+  const schedulePointerEnd = useCallback(
+    (
+      pointerId: number,
+      _source: string,
+      confirmDelayMs: number = POINTER_END_CONFIRM_MS,
+    ) => {
+      if (confirmDelayMs <= 0) {
+        clearPendingEnd();
+        confirmPointerEnd(pointerId);
+        return;
+      }
+
+      if (
+        pendingEndPointerIdRef.current === pointerId &&
+        pendingEndTimerIdRef.current !== null
+      ) {
+        return;
+      }
+
+      clearPendingEnd();
+      pendingEndPointerIdRef.current = pointerId;
+      pendingEndTimerIdRef.current = window.setTimeout(() => {
+        pendingEndTimerIdRef.current = null;
+        pendingEndPointerIdRef.current = null;
+        confirmPointerEnd(pointerId);
+      }, confirmDelayMs);
+    },
+    [clearPendingEnd, confirmPointerEnd],
+  );
+
+  const applyNormalizedInput = useCallback(
+    (
+      normalized: NormalizedInput,
+      knob: Point,
+      allowPendingEndCancellation: boolean = true,
+    ) => {
+      setKnobOffset(knob);
+
+      if (allowPendingEndCancellation && pendingEndPointerIdRef.current !== null) {
+        clearPendingEnd();
+      }
+
+      onNormalizedInput?.(normalized);
+    },
+    [clearPendingEnd, onNormalizedInput],
+  );
+
   const handleStart = useCallback((e: JoystickPointerEvent) => {
-    if (activePointerIdRef.current !== null) return;
+    if (activePointerIdRef.current !== null) {
+      return;
+    }
 
     const point = getClientPoint(e);
-    if (!point) return;
-    if (point.x > window.innerWidth / 2) return;
+    if (!point) {
+      return;
+    }
+    if (point.x > window.innerWidth / 2) {
+      return;
+    }
 
     activePointerIdRef.current = e.pointerId;
-    activePointerTargetRef.current = e.currentTarget;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    activePointerTypeRef.current = e.pointerType;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      capturedElementRef.current = e.currentTarget;
+    } catch {
+      capturedElementRef.current = null;
+    }
+    deadzoneStreakRef.current = 0;
+    clearPendingEnd();
     setCenter(point);
     setKnobOffset({ x: 0, y: 0 });
     setIsMoving(true);
-  }, []);
+  }, [clearPendingEnd]);
 
   const handleMove = useCallback(
     (e: JoystickPointerEvent) => {
-      if (!isMoving || activePointerIdRef.current !== e.pointerId) return null;
+      if (!isMoving || activePointerIdRef.current !== e.pointerId) {
+        return null;
+      }
+
       const point = getClientPoint(e);
-      if (!point) return null;
+      if (!point) {
+        return null;
+      }
 
       const computed = computeJoystick(center, point, radius);
+      const allowPendingEndCancellation =
+        e.pointerType !== "mouse" || e.buttons !== 0;
 
       const magnitude = Math.hypot(
         computed.normalized.x,
         computed.normalized.y,
       );
       if (magnitude < JOYSTICK_DEADZONE) {
-        setKnobOffset({ x: 0, y: 0 });
-        return { x: 0, y: 0 };
+        deadzoneStreakRef.current += 1;
+        if (deadzoneStreakRef.current < DEADZONE_STREAK_THRESHOLD) {
+          return null;
+        }
+
+        const zero = { x: 0, y: 0 };
+        applyNormalizedInput(zero, zero, allowPendingEndCancellation);
+        return zero;
       }
 
-      setKnobOffset(computed.knobOffset);
+      deadzoneStreakRef.current = 0;
+
+      applyNormalizedInput(
+        computed.normalized,
+        computed.knobOffset,
+        allowPendingEndCancellation,
+      );
       return computed.normalized;
     },
-    [isMoving, center.x, center.y, radius],
+    [
+      applyNormalizedInput,
+      isMoving,
+      center.x,
+      center.y,
+      radius,
+    ],
+  );
+
+  const handleWindowPointerMove = useCallback(
+    (event: PointerEvent) => {
+      if (!isMoving || activePointerIdRef.current !== event.pointerId) {
+        return;
+      }
+
+      const point = getPointerPoint(event);
+      const computed = computeJoystick(center, point, radius);
+      const allowPendingEndCancellation =
+        event.pointerType !== "mouse" || event.buttons !== 0;
+      const magnitude = Math.hypot(
+        computed.normalized.x,
+        computed.normalized.y,
+      );
+
+      if (magnitude < JOYSTICK_DEADZONE) {
+        deadzoneStreakRef.current += 1;
+        if (deadzoneStreakRef.current < DEADZONE_STREAK_THRESHOLD) {
+          return;
+        }
+
+        const zero = { x: 0, y: 0 };
+        applyNormalizedInput(zero, zero, allowPendingEndCancellation);
+        return;
+      }
+
+      deadzoneStreakRef.current = 0;
+
+      applyNormalizedInput(
+        computed.normalized,
+        computed.knobOffset,
+        allowPendingEndCancellation,
+      );
+    },
+    [
+      applyNormalizedInput,
+      isMoving,
+      center.x,
+      center.y,
+      radius,
+    ],
   );
 
   const handleEnd = useCallback(
     (e: JoystickPointerEvent) => {
-      if (activePointerIdRef.current !== e.pointerId) return;
+      if (activePointerIdRef.current !== e.pointerId) {
+        return;
+      }
 
-      reset();
+      if (e.type === "pointercancel" || e.type === "lostpointercapture") {
+        schedulePointerEnd(
+          e.pointerId,
+          `element-${e.type}`,
+          DIRECT_END_CONFIRM_MS,
+        );
+        return;
+      }
+
+      if (e.type !== "pointerup") {
+        return;
+      }
+
+      schedulePointerEnd(e.pointerId, "element-pointerup", DIRECT_END_CONFIRM_MS);
     },
-    [reset],
+    [schedulePointerEnd],
   );
+
+  const handleWindowPointerEnd = useCallback(
+    (event: PointerEvent) => {
+      if (activePointerIdRef.current !== event.pointerId) {
+        return;
+      }
+
+      if (event.type === "pointercancel") {
+        schedulePointerEnd(
+          event.pointerId,
+          "window-pointercancel",
+          DIRECT_END_CONFIRM_MS,
+        );
+        return;
+      }
+
+      if (event.type !== "pointerup") {
+        return;
+      }
+
+      schedulePointerEnd(
+        event.pointerId,
+        "window-pointerup",
+        DIRECT_END_CONFIRM_MS,
+      );
+    },
+    [schedulePointerEnd],
+  );
+
+  const handleWindowMouseUp = useCallback(() => {
+    if (activePointerTypeRef.current !== "mouse") {
+      return;
+    }
+
+    const activePointerId = activePointerIdRef.current;
+    if (activePointerId === null) {
+      return;
+    }
+
+    schedulePointerEnd(activePointerId, "window-mouseup", DIRECT_END_CONFIRM_MS);
+  }, [schedulePointerEnd]);
+
+  const handleDocumentMouseUp = useCallback(() => {
+    if (activePointerTypeRef.current !== "mouse") {
+      return;
+    }
+
+    const activePointerId = activePointerIdRef.current;
+    if (activePointerId === null) {
+      return;
+    }
+
+    schedulePointerEnd(
+      activePointerId,
+      "document-mouseup",
+      DIRECT_END_CONFIRM_MS,
+    );
+  }, [schedulePointerEnd]);
 
   useEffect(() => {
     const handleWindowBlur = () => {
-      reset();
+      if (activePointerTypeRef.current !== "mouse") {
+        return;
+      }
+
+      const activePointerId = activePointerIdRef.current;
+      if (activePointerId === null) {
+        return;
+      }
+
+      // blur で pointerup を取り逃した場合に備えて，短い遅延で終了を予約する
+      schedulePointerEnd(activePointerId, "window-blur", POINTER_END_CONFIRM_MS);
     };
 
     const handleVisibilityChange = () => {
@@ -110,7 +359,33 @@ export const useJoystickState = ({
       window.removeEventListener("blur", handleWindowBlur);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [reset]);
+  }, [reset, schedulePointerEnd]);
+
+  useEffect(() => {
+    if (!isMoving) {
+      return;
+    }
+
+    window.addEventListener("pointermove", handleWindowPointerMove, true);
+    window.addEventListener("pointerup", handleWindowPointerEnd, true);
+    window.addEventListener("pointercancel", handleWindowPointerEnd, true);
+    window.addEventListener("mouseup", handleWindowMouseUp, true);
+    document.addEventListener("mouseup", handleDocumentMouseUp, true);
+
+    return () => {
+      window.removeEventListener("pointermove", handleWindowPointerMove, true);
+      window.removeEventListener("pointerup", handleWindowPointerEnd, true);
+      window.removeEventListener("pointercancel", handleWindowPointerEnd, true);
+      window.removeEventListener("mouseup", handleWindowMouseUp, true);
+      document.removeEventListener("mouseup", handleDocumentMouseUp, true);
+    };
+  }, [
+    handleDocumentMouseUp,
+    handleWindowMouseUp,
+    handleWindowPointerEnd,
+    handleWindowPointerMove,
+    isMoving,
+  ]);
 
   return {
     isMoving,

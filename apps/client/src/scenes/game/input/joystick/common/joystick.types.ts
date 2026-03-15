@@ -18,6 +18,7 @@ export type JoystickPointerEvent = React.PointerEvent<HTMLDivElement>;
 /** useJoystickState に渡す設定型 */
 export type UseJoystickStateProps = {
   maxDist?: number;
+  onNormalizedInput?: (normalized: NormalizedInput) => void;
 };
 
 /** useJoystickState が返すUI向けの状態とハンドラ型 */
