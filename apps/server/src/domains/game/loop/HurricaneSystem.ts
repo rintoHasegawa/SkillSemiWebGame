@@ -20,6 +20,11 @@ type HurricaneState = {
   rotationRad: number;
 };
 
+type MapGridSize = {
+  gridCols: number;
+  gridRows: number;
+};
+
 type HurricaneSyncSnapshot = {
   x: number;
   y: number;
@@ -68,6 +73,7 @@ const isSameHurricaneSyncSnapshot = (
 
 /** ハリケーン状態の生成更新と被弾判定を管理する */
 export class HurricaneSystem {
+  private readonly mapSize: MapGridSize;
   private hasSpawned = false;
   private hurricanes: HurricaneState[] = [];
   private readonly lastHitAtMsByPlayerId = new Map<string, number>();
@@ -75,6 +81,10 @@ export class HurricaneSystem {
     string,
     HurricaneSyncSnapshot
   >();
+
+  constructor(mapSize: MapGridSize) {
+    this.mapSize = mapSize;
+  }
 
   /** 残り時間しきい値到達時にハリケーンを一度だけ生成する */
   public ensureSpawned(elapsedMs: number): void {
@@ -101,8 +111,8 @@ export class HurricaneSystem {
       return;
     }
 
-    const maxX = config.GAME_CONFIG.GRID_COLS;
-    const maxY = config.GAME_CONFIG.GRID_ROWS;
+    const maxX = this.mapSize.gridCols;
+    const maxY = this.mapSize.gridRows;
 
     this.hurricanes.forEach((hurricane) => {
       hurricane.x += hurricane.vx * deltaSec;
@@ -210,8 +220,8 @@ export class HurricaneSystem {
   /** ハリケーン初期状態を生成する */
   private createHurricane(index: number): HurricaneState {
     const radius = config.GAME_CONFIG.HURRICANE_DIAMETER_GRID / 2;
-    const x = this.randomInRange(radius, config.GAME_CONFIG.GRID_COLS - radius);
-    const y = this.randomInRange(radius, config.GAME_CONFIG.GRID_ROWS - radius);
+    const x = this.randomInRange(radius, this.mapSize.gridCols - radius);
+    const y = this.randomInRange(radius, this.mapSize.gridRows - radius);
     const directionRad = this.randomInRange(0, Math.PI * 2);
     const speed = config.GAME_CONFIG.HURRICANE_MOVE_SPEED;
 

@@ -107,6 +107,10 @@ export type GameStartPayload = {
   serverNow: number;
   /** 今回のゲームで採用するフィールドサイズ種別 */
   fieldSizePreset: FieldSizePreset;
+  /** 今回のゲームで採用するマップ横幅（グリッド単位） */
+  gridCols: number;
+  /** 今回のゲームで採用するマップ縦幅（グリッド単位） */
+  gridRows: number;
 };
 
 /** start-game イベントで受信するゲーム開始要求 */

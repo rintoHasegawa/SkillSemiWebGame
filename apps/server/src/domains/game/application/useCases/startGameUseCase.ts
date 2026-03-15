@@ -18,7 +18,7 @@ import { createBotBombActionHandler } from "../services/bot/index.js";
 
 type StartGameUseCaseParams = {
   roomId: string;
-  fieldSizePreset: GameFieldConfig["fieldSizePreset"];
+  fieldConfig: GameFieldConfig;
   playerIds: string[];
   playerNamesById: Record<string, string>;
   gameSession: StartGamePort;
@@ -58,7 +58,7 @@ const publishTickUpdates = ({
 /** ゲームセッション開始とティック通知，終了通知を実行する */
 export const startGameUseCase = ({
   roomId,
-  fieldSizePreset,
+  fieldConfig,
   playerIds,
   playerNamesById,
   gameSession,
@@ -83,7 +83,7 @@ export const startGameUseCase = ({
     playerIds,
     playerNamesById,
     {
-      fieldSizePreset,
+      ...fieldConfig,
     },
     {
       onTick: (tickData) => {
@@ -111,10 +111,12 @@ export const startGameUseCase = ({
   );
 
   const startTime = gameSession.getRoomStartTime() || Date.now();
-  const fieldConfig = gameSession.getRoomFieldConfig();
+  const sessionFieldConfig = gameSession.getRoomFieldConfig() ?? fieldConfig;
   output.publishGameStartToRoom(roomId, {
     startTime,
     serverNow: Date.now(),
-    fieldSizePreset: fieldConfig?.fieldSizePreset ?? fieldSizePreset,
+    fieldSizePreset: sessionFieldConfig.fieldSizePreset,
+    gridCols: sessionFieldConfig.gridCols,
+    gridRows: sessionFieldConfig.gridRows,
   });
 };

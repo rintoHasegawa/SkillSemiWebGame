@@ -24,6 +24,8 @@ import type { GameSessionCallbacks } from "../services/GameRoomSession";
 /** ゲーム開始時に固定するフィールド設定情報 */
 export type GameFieldConfig = {
   fieldSizePreset: FieldSizePreset;
+  gridCols: number;
+  gridRows: number;
 };
 
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */

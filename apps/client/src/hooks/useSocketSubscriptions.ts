@@ -5,8 +5,12 @@
  */
 import { useEffect } from "react";
 import { socketManager } from "@client/network/SocketManager";
+import {
+  applyRuntimeMapSizeFromGameStart,
+  setRuntimeMapSizeByPreset,
+} from "@client/config";
 import { domain } from "@repo/shared";
-import type { GameResultPayload } from "@repo/shared";
+import type { GameResultPayload, GameStartPayload } from "@repo/shared";
 import type { AppFlowAction } from "./types/appFlowState";
 
 type UseSocketSubscriptionsParams = {
@@ -18,7 +22,7 @@ type UseSocketSubscriptionsParams = {
 type AppSocketHandlers = {
   handleConnect: (id: string) => void;
   handleRoomUpdate: (updatedRoom: domain.room.Room) => void;
-  handleGameStart: () => void;
+  handleGameStart: (payload: GameStartPayload) => void;
   handleGameResult: (payload: GameResultPayload) => void;
 };
 
@@ -76,6 +80,7 @@ export const useSocketSubscriptions = ({
 
       handleRoomUpdate: (updatedRoom: domain.room.Room) => {
         completeJoinRequest();
+        setRuntimeMapSizeByPreset(updatedRoom.fieldSizePreset);
         if (
           scenePhase === domain.app.ScenePhase.PLAYING ||
           scenePhase === domain.app.ScenePhase.RESULT
@@ -86,7 +91,8 @@ export const useSocketSubscriptions = ({
         }
       },
 
-      handleGameStart: () => {
+      handleGameStart: (payload) => {
+        applyRuntimeMapSizeFromGameStart(payload);
         dispatchAppFlow({ type: "setPlaying" });
       },
 

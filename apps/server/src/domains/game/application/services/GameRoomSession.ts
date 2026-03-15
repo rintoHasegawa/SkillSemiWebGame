@@ -50,7 +50,10 @@ export class GameRoomSession {
     fieldConfig: GameFieldConfig,
   ) {
     this.players = new Map();
-    this.mapStore = new MapStore();
+    this.mapStore = new MapStore({
+      gridCols: fieldConfig.gridCols,
+      gridRows: fieldConfig.gridRows,
+    });
     this.bombStateStore = new BombStateStore();
     this.fieldConfig = fieldConfig;
 
@@ -62,7 +65,15 @@ export class GameRoomSession {
 
       // 算出したチームIDを指定してプレイヤーを生成する
       const playerName = playerNamesById[playerId] ?? playerId;
-      const player = createSpawnedPlayer(playerId, playerName, assignedTeamId);
+      const player = createSpawnedPlayer(
+        playerId,
+        playerName,
+        assignedTeamId,
+        {
+          gridCols: fieldConfig.gridCols,
+          gridRows: fieldConfig.gridRows,
+        },
+      );
 
       this.players.set(playerId, player);
     });
@@ -99,6 +110,8 @@ export class GameRoomSession {
     this.gameLoop = new GameLoop({
       roomId: this.roomId,
       tickRate,
+      gridCols: this.fieldConfig.gridCols,
+      gridRows: this.fieldConfig.gridRows,
       players: this.players,
       mapStore: this.mapStore,
       activeBombRegistry: this.bombStateStore.activeBombRegistry,

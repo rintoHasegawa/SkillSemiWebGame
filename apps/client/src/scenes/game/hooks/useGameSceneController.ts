@@ -19,9 +19,12 @@ import {
 const DEFAULT_TEAM_PAINT_RATES = new Array<number>(
   config.GAME_CONFIG.TEAM_COUNT,
 ).fill(0);
-const DEFAULT_MINIMAP_TEAM_IDS = new Array<number>(
-  config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS,
-).fill(-1);
+
+const createDefaultMiniMapTeamIds = (): number[] => {
+  return new Array<number>(
+    config.GAME_CONFIG.GRID_COLS * config.GAME_CONFIG.GRID_ROWS,
+  ).fill(-1);
+};
 
 type SceneControllerState = {
   timeLeft: string;
@@ -38,14 +41,16 @@ type SceneControllerAction =
   | { type: "syncMiniMap"; payload: MiniMapState }
   | { type: "reset" };
 
-const INITIAL_SCENE_CONTROLLER_STATE: SceneControllerState = {
-  timeLeft: getInitialTimeDisplay(),
-  startCountdownText: null,
-  isInputEnabled: false,
-  teamPaintRates: DEFAULT_TEAM_PAINT_RATES,
-  miniMapTeamIds: DEFAULT_MINIMAP_TEAM_IDS,
-  localBombHitCount: 0,
-  localPlayerPosition: null,
+const createInitialSceneControllerState = (): SceneControllerState => {
+  return {
+    timeLeft: getInitialTimeDisplay(),
+    startCountdownText: null,
+    isInputEnabled: false,
+    teamPaintRates: DEFAULT_TEAM_PAINT_RATES,
+    miniMapTeamIds: createDefaultMiniMapTeamIds(),
+    localBombHitCount: 0,
+    localPlayerPosition: null,
+  };
 };
 
 const sceneControllerReducer = (
@@ -73,7 +78,7 @@ const sceneControllerReducer = (
       };
     }
     case "reset": {
-      return INITIAL_SCENE_CONTROLLER_STATE;
+      return createInitialSceneControllerState();
     }
     default: {
       return state;
@@ -87,7 +92,7 @@ export const useGameSceneController = (myId: string | null) => {
   const gameManagerRef = useRef<GameManager | null>(null);
   const [state, dispatch] = useReducer(
     sceneControllerReducer,
-    INITIAL_SCENE_CONTROLLER_STATE,
+    createInitialSceneControllerState(),
   );
 
   useEffect(() => {

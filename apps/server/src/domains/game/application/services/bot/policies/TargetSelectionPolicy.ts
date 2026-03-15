@@ -5,6 +5,11 @@
 import { config } from "@server/config";
 import type { BotTarget } from "../types/BotTypes.js";
 
+type MapGridSize = {
+  gridCols: number;
+  gridRows: number;
+};
+
 const UNPAINTED_TEAM_ID = -1;
 
 const clamp = (value: number, min: number, max: number): number => {
@@ -29,9 +34,10 @@ export const chooseNextTarget = (
   col: number,
   row: number,
   gridColors: number[],
+  size: MapGridSize,
 ): BotTarget => {
   const { UNPAINTED_PRIORITY_STRENGTH } = config.BOT_AI_CONFIG;
-  const { GRID_COLS, GRID_ROWS } = config.GAME_CONFIG;
+  const { gridCols, gridRows } = size;
   const candidates = [
     { col: col + 1, row },
     { col: col - 1, row },
@@ -40,9 +46,9 @@ export const chooseNextTarget = (
   ].filter((candidate) => {
     return (
       candidate.col >= 0 &&
-      candidate.col < GRID_COLS &&
+      candidate.col < gridCols &&
       candidate.row >= 0 &&
-      candidate.row < GRID_ROWS
+      candidate.row < gridRows
     );
   });
 
@@ -52,7 +58,7 @@ export const chooseNextTarget = (
 
   const unpaintedCandidates = candidates.filter((candidate) => {
     return (
-      getCellTeamId(gridColors, candidate.col, candidate.row, GRID_COLS) ===
+      getCellTeamId(gridColors, candidate.col, candidate.row, gridCols) ===
       UNPAINTED_TEAM_ID
     );
   });

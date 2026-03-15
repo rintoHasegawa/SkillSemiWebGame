@@ -5,6 +5,7 @@
 import { type StartGameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { FieldSizePreset } from "@repo/shared";
 import { config } from "@server/config";
+import { config as sharedConfig } from "@repo/shared";
 import type { StartGameCoordinatorDeps } from "./coordinatorDeps";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import {
@@ -75,6 +76,9 @@ export const startGameCoordinator = ({
     requestedFieldSizePreset
     ?? updatedRoom.fieldSizePreset
     ?? config.GAME_CONFIG.DEFAULT_FIELD_PRESET;
+  const resolvedGridSize = sharedConfig.resolveFieldGridSize(
+    resolvedFieldSizePreset,
+  );
   updatedRoom.fieldSizePreset = resolvedFieldSizePreset;
 
   logEvent(logScopes.GAME_USE_CASE, {
@@ -111,7 +115,11 @@ export const startGameCoordinator = ({
 
   startGameUseCase({
     roomId: updatedRoom.roomId,
-    fieldSizePreset: resolvedFieldSizePreset,
+    fieldConfig: {
+      fieldSizePreset: resolvedFieldSizePreset,
+      gridCols: resolvedGridSize.cols,
+      gridRows: resolvedGridSize.rows,
+    },
     playerIds: sessionPlayerIds,
     playerNamesById,
     gameSession: gameManager,

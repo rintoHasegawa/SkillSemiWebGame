@@ -4,6 +4,11 @@
  */
 import { config } from "@server/config";
 
+type MapGridSize = {
+  gridCols: number;
+  gridRows: number;
+};
+
 const clamp = (value: number, min: number, max: number): number => {
   return Math.max(min, Math.min(max, value));
 };
@@ -14,6 +19,7 @@ export const moveTowardsTarget = (
   y: number,
   targetCol: number,
   targetRow: number,
+  size: MapGridSize,
 ): { nextX: number; nextY: number } => {
   const targetX = targetCol + 0.5;
   const targetY = targetRow + 0.5;
@@ -35,7 +41,7 @@ export const moveTowardsTarget = (
   const nextY = y + diffY * ratio;
 
   return {
-    nextX: clamp(nextX, 0, config.GAME_CONFIG.GRID_COLS - 0.001),
-    nextY: clamp(nextY, 0, config.GAME_CONFIG.GRID_ROWS - 0.001),
+    nextX: clamp(nextX, 0, size.gridCols - 0.001),
+    nextY: clamp(nextY, 0, size.gridRows - 0.001),
   };
 };

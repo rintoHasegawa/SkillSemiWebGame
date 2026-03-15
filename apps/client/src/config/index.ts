@@ -1,4 +1,40 @@
 import { config as sharedConfig } from "@repo/shared";
+import type { FieldSizePreset, GameStartPayload } from "@repo/shared";
+
+const runtimeMapSize = {
+  gridCols: sharedConfig.GAME_CONFIG.GRID_COLS,
+  gridRows: sharedConfig.GAME_CONFIG.GRID_ROWS,
+};
+
+/** フィールドサイズ種別からクライアント実行中のマップサイズを更新する */
+export const setRuntimeMapSizeByPreset = (preset: FieldSizePreset): void => {
+  const resolved = sharedConfig.resolveFieldGridSize(preset);
+  runtimeMapSize.gridCols = resolved.cols;
+  runtimeMapSize.gridRows = resolved.rows;
+};
+
+/** GAME_STARTペイロードを優先してクライアント実行中のマップサイズを更新する */
+export const applyRuntimeMapSizeFromGameStart = (
+  payload: Pick<GameStartPayload, "fieldSizePreset" | "gridCols" | "gridRows">,
+): void => {
+  if (
+    Number.isFinite(payload.gridCols)
+    && Number.isFinite(payload.gridRows)
+    && payload.gridCols > 0
+    && payload.gridRows > 0
+  ) {
+    runtimeMapSize.gridCols = payload.gridCols;
+    runtimeMapSize.gridRows = payload.gridRows;
+    return;
+  }
+
+  setRuntimeMapSizeByPreset(payload.fieldSizePreset);
+};
+
+/** クライアント実行中マップサイズを既定値へ戻す */
+export const resetRuntimeMapSizeToDefault = (): void => {
+  setRuntimeMapSizeByPreset(sharedConfig.GAME_CONFIG.DEFAULT_FIELD_PRESET);
+};
 
 const sharedBombRenderScale =
   (sharedConfig.GAME_CONFIG as { BOMB_RENDER_SCALE?: number })
@@ -66,6 +102,12 @@ const CLIENT_GAME_CONFIG = {
 const GAME_CONFIG = {
   ...sharedConfig.GAME_CONFIG,
   ...CLIENT_GAME_CONFIG,
+  get GRID_COLS(): number {
+    return runtimeMapSize.gridCols;
+  },
+  get GRID_ROWS(): number {
+    return runtimeMapSize.gridRows;
+  },
   get MAP_WIDTH_PX(): number {
     return this.GRID_COLS * this.GRID_CELL_SIZE;
   },
