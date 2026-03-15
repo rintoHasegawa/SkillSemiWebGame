@@ -85,7 +85,7 @@ export class GameSessionLifecycleService {
       return;
     }
 
-    const tickRate = config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS;
+    const tickRate = config.GAME_CONFIG.NETWORK_SYNC.PLAYER_POSITION_UPDATE_MS;
     const session = new GameRoomSession(
       this.roomId,
       playerIds,

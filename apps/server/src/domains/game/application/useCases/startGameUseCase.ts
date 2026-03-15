@@ -25,6 +25,34 @@ type StartGameUseCaseParams = {
   output: StartGameOutputPort;
 };
 
+type TickUpdatePublishParams = {
+  roomId: string;
+  output: StartGameOutputPort;
+  tickData: Parameters<StartGamePort["startRoomSession"]>[2] extends {
+    onTick: (data: infer TTickData) => void;
+  }
+    ? TTickData
+    : never;
+};
+
+const publishTickUpdates = ({
+  roomId,
+  output,
+  tickData,
+}: TickUpdatePublishParams): void => {
+  if (tickData.playerUpdates.length > 0) {
+    output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
+  }
+
+  if (tickData.cellUpdates.length > 0) {
+    output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
+  }
+
+  if (tickData.hurricaneUpdates.length > 0) {
+    output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
+  }
+};
+
 /** ゲームセッション開始とティック通知，終了通知を実行する */
 export const startGameUseCase = ({
   roomId,
@@ -50,17 +78,7 @@ export const startGameUseCase = ({
 
   gameSession.startRoomSession(playerIds, playerNamesById, {
     onTick: (tickData) => {
-      if (tickData.playerUpdates.length > 0) {
-        output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
-      }
-
-      if (tickData.cellUpdates.length > 0) {
-        output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
-      }
-
-      if (tickData.hurricaneUpdates.length > 0) {
-        output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
-      }
+      publishTickUpdates({ roomId, output, tickData });
     },
     onGameEnd: (resultPayload) => {
       logEvent(logScopes.GAME_USE_CASE, {

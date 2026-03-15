@@ -6,3 +6,9 @@
 
 /** プレイヤー契約関連の型を再公開する */
 export type { PlayerData, MovePayload } from "./player.type";
+/** MOVE ペイロード送信の正規化関数を再公開する */
+export {
+	DEFAULT_MOVE_QUANTIZE_SCALE,
+	quantizeMovePayload,
+	isSameMovePayload,
+} from "./moveSync";

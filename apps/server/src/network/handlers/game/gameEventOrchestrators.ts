@@ -86,6 +86,7 @@ export const handleMoveEvent = (
   deps: GameEventOrchestratorDeps,
   move: domain.game.player.MovePayload,
 ): void => {
+  const normalizedMove = domain.game.player.quantizeMovePayload(move);
   const resolved = runWithRuntimeByPlayerId(
     deps.roomManager,
     deps.runtimeRegistry,
@@ -94,7 +95,7 @@ export const handleMoveEvent = (
       movePlayerUseCase({
         gameManager,
         playerId: deps.socketId,
-        move,
+        move: normalizedMove,
       });
     },
   );

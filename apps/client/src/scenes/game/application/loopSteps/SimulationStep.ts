@@ -63,7 +63,10 @@ export class SimulationStep implements LoopStep {
       me.tick();
 
       const now = this.nowMsProvider();
-      if (now - this.lastPositionSentTime >= config.GAME_CONFIG.PLAYER_POSITION_UPDATE_MS) {
+      if (
+        now - this.lastPositionSentTime
+        >= config.GAME_CONFIG.NETWORK_SYNC.PLAYER_POSITION_UPDATE_MS
+      ) {
         const position = me.getPosition();
         this.moveSender.sendMove(position.x, position.y);
         this.lastPositionSentTime = now;
@@ -71,7 +74,7 @@ export class SimulationStep implements LoopStep {
     } else if (this.wasMoving) {
       me.tick();
       const position = me.getPosition();
-      this.moveSender.sendMove(position.x, position.y);
+      this.moveSender.sendMove(position.x, position.y, { force: true });
     } else {
       me.tick();
     }

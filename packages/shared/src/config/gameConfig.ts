@@ -4,14 +4,21 @@
  * クライアントとサーバーで参照する定数群を提供する
  */
 /** ゲーム全体で利用する共有設定値 */
+const NETWORK_SYNC_CONFIG = {
+  PLAYER_POSITION_UPDATE_MS: 50,
+  POSITION_QUANTIZE_SCALE: 100,
+} as const;
+
+/** ゲーム全体で利用する共有設定値 */
 export const GAME_CONFIG = {
   // ゲーム進行設定（クライアント/サーバー契約）
   GAME_DURATION_SEC: 180, // 1ゲームの制限時間（秒）
   GAME_START_DELAY_MS: 5000, // 開始通知から実際にゲーム進行を開始するまでの待機時間（ms）
 
   // ネットワーク同期設定（クライアント/サーバー契約）
-  PLAYER_POSITION_UPDATE_MS: 50, // 座標送信間隔（20Hz）
-  POSITION_QUANTIZE_SCALE: 100, // 送信座標の量子化スケール（100なら小数第2位まで保持）
+  NETWORK_SYNC: NETWORK_SYNC_CONFIG,
+  PLAYER_POSITION_UPDATE_MS: NETWORK_SYNC_CONFIG.PLAYER_POSITION_UPDATE_MS, // 後方互換のため維持
+  POSITION_QUANTIZE_SCALE: NETWORK_SYNC_CONFIG.POSITION_QUANTIZE_SCALE, // 後方互換のため維持
 
   // グリッド（マス）設定（クライアント/サーバー契約）
   GRID_COLS: 40, // 横のマス数（グリッド単位）

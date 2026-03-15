@@ -19,12 +19,14 @@ export type RoomOutputAdapter = RoomOutputPort;
 export const createRoomOutputAdapter = (
   common: CommonHandlerContext
 ): RoomOutputAdapter => {
+  const { reliable } = common;
+
   return {
     publishRoomUpdateToRoom: (roomId: RoomId, room: RoomUpdatePayload) => {
-      common.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
+      reliable.emitToRoom(roomId, protocol.SocketEvents.ROOM_UPDATE, room);
     },
     publishJoinRejectedToSocket: (payload: domain.room.JoinRoomRejectedPayload) => {
-      common.emitToSocket(protocol.SocketEvents.ROOM_JOIN_REJECTED, payload);
+      reliable.emitToSocket(protocol.SocketEvents.ROOM_JOIN_REJECTED, payload);
     },
   };
 };
