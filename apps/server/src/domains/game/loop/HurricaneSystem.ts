@@ -19,11 +19,52 @@ type HurricaneState = {
   rotationRad: number;
 };
 
+type HurricaneSyncSnapshot = {
+  x: number;
+  y: number;
+  radius: number;
+  rotationRad: number;
+};
+
+const HURRICANE_POSITION_SYNC_SCALE = 10;
+const HURRICANE_ROTATION_SYNC_SCALE = 4;
+
+const quantizeValue = (value: number, scale: number): number => {
+  return Math.round(value * scale) / scale;
+};
+
+const toHurricaneSyncSnapshot = (
+  state: HurricaneState,
+): HurricaneSyncSnapshot => {
+  return {
+    x: quantizeValue(state.x, HURRICANE_POSITION_SYNC_SCALE),
+    y: quantizeValue(state.y, HURRICANE_POSITION_SYNC_SCALE),
+    radius: quantizeValue(state.radius, HURRICANE_POSITION_SYNC_SCALE),
+    rotationRad: quantizeValue(state.rotationRad, HURRICANE_ROTATION_SYNC_SCALE),
+  };
+};
+
+const isSameHurricaneSyncSnapshot = (
+  left: HurricaneSyncSnapshot,
+  right: HurricaneSyncSnapshot,
+): boolean => {
+  return (
+    left.x === right.x
+    && left.y === right.y
+    && left.radius === right.radius
+    && left.rotationRad === right.rotationRad
+  );
+};
+
 /** ハリケーン状態の生成更新と被弾判定を管理する */
 export class HurricaneSystem {
   private hasSpawned = false;
   private hurricanes: HurricaneState[] = [];
   private readonly lastHitAtMsByPlayerId = new Map<string, number>();
+  private readonly lastSentSnapshotByHurricaneId = new Map<
+    string,
+    HurricaneSyncSnapshot
+  >();
 
   /** 残り時間しきい値到達時にハリケーンを一度だけ生成する */
   public ensureSpawned(elapsedMs: number): void {
@@ -79,13 +120,27 @@ export class HurricaneSystem {
 
   /** 同期配信用のハリケーン状態配列を返す */
   public getUpdatePayload(): HurricaneStatePayload[] {
-    return this.hurricanes.map((hurricane) => ({
-      id: hurricane.id,
-      x: hurricane.x,
-      y: hurricane.y,
-      radius: hurricane.radius,
-      rotationRad: hurricane.rotationRad,
-    }));
+    const changedPayloads: HurricaneStatePayload[] = [];
+
+    this.hurricanes.forEach((hurricane) => {
+      const nextSnapshot = toHurricaneSyncSnapshot(hurricane);
+      const lastSnapshot = this.lastSentSnapshotByHurricaneId.get(hurricane.id);
+
+      if (lastSnapshot && isSameHurricaneSyncSnapshot(lastSnapshot, nextSnapshot)) {
+        return;
+      }
+
+      this.lastSentSnapshotByHurricaneId.set(hurricane.id, nextSnapshot);
+      changedPayloads.push({
+        id: hurricane.id,
+        x: nextSnapshot.x,
+        y: nextSnapshot.y,
+        radius: nextSnapshot.radius,
+        rotationRad: nextSnapshot.rotationRad,
+      });
+    });
+
+    return changedPayloads;
   }
 
   /** クールダウン付きで被弾プレイヤーID配列を返す */
@@ -141,6 +196,7 @@ export class HurricaneSystem {
     this.hasSpawned = false;
     this.hurricanes = [];
     this.lastHitAtMsByPlayerId.clear();
+    this.lastSentSnapshotByHurricaneId.clear();
   }
 
   /** ハリケーン初期状態を生成する */

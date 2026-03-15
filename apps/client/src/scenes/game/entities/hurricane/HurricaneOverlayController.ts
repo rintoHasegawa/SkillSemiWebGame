@@ -28,11 +28,7 @@ export class HurricaneOverlayController {
 
   /** ハリケーン状態を描画へ同期する */
   public applyUpdates(states: UpdateHurricanesPayload): void {
-    const activeIds = new Set<string>();
-
     states.forEach((state) => {
-      activeIds.add(state.id);
-
       let target = this.displayById.get(state.id);
       if (!target) {
         const created = this.createDisplay();
@@ -49,16 +45,6 @@ export class HurricaneOverlayController {
       target.container.x = state.x * config.GAME_CONFIG.GRID_CELL_SIZE;
       target.container.y = state.y * config.GAME_CONFIG.GRID_CELL_SIZE;
       target.container.rotation = state.rotationRad;
-    });
-
-    this.displayById.forEach((display, id) => {
-      if (activeIds.has(id)) {
-        return;
-      }
-
-      this.layer.removeChild(display.container);
-      display.container.destroy({ children: true });
-      this.displayById.delete(id);
     });
   }
 

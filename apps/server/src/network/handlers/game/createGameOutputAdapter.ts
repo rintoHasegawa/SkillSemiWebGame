@@ -24,7 +24,10 @@ import type {
   GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { isBotPlayerId } from "@server/domains/game/application/services/bot/index.js";
-import { sanitizeUpdatePlayersPayload } from "@server/network/adapters/gamePayloadSanitizers";
+import {
+  filterUnchangedUpdatePlayersPayload,
+  sanitizeUpdatePlayersPayload,
+} from "@server/network/adapters/gamePayloadSanitizers";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
@@ -49,6 +52,27 @@ export const createGameOutputAdapter = (
   common: CommonHandlerContext,
 ): GameOutputAdapter => {
   const { reliable, realtime } = common;
+  const lastSentPlayerPositionsByRoomId = new Map<
+    RoomId,
+    Map<string, { x: number; y: number }>
+  >();
+
+  const getLastSentPlayerPositions = (
+    roomId: RoomId,
+  ): Map<string, { x: number; y: number }> => {
+    const existing = lastSentPlayerPositionsByRoomId.get(roomId);
+    if (existing) {
+      return existing;
+    }
+
+    const created = new Map<string, { x: number; y: number }>();
+    lastSentPlayerPositionsByRoomId.set(roomId, created);
+    return created;
+  };
+
+  const clearRoomRealtimeCaches = (roomId: RoomId): void => {
+    lastSentPlayerPositionsByRoomId.delete(roomId);
+  };
 
   return {
     publishPongToSocket: (payload: PongPayload) => {
@@ -59,10 +83,19 @@ export const createGameOutputAdapter = (
       players: UpdatePlayersPayload,
     ) => {
       const sanitizedPlayers = sanitizeUpdatePlayersPayload(players);
+      const changedPlayers = filterUnchangedUpdatePlayersPayload(
+        sanitizedPlayers,
+        getLastSentPlayerPositions(roomId),
+      );
+
+      if (changedPlayers.length === 0) {
+        return;
+      }
+
       realtime.emitToRoom(
         roomId,
         protocol.SocketEvents.UPDATE_PLAYERS,
-        sanitizedPlayers,
+        changedPlayers,
       );
     },
     publishMapCellUpdatesToRoom: (
@@ -87,12 +120,14 @@ export const createGameOutputAdapter = (
       );
     },
     publishGameEndToRoom: (roomId: RoomId) => {
+      clearRoomRealtimeCaches(roomId);
       reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
     },
     publishGameResultToRoom: (roomId: RoomId, payload: GameResultPayload) => {
       reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_RESULT, payload);
     },
     publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => {
+      clearRoomRealtimeCaches(roomId);
       reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
     },
     publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => {
