@@ -104,8 +104,12 @@ export type GameStartPayload = {
 };
 
 /** start-game イベントで受信するゲーム開始要求 */
+export type FieldSizePreset = "SMALL" | "MEDIUM" | "LARGE" | "XLARGE";
+
+/** start-game イベントで受信するゲーム開始要求 */
 export type StartGameRequestPayload = {
   targetPlayerCount?: number;
+  fieldSizePreset?: FieldSizePreset;
 };
 
 /** move イベントで送受信する移動入力情報 */

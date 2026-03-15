@@ -4,7 +4,7 @@
  * 受信ハンドラからユースケース実行責務を分離する
  * ランタイム未解決時はNetworkスコープでignored_missing_roomを記録する
  */
-import { contracts as protocol, domain, type BombHitReportPayload, type PingPayload, type PlaceBombPayload } from "@repo/shared";
+import { contracts as protocol, domain, type BombHitReportPayload, type PingPayload, type PlaceBombPayload, type StartGameRequestPayload } from "@repo/shared";
 import { readyForGameCoordinator } from "@server/application/coordinators/readyForGameCoordinator";
 import { startGameCoordinator } from "@server/application/coordinators/startGameCoordinator";
 import { movePlayerUseCase } from "@server/domains/game/application/useCases/movePlayerUseCase";
@@ -20,9 +20,7 @@ import type {
 } from "@server/network/types/connectionPorts";
 
 /** START_GAMEイベントの入力ペイロード型 */
-export type StartGamePayload = {
-  targetPlayerCount?: number;
-};
+export type StartGamePayload = StartGameRequestPayload;
 
 /** PINGイベントの入力ペイロード型 */
 export type PingEventPayload = Parameters<typeof handlePingEvent>[1];
@@ -63,6 +61,7 @@ export const handleStartGameEvent = (
   startGameCoordinator({
     ownerId: deps.socketId,
     requestedPlayerCount: payload.targetPlayerCount,
+    requestedFieldSizePreset: payload.fieldSizePreset,
     roomManager: deps.roomManager,
     runtimeRegistry: deps.runtimeRegistry,
     output: deps.output,

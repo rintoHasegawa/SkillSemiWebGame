@@ -30,6 +30,7 @@ export type {
   NewPlayerPayload,
   RemovePlayerPayload,
   GameStartPayload,
+  FieldSizePreset,
   StartGameRequestPayload,
   MovePayload,
   PlaceBombPayload,

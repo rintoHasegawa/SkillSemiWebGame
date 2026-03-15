@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { domain } from "@repo/shared";
+import type { FieldSizePreset, StartGameRequestPayload } from "@repo/shared";
+import { config } from "@client/config";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 import { LobbyRuleModal } from "./components/LobbyRuleModal";
 
 type Props = {
   room: domain.room.Room | null;
   myId: string | null;
-  onStart: (targetPlayerCount: number) => void;
+  onStart: (payload: StartGameRequestPayload) => void;
   onBackToTitle: () => void;
 };
 
@@ -46,6 +48,13 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   const [selectedStartPlayerCount, setSelectedStartPlayerCount] = useState(
     minimumStartPlayerCount,
   );
+  const fieldPresetOptions = useMemo(() => {
+    return Object.keys(
+      config.GAME_CONFIG.FIELD_PRESETS,
+    ) as FieldSizePreset[];
+  }, []);
+  const [selectedFieldSizePreset, setSelectedFieldSizePreset] =
+    useState<FieldSizePreset>(config.GAME_CONFIG.DEFAULT_FIELD_PRESET);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
 
   useEffect(() => {
@@ -63,7 +72,24 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   }, [minimumStartPlayerCount, maxStartPlayerCount]);
 
   const handleStart = () => {
-    onStart(selectedStartPlayerCount);
+    onStart({
+      targetPlayerCount: selectedStartPlayerCount,
+      fieldSizePreset: selectedFieldSizePreset,
+    });
+  };
+
+  const toFieldPresetLabel = (preset: FieldSizePreset): string => {
+    const range = config.GAME_CONFIG.FIELD_PRESETS[preset].recommendedPlayers;
+    const baseLabel =
+      preset === "SMALL"
+        ? "小"
+        : preset === "MEDIUM"
+          ? "中"
+          : preset === "LARGE"
+            ? "大"
+            : "極大";
+
+    return `${baseLabel} (${range.min}-${range.max}人目安)`;
   };
 
   return (
@@ -222,6 +248,40 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     {startPlayerCountOptions.map((count) => (
                       <option key={count} value={count}>
                         {count}人
+                      </option>
+                    ))}
+                  </select>
+
+                  <label
+                    htmlFor="field-size-preset"
+                    style={{
+                      fontSize: "0.95rem",
+                      fontWeight: 700,
+                      textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
+                    }}
+                  >
+                    フィールドサイズ
+                  </label>
+                  <select
+                    id="field-size-preset"
+                    value={selectedFieldSizePreset}
+                    onChange={(event) => {
+                      setSelectedFieldSizePreset(event.target.value as FieldSizePreset);
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(255,255,255,0.4)",
+                      background: "rgba(0,0,0,0.55)",
+                      color: "white",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {fieldPresetOptions.map((preset) => (
+                      <option key={preset} value={preset}>
+                        {toFieldPresetLabel(preset)}
                       </option>
                     ))}
                   </select>

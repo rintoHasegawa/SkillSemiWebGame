@@ -11,6 +11,40 @@ const NETWORK_SYNC_CONFIG = {
   HURRICANE_ROTATION_QUANTIZE_SCALE: 4,
 } as const;
 
+/** AOI同期で利用する1セルのグリッド幅 */
+const AOI_CELL_SIZE = 3 as const;
+
+/** フィールドサイズ種別ごとのAOIセル数と推奨人数レンジ */
+const FIELD_PRESETS = {
+  SMALL: {
+    aoiCols: 8,
+    aoiRows: 8,
+    recommendedPlayers: { min: 4, max: 20 },
+  },
+  MEDIUM: {
+    aoiCols: 12,
+    aoiRows: 12,
+    recommendedPlayers: { min: 20, max: 40 },
+  },
+  LARGE: {
+    aoiCols: 15,
+    aoiRows: 15,
+    recommendedPlayers: { min: 40, max: 70 },
+  },
+  XLARGE: {
+    aoiCols: 18,
+    aoiRows: 18,
+    recommendedPlayers: { min: 70, max: 100 },
+  },
+} as const;
+
+/** 既定で利用するフィールドサイズ種別 */
+const DEFAULT_FIELD_PRESET = "MEDIUM" as const;
+
+const defaultFieldPreset = FIELD_PRESETS[DEFAULT_FIELD_PRESET];
+const defaultGridCols = defaultFieldPreset.aoiCols * AOI_CELL_SIZE;
+const defaultGridRows = defaultFieldPreset.aoiRows * AOI_CELL_SIZE;
+
 /** ゲーム全体で利用する共有設定値 */
 export const GAME_CONFIG = {
   // ゲーム進行設定（クライアント/サーバー契約）
@@ -24,9 +58,14 @@ export const GAME_CONFIG = {
   HURRICANE_POSITION_QUANTIZE_SCALE: NETWORK_SYNC_CONFIG.HURRICANE_POSITION_QUANTIZE_SCALE, // 後方互換のため維持
   HURRICANE_ROTATION_QUANTIZE_SCALE: NETWORK_SYNC_CONFIG.HURRICANE_ROTATION_QUANTIZE_SCALE, // 後方互換のため維持
 
+  // AOI設定（クライアント/サーバー契約）
+  AOI_CELL_SIZE,
+  FIELD_PRESETS,
+  DEFAULT_FIELD_PRESET,
+
   // グリッド（マス）設定（クライアント/サーバー契約）
-  GRID_COLS: 40, // 横のマス数（グリッド単位）
-  GRID_ROWS: 40, // 縦のマス数（グリッド単位）
+  GRID_COLS: defaultGridCols, // 横のマス数（グリッド単位）
+  GRID_ROWS: defaultGridRows, // 縦のマス数（グリッド単位）
 
   // プレイヤー挙動設定（内部座標はグリッド単位、契約値）
   PLAYER_RADIUS: 0.5, // プレイヤー半径（グリッド単位、目安: 0.05〜0.2）

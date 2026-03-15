@@ -3,6 +3,7 @@
  * START_GAMEイベントの調停を行い，ルーム状態更新とゲーム開始処理を橋渡しする
  */
 import { type StartGameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
+import type { FieldSizePreset } from "@repo/shared";
 import type { StartGameCoordinatorDeps } from "./coordinatorDeps";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import {
@@ -19,6 +20,7 @@ import {
 type StartGameCoordinatorParams = {
   ownerId: string;
   requestedPlayerCount?: number;
+  requestedFieldSizePreset?: FieldSizePreset;
 } & StartGameCoordinatorDeps & {
     output: StartGameOutputPort;
   };
@@ -27,6 +29,7 @@ type StartGameCoordinatorParams = {
 export const startGameCoordinator = ({
   ownerId,
   requestedPlayerCount,
+  requestedFieldSizePreset,
   roomManager,
   runtimeRegistry,
   output,
@@ -73,6 +76,7 @@ export const startGameCoordinator = ({
     roomId: updatedRoom.roomId,
     socketId: ownerId,
     totalPlayers: updatedRoom.players.length,
+    fieldSizePreset: requestedFieldSizePreset,
   });
 
   const humanPlayerIds = updatedRoom.players.map((player) => player.id);
