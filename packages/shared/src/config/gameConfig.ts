@@ -11,6 +11,7 @@ export const GAME_CONFIG = {
 
   // ネットワーク同期設定（クライアント/サーバー契約）
   PLAYER_POSITION_UPDATE_MS: 50, // 座標送信間隔（20Hz）
+  POSITION_QUANTIZE_SCALE: 100, // 送信座標の量子化スケール（100なら小数第2位まで保持）
 
   // グリッド（マス）設定（クライアント/サーバー契約）
   GRID_COLS: 40, // 横のマス数（グリッド単位）

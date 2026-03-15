@@ -58,7 +58,9 @@ export const startGameUseCase = ({
         output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
       }
 
-      output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
+      if (tickData.hurricaneUpdates.length > 0) {
+        output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
+      }
     },
     onGameEnd: (resultPayload) => {
       logEvent(logScopes.GAME_USE_CASE, {

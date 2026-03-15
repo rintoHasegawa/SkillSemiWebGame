@@ -57,7 +57,7 @@ export const createGameOutputAdapter = (
       players: UpdatePlayersPayload,
     ) => {
       const sanitizedPlayers = sanitizeUpdatePlayersPayload(players);
-      common.emitToRoom(
+      common.emitToRoomVolatile(
         roomId,
         protocol.SocketEvents.UPDATE_PLAYERS,
         sanitizedPlayers,
@@ -78,7 +78,7 @@ export const createGameOutputAdapter = (
       roomId: RoomId,
       hurricanes: UpdateHurricanesPayload,
     ) => {
-      common.emitToRoom(
+      common.emitToRoomVolatile(
         roomId,
         protocol.SocketEvents.UPDATE_HURRICANES,
         hurricanes,
