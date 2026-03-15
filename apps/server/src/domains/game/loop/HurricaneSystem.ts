@@ -75,6 +75,7 @@ const isSameHurricaneSyncSnapshot = (
 export class HurricaneSystem {
   private readonly mapSize: MapGridSize;
   private hasSpawned = false;
+  private hasInitialSyncPending = false;
   private hurricanes: HurricaneState[] = [];
   private readonly lastHitAtMsByPlayerId = new Map<string, number>();
   private readonly lastSentSnapshotByHurricaneId = new Map<
@@ -99,10 +100,33 @@ export class HurricaneSystem {
     }
 
     this.hasSpawned = true;
+    this.hasInitialSyncPending = true;
     this.hurricanes = Array.from(
       { length: config.GAME_CONFIG.HURRICANE_COUNT },
       (_, index) => this.createHurricane(index),
     );
+  }
+
+  /** 出現直後に1回だけ配信用の初期同期スナップショットを返す */
+  public consumeInitialSyncPayload(): HurricaneStatePayload[] {
+    if (!this.hasInitialSyncPending) {
+      return [];
+    }
+
+    this.hasInitialSyncPending = false;
+
+    return this.hurricanes.map((hurricane) => {
+      const snapshot = toHurricaneSyncSnapshot(hurricane);
+      this.lastSentSnapshotByHurricaneId.set(hurricane.id, snapshot);
+
+      return {
+        id: hurricane.id,
+        x: snapshot.x,
+        y: snapshot.y,
+        radius: snapshot.radius,
+        rotationRad: snapshot.rotationRad,
+      };
+    });
   }
 
   /** ハリケーンを直線移動させ，境界で反射させる */
@@ -212,6 +236,7 @@ export class HurricaneSystem {
   /** 状態を初期化する */
   public clear(): void {
     this.hasSpawned = false;
+    this.hasInitialSyncPending = false;
     this.hurricanes = [];
     this.lastHitAtMsByPlayerId.clear();
     this.lastSentSnapshotByHurricaneId.clear();

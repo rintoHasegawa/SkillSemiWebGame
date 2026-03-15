@@ -50,6 +50,13 @@ const publishTickUpdates = ({
     output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
   }
 
+  if (tickData.hurricaneInitialSnapshot.length > 0) {
+    output.publishInitialHurricanesToRoom(
+      roomId,
+      tickData.hurricaneInitialSnapshot,
+    );
+  }
+
   if (tickData.hurricaneUpdates.length > 0) {
     output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
   }

@@ -13,5 +13,7 @@ export type PlayerPositionUpdate = Pick<PlayerData, "id" | "x" | "y">;
 export interface TickData {
   playerUpdates: PlayerPositionUpdate[];
   cellUpdates: CellUpdate[];
+  /** 出現直後に1回だけ配信するハリケーン初期同期スナップショット */
+  hurricaneInitialSnapshot: HurricaneStatePayload[];
   hurricaneUpdates: HurricaneStatePayload[];
 }

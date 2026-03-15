@@ -94,7 +94,17 @@ export const createGameOutputAdapter = (
       roomId: RoomId,
       hurricanes: UpdateHurricanesPayload,
     ) => {
-      realtime.emitToRoom(
+      reliable.emitToRoom(
+        roomId,
+        protocol.SocketEvents.UPDATE_HURRICANES,
+        hurricanes,
+      );
+    },
+    publishInitialHurricanesToRoom: (
+      roomId: RoomId,
+      hurricanes: UpdateHurricanesPayload,
+    ) => {
+      reliable.emitToRoom(
         roomId,
         protocol.SocketEvents.UPDATE_HURRICANES,
         hurricanes,

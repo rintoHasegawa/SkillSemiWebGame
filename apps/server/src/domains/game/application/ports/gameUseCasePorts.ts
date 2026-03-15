@@ -73,6 +73,10 @@ export interface GameOutputPort {
     roomId: domain.room.Room["roomId"],
     hurricanes: UpdateHurricanesPayload,
   ): void;
+  publishInitialHurricanesToRoom(
+    roomId: domain.room.Room["roomId"],
+    hurricanes: UpdateHurricanesPayload,
+  ): void;
   publishGameEndToRoom(roomId: domain.room.Room["roomId"]): void;
   publishGameResultToRoom(
     roomId: domain.room.Room["roomId"],
@@ -125,6 +129,7 @@ export type StartGameOutputPort = Pick<
   GameOutputPort,
   | "publishUpdatePlayersToRoom"
   | "publishMapCellUpdatesToRoom"
+  | "publishInitialHurricanesToRoom"
   | "publishUpdateHurricanesToRoom"
   | "publishGameEndToRoom"
   | "publishGameResultToRoom"
