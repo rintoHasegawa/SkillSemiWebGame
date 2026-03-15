@@ -11,6 +11,7 @@ import type {
   HurricaneHitPayload,
   NewPlayerPayload,
   PlayerHitPayload,
+  PongPayload,
   RemovePlayerPayload,
   UpdateHurricanesPayload,
   UpdateMapCellsPayload,
@@ -35,6 +36,7 @@ export type ReceivedGameEventHandlers = {
   onReceivedBombPlacedAck: (payload: BombPlacedAckPayload) => void;
   onReceivedPlayerHit: (payload: PlayerHitPayload) => void;
   onReceivedHurricaneHit: (payload: HurricaneHitPayload) => void;
+  onReceivedPong: (payload: PongPayload) => void;
 };
 
 /** 受信イベント購読の管理を担当する */
@@ -56,6 +58,7 @@ export class GameNetworkEventReceiver {
       onBombPlacedAck: handlers.onReceivedBombPlacedAck,
       onPlayerHit: handlers.onReceivedPlayerHit,
       onHurricaneHit: handlers.onReceivedHurricaneHit,
+      onPong: handlers.onReceivedPong,
     });
   }
 

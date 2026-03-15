@@ -19,6 +19,7 @@ import type {
   NewPlayerPayload,
   PlaceBombPayload,
   PlayerHitPayload,
+  PongPayload,
   RemovePlayerPayload,
   UpdateHurricanesPayload,
   UpdateMapCellsPayload,
@@ -67,9 +68,12 @@ export type GameHandler = {
   offPlayerHit: (callback: (payload: PlayerHitPayload) => void) => void;
   onHurricaneHit: (callback: (payload: HurricaneHitPayload) => void) => void;
   offHurricaneHit: (callback: (payload: HurricaneHitPayload) => void) => void;
+  onPong: (callback: (payload: PongPayload) => void) => void;
+  offPong: (callback: (payload: PongPayload) => void) => void;
   sendMove: (x: number, y: number) => void;
   sendPlaceBomb: (payload: PlaceBombPayload) => void;
   sendBombHitReport: (payload: BombHitReportPayload) => void;
+  sendPing: (clientTime: number) => void;
   readyForGame: () => void;
 };
 
@@ -145,6 +149,7 @@ export const createGameHandler = (socket: Socket): GameHandler => {
   const hurricaneHitSubscription = createSubscriptionPair(
     protocol.SocketEvents.HURRICANE_HIT,
   );
+  const pongSubscription = createSubscriptionPair(protocol.SocketEvents.PONG);
   const sendMovePayload = createPayloadSender(protocol.SocketEvents.MOVE);
   const sendPlaceBombPayload = createPayloadSender(
     protocol.SocketEvents.PLACE_BOMB,
@@ -152,6 +157,7 @@ export const createGameHandler = (socket: Socket): GameHandler => {
   const sendBombHitReportPayload = createPayloadSender(
     protocol.SocketEvents.BOMB_HIT_REPORT,
   );
+  const sendPingPayload = createPayloadSender(protocol.SocketEvents.PING);
   const sendReadyForGame = createVoidSender(
     protocol.SocketEvents.READY_FOR_GAME,
   );
@@ -238,6 +244,12 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     offHurricaneHit: (callback) => {
       hurricaneHitSubscription.off(callback);
     },
+    onPong: (callback) => {
+      pongSubscription.on(callback);
+    },
+    offPong: (callback) => {
+      pongSubscription.off(callback);
+    },
     sendMove: (x, y) => {
       const payload: MovePayload = { x, y };
       sendMovePayload(payload);
@@ -247,6 +259,9 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     },
     sendBombHitReport: (payload) => {
       sendBombHitReportPayload(payload);
+    },
+    sendPing: (clientTime) => {
+      sendPingPayload(clientTime);
     },
     readyForGame: () => {
       sendReadyForGame();

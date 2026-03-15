@@ -6,12 +6,18 @@
 import { GameTimer } from "@client/scenes/game/application/GameTimer";
 import { InputGate, type JoystickInput } from "./InputGate";
 
+/** GameSessionFacade の初期化入力型 */
+export type GameSessionFacadeOptions = {
+  nowMsProvider?: () => number;
+};
+
 /** ゲーム進行状態と入力可否の窓口を提供する */
 export class GameSessionFacade {
-  private readonly timer = new GameTimer();
+  private readonly timer: GameTimer;
   private readonly inputGate: InputGate;
 
-  constructor() {
+  constructor(options: GameSessionFacadeOptions = {}) {
+    this.timer = new GameTimer(options.nowMsProvider);
     this.inputGate = new InputGate({
       isStartedProvider: () => this.timer.isStarted(),
       isPlayableTimeProvider: () => this.timer.getRemainingTime() > 0,

@@ -12,6 +12,7 @@ import type {
   HurricaneHitPayload,
   NewPlayerPayload,
   PlayerHitPayload,
+  PongPayload,
   RemovePlayerPayload,
   UpdateHurricanesPayload,
   UpdateMapCellsPayload,
@@ -38,6 +39,7 @@ export type SocketSubscriptionDictionary = {
   bombPlacedAck: SocketSubscription;
   playerHit: SocketSubscription;
   hurricaneHit: SocketSubscription;
+  pong: SocketSubscription;
 };
 
 /** 購読辞書生成に必要なハンドラ群 */
@@ -54,6 +56,7 @@ export type NetworkSubscriptionHandlers = {
   onBombPlacedAck: (payload: BombPlacedAckPayload) => void;
   onPlayerHit: (payload: PlayerHitPayload) => void;
   onHurricaneHit: (payload: HurricaneHitPayload) => void;
+  onPong: (payload: PongPayload) => void;
 };
 
 type SubscriptionDefinition = {
@@ -152,6 +155,13 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
     create: (handlers) => ({
       bind: () => socketManager.game.onHurricaneHit(handlers.onHurricaneHit),
       unbind: () => socketManager.game.offHurricaneHit(handlers.onHurricaneHit),
+    }),
+  },
+  {
+    key: "pong",
+    create: (handlers) => ({
+      bind: () => socketManager.game.onPong(handlers.onPong),
+      unbind: () => socketManager.game.offPong(handlers.onPong),
     }),
   },
 ];

@@ -11,6 +11,7 @@ export type GameActionSender = {
   readyForGame: () => void;
   sendPlaceBomb: (payload: PlaceBombPayload) => void;
   sendBombHitReport: (bombId: string) => void;
+  sendPing: (clientTime: number) => void;
 };
 
 /** ソケット経由でゲーム中送信アクションを実行する実装 */
@@ -28,5 +29,10 @@ export class SocketGameActionSender implements GameActionSender {
   /** 被弾報告をサーバーへ送信する */
   public sendBombHitReport(bombId: string): void {
     socketManager.game.sendBombHitReport({ bombId });
+  }
+
+  /** 時刻同期PINGをサーバーへ送信する */
+  public sendPing(clientTime: number): void {
+    socketManager.game.sendPing(clientTime);
   }
 }

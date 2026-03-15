@@ -30,6 +30,7 @@ import {
   type GameUiState,
 } from "./application/ui/GameUiStateSyncService";
 import { preloadGameStartAssets } from "./application/assets/GameAssetPreloader";
+import { ClockSyncService } from "./application/time/ClockSyncService";
 
 /** GameManager の依存注入オプション型 */
 export type GameManagerDependencies = {
@@ -55,12 +56,15 @@ export class GameManager {
   private myId: string;
   private container: HTMLDivElement;
   private sessionFacade: GameSessionFacade;
+  private gameActionSender: GameActionSender;
   private runtime: GameSceneRuntime;
   private gameEventFacade: GameEventFacade;
   private combatFacade: CombatLifecycleFacade;
   private lifecycleState: SceneLifecycleState;
   private uiStateSyncService: GameUiStateSyncService;
   private disposableRegistry: DisposableRegistry;
+  private readonly clockSyncService: ClockSyncService;
+  private clockSyncTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private localBombHitCount = 0;
 
   public getStartCountdownSec(): number {
@@ -98,10 +102,15 @@ export class GameManager {
   ) {
     this.container = container; // 明示的に代入
     this.myId = myId;
-    this.sessionFacade = dependencies.sessionFacade ?? new GameSessionFacade();
+    this.clockSyncService = new ClockSyncService();
+    this.sessionFacade =
+      dependencies.sessionFacade ??
+      new GameSessionFacade({
+        nowMsProvider: () => this.clockSyncService.getSynchronizedNowMs(),
+      });
     this.lifecycleState =
       dependencies.lifecycleState ?? new SceneLifecycleState();
-    const gameActionSender =
+    this.gameActionSender =
       dependencies.gameActionSender ?? new SocketGameActionSender();
     const moveSender = dependencies.moveSender ?? new SocketPlayerMoveSender();
     const sceneFactories = dependencies.sceneFactories;
@@ -122,7 +131,7 @@ export class GameManager {
       myId: this.myId,
       acquireInputLock: this.lockInput.bind(this),
       onSendBombHitReport: (bombId) => {
-        gameActionSender.sendBombHitReport(bombId);
+        this.gameActionSender.sendBombHitReport(bombId);
       },
       onLocalBombHitCountChanged: (count) => {
         this.localBombHitCount = count;
@@ -135,9 +144,15 @@ export class GameManager {
       players: this.players,
       myId: this.myId,
       sessionFacade: this.sessionFacade,
-      gameActionSender,
+      gameActionSender: this.gameActionSender,
       moveSender,
       getElapsedMs: () => this.sessionFacade.getElapsedMs(),
+      onPongReceived: (payload) => {
+        this.clockSyncService.updateFromPong(payload);
+      },
+      onGameStartClockHint: (serverNowMs) => {
+        this.clockSyncService.seedFromServerNow(serverNowMs);
+      },
       eventPorts: {
         onGameStarted: this.gameEventFacade.applyGameStarted.bind(
           this.gameEventFacade,
@@ -177,6 +192,12 @@ export class GameManager {
       lifecycleState: this.lifecycleState,
       app: this.app,
     });
+    this.disposableRegistry.add(() => {
+      this.stopClockSyncLoop();
+    });
+    this.disposableRegistry.add(() => {
+      this.clockSyncService.reset();
+    });
   }
 
   /**
@@ -196,6 +217,7 @@ export class GameManager {
       return;
     }
 
+    this.startClockSyncLoop();
     this.uiStateSyncService.startTicker();
     this.uiStateSyncService.emitIfChanged(true);
   }
@@ -259,5 +281,29 @@ export class GameManager {
   public destroy() {
     this.lifecycleState.markDestroyed();
     this.disposableRegistry.disposeAll();
+  }
+
+  /** RTT状況に応じて可変間隔でPING送信を継続する */
+  private startClockSyncLoop(): void {
+    this.stopClockSyncLoop();
+
+    const executeSync = () => {
+      this.gameActionSender.sendPing(Date.now());
+
+      const nextIntervalMs = this.clockSyncService.getRecommendedSyncIntervalMs();
+      this.clockSyncTimeoutId = setTimeout(executeSync, nextIntervalMs);
+    };
+
+    executeSync();
+  }
+
+  /** 進行中のPING送信ループを停止する */
+  private stopClockSyncLoop(): void {
+    if (this.clockSyncTimeoutId === null) {
+      return;
+    }
+
+    clearTimeout(this.clockSyncTimeoutId);
+    this.clockSyncTimeoutId = null;
   }
 }

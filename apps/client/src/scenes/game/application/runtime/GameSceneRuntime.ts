@@ -21,6 +21,7 @@ import { GameSceneRuntimeWiring } from "./GameSceneRuntimeWiring";
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import type { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import { config } from "@client/config";
+import type { PongPayload } from "@repo/shared";
 
 type RuntimeLifecycleState = "created" | "initialized" | "destroyed";
 
@@ -34,6 +35,8 @@ export type GameSceneRuntimeOptions = {
   moveSender: MoveSender;
   getElapsedMs: () => number;
   eventPorts: GameSceneEventPorts;
+  onPongReceived: (payload: PongPayload) => void;
+  onGameStartClockHint: (serverNowMs: number) => void;
   sceneFactories?: GameSceneFactoryOptions;
 };
 
@@ -48,6 +51,8 @@ export class GameSceneRuntime {
   private readonly moveSender: MoveSender;
   private readonly getElapsedMs: () => number;
   private readonly eventPorts: GameSceneEventPorts;
+  private readonly onPongReceived: (payload: PongPayload) => void;
+  private readonly onGameStartClockHint: (serverNowMs: number) => void;
   private readonly sceneFactories?: GameSceneFactoryOptions;
   private readonly playerRepository: PlayerRepository;
   private readonly disposableRegistry = new DisposableRegistry();
@@ -77,6 +82,8 @@ export class GameSceneRuntime {
     moveSender,
     getElapsedMs,
     eventPorts,
+    onPongReceived,
+    onGameStartClockHint,
     sceneFactories,
   }: GameSceneRuntimeOptions) {
     this.app = app;
@@ -88,6 +95,8 @@ export class GameSceneRuntime {
     this.moveSender = moveSender;
     this.getElapsedMs = getElapsedMs;
     this.eventPorts = eventPorts;
+    this.onPongReceived = onPongReceived;
+    this.onGameStartClockHint = onGameStartClockHint;
     this.sceneFactories = sceneFactories;
     this.playerRepository = new PlayerRepository(this.players);
 
@@ -116,6 +125,8 @@ export class GameSceneRuntime {
       getJoystickInput: () => this.joystickInput,
       moveSender: this.moveSender,
       eventPorts: this.eventPorts,
+      onPongReceived: this.onPongReceived,
+      onGameStartClockHint: this.onGameStartClockHint,
       sceneFactories: this.sceneFactories,
     });
 

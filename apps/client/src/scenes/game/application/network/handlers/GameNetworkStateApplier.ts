@@ -8,6 +8,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   HurricaneHitPayload,
+  PongPayload,
   PlayerHitPayload,
 } from "@repo/shared";
 import { domain } from "@repo/shared";
@@ -40,6 +41,8 @@ export type GameNetworkStateApplierOptions = {
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
   onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
+  onPongReceived: (payload: PongPayload) => void;
+  onGameStartClockHint: (serverNowMs: number) => void;
   onDebugLog?: (message: string) => void;
 };
 
@@ -51,6 +54,8 @@ export class GameNetworkStateApplier {
   private readonly hurricaneSyncHandler: HurricaneSyncHandler;
   private readonly onGameStarted: (startTime: number) => void;
   private readonly onGameEnded: () => void;
+  private readonly onPongReceived: (payload: PongPayload) => void;
+  private readonly onGameStartClockHint: (serverNowMs: number) => void;
   private readonly onDebugLog: (message: string) => void;
   private readonly receivedEventHandlers: ReceivedGameEventHandlers;
 
@@ -66,6 +71,8 @@ export class GameNetworkStateApplier {
     onBombPlacementAcknowledged,
     onRemotePlayerHit,
     onRemoteHurricaneHit,
+    onPongReceived,
+    onGameStartClockHint,
     onDebugLog,
   }: GameNetworkStateApplierOptions) {
     this.playerSyncHandler = new PlayerSyncHandler({
@@ -84,6 +91,8 @@ export class GameNetworkStateApplier {
     });
     this.onGameStarted = onGameStarted;
     this.onGameEnded = onGameEnded;
+    this.onPongReceived = onPongReceived;
+    this.onGameStartClockHint = onGameStartClockHint;
     this.onDebugLog = onDebugLog ?? (() => undefined);
     this.receivedEventHandlers = this.createReceivedEventHandlers();
   }
@@ -139,6 +148,8 @@ export class GameNetworkStateApplier {
         this.playerSyncHandler.handleNewPlayer(payload);
       },
       onReceivedGameStart: (payload) => {
+        this.onGameStartClockHint(payload.serverNow);
+
         const startTime = toGameStartedAt(payload);
         if (startTime === null) {
           return;
@@ -176,6 +187,9 @@ export class GameNetworkStateApplier {
       },
       onReceivedHurricaneHit: (payload) => {
         this.combatSyncHandler.handleReceivedHurricaneHit(payload);
+      },
+      onReceivedPong: (payload) => {
+        this.onPongReceived(payload);
       },
     };
   }

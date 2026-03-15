@@ -8,6 +8,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   HurricaneHitPayload,
+  PongPayload,
   PlayerHitPayload,
 } from "@repo/shared";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
@@ -35,6 +36,8 @@ export type CreateNetworkSyncOptions = {
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
   onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
+  onPongReceived: (payload: PongPayload) => void;
+  onGameStartClockHint: (serverNowMs: number) => void;
 };
 
 /** BombManager 生成入力型 */
@@ -88,6 +91,8 @@ export type GameSceneOrchestratorOptions = {
   getJoystickInput: () => { x: number; y: number };
   moveSender: MoveSender;
   eventPorts: GameSceneEventPorts;
+  onPongReceived: (payload: PongPayload) => void;
+  onGameStartClockHint: (serverNowMs: number) => void;
   factories?: GameSceneFactoryOptions;
 };
 
@@ -111,6 +116,8 @@ export class GameSceneOrchestrator {
   private readonly getJoystickInput: () => { x: number; y: number };
   private readonly moveSender: MoveSender;
   private readonly eventPorts: GameSceneEventPorts;
+  private readonly onPongReceived: (payload: PongPayload) => void;
+  private readonly onGameStartClockHint: (serverNowMs: number) => void;
   private readonly createNetworkSync: (
     options: CreateNetworkSyncOptions,
   ) => GameNetworkSync;
@@ -130,6 +137,8 @@ export class GameSceneOrchestrator {
     getJoystickInput,
     moveSender,
     eventPorts,
+    onPongReceived,
+    onGameStartClockHint,
     factories,
   }: GameSceneOrchestratorOptions) {
     this.app = app;
@@ -142,6 +151,8 @@ export class GameSceneOrchestrator {
     this.getJoystickInput = getJoystickInput;
     this.moveSender = moveSender;
     this.eventPorts = eventPorts;
+    this.onPongReceived = onPongReceived;
+    this.onGameStartClockHint = onGameStartClockHint;
     this.createNetworkSync =
       factories?.createNetworkSync ??
       ((options) => new GameNetworkSync(options));
@@ -187,6 +198,8 @@ export class GameSceneOrchestrator {
       onBombPlacementAcknowledged: this.eventPorts.onBombPlacementAcknowledged,
       onRemotePlayerHit: this.eventPorts.onRemotePlayerHit,
       onRemoteHurricaneHit: this.eventPorts.onRemoteHurricaneHit,
+      onPongReceived: this.onPongReceived,
+      onGameStartClockHint: this.onGameStartClockHint,
     });
     networkSync.bind();
     return networkSync;
