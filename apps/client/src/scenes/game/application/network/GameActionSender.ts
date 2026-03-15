@@ -33,6 +33,6 @@ export class SocketGameActionSender implements GameActionSender {
 
   /** 時刻同期PINGをサーバーへ送信する */
   public sendPing(clientTime: number): void {
-    socketManager.game.sendPing(clientTime);
+    socketManager.gameSync.sendPing(clientTime);
   }
 }

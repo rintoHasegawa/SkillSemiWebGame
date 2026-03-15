@@ -17,12 +17,12 @@ import { GameMapController } from "@client/scenes/game/entities/map/GameMapContr
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import {
   toBombPlacementAcknowledgedPayload,
-  toGameStartedAt,
   toRemoteBombPlacedPayload,
   toRemoteHurricaneHitPayload,
   toRemotePlayerHitPayload,
 } from "@client/scenes/game/application/network/adapters/GameNetworkEventAdapter";
 import { CombatSyncHandler } from "./CombatSyncHandler";
+import { ClockSyncEventApplier } from "./ClockSyncEventApplier";
 import { HurricaneSyncHandler } from "./HurricaneSyncHandler";
 import { MapSyncHandler } from "./MapSyncHandler";
 import { PlayerSyncHandler } from "./PlayerSyncHandler";
@@ -51,12 +51,9 @@ export class GameNetworkStateApplier {
   private readonly playerSyncHandler: PlayerSyncHandler;
   private readonly mapSyncHandler: MapSyncHandler;
   private readonly combatSyncHandler: CombatSyncHandler;
+  private readonly clockSyncEventApplier: ClockSyncEventApplier;
   private readonly hurricaneSyncHandler: HurricaneSyncHandler;
-  private readonly onGameStarted: (startTime: number) => void;
   private readonly onGameEnded: () => void;
-  private readonly onPongReceived: (payload: PongPayload) => void;
-  private readonly onGameStartClockHint: (serverNowMs: number) => void;
-  private readonly onDebugLog: (message: string) => void;
   private readonly receivedEventHandlers: ReceivedGameEventHandlers;
 
   constructor({
@@ -89,11 +86,13 @@ export class GameNetworkStateApplier {
       onRemotePlayerHit,
       onRemoteHurricaneHit,
     });
-    this.onGameStarted = onGameStarted;
+    this.clockSyncEventApplier = new ClockSyncEventApplier({
+      onGameStarted,
+      onGameStartClockHint,
+      onPongReceived,
+      onDebugLog,
+    });
     this.onGameEnded = onGameEnded;
-    this.onPongReceived = onPongReceived;
-    this.onGameStartClockHint = onGameStartClockHint;
-    this.onDebugLog = onDebugLog ?? (() => undefined);
     this.receivedEventHandlers = this.createReceivedEventHandlers();
   }
 
@@ -148,17 +147,7 @@ export class GameNetworkStateApplier {
         this.playerSyncHandler.handleNewPlayer(payload);
       },
       onReceivedGameStart: (payload) => {
-        this.onGameStartClockHint(payload.serverNow);
-
-        const startTime = toGameStartedAt(payload);
-        if (startTime === null) {
-          return;
-        }
-
-        this.onGameStarted(startTime);
-        this.onDebugLog(
-          `[GameNetworkSync] ゲーム開始時刻同期完了: ${startTime}`,
-        );
+        this.clockSyncEventApplier.applyGameStart(payload);
       },
       onReceivedUpdatePlayers: (payload) => {
         this.playerSyncHandler.handlePlayerUpdates(payload);
@@ -189,7 +178,7 @@ export class GameNetworkStateApplier {
         this.combatSyncHandler.handleReceivedHurricaneHit(payload);
       },
       onReceivedPong: (payload) => {
-        this.onPongReceived(payload);
+        this.clockSyncEventApplier.applyPong(payload);
       },
     };
   }

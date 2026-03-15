@@ -31,6 +31,8 @@ import {
 } from "./application/ui/GameUiStateSyncService";
 import { preloadGameStartAssets } from "./application/assets/GameAssetPreloader";
 import { ClockSyncService } from "./application/time/ClockSyncService";
+import { SYSTEM_TIME_PROVIDER } from "./application/time/TimeProvider";
+import { ClockSyncLoop } from "./application/time/ClockSyncLoop";
 
 /** GameManager の依存注入オプション型 */
 export type GameManagerDependencies = {
@@ -64,7 +66,8 @@ export class GameManager {
   private uiStateSyncService: GameUiStateSyncService;
   private disposableRegistry: DisposableRegistry;
   private readonly clockSyncService: ClockSyncService;
-  private clockSyncTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private readonly nowMsProvider = SYSTEM_TIME_PROVIDER.now;
+  private readonly clockSyncLoop: ClockSyncLoop;
   private localBombHitCount = 0;
 
   public getStartCountdownSec(): number {
@@ -103,6 +106,13 @@ export class GameManager {
     this.container = container; // 明示的に代入
     this.myId = myId;
     this.clockSyncService = new ClockSyncService();
+    this.clockSyncLoop = new ClockSyncLoop({
+      sendPing: (clientTime) => {
+        this.gameActionSender.sendPing(clientTime);
+      },
+      getNextIntervalMs: () => this.clockSyncService.getRecommendedSyncIntervalMs(),
+      nowMsProvider: this.nowMsProvider,
+    });
     this.sessionFacade =
       dependencies.sessionFacade ??
       new GameSessionFacade({
@@ -193,7 +203,7 @@ export class GameManager {
       app: this.app,
     });
     this.disposableRegistry.add(() => {
-      this.stopClockSyncLoop();
+      this.clockSyncLoop.dispose();
     });
     this.disposableRegistry.add(() => {
       this.clockSyncService.reset();
@@ -217,7 +227,7 @@ export class GameManager {
       return;
     }
 
-    this.startClockSyncLoop();
+    this.clockSyncLoop.start();
     this.uiStateSyncService.startTicker();
     this.uiStateSyncService.emitIfChanged(true);
   }
@@ -283,27 +293,4 @@ export class GameManager {
     this.disposableRegistry.disposeAll();
   }
 
-  /** RTT状況に応じて可変間隔でPING送信を継続する */
-  private startClockSyncLoop(): void {
-    this.stopClockSyncLoop();
-
-    const executeSync = () => {
-      this.gameActionSender.sendPing(Date.now());
-
-      const nextIntervalMs = this.clockSyncService.getRecommendedSyncIntervalMs();
-      this.clockSyncTimeoutId = setTimeout(executeSync, nextIntervalMs);
-    };
-
-    executeSync();
-  }
-
-  /** 進行中のPING送信ループを停止する */
-  private stopClockSyncLoop(): void {
-    if (this.clockSyncTimeoutId === null) {
-      return;
-    }
-
-    clearTimeout(this.clockSyncTimeoutId);
-    this.clockSyncTimeoutId = null;
-  }
 }

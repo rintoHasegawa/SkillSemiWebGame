@@ -160,8 +160,8 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
   {
     key: "pong",
     create: (handlers) => ({
-      bind: () => socketManager.game.onPong(handlers.onPong),
-      unbind: () => socketManager.game.offPong(handlers.onPong),
+      bind: () => socketManager.gameSync.onPong(handlers.onPong),
+      unbind: () => socketManager.gameSync.offPong(handlers.onPong),
     }),
   },
 ];

@@ -4,6 +4,7 @@
  * 表示用の残り秒数取得を提供する
  */
 import { config } from "@client/config";
+import { SYSTEM_TIME_PROVIDER } from "@client/scenes/game/application/time/TimeProvider";
 
 /** 現在時刻ミリ秒を返す関数型 */
 export type NowMsProvider = () => number;
@@ -13,7 +14,7 @@ export class GameTimer {
   private gameStartTime: number | null = null;
   private nowMsProvider: NowMsProvider;
 
-  constructor(nowMsProvider: NowMsProvider = () => Date.now()) {
+  constructor(nowMsProvider: NowMsProvider = SYSTEM_TIME_PROVIDER.now) {
     this.nowMsProvider = nowMsProvider;
   }
 
