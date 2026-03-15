@@ -6,6 +6,7 @@ import type {
   domain,
   PlaceBombPayload,
   BombHitReportPayload,
+  StartGameRequestPayload,
 } from "@repo/shared";
 import type { PingPayload } from "@repo/shared";
 import { isPlaceBombPayload as isValidPlaceBombPayload } from "@server/domains/game/entities/bomb/bombPayloadValidation";
@@ -57,21 +58,47 @@ export const isBombHitReportPayload = (
 /** START_GAMEイベントのペイロードが開始要求情報であるか判定する */
 export const isStartGamePayload = (
   value: unknown,
-): value is { targetPlayerCount?: number } => {
+): value is StartGameRequestPayload => {
   if (typeof value !== "object" || value === null) {
     return false;
   }
 
   const candidate = value as Record<string, unknown>;
   const targetPlayerCount = candidate.targetPlayerCount;
+  const fieldSizePreset = candidate.fieldSizePreset;
+
   if (targetPlayerCount === undefined) {
+    if (fieldSizePreset === undefined) {
+      return true;
+    }
+
+    return (
+      fieldSizePreset === "SMALL"
+      || fieldSizePreset === "MEDIUM"
+      || fieldSizePreset === "LARGE"
+      || fieldSizePreset === "XLARGE"
+    );
+  }
+
+  const isValidTargetPlayerCount = (
+    typeof targetPlayerCount === "number" &&
+    Number.isInteger(targetPlayerCount) &&
+    targetPlayerCount > 0
+  );
+
+  if (!isValidTargetPlayerCount) {
+    return false;
+  }
+
+  if (fieldSizePreset === undefined) {
     return true;
   }
 
   return (
-    typeof targetPlayerCount === "number" &&
-    Number.isInteger(targetPlayerCount) &&
-    targetPlayerCount > 0
+    fieldSizePreset === "SMALL"
+    || fieldSizePreset === "MEDIUM"
+    || fieldSizePreset === "LARGE"
+    || fieldSizePreset === "XLARGE"
   );
 };
 

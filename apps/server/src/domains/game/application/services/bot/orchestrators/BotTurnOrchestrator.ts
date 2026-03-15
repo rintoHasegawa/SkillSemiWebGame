@@ -12,17 +12,27 @@ import { BotHitStunPolicy } from "../combat/BotHitStunPolicy.js";
 import { BotStateStore } from "../state/BotStateStore.js";
 import type { BotDecision } from "../types/BotTypes.js";
 
+type MapGridSize = {
+  gridCols: number;
+  gridRows: number;
+};
+
 const clamp = (value: number, min: number, max: number): number => {
   return Math.max(min, Math.min(max, value));
 };
 
 /** Botの1tick分の意思決定を提供するオーケストレータ */
 export class BotTurnOrchestrator {
+  private readonly mapSize: MapGridSize;
   private stateStore = new BotStateStore();
   private readonly hitStunPolicy = new BotHitStunPolicy({
     hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
   });
   private readonly respawnAtMsByBotId = new Map<BotPlayerId, number>();
+
+  constructor(mapSize: MapGridSize) {
+    this.mapSize = mapSize;
+  }
 
   public decide(
     botPlayerId: BotPlayerId,
@@ -31,9 +41,8 @@ export class BotTurnOrchestrator {
     nowMs: number,
     elapsedMs: number,
   ): BotDecision {
-    const { GRID_COLS, GRID_ROWS } = config.GAME_CONFIG;
-    const currentCol = clamp(Math.floor(player.x), 0, GRID_COLS - 1);
-    const currentRow = clamp(Math.floor(player.y), 0, GRID_ROWS - 1);
+    const currentCol = clamp(Math.floor(player.x), 0, this.mapSize.gridCols - 1);
+    const currentRow = clamp(Math.floor(player.y), 0, this.mapSize.gridRows - 1);
 
     const currentState = this.stateStore.getOrCreate(botPlayerId, {
       targetCol: currentCol,
@@ -49,8 +58,8 @@ export class BotTurnOrchestrator {
       this.respawnAtMsByBotId.delete(botPlayerId);
       this.stateStore.update(botPlayerId, (state) => ({
         ...state,
-        targetCol: clamp(Math.floor(player.initialX), 0, GRID_COLS - 1),
-        targetRow: clamp(Math.floor(player.initialY), 0, GRID_ROWS - 1),
+        targetCol: clamp(Math.floor(player.initialX), 0, this.mapSize.gridCols - 1),
+        targetRow: clamp(Math.floor(player.initialY), 0, this.mapSize.gridRows - 1),
       }));
       return {
         nextX: player.initialX,
@@ -78,7 +87,7 @@ export class BotTurnOrchestrator {
       config.BOT_AI_CONFIG.TARGET_REACHED_EPSILON;
 
     const nextTarget = reachedTarget
-      ? chooseNextTarget(currentCol, currentRow, gridColors)
+      ? chooseNextTarget(currentCol, currentRow, gridColors, this.mapSize)
       : { col: currentState.targetCol, row: currentState.targetRow };
 
     const moved = moveTowardsTarget(
@@ -86,6 +95,7 @@ export class BotTurnOrchestrator {
       player.y,
       nextTarget.col,
       nextTarget.row,
+      this.mapSize,
     );
 
     const bombDecision = decideBombPlacement(

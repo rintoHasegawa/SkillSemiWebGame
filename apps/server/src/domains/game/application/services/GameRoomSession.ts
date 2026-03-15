@@ -22,6 +22,7 @@ import {
 } from "../../entities/player/playerMovement.js";
 import { buildGameResultPayload } from "./gameResultCalculator.js";
 import { TeamAssignmentService } from "../services/TeamAssignmentService.js";
+import type { GameFieldConfig } from "../ports/gameUseCasePorts";
 
 /** GameRoomSession のコールバック集合 */
 export type GameSessionCallbacks = {
@@ -40,15 +41,21 @@ export class GameRoomSession {
   private gameLoop: GameLoop | null = null;
   private startTime: number | undefined;
   private startDelayTimer: NodeJS.Timeout | null = null;
+  private fieldConfig: GameFieldConfig;
 
   constructor(
     private roomId: string,
     playerIds: string[],
     playerNamesById: Record<string, string>,
+    fieldConfig: GameFieldConfig,
   ) {
     this.players = new Map();
-    this.mapStore = new MapStore();
+    this.mapStore = new MapStore({
+      gridCols: fieldConfig.gridCols,
+      gridRows: fieldConfig.gridRows,
+    });
     this.bombStateStore = new BombStateStore();
+    this.fieldConfig = fieldConfig;
 
     playerIds.forEach((playerId) => {
       // 現在のプレイヤー構成から人数が最も少ないチームを算出する
@@ -58,7 +65,15 @@ export class GameRoomSession {
 
       // 算出したチームIDを指定してプレイヤーを生成する
       const playerName = playerNamesById[playerId] ?? playerId;
-      const player = createSpawnedPlayer(playerId, playerName, assignedTeamId);
+      const player = createSpawnedPlayer(
+        playerId,
+        playerName,
+        assignedTeamId,
+        {
+          gridCols: fieldConfig.gridCols,
+          gridRows: fieldConfig.gridRows,
+        },
+      );
 
       this.players.set(playerId, player);
     });
@@ -95,6 +110,8 @@ export class GameRoomSession {
     this.gameLoop = new GameLoop({
       roomId: this.roomId,
       tickRate,
+      gridCols: this.fieldConfig.gridCols,
+      gridRows: this.fieldConfig.gridRows,
       players: this.players,
       mapStore: this.mapStore,
       activeBombRegistry: this.bombStateStore.activeBombRegistry,
@@ -164,6 +181,11 @@ export class GameRoomSession {
 
   public getStartTime(): number | undefined {
     return this.startTime;
+  }
+
+  /** 現在セッションで確定したフィールド設定を返す */
+  public getFieldConfig(): GameFieldConfig {
+    return this.fieldConfig;
   }
 
   public getPlayers(): Player[] {

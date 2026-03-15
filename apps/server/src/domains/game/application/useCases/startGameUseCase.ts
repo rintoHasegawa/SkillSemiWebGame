@@ -4,6 +4,7 @@
  */
 import type {
   BombPlacementPort,
+  GameFieldConfig,
   StartGameOutputPort,
   StartGamePort,
 } from "../ports/gameUseCasePorts";
@@ -17,6 +18,7 @@ import { createBotBombActionHandler } from "../services/bot/index.js";
 
 type StartGameUseCaseParams = {
   roomId: string;
+  fieldConfig: GameFieldConfig;
   playerIds: string[];
   playerNamesById: Record<string, string>;
   gameSession: StartGamePort;
@@ -25,9 +27,38 @@ type StartGameUseCaseParams = {
   output: StartGameOutputPort;
 };
 
+type TickUpdatePublishParams = {
+  roomId: string;
+  output: StartGameOutputPort;
+  tickData: Parameters<StartGamePort["startRoomSession"]>[3] extends {
+    onTick: (data: infer TTickData) => void;
+  }
+    ? TTickData
+    : never;
+};
+
+const publishTickUpdates = ({
+  roomId,
+  output,
+  tickData,
+}: TickUpdatePublishParams): void => {
+  if (tickData.playerUpdates.length > 0) {
+    output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
+  }
+
+  if (tickData.cellUpdates.length > 0) {
+    output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
+  }
+
+  if (tickData.hurricaneUpdates.length > 0) {
+    output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
+  }
+};
+
 /** ゲームセッション開始とティック通知，終了通知を実行する */
 export const startGameUseCase = ({
   roomId,
+  fieldConfig,
   playerIds,
   playerNamesById,
   gameSession,
@@ -48,38 +79,44 @@ export const startGameUseCase = ({
     });
   };
 
-  gameSession.startRoomSession(playerIds, playerNamesById, {
-    onTick: (tickData) => {
-      if (tickData.playerUpdates.length > 0) {
-        output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
-      }
-
-      if (tickData.cellUpdates.length > 0) {
-        output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
-      }
-
-      output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
+  gameSession.startRoomSession(
+    playerIds,
+    playerNamesById,
+    {
+      ...fieldConfig,
     },
-    onGameEnd: (resultPayload) => {
-      logEvent(logScopes.GAME_USE_CASE, {
-        event: gameUseCaseLogEvents.GAME_END,
-        result: logResults.EMITTED,
-        roomId,
-        reason: "duration_elapsed",
-      });
-      output.publishGameEndToRoom(roomId);
-      output.publishGameResultToRoom(roomId, resultPayload);
-      onGameEnd();
+    {
+      onTick: (tickData) => {
+        publishTickUpdates({ roomId, output, tickData });
+      },
+      onGameEnd: (resultPayload) => {
+        logEvent(logScopes.GAME_USE_CASE, {
+          event: gameUseCaseLogEvents.GAME_END,
+          result: logResults.EMITTED,
+          roomId,
+          reason: "duration_elapsed",
+        });
+        output.publishGameEndToRoom(roomId);
+        output.publishGameResultToRoom(roomId, resultPayload);
+        onGameEnd();
+      },
+      onBotPlaceBomb: handleBotBombAction,
+      onBotBombHit: handleBotBombHit,
+      onHurricanePlayerHit: (targetPlayerId) => {
+        output.publishHurricaneHitToRoom(roomId, {
+          playerId: targetPlayerId,
+        });
+      },
     },
-    onBotPlaceBomb: handleBotBombAction,
-    onBotBombHit: handleBotBombHit,
-    onHurricanePlayerHit: (targetPlayerId) => {
-      output.publishHurricaneHitToRoom(roomId, {
-        playerId: targetPlayerId,
-      });
-    },
-  });
+  );
 
   const startTime = gameSession.getRoomStartTime() || Date.now();
-  output.publishGameStartToRoom(roomId, { startTime, serverNow: Date.now() });
+  const sessionFieldConfig = gameSession.getRoomFieldConfig() ?? fieldConfig;
+  output.publishGameStartToRoom(roomId, {
+    startTime,
+    serverNow: Date.now(),
+    fieldSizePreset: sessionFieldConfig.fieldSizePreset,
+    gridCols: sessionFieldConfig.gridCols,
+    gridRows: sessionFieldConfig.gridRows,
+  });
 };

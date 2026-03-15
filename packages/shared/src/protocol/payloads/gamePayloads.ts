@@ -9,6 +9,10 @@ import type {
   MovePayload as PlayerMovePayload,
   PlayerData,
 } from "../../domains/game/player/player.type";
+import type { FieldSizePreset } from "../../config/gameConfig";
+
+/** start-game で利用するフィールドサイズ種別を再公開する型別名 */
+export type { FieldSizePreset } from "../../config/gameConfig";
 
 /** game-result イベントで送受信するランキング1行 */
 export type GameResultRanking = {
@@ -78,7 +82,13 @@ export type HurricaneStatePayload = {
 };
 
 /** update-hurricanes イベントで送受信するハリケーン状態配列 */
-export type UpdateHurricanesPayload = HurricaneStatePayload[];
+export type HurricaneSnapshotPayload = HurricaneStatePayload[];
+
+/** update-hurricanes イベントで送受信するハリケーン差分配列 */
+export type HurricaneDeltaPayload = HurricaneStatePayload[];
+
+/** update-hurricanes イベントで送受信するハリケーン差分配列（互換名） */
+export type UpdateHurricanesPayload = HurricaneDeltaPayload;
 
 /**
  * new-player イベントで送受信するプレイヤー情報
@@ -95,11 +105,18 @@ export type GameStartPayload = {
   startTime: number;
   /** ペイロード送信時のサーバー時刻（クライアント側クロックオフセット補正用, ms） */
   serverNow: number;
+  /** 今回のゲームで採用するフィールドサイズ種別 */
+  fieldSizePreset: FieldSizePreset;
+  /** 今回のゲームで採用するマップ横幅（グリッド単位） */
+  gridCols: number;
+  /** 今回のゲームで採用するマップ縦幅（グリッド単位） */
+  gridRows: number;
 };
 
 /** start-game イベントで受信するゲーム開始要求 */
 export type StartGameRequestPayload = {
   targetPlayerCount?: number;
+  fieldSizePreset?: FieldSizePreset;
 };
 
 /** move イベントで送受信する移動入力情報 */

@@ -10,6 +10,7 @@ import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import type { GameSessionCallbacks } from "./application/services/GameRoomSession";
 import type { ActiveBombRegistration } from "./application/ports/gameUseCasePorts";
+import type { GameFieldConfig } from "./application/ports/gameUseCasePorts";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
 import { GamePlayerOperationService } from "./application/services/GamePlayerOperationService";
 
@@ -44,6 +45,10 @@ export class GameManager {
     return this.lifecycleService.getRoomStartTime();
   }
 
+  getRoomFieldConfig(): GameFieldConfig | undefined {
+    return this.lifecycleService.getRoomFieldConfig();
+  }
+
   // プレイヤー登録解除処理
   removePlayer(id: string) {
     this.playerOperationService.removePlayer(id);
@@ -67,11 +72,13 @@ export class GameManager {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
+    fieldConfig: GameFieldConfig,
     callbacks: GameSessionCallbacks,
   ) {
     this.lifecycleService.startRoomSession(
       playerIds,
       playerNamesById,
+      fieldConfig,
       callbacks,
     );
   }

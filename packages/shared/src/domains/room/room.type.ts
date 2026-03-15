@@ -4,6 +4,8 @@
  * 参加状態とイベントペイロード契約を集約する
  */
 
+import type { FieldSizePreset } from "../../config/gameConfig";
+
 /** ルーム進行フェーズ状態型 */
 export type RoomPhase = "waiting" | "playing" | "result";
 
@@ -22,6 +24,7 @@ export interface Room {
   players: RoomMember[];
   status: RoomPhase;
   maxPlayers: number;
+  fieldSizePreset: FieldSizePreset;
 }
 
 /** ルーム参加時に送信するペイロード */

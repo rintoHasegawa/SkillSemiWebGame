@@ -4,7 +4,9 @@
  */
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
 import type { GameOutputPort } from "../ports/gameUseCasePorts";
+import { config } from "@server/config";
 import { logEvent } from "@server/logging/logger";
+import { config as sharedConfig } from "@repo/shared";
 import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
 
 type ReadyForGameUseCaseParams = {
@@ -47,7 +49,24 @@ export const readyForGameUseCase = ({
     return;
   }
 
-  output.publishGameStartToSocket({ startTime, serverNow: Date.now() });
+  const fieldConfig = gameManager.getRoomFieldConfig();
+
+  output.publishGameStartToSocket({
+    startTime,
+    serverNow: Date.now(),
+    fieldSizePreset:
+      fieldConfig?.fieldSizePreset ?? config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
+    gridCols:
+      fieldConfig?.gridCols
+      ?? sharedConfig.resolveFieldGridSize(
+        config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
+      ).cols,
+    gridRows:
+      fieldConfig?.gridRows
+      ?? sharedConfig.resolveFieldGridSize(
+        config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
+      ).rows,
+  });
   logEvent(logScopes.GAME_USE_CASE, {
     event: gameUseCaseLogEvents.GAME_START,
     result: logResults.EMITTED,

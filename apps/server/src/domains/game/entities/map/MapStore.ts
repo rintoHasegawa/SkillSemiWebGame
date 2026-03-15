@@ -6,6 +6,11 @@ import { domain } from "@repo/shared";
 import { createInitialGridColors } from "./mapGrid.js";
 import { paintCellIfChanged } from "./mapPainting.js";
 
+type MapGridSize = {
+  gridCols: number;
+  gridRows: number;
+};
+
 /** ルーム内マップの塗り状態と更新差分を管理するストア */
 export class MapStore {
   // 全マスの現在の色（teamId）を保持
@@ -13,9 +18,9 @@ export class MapStore {
   // 次回の送信ループで送る差分リスト
   private pendingUpdates: domain.game.gridMap.CellUpdate[];
 
-  constructor() {
+  constructor(size?: MapGridSize) {
     // 初期状態は -1 (無色) などで初期化
-    this.gridColors = createInitialGridColors();
+    this.gridColors = createInitialGridColors(size);
     this.pendingUpdates = [];
   }
 

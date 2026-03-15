@@ -15,6 +15,11 @@ type EmitToRoom = {
   <TEvent extends SocketEventName>(roomId: string, event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
+type EmitToRoomVolatile = {
+  <TEvent extends SocketEventName>(roomId: string, event: TEvent): void;
+  <TEvent extends SocketEventName>(roomId: string, event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
+};
+
 type EmitToRoomExceptSocket = {
   <TEvent extends SocketEventName>(roomId: string, excludedSocketId: string, event: TEvent): void;
   <TEvent extends SocketEventName>(roomId: string, excludedSocketId: string, event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
@@ -53,6 +58,17 @@ const emitWithOptionalPayload = (
 export const createEmitToRoom = (io: Server): EmitToRoom => {
   return (roomId: string, event: SocketEventName, payload?: unknown) => {
     emitWithOptionalPayload((eventName, body) => io.to(roomId).emit(eventName, body), event, payload);
+  };
+};
+
+/** ルーム単位の volatile 送信関数を生成する */
+export const createEmitToRoomVolatile = (io: Server): EmitToRoomVolatile => {
+  return (roomId: string, event: SocketEventName, payload?: unknown) => {
+    emitWithOptionalPayload(
+      (eventName, body) => io.to(roomId).volatile.emit(eventName, body),
+      event,
+      payload,
+    );
   };
 };
 

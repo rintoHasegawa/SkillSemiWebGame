@@ -34,6 +34,8 @@ const { checkBombHit } = domain.game.bombHit;
 export type GameLoopOptions = {
   roomId: string;
   tickRate: number;
+  gridCols: number;
+  gridRows: number;
   players: Map<string, Player>;
   mapStore: MapStore;
   activeBombRegistry: ActiveBombRegistry;
@@ -65,9 +67,10 @@ export class GameLoop {
   private lastSentPlayers: Map<string, domain.game.tick.PlayerPositionUpdate> =
     new Map();
   private disconnectedBotControlledPlayerIds: Set<string> = new Set();
-  private botTurnOrchestrator: BotTurnOrchestrator = new BotTurnOrchestrator();
+  private readonly mapSize: { gridCols: number; gridRows: number };
+  private botTurnOrchestrator: BotTurnOrchestrator;
   private readonly botReceivedHitCountById = new Map<string, number>();
-  private readonly hurricaneSystem = new HurricaneSystem();
+  private readonly hurricaneSystem: HurricaneSystem;
 
   private readonly roomId: string;
   private readonly tickRate: number;
@@ -79,6 +82,12 @@ export class GameLoop {
   constructor(options: GameLoopOptions) {
     this.roomId = options.roomId;
     this.tickRate = options.tickRate;
+    this.mapSize = {
+      gridCols: options.gridCols,
+      gridRows: options.gridRows,
+    };
+    this.botTurnOrchestrator = new BotTurnOrchestrator(this.mapSize);
+    this.hurricaneSystem = new HurricaneSystem(this.mapSize);
     this.players = options.players;
     this.mapStore = options.mapStore;
     this.activeBombRegistry = options.activeBombRegistry;
@@ -311,7 +320,7 @@ export class GameLoop {
     this.players.forEach((player) => {
       gridEntries.push({
         playerId: player.id,
-        gridIndex: getPlayerGridIndex(player),
+        gridIndex: getPlayerGridIndex(player, this.mapSize),
         teamId: player.teamId,
         player,
       });

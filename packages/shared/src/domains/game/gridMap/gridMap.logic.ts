@@ -1,20 +1,35 @@
 import { GAME_CONFIG } from "../../../config/gameConfig";
 
+const toGridIndexWithSize = (
+  x: number,
+  y: number,
+  gridCols: number,
+  gridRows: number,
+): number | null => {
+  const col = Math.floor(x);
+  const row = Math.floor(y);
+
+  if (col < 0 || col >= gridCols || row < 0 || row >= gridRows) {
+    return null;
+  }
+
+  return row * gridCols + col;
+};
+
+/** グリッド座標から1次元配列インデックスを取得する（サイズ指定版） */
+export function getGridIndexFromPositionWithSize(
+  x: number,
+  y: number,
+  gridCols: number,
+  gridRows: number,
+): number | null {
+  return toGridIndexWithSize(x, y, gridCols, gridRows);
+}
+
 /**
  * グリッド座標から1次元配列インデックスを取得する（中心点判定）
  */
 export function getGridIndexFromPosition(x: number, y: number): number | null {
   const { GRID_COLS, GRID_ROWS } = GAME_CONFIG;
-
-  // 座標がどのマス（列・行）に属するか計算
-  const col = Math.floor(x);
-  const row = Math.floor(y);
-
-  // マップ外の場合は null を返す
-  if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) {
-    return null;
-  }
-
-  // 1次元配列のインデックスに変換 (row * 幅 + col)
-  return row * GRID_COLS + col;
+  return toGridIndexWithSize(x, y, GRID_COLS, GRID_ROWS);
 }

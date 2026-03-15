@@ -24,7 +24,11 @@ import type {
   GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 import { isBotPlayerId } from "@server/domains/game/application/services/bot/index.js";
-import { sanitizeUpdatePlayersPayload } from "@server/network/adapters/gamePayloadSanitizers";
+import {
+  collectChangedUpdatePlayersPayload,
+  quantizeUpdatePlayersPayload,
+} from "@server/network/adapters/gamePayloadSanitizers";
+import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 
@@ -48,19 +52,31 @@ export type GameDisconnectOutputAdapter = Pick<
 export const createGameOutputAdapter = (
   common: CommonHandlerContext,
 ): GameOutputAdapter => {
+  const { reliable, realtime } = common;
+  const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
+
   return {
     publishPongToSocket: (payload: PongPayload) => {
-      common.emitToSocket(protocol.SocketEvents.PONG, payload);
+      reliable.emitToSocket(protocol.SocketEvents.PONG, payload);
     },
     publishUpdatePlayersToRoom: (
       roomId: RoomId,
       players: UpdatePlayersPayload,
     ) => {
-      const sanitizedPlayers = sanitizeUpdatePlayersPayload(players);
-      common.emitToRoom(
+      const quantizedPlayers = quantizeUpdatePlayersPayload(players);
+      const changedPlayers = collectChangedUpdatePlayersPayload(
+        quantizedPlayers,
+        realtimeRoomSyncState.getPlayerPositionCache(roomId),
+      );
+
+      if (changedPlayers.length === 0) {
+        return;
+      }
+
+      realtime.emitToRoom(
         roomId,
         protocol.SocketEvents.UPDATE_PLAYERS,
-        sanitizedPlayers,
+        changedPlayers,
       );
     },
     publishMapCellUpdatesToRoom: (
@@ -68,7 +84,7 @@ export const createGameOutputAdapter = (
       cellUpdates: domainNs.game.gridMap.CellUpdate[],
     ) => {
       const grouped = domainNs.game.gridMap.groupCellUpdates(cellUpdates);
-      common.emitToRoom(
+      reliable.emitToRoom(
         roomId,
         protocol.SocketEvents.UPDATE_MAP_CELLS,
         grouped,
@@ -78,26 +94,28 @@ export const createGameOutputAdapter = (
       roomId: RoomId,
       hurricanes: UpdateHurricanesPayload,
     ) => {
-      common.emitToRoom(
+      realtime.emitToRoom(
         roomId,
         protocol.SocketEvents.UPDATE_HURRICANES,
         hurricanes,
       );
     },
     publishGameEndToRoom: (roomId: RoomId) => {
-      common.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
+      realtimeRoomSyncState.resetRoom(roomId);
+      reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
     },
     publishGameResultToRoom: (roomId: RoomId, payload: GameResultPayload) => {
-      common.emitToRoom(roomId, protocol.SocketEvents.GAME_RESULT, payload);
+      reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_RESULT, payload);
     },
     publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => {
-      common.emitToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
+      realtimeRoomSyncState.resetRoom(roomId);
+      reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
     },
     publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => {
-      common.emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, players);
+      reliable.emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, players);
     },
     publishGameStartToSocket: (payload: GameStartPayload) => {
-      common.emitToSocket(protocol.SocketEvents.GAME_START, payload);
+      reliable.emitToSocket(protocol.SocketEvents.GAME_START, payload);
     },
     publishBombPlacedToOthersInRoom: (
       roomId: RoomId,
@@ -105,11 +123,11 @@ export const createGameOutputAdapter = (
       payload: BombPlacedPayload,
     ) => {
       if (isBotPlayerId(ownerSocketId)) {
-        common.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, payload);
+        reliable.emitToRoom(roomId, protocol.SocketEvents.BOMB_PLACED, payload);
         return;
       }
 
-      common.emitToRoomExceptSocket(
+      reliable.emitToRoomExceptSocket(
         roomId,
         ownerSocketId,
         protocol.SocketEvents.BOMB_PLACED,
@@ -120,7 +138,7 @@ export const createGameOutputAdapter = (
       socketId: string,
       payload: BombPlacedAckPayload,
     ) => {
-      common.emitToSocketById(
+      reliable.emitToSocketById(
         socketId,
         protocol.SocketEvents.BOMB_PLACED_ACK,
         payload,
@@ -131,7 +149,7 @@ export const createGameOutputAdapter = (
       deadPlayerId: string,
       payload: PlayerHitPayload,
     ) => {
-      common.emitToRoomExceptSocket(
+      reliable.emitToRoomExceptSocket(
         roomId,
         deadPlayerId,
         protocol.SocketEvents.PLAYER_HIT,
@@ -139,13 +157,13 @@ export const createGameOutputAdapter = (
       );
     },
     publishPlayerHitToRoom: (roomId: RoomId, payload: PlayerHitPayload) => {
-      common.emitToRoom(roomId, protocol.SocketEvents.PLAYER_HIT, payload);
+      reliable.emitToRoom(roomId, protocol.SocketEvents.PLAYER_HIT, payload);
     },
     publishHurricaneHitToRoom: (
       roomId: RoomId,
       payload: HurricaneHitPayload,
     ) => {
-      common.emitToRoom(roomId, protocol.SocketEvents.HURRICANE_HIT, payload);
+      reliable.emitToRoom(roomId, protocol.SocketEvents.HURRICANE_HIT, payload);
     },
   };
 };

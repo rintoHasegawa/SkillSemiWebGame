@@ -4,17 +4,78 @@
  * クライアントとサーバーで参照する定数群を提供する
  */
 /** ゲーム全体で利用する共有設定値 */
+const NETWORK_SYNC_CONFIG = {
+  PLAYER_POSITION_UPDATE_MS: 50,
+  POSITION_QUANTIZE_SCALE: 100,
+  HURRICANE_POSITION_QUANTIZE_SCALE: 10,
+  HURRICANE_ROTATION_QUANTIZE_SCALE: 4,
+} as const;
+
+/** AOI同期で利用する1セルのグリッド幅 */
+const AOI_CELL_SIZE = 3 as const;
+
+/** フィールドサイズ種別ごとのAOIセル数と推奨人数レンジ */
+const FIELD_PRESETS = {
+  SMALL: {
+    aoiCols: 8,
+    aoiRows: 8,
+    recommendedPlayers: { min: 4, max: 20 },
+  },
+  MEDIUM: {
+    aoiCols: 12,
+    aoiRows: 12,
+    recommendedPlayers: { min: 20, max: 40 },
+  },
+  LARGE: {
+    aoiCols: 15,
+    aoiRows: 15,
+    recommendedPlayers: { min: 40, max: 70 },
+  },
+  XLARGE: {
+    aoiCols: 18,
+    aoiRows: 18,
+    recommendedPlayers: { min: 70, max: 100 },
+  },
+} as const;
+
+/** フィールドサイズ種別のキー型 */
+export type FieldSizePreset = keyof typeof FIELD_PRESETS;
+
+/** フィールドサイズ種別から実グリッドサイズを解決する */
+export const resolveFieldGridSize = (preset: FieldSizePreset) => {
+  const selectedPreset = FIELD_PRESETS[preset];
+  return {
+    cols: selectedPreset.aoiCols * AOI_CELL_SIZE,
+    rows: selectedPreset.aoiRows * AOI_CELL_SIZE,
+  };
+};
+
+/** 既定で利用するフィールドサイズ種別 */
+const DEFAULT_FIELD_PRESET = "MEDIUM" as const;
+
+const defaultGridSize = resolveFieldGridSize(DEFAULT_FIELD_PRESET);
+
+/** ゲーム全体で利用する共有設定値 */
 export const GAME_CONFIG = {
   // ゲーム進行設定（クライアント/サーバー契約）
   GAME_DURATION_SEC: 180, // 1ゲームの制限時間（秒）
   GAME_START_DELAY_MS: 5000, // 開始通知から実際にゲーム進行を開始するまでの待機時間（ms）
 
   // ネットワーク同期設定（クライアント/サーバー契約）
-  PLAYER_POSITION_UPDATE_MS: 50, // 座標送信間隔（20Hz）
+  NETWORK_SYNC: NETWORK_SYNC_CONFIG,
+  PLAYER_POSITION_UPDATE_MS: NETWORK_SYNC_CONFIG.PLAYER_POSITION_UPDATE_MS, // 後方互換のため維持
+  POSITION_QUANTIZE_SCALE: NETWORK_SYNC_CONFIG.POSITION_QUANTIZE_SCALE, // 後方互換のため維持
+  HURRICANE_POSITION_QUANTIZE_SCALE: NETWORK_SYNC_CONFIG.HURRICANE_POSITION_QUANTIZE_SCALE, // 後方互換のため維持
+  HURRICANE_ROTATION_QUANTIZE_SCALE: NETWORK_SYNC_CONFIG.HURRICANE_ROTATION_QUANTIZE_SCALE, // 後方互換のため維持
+
+  // AOI設定（クライアント/サーバー契約）
+  AOI_CELL_SIZE,
+  FIELD_PRESETS,
+  DEFAULT_FIELD_PRESET,
 
   // グリッド（マス）設定（クライアント/サーバー契約）
-  GRID_COLS: 40, // 横のマス数（グリッド単位）
-  GRID_ROWS: 40, // 縦のマス数（グリッド単位）
+  GRID_COLS: defaultGridSize.cols, // 横のマス数（グリッド単位）
+  GRID_ROWS: defaultGridSize.rows, // 縦のマス数（グリッド単位）
 
   // プレイヤー挙動設定（内部座標はグリッド単位、契約値）
   PLAYER_RADIUS: 0.5, // プレイヤー半径（グリッド単位、目安: 0.05〜0.2）
