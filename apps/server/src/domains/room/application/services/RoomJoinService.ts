@@ -21,6 +21,7 @@ export class RoomJoinService {
         players: [],
         status: domain.room.RoomPhase.WAITING,
         maxPlayers: config.GAME_CONFIG.MAX_PLAYERS_PER_ROOM,
+        fieldSizePreset: config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
       };
       this.rooms.set(roomId, room);
       logEvent(logScopes.ROOM_JOIN_SERVICE, {

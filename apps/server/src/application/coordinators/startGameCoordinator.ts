@@ -4,6 +4,7 @@
  */
 import { type StartGameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { FieldSizePreset } from "@repo/shared";
+import { config } from "@server/config";
 import type { StartGameCoordinatorDeps } from "./coordinatorDeps";
 import { startGameUseCase } from "@server/domains/game/application/useCases/startGameUseCase";
 import {
@@ -70,13 +71,19 @@ export const startGameCoordinator = ({
     return;
   }
 
+  const resolvedFieldSizePreset: FieldSizePreset =
+    requestedFieldSizePreset
+    ?? updatedRoom.fieldSizePreset
+    ?? config.GAME_CONFIG.DEFAULT_FIELD_PRESET;
+  updatedRoom.fieldSizePreset = resolvedFieldSizePreset;
+
   logEvent(logScopes.GAME_USE_CASE, {
     event: gameUseCaseLogEvents.START_GAME,
     result: logResults.ACCEPTED,
     roomId: updatedRoom.roomId,
     socketId: ownerId,
     totalPlayers: updatedRoom.players.length,
-    fieldSizePreset: requestedFieldSizePreset,
+    fieldSizePreset: resolvedFieldSizePreset,
   });
 
   const humanPlayerIds = updatedRoom.players.map((player) => player.id);
@@ -104,6 +111,7 @@ export const startGameCoordinator = ({
 
   startGameUseCase({
     roomId: updatedRoom.roomId,
+    fieldSizePreset: resolvedFieldSizePreset,
     playerIds: sessionPlayerIds,
     playerNamesById,
     gameSession: gameManager,

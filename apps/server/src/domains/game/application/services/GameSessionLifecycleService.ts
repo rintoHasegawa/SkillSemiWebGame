@@ -3,7 +3,10 @@
  * ゲームセッションの開始，参照，終了時クリーンアップを管理する
  */
 import { config } from "@server/config";
-import type { ActiveBombRegistration } from "../ports/gameUseCasePorts";
+import type {
+  ActiveBombRegistration,
+  GameFieldConfig,
+} from "../ports/gameUseCasePorts";
 import type {
   domain,
   GameResultPayload,
@@ -33,6 +36,10 @@ export class GameSessionLifecycleService {
 
   public getRoomPlayers() {
     return this.sessionRef.current?.getPlayers() ?? [];
+  }
+
+  public getRoomFieldConfig(): GameFieldConfig | undefined {
+    return this.sessionRef.current?.getFieldConfig();
   }
 
   public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
@@ -74,6 +81,7 @@ export class GameSessionLifecycleService {
   public startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
+    fieldConfig: GameFieldConfig,
     callbacks: GameSessionCallbacks,
   ) {
     if (this.sessionRef.current) {
@@ -90,6 +98,7 @@ export class GameSessionLifecycleService {
       this.roomId,
       playerIds,
       playerNamesById,
+      fieldConfig,
     );
 
     this.activePlayerIds.clear();

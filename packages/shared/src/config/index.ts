@@ -6,6 +6,10 @@
 
 /** ゲーム全体の共有設定値を再公開する */
 export { GAME_CONFIG } from "./gameConfig";
+/** フィールドサイズ種別から実グリッドサイズを解決する関数を再公開する */
+export { resolveFieldGridSize } from "./gameConfig";
+/** フィールドサイズ種別のキー型を再公開する */
+export type { FieldSizePreset } from "./gameConfig";
 /** チーム名配列を再公開する */
 export { TEAM_NAMES } from "./gameConfig";
 /** 未確定 teamId の既定値を再公開する */

@@ -9,6 +9,10 @@ import type {
   MovePayload as PlayerMovePayload,
   PlayerData,
 } from "../../domains/game/player/player.type";
+import type { FieldSizePreset } from "../../config/gameConfig";
+
+/** start-game で利用するフィールドサイズ種別を再公開する型別名 */
+export type { FieldSizePreset } from "../../config/gameConfig";
 
 /** game-result イベントで送受信するランキング1行 */
 export type GameResultRanking = {
@@ -101,10 +105,9 @@ export type GameStartPayload = {
   startTime: number;
   /** ペイロード送信時のサーバー時刻（クライアント側クロックオフセット補正用, ms） */
   serverNow: number;
+  /** 今回のゲームで採用するフィールドサイズ種別 */
+  fieldSizePreset: FieldSizePreset;
 };
-
-/** start-game イベントで受信するゲーム開始要求 */
-export type FieldSizePreset = "SMALL" | "MEDIUM" | "LARGE" | "XLARGE";
 
 /** start-game イベントで受信するゲーム開始要求 */
 export type StartGameRequestPayload = {

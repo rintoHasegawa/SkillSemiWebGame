@@ -17,23 +17,32 @@ import type {
   PongPayload,
   RemovePlayerPayload,
   UpdatePlayersPayload,
+  FieldSizePreset,
 } from "@repo/shared";
 import type { GameSessionCallbacks } from "../services/GameRoomSession";
+
+/** ゲーム開始時に固定するフィールド設定情報 */
+export type GameFieldConfig = {
+  fieldSizePreset: FieldSizePreset;
+};
 
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */
 export interface StartGamePort {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
+    fieldConfig: GameFieldConfig,
     callbacks: GameSessionCallbacks,
   ): void;
   getRoomStartTime(): number | undefined;
+  getRoomFieldConfig(): GameFieldConfig | undefined;
 }
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
 export interface ReadyForGamePort {
   getRoomPlayers(): domain.game.player.PlayerData[];
   getRoomStartTime(): number | undefined;
+  getRoomFieldConfig(): GameFieldConfig | undefined;
 }
 
 /** 移動入力ユースケースが利用するプレイヤー操作入力ポート */
