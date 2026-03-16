@@ -10,6 +10,7 @@ import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import type { GameSessionCallbacks } from "./application/services/GameRoomSession";
 import type { ActiveBombRegistration } from "./application/ports/gameUseCasePorts";
+import type { ActiveBombSnapshot } from "./application/ports/gameUseCasePorts";
 import type { GameFieldConfig } from "./application/ports/gameUseCasePorts";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
 import { GamePlayerOperationService } from "./application/services/GamePlayerOperationService";
@@ -103,6 +104,11 @@ export class GameManager {
     return this.lifecycleService.issueServerBombId();
   }
 
+  /** 指定プレイヤーのチームIDを返す */
+  getPlayerTeamId(playerId: string): number {
+    return this.lifecycleService.getPlayerTeamId(playerId);
+  }
+
   /** 設置済み爆弾をアクティブレジストリに登録する */
   registerActiveBomb(registration: ActiveBombRegistration): void {
     this.lifecycleService.registerActiveBomb(registration);
@@ -111,6 +117,11 @@ export class GameManager {
   /** 指定爆弾の所有者の bombHitCount を加算する */
   recordBombHitForOwner(bombId: string): void {
     this.lifecycleService.recordBombHitForOwner(bombId);
+  }
+
+  /** 現在アクティブな爆弾一覧を返す */
+  getActiveBombSnapshots(): ActiveBombSnapshot[] {
+    return this.lifecycleService.getActiveBombSnapshots();
   }
 
   dispose(): void {

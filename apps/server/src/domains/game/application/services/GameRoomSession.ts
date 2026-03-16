@@ -9,7 +9,10 @@ import {
   logScopes,
 } from "@server/logging/index";
 import type { domain, GameResultPayload, PlaceBombPayload } from "@repo/shared";
-import type { ActiveBombRegistration } from "../ports/gameUseCasePorts";
+import type {
+  ActiveBombRegistration,
+  ActiveBombSnapshot,
+} from "../ports/gameUseCasePorts";
 import { config } from "@server/config";
 import { GameLoop, type GameLoopCallbacks } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
@@ -211,6 +214,12 @@ export class GameRoomSession {
     return this.bombStateStore.issueServerBombId();
   }
 
+  /** 指定プレイヤーのチームIDを返す，存在しない場合は UNKNOWN_TEAM_ID を返す */
+  public getPlayerTeamId(playerId: string): number {
+    const player = this.players.get(playerId);
+    return player?.teamId ?? -1;
+  }
+
   /** 設置済み爆弾をアクティブレジストリに登録する */
   public registerActiveBomb(registration: ActiveBombRegistration): void {
     const player = this.players.get(registration.ownerPlayerId);
@@ -237,6 +246,20 @@ export class GameRoomSession {
     if (owner) {
       owner.bombHitCount += 1;
     }
+  }
+
+  /** 現在アクティブな爆弾一覧を返す */
+  public getActiveBombSnapshots(): ActiveBombSnapshot[] {
+    return this.bombStateStore.activeBombRegistry.getActiveBombSnapshots().map((bomb) => {
+      return {
+        bombId: bomb.bombId,
+        ownerPlayerId: bomb.ownerPlayerId,
+        ownerTeamId: bomb.ownerTeamId,
+        x: bomb.x,
+        y: bomb.y,
+        explodeAtElapsedMs: bomb.explodeAtElapsedMs,
+      };
+    });
   }
 
   public dispose(): void {

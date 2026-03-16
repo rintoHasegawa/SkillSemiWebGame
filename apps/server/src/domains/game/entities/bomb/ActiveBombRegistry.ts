@@ -41,4 +41,9 @@ export class ActiveBombRegistry {
   public clear(): void {
     this.bombs.clear();
   }
+
+  /** 現在アクティブな爆弾のスナップショットを返す */
+  public getActiveBombSnapshots(): ActiveBomb[] {
+    return Array.from(this.bombs.values());
+  }
 }

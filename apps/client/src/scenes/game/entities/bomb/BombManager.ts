@@ -98,7 +98,7 @@ export class BombManager {
   public applyPlacedBombFromOthers(payload: BombPlacedPayload): void {
     this.upsertBomb(
       payload.bombId,
-      this.bombPlacementService.createRenderPayload(payload, payload.ownerSocketId),
+      this.bombPlacementService.createRenderPayload(payload),
     );
   }
 

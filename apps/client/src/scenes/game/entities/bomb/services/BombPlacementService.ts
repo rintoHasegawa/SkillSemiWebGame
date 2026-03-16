@@ -98,11 +98,14 @@ export class BombPlacementService {
 
   /** 指定オーナー情報から描画ペイロードを生成する */
   public createRenderPayload(
-    payload: { x: number; y: number; explodeAtElapsedMs: number },
-    ownerSocketId: string,
+    payload: {
+      x: number;
+      y: number;
+      explodeAtElapsedMs: number;
+      ownerTeamId: number;
+    },
   ): BombRenderPayload {
-    const ownerTeamId = this.resolveTeamIdBySocketId(ownerSocketId);
-    return this.toRenderPayload(payload, ownerTeamId);
+    return this.toRenderPayload(payload, payload.ownerTeamId);
   }
 
   private toRenderPayload(

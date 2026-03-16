@@ -160,7 +160,7 @@ export class GameNetworkStateApplier {
         this.mapSyncHandler.handleUpdateMapCells(updates);
       },
       onReceivedCurrentHurricanes: (payload) => {
-        this.hurricaneSyncHandler.handleUpdateHurricanes(payload);
+        this.hurricaneSyncHandler.handleCurrentHurricanes(payload);
       },
       onReceivedUpdateHurricanes: (payload) => {
         this.hurricaneSyncHandler.handleUpdateHurricanes(payload);

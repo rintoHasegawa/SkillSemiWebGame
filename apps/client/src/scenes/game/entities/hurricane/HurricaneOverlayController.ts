@@ -48,6 +48,23 @@ export class HurricaneOverlayController {
     });
   }
 
+  /** 受信状態で全体を置換し，未含有IDを描画から除去する */
+  public replaceAll(states: UpdateHurricanesPayload): void {
+    const nextIds = new Set(states.map((state) => state.id));
+
+    this.displayById.forEach((display, id) => {
+      if (nextIds.has(id)) {
+        return;
+      }
+
+      this.layer.removeChild(display.container);
+      display.container.destroy({ children: true });
+      this.displayById.delete(id);
+    });
+
+    this.applyUpdates(states);
+  }
+
   /** 描画リソースを破棄する */
   public destroy(): void {
     this.displayById.forEach((display) => {

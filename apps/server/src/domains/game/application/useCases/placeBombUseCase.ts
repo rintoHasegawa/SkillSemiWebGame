@@ -33,6 +33,7 @@ export const placeBombUseCase = ({
   }
 
   const bombId = bombStore.issueServerBombId();
+  const ownerTeamId = bombStore.getPlayerTeamId(input.socketId);
 
   bombStore.registerActiveBomb({
     bombId,
@@ -48,7 +49,7 @@ export const placeBombUseCase = ({
     createBombPlacedPayload({
       payload: input.payload,
       bombId,
-      ownerSocketId: input.socketId,
+      ownerTeamId,
     })
   );
 

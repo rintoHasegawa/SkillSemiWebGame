@@ -14,6 +14,12 @@ const NETWORK_SYNC_CONFIG = {
 /** AOI同期で利用する1セルのグリッド幅 */
 const AOI_CELL_SIZE = 3 as const;
 
+/** AOI同期で利用する横方向の窓サイズ（AOIセル数） */
+const AOI_WINDOW_COLS = 5 as const;
+
+/** AOI同期で利用する縦方向の窓サイズ（AOIセル数） */
+const AOI_WINDOW_ROWS = 3 as const;
+
 /** フィールドサイズ種別ごとのAOIセル数と推奨人数レンジ */
 const FIELD_PRESETS = {
   SMALL: {
@@ -70,6 +76,8 @@ export const GAME_CONFIG = {
 
   // AOI設定（クライアント/サーバー契約）
   AOI_CELL_SIZE,
+  AOI_WINDOW_COLS,
+  AOI_WINDOW_ROWS,
   FIELD_PRESETS,
   DEFAULT_FIELD_PRESET,
 

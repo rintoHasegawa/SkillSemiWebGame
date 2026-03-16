@@ -35,6 +35,9 @@ export const createConnectionRegistrationContext = (
 
   return {
     deps,
-    socketOutputAdapters: createSocketOutputAdapters(deps.io, deps.socket),
+    socketOutputAdapters: createSocketOutputAdapters(deps.io, deps.socket, {
+      roomManager: deps.roomManager,
+      runtimeRegistry: deps.runtimeRegistry,
+    }),
   };
 };

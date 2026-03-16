@@ -12,6 +12,12 @@ import { PlayerHitEffectOrchestrator } from "@client/scenes/game/application/Pla
 import { RespawnManager } from "./RespawnManager";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
 
+/** リスポーン完了時に通知するプレイヤー座標型 */
+export type RespawnPosition = {
+  x: number;
+  y: number;
+};
+
 /** CombatLifecycleFacade の初期化入力 */
 export type CombatLifecycleFacadeOptions = {
   players: GamePlayers;
@@ -19,6 +25,7 @@ export type CombatLifecycleFacadeOptions = {
   acquireInputLock: () => () => void;
   onSendBombHitReport: (bombId: string) => void;
   onLocalBombHitCountChanged: (count: number) => void;
+  onLocalRespawnCompleted?: (position: RespawnPosition) => void;
 };
 
 type NetworkDamageSource = "bomb" | "hurricane";
@@ -28,6 +35,7 @@ export class CombatLifecycleFacade {
   private readonly myId: string;
   private readonly onSendBombHitReport: (bombId: string) => void;
   private readonly onLocalBombHitCountChanged: (count: number) => void;
+  private readonly onLocalRespawnCompleted?: (position: RespawnPosition) => void;
   private readonly bombHitOrchestrator: BombHitOrchestrator;
   private readonly playerHitPolicy: PlayerHitPolicy;
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
@@ -40,10 +48,12 @@ export class CombatLifecycleFacade {
     acquireInputLock,
     onSendBombHitReport,
     onLocalBombHitCountChanged,
+    onLocalRespawnCompleted,
   }: CombatLifecycleFacadeOptions) {
     this.myId = myId;
     this.onSendBombHitReport = onSendBombHitReport;
     this.onLocalBombHitCountChanged = onLocalBombHitCountChanged;
+    this.onLocalRespawnCompleted = onLocalRespawnCompleted;
     this.bombHitOrchestrator = new BombHitOrchestrator({
       players,
       myId,
@@ -65,6 +75,12 @@ export class CombatLifecycleFacade {
         if (playerId !== this.myId) return;
         this.localBombHitCount = 0;
         this.onLocalBombHitCountChanged(this.localBombHitCount);
+        const localPlayer = players[playerId];
+        if (!localPlayer) {
+          return;
+        }
+
+        this.onLocalRespawnCompleted?.(localPlayer.getPosition());
       },
     });
   }

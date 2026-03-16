@@ -12,3 +12,5 @@ export * as player from "./player";
 export * as gridMap from "./gridMap";
 /** 爆弾当たり判定サブドメインを再公開する */
 export * as bombHit from "./bombHit";
+/** AOIサブドメインを再公開する */
+export * as aoi from "./aoi";
