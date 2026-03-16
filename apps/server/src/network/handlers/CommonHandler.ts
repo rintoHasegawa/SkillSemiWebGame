@@ -6,7 +6,6 @@ import { Server, Socket } from "socket.io";
 import {
   createEmitToAll,
   createEmitToRoom,
-  createEmitToRoomVolatile,
   createEmitToRoomExceptSocket,
   createEmitToSocket,
   createEmitToSocketById,
@@ -21,15 +20,9 @@ export type ReliableEmitters = {
   emitToSocketById: ReturnType<typeof createEmitToSocketById>;
 };
 
-/** 鮮度を重視する高頻度送信関数群 */
-export type RealtimeEmitters = {
-  emitToRoom: ReturnType<typeof createEmitToRoomVolatile>;
-};
-
 /** ハンドラで共通利用する送信コンテキスト */
 export type CommonHandlerContext = {
   reliable: ReliableEmitters;
-  realtime: RealtimeEmitters;
 };
 
 /** 送信先別のエミッタをまとめた共通コンテキストを生成する */
@@ -45,12 +38,7 @@ export const createCommonHandlerContext = (
     emitToSocketById: createEmitToSocketById(io),
   };
 
-  const realtime: RealtimeEmitters = {
-    emitToRoom: createEmitToRoomVolatile(io),
-  };
-
   return {
     reliable,
-    realtime,
   };
 };

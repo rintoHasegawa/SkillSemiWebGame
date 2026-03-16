@@ -15,5 +15,7 @@ export interface TickData {
   cellUpdates: CellUpdate[];
   /** 出現直後に1回だけ配信するハリケーン初期同期スナップショット */
   hurricaneInitialSnapshot: HurricaneStatePayload[];
+  /** 欠損復旧のため定期配信するハリケーン再同期スナップショット */
+  hurricaneReliableSnapshot: HurricaneStatePayload[];
   hurricaneUpdates: HurricaneStatePayload[];
 }

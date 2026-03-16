@@ -52,7 +52,7 @@ export type GameDisconnectOutputAdapter = Pick<
 export const createGameOutputAdapter = (
   common: CommonHandlerContext,
 ): GameOutputAdapter => {
-  const { reliable, realtime } = common;
+  const { reliable } = common;
   const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
 
   return {
@@ -73,7 +73,7 @@ export const createGameOutputAdapter = (
         return;
       }
 
-      realtime.emitToRoom(
+      reliable.emitToRoom(
         roomId,
         protocol.SocketEvents.UPDATE_PLAYERS,
         changedPlayers,
@@ -94,13 +94,9 @@ export const createGameOutputAdapter = (
       roomId: RoomId,
       hurricanes: UpdateHurricanesPayload,
     ) => {
-      reliable.emitToRoom(
-        roomId,
-        protocol.SocketEvents.UPDATE_HURRICANES,
-        hurricanes,
-      );
+      reliable.emitToRoom(roomId, protocol.SocketEvents.UPDATE_HURRICANES, hurricanes);
     },
-    publishInitialHurricanesToRoom: (
+    publishReliableHurricanesToRoom: (
       roomId: RoomId,
       hurricanes: UpdateHurricanesPayload,
     ) => {

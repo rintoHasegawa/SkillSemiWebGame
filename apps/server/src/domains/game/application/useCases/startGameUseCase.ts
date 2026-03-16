@@ -42,23 +42,30 @@ const publishTickUpdates = ({
   output,
   tickData,
 }: TickUpdatePublishParams): void => {
+  if (tickData.hurricaneInitialSnapshot.length > 0) {
+    output.publishReliableHurricanesToRoom(
+      roomId,
+      tickData.hurricaneInitialSnapshot,
+    );
+  }
+
+  if (tickData.hurricaneReliableSnapshot.length > 0) {
+    output.publishReliableHurricanesToRoom(
+      roomId,
+      tickData.hurricaneReliableSnapshot,
+    );
+  }
+
+  if (tickData.hurricaneUpdates.length > 0) {
+    output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
+  }
+
   if (tickData.playerUpdates.length > 0) {
     output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
   }
 
   if (tickData.cellUpdates.length > 0) {
     output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
-  }
-
-  if (tickData.hurricaneInitialSnapshot.length > 0) {
-    output.publishInitialHurricanesToRoom(
-      roomId,
-      tickData.hurricaneInitialSnapshot,
-    );
-  }
-
-  if (tickData.hurricaneUpdates.length > 0) {
-    output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
   }
 };
 

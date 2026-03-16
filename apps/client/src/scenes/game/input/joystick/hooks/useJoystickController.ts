@@ -15,35 +15,6 @@ import {
 } from "../common";
 import { useJoystickState } from "./useJoystickState";
 
-const isJoystickDebugEnabled = (): boolean => {
-  if (import.meta.env.DEV) {
-    try {
-      return window.localStorage.getItem("debug:joystick") !== "0";
-    } catch {
-      return true;
-    }
-  }
-
-  try {
-    return window.localStorage.getItem("debug:joystick") === "1";
-  } catch {
-    return false;
-  }
-};
-
-const debugJoystick = (label: string, payload?: unknown): void => {
-  if (!isJoystickDebugEnabled()) {
-    return;
-  }
-
-  if (payload === undefined) {
-    console.log(`[joystick-controller] ${label}`);
-    return;
-  }
-
-  console.log(`[joystick-controller] ${label}`, payload);
-};
-
 /** 入力イベントと通知処理を仲介するフック */
 export const useJoystickController = ({
   onInput,
@@ -53,7 +24,6 @@ export const useJoystickController = ({
 
   const emitInput = useCallback(
     (normalized: NormalizedInput) => {
-      debugJoystick("emit", normalized);
       onInput(normalized.x, normalized.y);
     },
     [onInput],
@@ -65,12 +35,6 @@ export const useJoystickController = ({
       if (last) {
         const delta = Math.hypot(normalized.x - last.x, normalized.y - last.y);
         if (delta < JOYSTICK_MIN_MOVEMENT_DELTA) {
-          debugJoystick("skip-small-delta", {
-            normalized,
-            last,
-            delta,
-            threshold: JOYSTICK_MIN_MOVEMENT_DELTA,
-          });
           return;
         }
       }
