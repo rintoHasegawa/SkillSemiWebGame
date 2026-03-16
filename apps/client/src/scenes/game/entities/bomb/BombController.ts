@@ -34,8 +34,13 @@ export class BombController {
     return this.view.displayObject;
   }
 
-  public tick(elapsedMs: number): void {
+  /** 経過時間に基づいて内部状態だけ更新する */
+  public updateState(elapsedMs: number): void {
     this.model.update(elapsedMs);
+  }
+
+  /** 現在状態を描画へ同期する */
+  public render(): void {
     this.view.renderState(this.model.getState(), this.model.getExplosionRadiusGrid(), this.model.getColor());
   }
 

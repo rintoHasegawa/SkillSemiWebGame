@@ -3,7 +3,7 @@
  * ハリケーン状態配列を受け取り，Pixi描画オブジェクトへ反映する
  * 生成，更新，削除を同一コントローラーで管理する
  */
-import type { UpdateHurricanesPayload } from "@repo/shared";
+import type { HurricaneStatePayload, UpdateHurricanesPayload } from "@repo/shared";
 import { config } from "@client/config";
 import { Container, Sprite, Texture } from "pixi.js";
 import { loadHurricaneTexture } from "./HurricaneTextureCache";
@@ -22,6 +22,7 @@ type HurricaneDisplay = {
 export class HurricaneOverlayController {
   private readonly layer: Container;
   private readonly displayById = new Map<string, HurricaneDisplay>();
+  private readonly stateById = new Map<string, HurricaneStatePayload>();
   private readonly imageUrl = `${import.meta.env.BASE_URL}hurricane.svg`;
 
   constructor(worldContainer: Container) {
@@ -33,6 +34,8 @@ export class HurricaneOverlayController {
   /** ハリケーン状態を描画へ同期する */
   public applyUpdates(states: UpdateHurricanesPayload): void {
     states.forEach((state) => {
+      this.stateById.set(state.id, state);
+
       let target = this.displayById.get(state.id);
       if (!target) {
         const created = this.createDisplay();
@@ -41,14 +44,11 @@ export class HurricaneOverlayController {
         target = created;
       }
 
-      if (Math.abs(target.radiusGrid - state.radius) > 0.0001) {
-        this.applySpriteSize(target.sprite, state.radius);
-        target.radiusGrid = state.radius;
+      if (!target.container.visible) {
+        return;
       }
 
-      target.container.x = state.x * config.GAME_CONFIG.GRID_CELL_SIZE;
-      target.container.y = state.y * config.GAME_CONFIG.GRID_CELL_SIZE;
-      target.container.rotation = state.rotationRad;
+      this.renderDisplayFromState(target, state);
     });
   }
 
@@ -64,6 +64,7 @@ export class HurricaneOverlayController {
       this.layer.removeChild(display.container);
       display.container.destroy({ children: true });
       this.displayById.delete(id);
+      this.stateById.delete(id);
     });
 
     this.applyUpdates(states);
@@ -71,15 +72,28 @@ export class HurricaneOverlayController {
 
   /** 可視矩形に基づいてハリケーン表示を切り替える */
   public applyViewportCulling(viewport: WorldViewport, marginPx: number): void {
-    this.displayById.forEach((display) => {
-      const radiusPx = display.radiusGrid * config.GAME_CONFIG.GRID_CELL_SIZE + marginPx;
+    this.stateById.forEach((state, id) => {
+      const display = this.displayById.get(id);
+      if (!display) {
+        return;
+      }
+
+      const centerX = state.x * config.GAME_CONFIG.GRID_CELL_SIZE;
+      const centerY = state.y * config.GAME_CONFIG.GRID_CELL_SIZE;
+      const radiusPx = state.radius * config.GAME_CONFIG.GRID_CELL_SIZE + marginPx;
       const isVisible = isCircleIntersectingViewport(
-        display.container.x,
-        display.container.y,
+        centerX,
+        centerY,
         radiusPx,
         viewport,
       );
+
+      const wasVisible = display.container.visible;
       display.container.visible = isVisible;
+
+      if (isVisible && !wasVisible) {
+        this.renderDisplayFromState(display, state);
+      }
     });
   }
 
@@ -129,5 +143,20 @@ export class HurricaneOverlayController {
   /** 半径グリッド値をスプライト直径ピクセルへ変換する */
   private toSpriteSizePx(radiusGrid: number): number {
     return radiusGrid * 2 * config.GAME_CONFIG.GRID_CELL_SIZE;
+  }
+
+  /** 最新状態を描画オブジェクトへ反映する */
+  private renderDisplayFromState(
+    display: HurricaneDisplay,
+    state: HurricaneStatePayload,
+  ): void {
+    if (Math.abs(display.radiusGrid - state.radius) > 0.0001) {
+      this.applySpriteSize(display.sprite, state.radius);
+      display.radiusGrid = state.radius;
+    }
+
+    display.container.x = state.x * config.GAME_CONFIG.GRID_CELL_SIZE;
+    display.container.y = state.y * config.GAME_CONFIG.GRID_CELL_SIZE;
+    display.container.rotation = state.rotationRad;
   }
 }
