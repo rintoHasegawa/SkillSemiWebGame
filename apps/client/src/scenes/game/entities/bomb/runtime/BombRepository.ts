@@ -4,8 +4,13 @@
  * 追加，更新，削除，破棄の基本操作を提供する
  */
 import type { Container } from "pixi.js";
+import { config } from "@client/config";
 import { BombController } from "@client/scenes/game/entities/bomb/BombController";
 import { BombIdRegistry } from "@client/scenes/game/entities/bomb/BombIdRegistry";
+import {
+  isCircleIntersectingViewport,
+  type WorldViewport,
+} from "@client/scenes/game/application/culling/worldViewport";
 
 /** 爆弾の描画更新に使う入力データ型 */
 export type BombRenderPayload = {
@@ -77,6 +82,26 @@ export class BombRepository {
   public forEachBomb(callback: (bomb: BombController, bombId: string) => void): void {
     this.bombs.forEach((bomb, bombId) => {
       callback(bomb, bombId);
+    });
+  }
+
+  /** 可視矩形に基づいて爆弾表示を切り替える */
+  public applyViewportCulling(viewport: WorldViewport, marginPx: number): void {
+    this.bombs.forEach((bomb, bombId) => {
+      const payload = this.bombRenderPayloadById.get(bombId);
+      if (!payload) {
+        return;
+      }
+
+      const display = bomb.getDisplayObject();
+      const radiusPx = payload.radiusGrid * config.GAME_CONFIG.GRID_CELL_SIZE + marginPx;
+      const isVisible = isCircleIntersectingViewport(
+        display.x,
+        display.y,
+        radiusPx,
+        viewport,
+      );
+      display.visible = isVisible;
     });
   }
 

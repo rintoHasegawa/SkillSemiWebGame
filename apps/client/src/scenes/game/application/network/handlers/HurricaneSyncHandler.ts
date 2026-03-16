@@ -9,6 +9,7 @@ import type {
   UpdateHurricanesPayload,
 } from "@repo/shared";
 import { HurricaneOverlayController } from "@client/scenes/game/entities/hurricane/HurricaneOverlayController";
+import type { WorldViewport } from "@client/scenes/game/application/culling/worldViewport";
 
 /** HurricaneSyncHandler の初期化入力 */
 export type HurricaneSyncHandlerOptions = {
@@ -34,6 +35,11 @@ export class HurricaneSyncHandler {
   public handleUpdateHurricanes = (payload: UpdateHurricanesPayload): void => {
     this.overlayController.applyUpdates(payload);
   };
+
+  /** 可視矩形に基づいてハリケーン表示を切り替える */
+  public applyViewportCulling(viewport: WorldViewport, marginPx: number): void {
+    this.overlayController.applyViewportCulling(viewport, marginPx);
+  }
 
   /** 管理中リソースを破棄する */
   public destroy(): void {

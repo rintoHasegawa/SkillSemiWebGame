@@ -22,6 +22,10 @@ import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepo
 import type { GameMapController } from "@client/scenes/game/entities/map/GameMapController";
 import { config } from "@client/config";
 import type { PongPayload } from "@repo/shared";
+import {
+  expandWorldViewport,
+  resolveWorldViewport,
+} from "@client/scenes/game/application/culling/worldViewport";
 
 type RuntimeLifecycleState = "created" | "initialized" | "destroyed";
 
@@ -199,6 +203,7 @@ export class GameSceneRuntime {
     }
 
     this.gameLoop?.tick(ticker);
+    this.applyViewportCulling();
   }
 
   /** チームごとの塗り率配列を返す */
@@ -258,5 +263,27 @@ export class GameSceneRuntime {
       this.tickerHandler = null;
     }
     this.disposableRegistry.disposeAll();
+  }
+
+  /** ローカルプレイヤー中心の可視矩形で画面外描画を抑制する */
+  private applyViewportCulling(): void {
+    const me = this.playerRepository.getById(this.myId);
+    if (!me) {
+      return;
+    }
+
+    const meDisplay = me.getDisplayObject();
+    const viewport = expandWorldViewport(
+      resolveWorldViewport(
+        meDisplay.x,
+        meDisplay.y,
+        this.app.screen.width,
+        this.app.screen.height,
+      ),
+      config.GAME_CONFIG.GRID_CELL_SIZE,
+    );
+
+    this.bombManager?.applyViewportCulling(viewport, config.GAME_CONFIG.GRID_CELL_SIZE);
+    this.networkSync?.applyViewportCulling(viewport, config.GAME_CONFIG.GRID_CELL_SIZE);
   }
 }

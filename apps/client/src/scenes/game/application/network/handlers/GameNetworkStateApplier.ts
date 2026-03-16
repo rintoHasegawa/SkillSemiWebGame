@@ -27,6 +27,7 @@ import { HurricaneSyncHandler } from "./HurricaneSyncHandler";
 import { MapSyncHandler } from "./MapSyncHandler";
 import { PlayerSyncHandler } from "./PlayerSyncHandler";
 import type { ReceivedGameEventHandlers } from "../receivers/GameNetworkEventReceiver";
+import type { WorldViewport } from "@client/scenes/game/application/culling/worldViewport";
 
 /** 状態反映処理の初期化入力 */
 export type GameNetworkStateApplierOptions = {
@@ -104,6 +105,11 @@ export class GameNetworkStateApplier {
   /** 状態反映層が保持するリソースを破棄する */
   public dispose(): void {
     this.hurricaneSyncHandler.destroy();
+  }
+
+  /** 可視矩形に基づいて画面外ハリケーンの描画を抑制する */
+  public applyViewportCulling(viewport: WorldViewport, marginPx: number): void {
+    this.hurricaneSyncHandler.applyViewportCulling(viewport, marginPx);
   }
 
   /** 戦闘イベント橋渡しハンドラを生成する */

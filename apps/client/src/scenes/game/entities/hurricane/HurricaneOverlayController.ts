@@ -7,6 +7,10 @@ import type { UpdateHurricanesPayload } from "@repo/shared";
 import { config } from "@client/config";
 import { Container, Sprite, Texture } from "pixi.js";
 import { loadHurricaneTexture } from "./HurricaneTextureCache";
+import {
+  isCircleIntersectingViewport,
+  type WorldViewport,
+} from "@client/scenes/game/application/culling/worldViewport";
 
 type HurricaneDisplay = {
   container: Container;
@@ -63,6 +67,20 @@ export class HurricaneOverlayController {
     });
 
     this.applyUpdates(states);
+  }
+
+  /** 可視矩形に基づいてハリケーン表示を切り替える */
+  public applyViewportCulling(viewport: WorldViewport, marginPx: number): void {
+    this.displayById.forEach((display) => {
+      const radiusPx = display.radiusGrid * config.GAME_CONFIG.GRID_CELL_SIZE + marginPx;
+      const isVisible = isCircleIntersectingViewport(
+        display.container.x,
+        display.container.y,
+        radiusPx,
+        viewport,
+      );
+      display.container.visible = isVisible;
+    });
   }
 
   /** 描画リソースを破棄する */
