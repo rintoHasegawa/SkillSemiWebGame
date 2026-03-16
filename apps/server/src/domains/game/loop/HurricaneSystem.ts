@@ -9,7 +9,14 @@ import { domain, type HurricaneStatePayload } from "@repo/shared";
 import { Player } from "../entities/player/Player.js";
 
 const { checkBombHit } = domain.game.bombHit;
-const HURRICANE_RELIABLE_RESYNC_INTERVAL_MS = 200;
+const HURRICANE_RELIABLE_RESYNC_INTERVAL_MS =
+  config.GAME_CONFIG.NETWORK_SYNC.HURRICANE_RELIABLE_RESYNC_INTERVAL_MS;
+
+/** 1ティック分のハリケーン同期出力 */
+export type HurricaneSyncOutputs = {
+  snapshotUpdates: HurricaneStatePayload[];
+  deltaUpdates: HurricaneStatePayload[];
+};
 
 type HurricaneState = {
   id: string;
@@ -109,40 +116,15 @@ export class HurricaneSystem {
     );
   }
 
-  /** 出現直後に1回だけ配信用の初期同期スナップショットを返す */
-  public consumeInitialSyncPayload(elapsedMs: number): HurricaneStatePayload[] {
-    if (!this.hasInitialSyncPending) {
-      return [];
-    }
+  /** 1ティック分のハリケーン同期出力をまとめて返す */
+  public consumeSyncOutputs(elapsedMs: number): HurricaneSyncOutputs {
+    const snapshotUpdates = this.consumeSnapshotUpdates(elapsedMs);
+    const deltaUpdates = this.consumeDeltaUpdates();
 
-    this.hasInitialSyncPending = false;
-    this.lastReliableSyncElapsedMs = elapsedMs;
-
-    return this.buildSnapshotPayload(true);
-  }
-
-  /** 欠損復旧のため一定間隔で再同期スナップショットを返す */
-  public consumePeriodicReliableSyncPayload(
-    elapsedMs: number,
-  ): HurricaneStatePayload[] {
-    if (this.hurricanes.length === 0 || this.hasInitialSyncPending) {
-      return [];
-    }
-
-    if (this.lastReliableSyncElapsedMs < 0) {
-      this.lastReliableSyncElapsedMs = elapsedMs;
-      return [];
-    }
-
-    if (
-      elapsedMs - this.lastReliableSyncElapsedMs
-      < HURRICANE_RELIABLE_RESYNC_INTERVAL_MS
-    ) {
-      return [];
-    }
-
-    this.lastReliableSyncElapsedMs = elapsedMs;
-    return this.buildSnapshotPayload(true);
+    return {
+      snapshotUpdates,
+      deltaUpdates,
+    };
   }
 
   /** ハリケーンを直線移動させ，境界で反射させる */
@@ -178,8 +160,8 @@ export class HurricaneSystem {
     });
   }
 
-  /** 同期配信用のハリケーン状態配列を返す */
-  public getUpdatePayload(): HurricaneStatePayload[] {
+  /** 差分同期配信用のハリケーン状態配列を返す */
+  private consumeDeltaUpdates(): HurricaneStatePayload[] {
     return collectSyncDeltaEntries(
       this.hurricanes,
       this.lastSentSnapshotByHurricaneId,
@@ -282,13 +264,39 @@ export class HurricaneSystem {
     return min + Math.random() * Math.max(0, max - min);
   }
 
-  /** 現在状態を量子化スナップショットへ変換する */
-  private buildSnapshotPayload(rememberAsLastSent: boolean): HurricaneStatePayload[] {
+  /** スナップショット同期が必要なら全量ペイロードを返す */
+  private consumeSnapshotUpdates(elapsedMs: number): HurricaneStatePayload[] {
+    if (this.hurricanes.length === 0) {
+      return [];
+    }
+
+    if (this.hasInitialSyncPending) {
+      this.hasInitialSyncPending = false;
+      this.lastReliableSyncElapsedMs = elapsedMs;
+      return this.buildSnapshotPayloadAndCommit();
+    }
+
+    if (this.lastReliableSyncElapsedMs < 0) {
+      this.lastReliableSyncElapsedMs = elapsedMs;
+      return [];
+    }
+
+    if (
+      elapsedMs - this.lastReliableSyncElapsedMs
+      < HURRICANE_RELIABLE_RESYNC_INTERVAL_MS
+    ) {
+      return [];
+    }
+
+    this.lastReliableSyncElapsedMs = elapsedMs;
+    return this.buildSnapshotPayloadAndCommit();
+  }
+
+  /** 現在状態を量子化スナップショットへ変換して送信済み状態へ反映する */
+  private buildSnapshotPayloadAndCommit(): HurricaneStatePayload[] {
     return this.hurricanes.map((hurricane) => {
       const snapshot = toHurricaneSyncSnapshot(hurricane);
-      if (rememberAsLastSent) {
-        this.lastSentSnapshotByHurricaneId.set(hurricane.id, snapshot);
-      }
+      this.lastSentSnapshotByHurricaneId.set(hurricane.id, snapshot);
 
       return {
         id: hurricane.id,

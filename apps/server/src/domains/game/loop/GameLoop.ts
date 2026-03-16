@@ -263,17 +263,12 @@ export class GameLoop {
     const activePlayerIds = new Set<string>();
     const playerUpdates = this.collectChangedPlayerUpdates(activePlayerIds);
     this.cleanupInactivePlayerSnapshots(activePlayerIds);
-    const hurricaneInitialSnapshot =
-      this.hurricaneSystem.consumeInitialSyncPayload(elapsedMs);
-    const hurricaneReliableSnapshot =
-      this.hurricaneSystem.consumePeriodicReliableSyncPayload(elapsedMs);
+    const hurricaneSync = this.hurricaneSystem.consumeSyncOutputs(elapsedMs);
 
     return {
       playerUpdates,
       cellUpdates: this.mapStore.getAndClearUpdates(),
-      hurricaneInitialSnapshot,
-      hurricaneReliableSnapshot,
-      hurricaneUpdates: this.hurricaneSystem.getUpdatePayload(),
+      hurricaneSync,
     };
   }
 

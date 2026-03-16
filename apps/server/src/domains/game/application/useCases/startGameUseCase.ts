@@ -37,36 +37,74 @@ type TickUpdatePublishParams = {
     : never;
 };
 
+type TickPublishStep = {
+  key: "hurricaneSnapshot" | "hurricaneDelta" | "player" | "map";
+  run: (params: TickUpdatePublishParams) => void;
+};
+
+const TICK_PUBLISH_STEPS: TickPublishStep[] = [
+  {
+    key: "hurricaneSnapshot",
+    run: ({ roomId, output, tickData }) => {
+      if (tickData.hurricaneSync.snapshotUpdates.length === 0) {
+        return;
+      }
+
+      output.publishCurrentHurricanesToRoom(
+        roomId,
+        tickData.hurricaneSync.snapshotUpdates,
+      );
+    },
+  },
+  {
+    key: "hurricaneDelta",
+    run: ({ roomId, output, tickData }) => {
+      if (tickData.hurricaneSync.deltaUpdates.length === 0) {
+        return;
+      }
+
+      output.publishUpdateHurricanesToRoom(
+        roomId,
+        tickData.hurricaneSync.deltaUpdates,
+      );
+    },
+  },
+  {
+    key: "player",
+    run: ({ roomId, output, tickData }) => {
+      if (tickData.playerUpdates.length === 0) {
+        return;
+      }
+
+      output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
+    },
+  },
+  {
+    key: "map",
+    run: ({ roomId, output, tickData }) => {
+      if (tickData.cellUpdates.length === 0) {
+        return;
+      }
+
+      output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
+    },
+  },
+];
+
 const publishTickUpdates = ({
   roomId,
   output,
   tickData,
 }: TickUpdatePublishParams): void => {
-  if (tickData.hurricaneInitialSnapshot.length > 0) {
-    output.publishReliableHurricanesToRoom(
-      roomId,
-      tickData.hurricaneInitialSnapshot,
-    );
-  }
+  const params: TickUpdatePublishParams = {
+    roomId,
+    output,
+    tickData,
+  };
 
-  if (tickData.hurricaneReliableSnapshot.length > 0) {
-    output.publishReliableHurricanesToRoom(
-      roomId,
-      tickData.hurricaneReliableSnapshot,
-    );
-  }
-
-  if (tickData.hurricaneUpdates.length > 0) {
-    output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
-  }
-
-  if (tickData.playerUpdates.length > 0) {
-    output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
-  }
-
-  if (tickData.cellUpdates.length > 0) {
-    output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
-  }
+  TICK_PUBLISH_STEPS.forEach((step) => {
+    step.run(params);
+  });
 };
 
 /** ゲームセッション開始とティック通知，終了通知を実行する */

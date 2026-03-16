@@ -7,6 +7,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   CurrentPlayersPayload,
+  CurrentHurricanesPayload,
   GameStartPayload,
   HurricaneHitPayload,
   NewPlayerPayload,
@@ -30,6 +31,7 @@ export type ReceivedGameEventHandlers = {
   onReceivedUpdatePlayers: (payload: UpdatePlayersPayload) => void;
   onReceivedRemovePlayer: (payload: RemovePlayerPayload) => void;
   onReceivedUpdateMapCells: (payload: UpdateMapCellsPayload) => void;
+  onReceivedCurrentHurricanes: (payload: CurrentHurricanesPayload) => void;
   onReceivedUpdateHurricanes: (payload: UpdateHurricanesPayload) => void;
   onReceivedGameEnd: () => void;
   onReceivedBombPlaced: (payload: BombPlacedPayload) => void;
@@ -52,6 +54,7 @@ export class GameNetworkEventReceiver {
       onUpdatePlayers: handlers.onReceivedUpdatePlayers,
       onRemovePlayer: handlers.onReceivedRemovePlayer,
       onUpdateMapCells: handlers.onReceivedUpdateMapCells,
+      onCurrentHurricanes: handlers.onReceivedCurrentHurricanes,
       onUpdateHurricanes: handlers.onReceivedUpdateHurricanes,
       onGameEnd: handlers.onReceivedGameEnd,
       onBombPlaced: handlers.onReceivedBombPlaced,

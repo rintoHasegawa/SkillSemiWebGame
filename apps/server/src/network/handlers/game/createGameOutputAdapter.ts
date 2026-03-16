@@ -34,6 +34,16 @@ import type { CommonHandlerContext } from "../CommonHandler";
 
 type RoomId = domain.room.Room["roomId"];
 
+type ReliableRoomEvent =
+  | typeof protocol.SocketEvents.UPDATE_PLAYERS
+  | typeof protocol.SocketEvents.UPDATE_MAP_CELLS
+  | typeof protocol.SocketEvents.CURRENT_HURRICANES
+  | typeof protocol.SocketEvents.UPDATE_HURRICANES
+  | typeof protocol.SocketEvents.GAME_END
+  | typeof protocol.SocketEvents.GAME_RESULT
+  | typeof protocol.SocketEvents.GAME_START
+  | typeof protocol.SocketEvents.HURRICANE_HIT;
+
 /** ゲーム出力アダプターのインターフェース */
 export type GameOutputAdapter = Omit<
   GameOutputPort,
@@ -55,6 +65,19 @@ export const createGameOutputAdapter = (
   const { reliable } = common;
   const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
 
+  const emitReliableToRoom = (
+    roomId: RoomId,
+    event: ReliableRoomEvent,
+    payload?: unknown,
+  ): void => {
+    if (payload === undefined) {
+      reliable.emitToRoom(roomId, event);
+      return;
+    }
+
+    reliable.emitToRoom(roomId, event, payload as never);
+  };
+
   return {
     publishPongToSocket: (payload: PongPayload) => {
       reliable.emitToSocket(protocol.SocketEvents.PONG, payload);
@@ -73,49 +96,37 @@ export const createGameOutputAdapter = (
         return;
       }
 
-      reliable.emitToRoom(
-        roomId,
-        protocol.SocketEvents.UPDATE_PLAYERS,
-        changedPlayers,
-      );
+      emitReliableToRoom(roomId, protocol.SocketEvents.UPDATE_PLAYERS, changedPlayers);
     },
     publishMapCellUpdatesToRoom: (
       roomId: RoomId,
       cellUpdates: domainNs.game.gridMap.CellUpdate[],
     ) => {
       const grouped = domainNs.game.gridMap.groupCellUpdates(cellUpdates);
-      reliable.emitToRoom(
-        roomId,
-        protocol.SocketEvents.UPDATE_MAP_CELLS,
-        grouped,
-      );
+      emitReliableToRoom(roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, grouped);
+    },
+    publishCurrentHurricanesToRoom: (
+      roomId: RoomId,
+      hurricanes: UpdateHurricanesPayload,
+    ) => {
+      emitReliableToRoom(roomId, protocol.SocketEvents.CURRENT_HURRICANES, hurricanes);
     },
     publishUpdateHurricanesToRoom: (
       roomId: RoomId,
       hurricanes: UpdateHurricanesPayload,
     ) => {
-      reliable.emitToRoom(roomId, protocol.SocketEvents.UPDATE_HURRICANES, hurricanes);
-    },
-    publishReliableHurricanesToRoom: (
-      roomId: RoomId,
-      hurricanes: UpdateHurricanesPayload,
-    ) => {
-      reliable.emitToRoom(
-        roomId,
-        protocol.SocketEvents.UPDATE_HURRICANES,
-        hurricanes,
-      );
+      emitReliableToRoom(roomId, protocol.SocketEvents.UPDATE_HURRICANES, hurricanes);
     },
     publishGameEndToRoom: (roomId: RoomId) => {
       realtimeRoomSyncState.resetRoom(roomId);
-      reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_END);
+      emitReliableToRoom(roomId, protocol.SocketEvents.GAME_END);
     },
     publishGameResultToRoom: (roomId: RoomId, payload: GameResultPayload) => {
-      reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_RESULT, payload);
+      emitReliableToRoom(roomId, protocol.SocketEvents.GAME_RESULT, payload);
     },
     publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => {
       realtimeRoomSyncState.resetRoom(roomId);
-      reliable.emitToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
+      emitReliableToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
     },
     publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => {
       reliable.emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, players);
@@ -169,7 +180,7 @@ export const createGameOutputAdapter = (
       roomId: RoomId,
       payload: HurricaneHitPayload,
     ) => {
-      reliable.emitToRoom(roomId, protocol.SocketEvents.HURRICANE_HIT, payload);
+      emitReliableToRoom(roomId, protocol.SocketEvents.HURRICANE_HIT, payload);
     },
   };
 };

@@ -12,6 +12,7 @@ import type {
   ClientToServerEventPayloadMap,
   ServerToClientEventPayloadMap,
   CurrentPlayersPayload,
+  CurrentHurricanesPayload,
   GameResultPayload,
   GameStartPayload,
   HurricaneHitPayload,
@@ -45,6 +46,12 @@ export type GameHandler = {
   ) => void;
   offUpdateMapCells: (
     callback: (updates: UpdateMapCellsPayload) => void,
+  ) => void;
+  onCurrentHurricanes: (
+    callback: (payload: CurrentHurricanesPayload) => void,
+  ) => void;
+  offCurrentHurricanes: (
+    callback: (payload: CurrentHurricanesPayload) => void,
   ) => void;
   onUpdateHurricanes: (
     callback: (payload: UpdateHurricanesPayload) => void,
@@ -124,6 +131,9 @@ export const createGameHandler = (socket: Socket): GameHandler => {
   const updateMapCellsSubscription = createSubscriptionPair(
     protocol.SocketEvents.UPDATE_MAP_CELLS,
   );
+  const currentHurricanesSubscription = createSubscriptionPair(
+    protocol.SocketEvents.CURRENT_HURRICANES,
+  );
   const updateHurricanesSubscription = createSubscriptionPair(
     protocol.SocketEvents.UPDATE_HURRICANES,
   );
@@ -186,6 +196,12 @@ export const createGameHandler = (socket: Socket): GameHandler => {
     },
     offUpdateMapCells: (callback) => {
       updateMapCellsSubscription.off(callback);
+    },
+    onCurrentHurricanes: (callback) => {
+      currentHurricanesSubscription.on(callback);
+    },
+    offCurrentHurricanes: (callback) => {
+      currentHurricanesSubscription.off(callback);
     },
     onUpdateHurricanes: (callback) => {
       updateHurricanesSubscription.on(callback);

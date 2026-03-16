@@ -9,13 +9,17 @@ import type { HurricaneStatePayload } from "../../../protocol/payloads/gamePaylo
 /** 1ティックで配信するプレイヤー座標差分 */
 export type PlayerPositionUpdate = Pick<PlayerData, "id" | "x" | "y">;
 
+/** 1ティック分のハリケーン同期データ */
+export type HurricaneSyncData = {
+  /** 初回同期や定期再同期で配信する全量スナップショット */
+  snapshotUpdates: HurricaneStatePayload[];
+  /** スナップショット間で配信する差分更新 */
+  deltaUpdates: HurricaneStatePayload[];
+};
+
 /** 1ティック分のプレイヤー差分更新とマップ差分を表す共有データ */
 export interface TickData {
   playerUpdates: PlayerPositionUpdate[];
   cellUpdates: CellUpdate[];
-  /** 出現直後に1回だけ配信するハリケーン初期同期スナップショット */
-  hurricaneInitialSnapshot: HurricaneStatePayload[];
-  /** 欠損復旧のため定期配信するハリケーン再同期スナップショット */
-  hurricaneReliableSnapshot: HurricaneStatePayload[];
-  hurricaneUpdates: HurricaneStatePayload[];
+  hurricaneSync: HurricaneSyncData;
 }
