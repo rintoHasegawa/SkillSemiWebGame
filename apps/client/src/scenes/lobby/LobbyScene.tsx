@@ -166,6 +166,18 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           zIndex: 1,
         }}
       >
+        <button
+          onClick={onBackToTitle}
+          style={{
+            ...OVERLAY_BUTTON_STYLE,
+            position: "absolute",
+            top: "20px",
+            left: "20px",
+          }}
+        >
+          タイトルへ戻る
+        </button>
+
         <h2
           style={{
             fontSize: "clamp(1.5rem, 4vw, 2rem)",
@@ -185,27 +197,17 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
               minWidth: 0,
               display: "flex",
               flexDirection: "column",
-              padding: "10px",
+              padding: "4px 10px 10px",
             }}
           >
-            <button
-              onClick={onBackToTitle}
-              style={{
-                ...OVERLAY_BUTTON_STYLE,
-                alignSelf: "flex-start",
-                marginBottom: "14px",
-              }}
-            >
-              タイトルへ戻る
-            </button>
-
             <div
               style={{
                 width: "100%",
                 flexGrow: 1,
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+                paddingTop: "2px",
               }}
             >
               {isMeOwner ? (
