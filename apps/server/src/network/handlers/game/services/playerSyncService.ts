@@ -11,11 +11,10 @@ import type { ReliableEmitters } from "../../CommonHandler";
 import { isTargetInAoiWindow, resolveViewerAoiWindow, type AoiWindow } from "../aoi/aoiVisibility";
 import {
   getActiveBombSnapshotsInRoom,
-  getConnectedSocketIdsInRoom,
-  getRoomPlayers,
   type RuntimeResolverDeps,
 } from "../runtime/gameRuntimeResolvers";
 import type { BombSyncService } from "./bombSyncService";
+import { forEachRoomViewer } from "./roomViewerSyncContext";
 
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
@@ -87,22 +86,12 @@ export const createPlayerSyncService = (
 
   return {
     publishUpdatePlayersToRoom: (roomId, players) => {
-      const roomPlayers = getRoomPlayers(deps.runtimeDeps, roomId);
       const activeBombs = getActiveBombSnapshotsInRoom(deps.runtimeDeps, roomId);
-      if (roomPlayers.length === 0) {
-        return;
-      }
-
       const quantizedPlayers = quantizeUpdatePlayersPayload(players);
-      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(deps.runtimeDeps, roomId);
-
-      recipientSocketIds.forEach((viewerId) => {
-        const viewer = roomPlayerById.get(viewerId);
-        if (!viewer) {
-          return;
-        }
-
+      forEachRoomViewer({
+        runtimeDeps: deps.runtimeDeps,
+        roomId,
+        run: ({ viewerId, viewer, roomPlayers }) => {
         deps.bombSyncService.syncVisibleBombsByViewer(
           roomId,
           viewerId,
@@ -148,6 +137,7 @@ export const createPlayerSyncService = (
           protocol.SocketEvents.UPDATE_PLAYERS,
           changedPlayers,
         );
+        },
       });
     },
   };

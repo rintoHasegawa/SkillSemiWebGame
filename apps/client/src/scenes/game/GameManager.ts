@@ -7,7 +7,10 @@ import { Application, Container, Ticker } from "pixi.js";
 import { GameEventFacade } from "./application/GameEventFacade";
 import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState";
 import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
-import { CombatLifecycleFacade } from "./application/combat/CombatLifecycleFacade";
+import {
+  CombatLifecycleFacade,
+  type CombatLifecycleFacadeOptions,
+} from "./application/combat/CombatLifecycleFacade";
 import { DisposableRegistry } from "./application/lifecycle/DisposableRegistry";
 import { registerGameManagerDisposers } from "./application/lifecycle/registerGameManagerDisposers";
 import { type GameSceneFactoryOptions } from "./application/orchestrators/GameSceneOrchestrator";
@@ -39,6 +42,7 @@ export type GameManagerDependencies = {
   sessionFacade?: GameSessionFacade;
   lifecycleState?: SceneLifecycleState;
   gameActionSender?: GameActionSender;
+  playerMoveSender?: MoveSender;
   moveSender?: MoveSender;
   sceneFactories?: GameSceneFactoryOptions;
 };
@@ -60,7 +64,7 @@ export class GameManager {
   private sessionFacade: GameSessionFacade;
   private gameActionSender: GameActionSender;
   private runtime: GameSceneRuntime;
-  private moveSender: MoveSender;
+  private playerMoveSender: MoveSender;
   private gameEventFacade: GameEventFacade;
   private combatFacade: CombatLifecycleFacade;
   private lifecycleState: SceneLifecycleState;
@@ -123,7 +127,10 @@ export class GameManager {
       dependencies.lifecycleState ?? new SceneLifecycleState();
     this.gameActionSender =
       dependencies.gameActionSender ?? new SocketGameActionSender();
-    this.moveSender = dependencies.moveSender ?? new SocketPlayerMoveSender();
+    this.playerMoveSender =
+      dependencies.playerMoveSender
+      ?? dependencies.moveSender
+      ?? new SocketPlayerMoveSender();
     const sceneFactories = dependencies.sceneFactories;
     this.app = new Application();
     this.worldContainer = new Container();
@@ -137,21 +144,9 @@ export class GameManager {
       },
       getBombManager: () => this.runtime.getBombManager(),
     });
-    this.combatFacade = new CombatLifecycleFacade({
-      players: this.players,
-      myId: this.myId,
-      acquireInputLock: this.lockInput.bind(this),
-      onSendBombHitReport: (bombId) => {
-        this.gameActionSender.sendBombHitReport(bombId);
-      },
-      onLocalBombHitCountChanged: (count) => {
-        this.localBombHitCount = count;
-        this.uiStateSyncService.emitIfChanged();
-      },
-      onLocalRespawnCompleted: (position) => {
-        this.moveSender.sendMove(position.x, position.y, { force: true });
-      },
-    });
+    this.combatFacade = new CombatLifecycleFacade(
+      this.createCombatLifecycleCallbacks(),
+    );
     this.runtime = new GameSceneRuntime({
       app: this.app,
       worldContainer: this.worldContainer,
@@ -159,7 +154,7 @@ export class GameManager {
       myId: this.myId,
       sessionFacade: this.sessionFacade,
       gameActionSender: this.gameActionSender,
-      moveSender: this.moveSender,
+      moveSender: this.playerMoveSender,
       getElapsedMs: () => this.sessionFacade.getElapsedMs(),
       onPongReceived: (payload) => {
         this.clockSyncService.updateFromPong(payload);
@@ -254,6 +249,25 @@ export class GameManager {
   /** UI状態購読を登録し，解除関数を返す */
   public subscribeUiState(listener: (state: GameUiState) => void): () => void {
     return this.uiStateSyncService.subscribe(listener);
+  }
+
+  /** 被弾ライフサイクルのコールバック群を組み立てる */
+  private createCombatLifecycleCallbacks(): CombatLifecycleFacadeOptions {
+    return {
+      players: this.players,
+      myId: this.myId,
+      acquireInputLock: this.lockInput.bind(this),
+      onSendBombHitReport: (bombId) => {
+        this.gameActionSender.sendBombHitReport(bombId);
+      },
+      onLocalBombHitCountChanged: (count) => {
+        this.localBombHitCount = count;
+        this.uiStateSyncService.emitIfChanged();
+      },
+      onLocalRespawnCompleted: (position) => {
+        this.playerMoveSender.sendMove(position.x, position.y, { force: true });
+      },
+    };
   }
 
   /** HUD状態購読を登録し，解除関数を返す */

@@ -13,10 +13,9 @@ import type { RealtimeRoomSyncStateStore } from "@server/network/adapters/realti
 import type { ReliableEmitters } from "../../CommonHandler";
 import { isTargetInAoiWindow, resolveViewerAoiWindow, type AoiWindow } from "../aoi/aoiVisibility";
 import {
-  getConnectedSocketIdsInRoom,
-  getRoomPlayers,
   type RuntimeResolverDeps,
 } from "../runtime/gameRuntimeResolvers";
+import { forEachRoomViewer } from "./roomViewerSyncContext";
 
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
@@ -134,20 +133,10 @@ export const createHurricaneSyncService = (
     publishCurrentHurricanesToRoom: (roomId, hurricanes) => {
       replaceRoomHurricaneSnapshot(roomId, hurricanes);
 
-      const roomPlayers = getRoomPlayers(deps.runtimeDeps, roomId);
-      if (roomPlayers.length === 0) {
-        return;
-      }
-
-      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(deps.runtimeDeps, roomId);
-
-      recipientSocketIds.forEach((viewerId) => {
-        const viewer = roomPlayerById.get(viewerId);
-        if (!viewer) {
-          return;
-        }
-
+      forEachRoomViewer({
+        runtimeDeps: deps.runtimeDeps,
+        roomId,
+        run: ({ viewerId, viewer }) => {
         const visibleHurricanes = collectVisibleHurricanesByViewer(
           roomId,
           viewerId,
@@ -161,26 +150,18 @@ export const createHurricaneSyncService = (
           protocol.SocketEvents.CURRENT_HURRICANES,
           visibleHurricanes,
         );
+        },
       });
     },
     publishUpdateHurricanesToRoom: (roomId, hurricanes) => {
       upsertRoomHurricaneSnapshot(roomId, hurricanes);
 
-      const roomPlayers = getRoomPlayers(deps.runtimeDeps, roomId);
-      if (roomPlayers.length === 0) {
-        return;
-      }
-
-      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(deps.runtimeDeps, roomId);
       const roomSnapshot = hurricaneSnapshotByRoomId.get(roomId);
 
-      recipientSocketIds.forEach((viewerId) => {
-        const viewer = roomPlayerById.get(viewerId);
-        if (!viewer) {
-          return;
-        }
-
+      forEachRoomViewer({
+        runtimeDeps: deps.runtimeDeps,
+        roomId,
+        run: ({ viewerId, viewer }) => {
         const nextVisibleHurricanes = collectVisibleHurricanesByViewer(
           roomId,
           viewerId,
@@ -219,6 +200,7 @@ export const createHurricaneSyncService = (
           visibleUpdateHurricanes,
         );
         syncVisibleHurricaneIdsByViewer(roomId, viewerId, nextVisibleHurricanes);
+        },
       });
     },
     clearRoomSnapshot: (roomId) => {

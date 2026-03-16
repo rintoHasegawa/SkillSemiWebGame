@@ -15,10 +15,9 @@ import {
   type AoiWindow,
 } from "../aoi/aoiVisibility";
 import {
-  getConnectedSocketIdsInRoom,
-  getRoomPlayers,
   type RuntimeResolverDeps,
 } from "../runtime/gameRuntimeResolvers";
+import { forEachRoomViewer } from "./roomViewerSyncContext";
 
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
@@ -106,21 +105,11 @@ export const createBombSyncService = (
       );
     },
     publishBombPlacedToOthersInRoom: (roomId, excludedSocketId, payload) => {
-      const roomPlayers = getRoomPlayers(deps.runtimeDeps, roomId);
-      if (roomPlayers.length === 0) {
-        return;
-      }
-
-      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(deps.runtimeDeps, roomId);
-
-      recipientSocketIds.forEach((viewerId) => {
+      forEachRoomViewer({
+        runtimeDeps: deps.runtimeDeps,
+        roomId,
+        run: ({ viewerId, viewer }) => {
         if (viewerId === excludedSocketId && !isBotPlayerId(excludedSocketId)) {
-          return;
-        }
-
-        const viewer = roomPlayerById.get(viewerId);
-        if (!viewer) {
           return;
         }
 
@@ -131,6 +120,7 @@ export const createBombSyncService = (
         }
 
         deps.reliable.emitToSocketById(viewerId, protocol.SocketEvents.BOMB_PLACED, payload);
+        },
       });
     },
   };
