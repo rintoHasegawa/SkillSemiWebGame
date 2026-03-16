@@ -31,6 +31,6 @@ export type HurricaneSyncSnapshot = {
 
 /** 1ティック分のハリケーン同期出力 */
 export type HurricaneSyncOutputs = {
-  snapshotUpdates: HurricaneStatePayload[];
-  deltaUpdates: HurricaneStatePayload[];
+  currentUpdates: HurricaneStatePayload[];
+  updateUpdates: HurricaneStatePayload[];
 };

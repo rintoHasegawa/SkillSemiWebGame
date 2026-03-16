@@ -5,17 +5,19 @@
  */
 import { config } from "@server/config";
 import { Player } from "../entities/player/Player.js";
-import { HurricaneMotionService } from "./hurricane/HurricaneMotionService.js";
-import { HurricaneSyncService } from "./hurricane/HurricaneSyncService.js";
-import { HurricaneHitService } from "./hurricane/HurricaneHitService.js";
+import {
+  HurricaneHitService,
+  HurricaneMotionService,
+  HurricaneSyncService,
+} from "./hurricane/index.js";
 import type {
   HurricaneState,
   HurricaneSyncOutputs,
   MapGridSize,
-} from "./hurricane/hurricaneTypes.js";
+} from "./hurricane/index.js";
 
 /** 1ティック分のハリケーン同期出力 */
-export type { HurricaneSyncOutputs } from "./hurricane/hurricaneTypes.js";
+export type { HurricaneSyncOutputs } from "./hurricane/index.js";
 
 /** ハリケーン状態の生成更新と被弾判定を管理する */
 export class HurricaneSystem {

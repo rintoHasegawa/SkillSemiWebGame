@@ -11,9 +11,6 @@ import type {
   HurricaneSyncSnapshot,
 } from "./hurricaneTypes.js";
 
-const HURRICANE_RELIABLE_RESYNC_INTERVAL_MS =
-  config.GAME_CONFIG.NETWORK_SYNC.HURRICANE_RELIABLE_RESYNC_INTERVAL_MS;
-
 const quantizeValue = (value: number, scale: number): number => {
   return Math.round(value * scale) / scale;
 };
@@ -56,7 +53,6 @@ const isSameHurricaneSyncSnapshot = (
 /** ハリケーン同期データを生成する */
 export class HurricaneSyncService {
   private hasInitialSyncPending = false;
-  private lastReliableSyncElapsedMs = -1;
   private readonly lastSentSnapshotByHurricaneId = new Map<
     string,
     HurricaneSyncSnapshot
@@ -69,58 +65,40 @@ export class HurricaneSyncService {
 
   /** 1ティック分の current/update 同期配列を返す */
   public consumeSyncOutputs(
-    elapsedMs: number,
+    _elapsedMs: number,
     hurricanes: HurricaneState[],
   ): HurricaneSyncOutputs {
-    const snapshotUpdates = this.consumeSnapshotUpdates(elapsedMs, hurricanes);
-    const deltaUpdates = this.consumeDeltaUpdates(hurricanes);
+    const currentUpdates = this.consumeCurrentUpdates(hurricanes);
+    const updateUpdates = this.consumeUpdateUpdates(hurricanes);
 
     return {
-      snapshotUpdates,
-      deltaUpdates,
+      currentUpdates,
+      updateUpdates,
     };
   }
 
   /** 同期状態を初期化する */
   public clear(): void {
     this.hasInitialSyncPending = false;
-    this.lastReliableSyncElapsedMs = -1;
     this.lastSentSnapshotByHurricaneId.clear();
   }
 
-  /** current-hurricanes 用の全量同期を返す */
-  private consumeSnapshotUpdates(
-    elapsedMs: number,
-    hurricanes: HurricaneState[],
-  ): HurricaneStatePayload[] {
+  /** current-hurricanes 用の初回全量同期を返す */
+  private consumeCurrentUpdates(hurricanes: HurricaneState[]): HurricaneStatePayload[] {
     if (hurricanes.length === 0) {
       return [];
     }
 
     if (this.hasInitialSyncPending) {
       this.hasInitialSyncPending = false;
-      this.lastReliableSyncElapsedMs = elapsedMs;
       return this.buildSnapshotPayloadAndCommit(hurricanes);
     }
 
-    if (this.lastReliableSyncElapsedMs < 0) {
-      this.lastReliableSyncElapsedMs = elapsedMs;
-      return [];
-    }
-
-    if (
-      elapsedMs - this.lastReliableSyncElapsedMs
-      < HURRICANE_RELIABLE_RESYNC_INTERVAL_MS
-    ) {
-      return [];
-    }
-
-    this.lastReliableSyncElapsedMs = elapsedMs;
-    return this.buildSnapshotPayloadAndCommit(hurricanes);
+    return [];
   }
 
   /** 差分同期配信用のハリケーン状態配列を返す */
-  private consumeDeltaUpdates(
+  private consumeUpdateUpdates(
     hurricanes: HurricaneState[],
   ): HurricaneStatePayload[] {
     return collectSyncDeltaEntries(

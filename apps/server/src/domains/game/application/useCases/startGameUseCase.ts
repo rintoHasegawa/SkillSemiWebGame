@@ -46,26 +46,26 @@ const TICK_PUBLISH_STEPS: TickPublishStep[] = [
   {
     key: "currentHurricanes",
     run: ({ roomId, output, tickData }) => {
-      if (tickData.hurricaneSync.snapshotUpdates.length === 0) {
+      if (tickData.hurricaneSync.currentUpdates.length === 0) {
         return;
       }
 
       output.publishCurrentHurricanesToRoom(
         roomId,
-        tickData.hurricaneSync.snapshotUpdates,
+        tickData.hurricaneSync.currentUpdates,
       );
     },
   },
   {
     key: "updateHurricanes",
     run: ({ roomId, output, tickData }) => {
-      if (tickData.hurricaneSync.deltaUpdates.length === 0) {
+      if (tickData.hurricaneSync.updateUpdates.length === 0) {
         return;
       }
 
       output.publishUpdateHurricanesToRoom(
         roomId,
-        tickData.hurricaneSync.deltaUpdates,
+        tickData.hurricaneSync.updateUpdates,
       );
     },
   },
