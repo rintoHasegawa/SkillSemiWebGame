@@ -7,49 +7,28 @@ import { contracts as protocol, domain as domainNs } from "@repo/shared";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
-  HurricaneStatePayload,
   domain,
   GameStartPayload,
   GameResultPayload,
   HurricaneHitPayload,
   PlayerHitPayload,
   PongPayload,
-  CurrentHurricanesPayload,
   CurrentPlayersPayload,
   RemovePlayerPayload,
-  UpdateHurricanesPayload,
-  UpdatePlayersPayload,
 } from "@repo/shared";
 import type {
-  ActiveBombSnapshot,
   BombPlacementOutputPort,
   PlayerHitOutputPort,
   GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
-import { isBotPlayerId } from "@server/domains/game/application/services/bot/index.js";
-import {
-  collectChangedUpdatePlayersPayload,
-  quantizeUpdatePlayersPayload,
-} from "@server/network/adapters/gamePayloadSanitizers";
 import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
-import type {
-  FindGameByRoomPort,
-  FindRoomByIdPort,
-} from "@server/domains/room/application/ports/roomUseCasePorts";
-import {
-  isTargetInAoiWindow,
-  resolveViewerAoiCell,
-  resolveViewerAoiWindow,
-  type AoiWindow,
-} from "./aoi/aoiVisibility";
-import {
-  getActiveBombSnapshotsInRoom,
-  getConnectedSocketIdsInRoom,
-  getRoomPlayers,
-  type RuntimeResolverDeps,
-} from "./runtime/gameRuntimeResolvers";
+import { resolveViewerAoiCell } from "./aoi/aoiVisibility";
+import type { RuntimeResolverDeps } from "./runtime/gameRuntimeResolvers";
+import { createBombSyncService } from "./services/bombSyncService";
+import { createHurricaneSyncService } from "./services/hurricaneSyncService";
+import { createPlayerSyncService } from "./services/playerSyncService";
 
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
@@ -84,27 +63,7 @@ export const createGameOutputAdapter = (
   deps: RuntimeResolverDeps,
 ): GameOutputAdapter => {
   const { reliable } = common;
-  const { roomManager, runtimeRegistry } = deps;
   const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
-  const hurricaneSnapshotByRoomId = new Map<
-    RoomId,
-    Map<string, HurricaneStatePayload>
-  >();
-
-  const getPlayersInRoom = (roomId: RoomId): domain.game.player.PlayerData[] => {
-    return getRoomPlayers(deps, roomId);
-  };
-
-  const getActiveBombsInRoom = (roomId: RoomId): ActiveBombSnapshot[] => {
-    return getActiveBombSnapshotsInRoom(deps, roomId);
-  };
-
-  const isInViewerAoi = (
-    target: { x: number; y: number },
-    aoiWindow: AoiWindow,
-  ): boolean => {
-    return isTargetInAoiWindow(target, aoiWindow);
-  };
 
   const updateViewerAoiCellCache = (
     roomId: RoomId,
@@ -121,154 +80,25 @@ export const createGameOutputAdapter = (
     realtimeRoomSyncState.setLastAoiCell(roomId, viewerId, nextCell);
   };
 
-  const syncVisiblePlayersByViewer = (
-    roomId: RoomId,
-    viewerId: SocketId,
-    visiblePlayers: domain.game.player.PlayerData[],
-  ): void => {
-    const previousVisibleIds = realtimeRoomSyncState.getVisiblePlayerIdsSnapshot(
-      roomId,
-      viewerId,
-    );
-    const viewerPositionCache = realtimeRoomSyncState.getPlayerPositionCache(
-      roomId,
-      viewerId,
-    );
-    const nextVisibleIds = new Set(visiblePlayers.map((player) => player.id));
-
-    visiblePlayers.forEach((player) => {
-      if (!previousVisibleIds.has(player.id)) {
-        reliable.emitToSocketById(viewerId, protocol.SocketEvents.NEW_PLAYER, player);
-      }
-    });
-
-    previousVisibleIds.forEach((playerId) => {
-      if (nextVisibleIds.has(playerId)) {
-        return;
-      }
-
-      viewerPositionCache.delete(playerId);
-      reliable.emitToSocketById(viewerId, protocol.SocketEvents.REMOVE_PLAYER, playerId);
-    });
-
-    realtimeRoomSyncState.replaceVisiblePlayerIds(roomId, viewerId, nextVisibleIds);
-  };
-
-  const syncVisibleBombsByViewer = (
-    roomId: RoomId,
-    viewerId: SocketId,
-    viewer: domain.game.player.PlayerData,
-    bombs: ActiveBombSnapshot[],
-  ): void => {
-    updateViewerAoiCellCache(roomId, viewerId, viewer);
-    const aoiWindow = resolveViewerAoiWindow(viewer);
-    const previousVisibleBombIds = realtimeRoomSyncState.getVisibleBombIdsSnapshot(
-      roomId,
-      viewerId,
-    );
-    const nextVisibleBombIds = new Set<string>();
-
-    bombs.forEach((bomb) => {
-      if (!isInViewerAoi(bomb, aoiWindow)) {
-        return;
-      }
-
-      nextVisibleBombIds.add(bomb.bombId);
-      if (previousVisibleBombIds.has(bomb.bombId)) {
-        return;
-      }
-
-      if (viewerId === bomb.ownerPlayerId && !isBotPlayerId(bomb.ownerPlayerId)) {
-        return;
-      }
-
-      const payload: BombPlacedPayload = {
-        bombId: bomb.bombId,
-        ownerTeamId: bomb.ownerTeamId,
-        x: bomb.x,
-        y: bomb.y,
-        explodeAtElapsedMs: bomb.explodeAtElapsedMs,
-      };
-      reliable.emitToSocketById(viewerId, protocol.SocketEvents.BOMB_PLACED, payload);
-    });
-
-    realtimeRoomSyncState.replaceVisibleBombIds(
-      roomId,
-      viewerId,
-      nextVisibleBombIds,
-    );
-  };
-
-  const replaceRoomHurricaneSnapshot = (
-    roomId: RoomId,
-    hurricanes: HurricaneStatePayload[],
-  ): void => {
-    const snapshotMap = new Map<string, HurricaneStatePayload>();
-    hurricanes.forEach((hurricane) => {
-      snapshotMap.set(hurricane.id, hurricane);
-    });
-    hurricaneSnapshotByRoomId.set(roomId, snapshotMap);
-  };
-
-  const upsertRoomHurricaneSnapshot = (
-    roomId: RoomId,
-    hurricanes: HurricaneStatePayload[],
-  ): void => {
-    const snapshotMap = hurricaneSnapshotByRoomId.get(roomId) ?? new Map();
-    hurricanes.forEach((hurricane) => {
-      snapshotMap.set(hurricane.id, hurricane);
-    });
-    hurricaneSnapshotByRoomId.set(roomId, snapshotMap);
-  };
-
-  const collectVisibleHurricanesByViewer = (
-    roomId: RoomId,
-    viewerId: SocketId,
-    viewer: domain.game.player.PlayerData,
-    hurricanes: Iterable<HurricaneStatePayload>,
-  ): HurricaneStatePayload[] => {
-    updateViewerAoiCellCache(roomId, viewerId, viewer);
-    const aoiWindow = resolveViewerAoiWindow(viewer);
-    const visibleHurricanes: HurricaneStatePayload[] = [];
-
-    for (const hurricane of hurricanes) {
-      if (isInViewerAoi(hurricane, aoiWindow)) {
-        visibleHurricanes.push(hurricane);
-      }
-    }
-
-    return visibleHurricanes;
-  };
-
-  const syncVisibleHurricaneIdsByViewer = (
-    roomId: RoomId,
-    viewerId: SocketId,
-    hurricanes: HurricaneStatePayload[],
-  ): void => {
-    const nextVisibleIds = hurricanes.map((hurricane) => hurricane.id);
-    realtimeRoomSyncState.replaceVisibleHurricaneIds(
-      roomId,
-      viewerId,
-      nextVisibleIds,
-    );
-  };
-
-  const hasChangedVisibleHurricaneIds = (
-    previousVisibleIds: Set<string>,
-    nextVisibleHurricanes: HurricaneStatePayload[],
-  ): boolean => {
-    if (previousVisibleIds.size !== nextVisibleHurricanes.length) {
-      return true;
-    }
-
-    for (const hurricane of nextVisibleHurricanes) {
-      if (!previousVisibleIds.has(hurricane.id)) {
-        return true;
-      }
-    }
-
-    return false;
-  };
+  const bombSyncService = createBombSyncService({
+    reliable,
+    runtimeDeps: deps,
+    realtimeRoomSyncState,
+    updateViewerAoiCellCache,
+  });
+  const playerSyncService = createPlayerSyncService({
+    reliable,
+    runtimeDeps: deps,
+    realtimeRoomSyncState,
+    bombSyncService,
+    updateViewerAoiCellCache,
+  });
+  const hurricaneSyncService = createHurricaneSyncService({
+    reliable,
+    runtimeDeps: deps,
+    realtimeRoomSyncState,
+    updateViewerAoiCellCache,
+  });
 
   const emitReliableToRoom = (
     roomId: RoomId,
@@ -287,67 +117,8 @@ export const createGameOutputAdapter = (
     publishPongToSocket: (payload: PongPayload) => {
       reliable.emitToSocket(protocol.SocketEvents.PONG, payload);
     },
-    publishUpdatePlayersToRoom: (
-      roomId: RoomId,
-      players: UpdatePlayersPayload,
-    ) => {
-      const roomPlayers = getPlayersInRoom(roomId);
-      const activeBombs = getActiveBombsInRoom(roomId);
-      if (roomPlayers.length === 0) {
-        return;
-      }
-
-      const quantizedPlayers = quantizeUpdatePlayersPayload(players);
-      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(deps, roomId);
-
-      recipientSocketIds.forEach((viewerId) => {
-        const viewer = roomPlayerById.get(viewerId);
-        if (!viewer) {
-          return;
-        }
-
-        syncVisibleBombsByViewer(roomId, viewerId, viewer, activeBombs);
-
-        updateViewerAoiCellCache(roomId, viewerId, viewer);
-        const aoiWindow = resolveViewerAoiWindow(viewer);
-
-        const visibleSnapshotPlayers = roomPlayers.filter((player) => {
-          if (player.id === viewerId) {
-            return false;
-          }
-
-          return isInViewerAoi(player, aoiWindow);
-        });
-        syncVisiblePlayersByViewer(roomId, viewerId, visibleSnapshotPlayers);
-
-        const visibleDeltaPlayers = quantizedPlayers.filter((player) => {
-          if (player.id === viewerId) {
-            return false;
-          }
-
-          return isInViewerAoi(player, aoiWindow);
-        });
-
-        const viewerPositionCache = realtimeRoomSyncState.getPlayerPositionCache(
-          roomId,
-          viewerId,
-        );
-        const changedPlayers = collectChangedUpdatePlayersPayload(
-          visibleDeltaPlayers,
-          viewerPositionCache,
-        );
-
-        if (changedPlayers.length === 0) {
-          return;
-        }
-
-        reliable.emitToSocketById(
-          viewerId,
-          protocol.SocketEvents.UPDATE_PLAYERS,
-          changedPlayers,
-        );
-      });
+    publishUpdatePlayersToRoom: (roomId, players) => {
+      playerSyncService.publishUpdatePlayersToRoom(roomId, players);
     },
 
     publishMapCellUpdatesToRoom: (
@@ -357,105 +128,15 @@ export const createGameOutputAdapter = (
       const grouped = domainNs.game.gridMap.groupCellUpdates(cellUpdates);
       emitReliableToRoom(roomId, protocol.SocketEvents.UPDATE_MAP_CELLS, grouped);
     },
-    publishCurrentHurricanesToRoom: (
-      roomId: RoomId,
-      hurricanes: CurrentHurricanesPayload,
-    ) => {
-      replaceRoomHurricaneSnapshot(roomId, hurricanes);
-
-      const roomPlayers = getPlayersInRoom(roomId);
-      if (roomPlayers.length === 0) {
-        return;
-      }
-
-      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(deps, roomId);
-
-      recipientSocketIds.forEach((viewerId) => {
-        const viewer = roomPlayerById.get(viewerId);
-        if (!viewer) {
-          return;
-        }
-
-        const visibleHurricanes = collectVisibleHurricanesByViewer(
-          roomId,
-          viewerId,
-          viewer,
-          hurricanes,
-        );
-        syncVisibleHurricaneIdsByViewer(roomId, viewerId, visibleHurricanes);
-
-        reliable.emitToSocketById(
-          viewerId,
-          protocol.SocketEvents.CURRENT_HURRICANES,
-          visibleHurricanes,
-        );
-      });
+    publishCurrentHurricanesToRoom: (roomId, hurricanes) => {
+      hurricaneSyncService.publishCurrentHurricanesToRoom(roomId, hurricanes);
     },
-    publishUpdateHurricanesToRoom: (
-      roomId: RoomId,
-      hurricanes: UpdateHurricanesPayload,
-    ) => {
-      upsertRoomHurricaneSnapshot(roomId, hurricanes);
-
-      const roomPlayers = getPlayersInRoom(roomId);
-      if (roomPlayers.length === 0) {
-        return;
-      }
-
-      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(deps, roomId);
-      const roomSnapshot = hurricaneSnapshotByRoomId.get(roomId);
-
-      recipientSocketIds.forEach((viewerId) => {
-        const viewer = roomPlayerById.get(viewerId);
-        if (!viewer) {
-          return;
-        }
-
-        const nextVisibleHurricanes = collectVisibleHurricanesByViewer(
-          roomId,
-          viewerId,
-          viewer,
-          roomSnapshot?.values() ?? [],
-        );
-        const previousVisibleIds = new Set(
-          realtimeRoomSyncState.getVisibleHurricaneIdsSnapshot(roomId, viewerId),
-        );
-        const hasMembershipChanged = hasChangedVisibleHurricaneIds(
-          previousVisibleIds,
-          nextVisibleHurricanes,
-        );
-
-        if (hasMembershipChanged) {
-          reliable.emitToSocketById(
-            viewerId,
-            protocol.SocketEvents.CURRENT_HURRICANES,
-            nextVisibleHurricanes,
-          );
-          syncVisibleHurricaneIdsByViewer(roomId, viewerId, nextVisibleHurricanes);
-          return;
-        }
-
-        const nextVisibleIdSet = new Set(nextVisibleHurricanes.map((hurricane) => hurricane.id));
-        const visibleUpdateHurricanes = hurricanes.filter((hurricane) => {
-          return nextVisibleIdSet.has(hurricane.id);
-        });
-        if (visibleUpdateHurricanes.length === 0) {
-          return;
-        }
-
-        reliable.emitToSocketById(
-          viewerId,
-          protocol.SocketEvents.UPDATE_HURRICANES,
-          visibleUpdateHurricanes,
-        );
-        syncVisibleHurricaneIdsByViewer(roomId, viewerId, nextVisibleHurricanes);
-      });
+    publishUpdateHurricanesToRoom: (roomId, hurricanes) => {
+      hurricaneSyncService.publishUpdateHurricanesToRoom(roomId, hurricanes);
     },
     publishGameEndToRoom: (roomId: RoomId) => {
       realtimeRoomSyncState.resetRoom(roomId);
-      hurricaneSnapshotByRoomId.delete(roomId);
+      hurricaneSyncService.clearRoomSnapshot(roomId);
       emitReliableToRoom(roomId, protocol.SocketEvents.GAME_END);
     },
     publishGameResultToRoom: (roomId: RoomId, payload: GameResultPayload) => {
@@ -463,7 +144,7 @@ export const createGameOutputAdapter = (
     },
     publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => {
       realtimeRoomSyncState.resetRoom(roomId);
-      hurricaneSnapshotByRoomId.delete(roomId);
+      hurricaneSyncService.clearRoomSnapshot(roomId);
       emitReliableToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
     },
     publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => {
@@ -477,32 +158,11 @@ export const createGameOutputAdapter = (
       excludedSocketId: string,
       payload: BombPlacedPayload,
     ) => {
-      const roomPlayers = getPlayersInRoom(roomId);
-      if (roomPlayers.length === 0) {
-        return;
-      }
-
-      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(deps, roomId);
-
-      recipientSocketIds.forEach((viewerId) => {
-        if (viewerId === excludedSocketId && !isBotPlayerId(excludedSocketId)) {
-          return;
-        }
-
-        const viewer = roomPlayerById.get(viewerId);
-        if (!viewer) {
-          return;
-        }
-
-        updateViewerAoiCellCache(roomId, viewerId, viewer);
-        const aoiWindow = resolveViewerAoiWindow(viewer);
-        if (!isInViewerAoi(payload, aoiWindow)) {
-          return;
-        }
-
-        reliable.emitToSocketById(viewerId, protocol.SocketEvents.BOMB_PLACED, payload);
-      });
+      bombSyncService.publishBombPlacedToOthersInRoom(
+        roomId,
+        excludedSocketId,
+        payload,
+      );
     },
     publishBombPlacedAckToSocket: (
       socketId: string,
