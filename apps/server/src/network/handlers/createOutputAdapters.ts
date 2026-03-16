@@ -15,11 +15,20 @@ import {
   createRoomOutputAdapter,
   type RoomOutputAdapter,
 } from "./room/createRoomOutputAdapter";
+import type {
+  FindGameByRoomPort,
+  FindRoomByIdPort,
+} from "@server/domains/room/application/ports/roomUseCasePorts";
 
 /** 接続単位で利用するゲームとルームの出力アダプタ集合 */
 export type SocketOutputAdapters = {
   game: GameOutputAdapter;
   room: RoomOutputAdapter;
+};
+
+type GameOutputAdapterDeps = {
+  roomManager: FindRoomByIdPort;
+  runtimeRegistry: FindGameByRoomPort;
 };
 
 /** 切断処理で利用するゲームとルームの出力アダプタ集合 */
@@ -32,11 +41,12 @@ type DisconnectOutputAdapters = {
 export const createSocketOutputAdapters = (
   io: Server,
   socket: Socket,
+  deps: GameOutputAdapterDeps,
 ): SocketOutputAdapters => {
   const common = createCommonHandlerContext(io, socket);
 
   return {
-    game: createGameOutputAdapter(common),
+    game: createGameOutputAdapter(common, deps),
     room: createRoomOutputAdapter(common),
   };
 };
