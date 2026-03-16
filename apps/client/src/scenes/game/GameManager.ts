@@ -60,6 +60,7 @@ export class GameManager {
   private sessionFacade: GameSessionFacade;
   private gameActionSender: GameActionSender;
   private runtime: GameSceneRuntime;
+  private moveSender: MoveSender;
   private gameEventFacade: GameEventFacade;
   private combatFacade: CombatLifecycleFacade;
   private lifecycleState: SceneLifecycleState;
@@ -122,7 +123,7 @@ export class GameManager {
       dependencies.lifecycleState ?? new SceneLifecycleState();
     this.gameActionSender =
       dependencies.gameActionSender ?? new SocketGameActionSender();
-    const moveSender = dependencies.moveSender ?? new SocketPlayerMoveSender();
+    this.moveSender = dependencies.moveSender ?? new SocketPlayerMoveSender();
     const sceneFactories = dependencies.sceneFactories;
     this.app = new Application();
     this.worldContainer = new Container();
@@ -147,6 +148,9 @@ export class GameManager {
         this.localBombHitCount = count;
         this.uiStateSyncService.emitIfChanged();
       },
+      onLocalRespawnCompleted: (position) => {
+        this.moveSender.sendMove(position.x, position.y, { force: true });
+      },
     });
     this.runtime = new GameSceneRuntime({
       app: this.app,
@@ -155,7 +159,7 @@ export class GameManager {
       myId: this.myId,
       sessionFacade: this.sessionFacade,
       gameActionSender: this.gameActionSender,
-      moveSender,
+      moveSender: this.moveSender,
       getElapsedMs: () => this.sessionFacade.getElapsedMs(),
       onPongReceived: (payload) => {
         this.clockSyncService.updateFromPong(payload);

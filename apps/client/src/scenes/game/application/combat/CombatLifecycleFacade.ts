@@ -19,6 +19,7 @@ export type CombatLifecycleFacadeOptions = {
   acquireInputLock: () => () => void;
   onSendBombHitReport: (bombId: string) => void;
   onLocalBombHitCountChanged: (count: number) => void;
+  onLocalRespawnCompleted?: (position: { x: number; y: number }) => void;
 };
 
 type NetworkDamageSource = "bomb" | "hurricane";
@@ -28,6 +29,7 @@ export class CombatLifecycleFacade {
   private readonly myId: string;
   private readonly onSendBombHitReport: (bombId: string) => void;
   private readonly onLocalBombHitCountChanged: (count: number) => void;
+  private readonly onLocalRespawnCompleted?: (position: { x: number; y: number }) => void;
   private readonly bombHitOrchestrator: BombHitOrchestrator;
   private readonly playerHitPolicy: PlayerHitPolicy;
   private readonly playerHitEffectOrchestrator: PlayerHitEffectOrchestrator;
@@ -40,10 +42,12 @@ export class CombatLifecycleFacade {
     acquireInputLock,
     onSendBombHitReport,
     onLocalBombHitCountChanged,
+    onLocalRespawnCompleted,
   }: CombatLifecycleFacadeOptions) {
     this.myId = myId;
     this.onSendBombHitReport = onSendBombHitReport;
     this.onLocalBombHitCountChanged = onLocalBombHitCountChanged;
+    this.onLocalRespawnCompleted = onLocalRespawnCompleted;
     this.bombHitOrchestrator = new BombHitOrchestrator({
       players,
       myId,
@@ -65,6 +69,12 @@ export class CombatLifecycleFacade {
         if (playerId !== this.myId) return;
         this.localBombHitCount = 0;
         this.onLocalBombHitCountChanged(this.localBombHitCount);
+        const localPlayer = players[playerId];
+        if (!localPlayer) {
+          return;
+        }
+
+        this.onLocalRespawnCompleted?.(localPlayer.getPosition());
       },
     });
   }
