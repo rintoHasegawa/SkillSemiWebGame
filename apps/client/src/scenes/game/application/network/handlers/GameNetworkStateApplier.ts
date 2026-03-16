@@ -159,6 +159,9 @@ export class GameNetworkStateApplier {
         const updates = domain.game.gridMap.ungroupCellUpdates(payload);
         this.mapSyncHandler.handleUpdateMapCells(updates);
       },
+      onReceivedCurrentHurricanes: (payload) => {
+        this.hurricaneSyncHandler.handleUpdateHurricanes(payload);
+      },
       onReceivedUpdateHurricanes: (payload) => {
         this.hurricaneSyncHandler.handleUpdateHurricanes(payload);
       },

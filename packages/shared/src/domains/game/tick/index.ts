@@ -5,4 +5,4 @@
  */
 
 /** tick同期関連の型を再公開する */
-export type { PlayerPositionUpdate, TickData } from "./tick.type";
+export type { HurricaneSyncData, PlayerPositionUpdate, TickData } from "./tick.type";

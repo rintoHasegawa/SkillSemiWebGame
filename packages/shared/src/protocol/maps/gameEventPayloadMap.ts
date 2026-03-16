@@ -10,6 +10,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   CurrentPlayersPayload,
+  CurrentHurricanesPayload,
   GameResultPayload,
   GameStartPayload,
   HurricaneHitPayload,
@@ -42,6 +43,7 @@ export type GameServerToClientEventPayloadMap = {
   [SocketEvents.UPDATE_PLAYERS_SYNC]: UpdatePlayersPayload;
   [SocketEvents.REMOVE_PLAYER_SYNC]: RemovePlayerPayload;
   [SocketEvents.UPDATE_MAP_CELLS_SYNC]: UpdateMapCellsPayload;
+  [SocketEvents.CURRENT_HURRICANES_SYNC]: CurrentHurricanesPayload;
   [SocketEvents.UPDATE_HURRICANES_SYNC]: UpdateHurricanesPayload;
   [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
   [SocketEvents.BOMB_PLACED_ACK]: BombPlacedAckPayload;

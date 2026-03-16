@@ -8,6 +8,7 @@ import type {
   BombPlacedPayload,
   HurricaneHitPayload,
   PlayerHitPayload,
+  CurrentHurricanesPayload,
   UpdateHurricanesPayload,
   domain,
   PlaceBombPayload,
@@ -69,6 +70,10 @@ export interface GameOutputPort {
     roomId: domain.room.Room["roomId"],
     cellUpdates: domain.game.gridMap.CellUpdate[],
   ): void;
+  publishCurrentHurricanesToRoom(
+    roomId: domain.room.Room["roomId"],
+    hurricanes: CurrentHurricanesPayload,
+  ): void;
   publishUpdateHurricanesToRoom(
     roomId: domain.room.Room["roomId"],
     hurricanes: UpdateHurricanesPayload,
@@ -125,6 +130,7 @@ export type StartGameOutputPort = Pick<
   GameOutputPort,
   | "publishUpdatePlayersToRoom"
   | "publishMapCellUpdatesToRoom"
+  | "publishCurrentHurricanesToRoom"
   | "publishUpdateHurricanesToRoom"
   | "publishGameEndToRoom"
   | "publishGameResultToRoom"

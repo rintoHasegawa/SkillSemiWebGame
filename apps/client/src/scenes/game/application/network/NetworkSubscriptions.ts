@@ -8,6 +8,7 @@ import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
   CurrentPlayersPayload,
+  CurrentHurricanesPayload,
   GameStartPayload,
   HurricaneHitPayload,
   NewPlayerPayload,
@@ -33,6 +34,7 @@ export type SocketSubscriptionDictionary = {
   updatePlayers: SocketSubscription;
   removePlayer: SocketSubscription;
   updateMapCells: SocketSubscription;
+  currentHurricanes: SocketSubscription;
   updateHurricanes: SocketSubscription;
   gameEnd: SocketSubscription;
   bombPlaced: SocketSubscription;
@@ -50,6 +52,7 @@ export type NetworkSubscriptionHandlers = {
   onUpdatePlayers: (payload: UpdatePlayersPayload) => void;
   onRemovePlayer: (payload: RemovePlayerPayload) => void;
   onUpdateMapCells: (payload: UpdateMapCellsPayload) => void;
+  onCurrentHurricanes: (payload: CurrentHurricanesPayload) => void;
   onUpdateHurricanes: (payload: UpdateHurricanesPayload) => void;
   onGameEnd: () => void;
   onBombPlaced: (payload: BombPlacedPayload) => void;
@@ -110,6 +113,15 @@ const SUBSCRIPTION_DEFINITIONS: SubscriptionDefinition[] = [
         socketManager.game.onUpdateMapCells(handlers.onUpdateMapCells),
       unbind: () =>
         socketManager.game.offUpdateMapCells(handlers.onUpdateMapCells),
+    }),
+  },
+  {
+    key: "currentHurricanes",
+    create: (handlers) => ({
+      bind: () =>
+        socketManager.game.onCurrentHurricanes(handlers.onCurrentHurricanes),
+      unbind: () =>
+        socketManager.game.offCurrentHurricanes(handlers.onCurrentHurricanes),
     }),
   },
   {

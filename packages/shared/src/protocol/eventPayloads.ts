@@ -26,6 +26,7 @@ export type {
   HurricaneStatePayload,
   HurricaneSnapshotPayload,
   HurricaneDeltaPayload,
+  CurrentHurricanesPayload,
   UpdateHurricanesPayload,
   NewPlayerPayload,
   RemovePlayerPayload,

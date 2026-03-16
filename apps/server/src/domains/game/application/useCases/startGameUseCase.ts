@@ -37,22 +37,74 @@ type TickUpdatePublishParams = {
     : never;
 };
 
+type TickPublishStep = {
+  key: "currentHurricanes" | "updateHurricanes" | "player" | "map";
+  run: (params: TickUpdatePublishParams) => void;
+};
+
+const TICK_PUBLISH_STEPS: TickPublishStep[] = [
+  {
+    key: "currentHurricanes",
+    run: ({ roomId, output, tickData }) => {
+      if (tickData.hurricaneSync.currentUpdates.length === 0) {
+        return;
+      }
+
+      output.publishCurrentHurricanesToRoom(
+        roomId,
+        tickData.hurricaneSync.currentUpdates,
+      );
+    },
+  },
+  {
+    key: "updateHurricanes",
+    run: ({ roomId, output, tickData }) => {
+      if (tickData.hurricaneSync.updateUpdates.length === 0) {
+        return;
+      }
+
+      output.publishUpdateHurricanesToRoom(
+        roomId,
+        tickData.hurricaneSync.updateUpdates,
+      );
+    },
+  },
+  {
+    key: "player",
+    run: ({ roomId, output, tickData }) => {
+      if (tickData.playerUpdates.length === 0) {
+        return;
+      }
+
+      output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
+    },
+  },
+  {
+    key: "map",
+    run: ({ roomId, output, tickData }) => {
+      if (tickData.cellUpdates.length === 0) {
+        return;
+      }
+
+      output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
+    },
+  },
+];
+
 const publishTickUpdates = ({
   roomId,
   output,
   tickData,
 }: TickUpdatePublishParams): void => {
-  if (tickData.playerUpdates.length > 0) {
-    output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
-  }
+  const params: TickUpdatePublishParams = {
+    roomId,
+    output,
+    tickData,
+  };
 
-  if (tickData.cellUpdates.length > 0) {
-    output.publishMapCellUpdatesToRoom(roomId, tickData.cellUpdates);
-  }
-
-  if (tickData.hurricaneUpdates.length > 0) {
-    output.publishUpdateHurricanesToRoom(roomId, tickData.hurricaneUpdates);
-  }
+  TICK_PUBLISH_STEPS.forEach((step) => {
+    step.run(params);
+  });
 };
 
 /** ゲームセッション開始とティック通知，終了通知を実行する */

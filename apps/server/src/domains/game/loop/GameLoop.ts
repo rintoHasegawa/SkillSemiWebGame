@@ -173,7 +173,7 @@ export class GameLoop {
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
     this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsSnapshot);
     this.detectBotBombHits(elapsedMs, wallClockNowMs);
-    const tickData = this.buildTickData();
+    const tickData = this.buildTickData(elapsedMs);
     this.callbacks.onTick(tickData);
   }
 
@@ -259,15 +259,16 @@ export class GameLoop {
     this.disconnectedBotControlledPlayerIds.delete(playerId);
   }
 
-  private buildTickData(): domain.game.tick.TickData {
+  private buildTickData(elapsedMs: number): domain.game.tick.TickData {
     const activePlayerIds = new Set<string>();
     const playerUpdates = this.collectChangedPlayerUpdates(activePlayerIds);
     this.cleanupInactivePlayerSnapshots(activePlayerIds);
+    const hurricaneSync = this.hurricaneSystem.consumeSyncOutputs(elapsedMs);
 
     return {
       playerUpdates,
       cellUpdates: this.mapStore.getAndClearUpdates(),
-      hurricaneUpdates: this.hurricaneSystem.getUpdatePayload(),
+      hurricaneSync,
     };
   }
 

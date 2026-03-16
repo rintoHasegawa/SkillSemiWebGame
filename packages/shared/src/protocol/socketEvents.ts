@@ -24,6 +24,7 @@ export const SocketEvents = {
   UPDATE_PLAYERS_SYNC: "update-players",
   REMOVE_PLAYER_SYNC: "remove-player",
   UPDATE_MAP_CELLS_SYNC: "update-map-cells",
+  CURRENT_HURRICANES_SYNC: "current-hurricanes",
   UPDATE_HURRICANES_SYNC: "update-hurricanes",
 
   // 互換維持のため残す旧キー名
@@ -35,6 +36,7 @@ export const SocketEvents = {
   PLACE_BOMB: "place-bomb",
   BOMB_HIT_REPORT: "bomb-hit-report",
   UPDATE_MAP_CELLS: "update-map-cells",
+  CURRENT_HURRICANES: "current-hurricanes",
   UPDATE_HURRICANES: "update-hurricanes",
   BOMB_PLACED: "bomb-placed",
   BOMB_PLACED_ACK: "bomb-placed-ack",
