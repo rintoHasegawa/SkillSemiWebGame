@@ -42,8 +42,25 @@ export type GameResultPayload = {
   playerStats?: PlayerGameStats[];
 };
 
-/** current-players で配信するプレイヤー全体スナップショット */
+/** current-players で配信するプレイヤー全体スナップショット（旧互換） */
 export type PlayerSnapshotPayload = PlayerData[];
+
+/** current-players で配信する不変プレイヤー情報 */
+export type CurrentPlayerMetaPayload = Pick<PlayerData, "id" | "name" | "teamId">;
+
+/** current-players で配信する初期表示用プレイヤー情報 */
+export type CurrentPlayerBootstrapPayload =
+  | CurrentPlayerMetaPayload
+  | (CurrentPlayerMetaPayload & Pick<PlayerData, "x" | "y">);
+
+/** current-players で配信する初期表示用プレイヤー情報配列 */
+export type CurrentPlayerBootstrapListPayload = CurrentPlayerBootstrapPayload[];
+
+/** current-players で配信する不変プレイヤー情報（互換名） */
+export type PlayerMetaPayload = CurrentPlayerMetaPayload;
+
+/** current-players で配信する不変プレイヤー情報配列（互換名） */
+export type PlayerMetaListPayload = CurrentPlayerMetaPayload[];
 
 /**
  * update-players で配信するプレイヤー差分配列
@@ -66,8 +83,11 @@ export type DeltaPlayerSyncPayload = PlayerDeltaPayload;
 /** update-players イベントで送受信するプレイヤー差分配列 */
 export type UpdatePlayersPayload = PlayerDeltaPayload;
 
-/** current-players イベントで送受信するプレイヤー一覧 */
-export type CurrentPlayersPayload = PlayerSnapshotPayload;
+/**
+ * current-players イベントで送受信するプレイヤー一覧
+ * 全プレイヤーのメタ情報を含み，自分と周辺プレイヤーのみ初期表示座標を含む
+ */
+export type CurrentPlayersPayload = CurrentPlayerBootstrapListPayload;
 
 /** update-map-cells イベントで送受信するグループ化マップ差分 */
 export type UpdateMapCellsPayload = GroupedCellUpdates;

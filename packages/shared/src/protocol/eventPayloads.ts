@@ -17,6 +17,11 @@ export type {
 /** ゲームイベントのペイロード型を再公開する */
 export type {
   PlayerSnapshotPayload,
+  CurrentPlayerMetaPayload,
+  CurrentPlayerBootstrapPayload,
+  CurrentPlayerBootstrapListPayload,
+  PlayerMetaPayload,
+  PlayerMetaListPayload,
   PlayerDeltaPayload,
   InitialPlayerSyncPayload,
   DeltaPlayerSyncPayload,

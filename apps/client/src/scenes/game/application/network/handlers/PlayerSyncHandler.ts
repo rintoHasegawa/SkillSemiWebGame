@@ -5,6 +5,8 @@
  */
 import { Container } from "pixi.js";
 import type {
+  CurrentPlayerMetaPayload,
+  CurrentPlayerBootstrapPayload,
   CurrentPlayersPayload,
   NewPlayerPayload,
   RemovePlayerPayload,
@@ -42,16 +44,16 @@ export class PlayerSyncHandler {
     });
   }
 
-  /** 初期プレイヤー一覧を生成して反映する */
+  /** 初期プレイヤー一覧を受信し，座標付き要素のみ実体生成する */
   public handleCurrentPlayers = (serverPlayers: CurrentPlayersPayload): void => {
     serverPlayers.forEach((player) => {
-      this.replacePlayerController(player.id, player);
+      this.upsertFromCurrentPlayerBootstrapPayload(player);
     });
   };
 
   /** 新規参加プレイヤーを生成して反映する */
   public handleNewPlayer = (payload: NewPlayerPayload): void => {
-    this.replacePlayerController(payload.id, payload);
+    this.upsertFromNewPlayerPayload(payload);
   };
 
   /** プレイヤー差分更新を反映する（自分自身は除外する） */
@@ -90,5 +92,34 @@ export class PlayerSyncHandler {
 
     this.worldContainer.addChild(playerController.getDisplayObject());
     this.playerRepository.upsert(playerId, playerController);
+  }
+
+  /** current-players要素から初期表示用の実体生成を行う */
+  private upsertFromCurrentPlayerBootstrapPayload(
+    payload: CurrentPlayerBootstrapPayload,
+  ): void {
+    if (!this.hasBootstrapPosition(payload)) {
+      return;
+    }
+
+    this.upsertFromNewPlayerPayload({
+      id: payload.id,
+      name: payload.name,
+      teamId: payload.teamId,
+      x: payload.x,
+      y: payload.y,
+    });
+  }
+
+  /** current-players要素が初期表示座標を含むか判定する */
+  private hasBootstrapPosition(
+    payload: CurrentPlayerBootstrapPayload,
+  ): payload is CurrentPlayerMetaPayload & Pick<NewPlayerPayload, "x" | "y"> {
+    return "x" in payload && "y" in payload;
+  }
+
+  /** new-player情報から実体生成を行う */
+  private upsertFromNewPlayerPayload(payload: NewPlayerPayload): void {
+    this.replacePlayerController(payload.id, payload);
   }
 }
