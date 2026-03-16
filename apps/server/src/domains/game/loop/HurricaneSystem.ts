@@ -264,7 +264,10 @@ export class HurricaneSystem {
     return min + Math.random() * Math.max(0, max - min);
   }
 
-  /** スナップショット同期が必要なら全量ペイロードを返す */
+  /**
+   * current-hurricanes 用の全量同期を返す
+   * 初回同期と定期再同期の両方で同じ全量ペイロードを利用する
+   */
   private consumeSnapshotUpdates(elapsedMs: number): HurricaneStatePayload[] {
     if (this.hurricanes.length === 0) {
       return [];

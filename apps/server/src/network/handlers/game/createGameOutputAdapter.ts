@@ -13,6 +13,7 @@ import type {
   HurricaneHitPayload,
   PlayerHitPayload,
   PongPayload,
+  CurrentHurricanesPayload,
   CurrentPlayersPayload,
   RemovePlayerPayload,
   UpdateHurricanesPayload,
@@ -107,7 +108,7 @@ export const createGameOutputAdapter = (
     },
     publishCurrentHurricanesToRoom: (
       roomId: RoomId,
-      hurricanes: UpdateHurricanesPayload,
+      hurricanes: CurrentHurricanesPayload,
     ) => {
       emitReliableToRoom(roomId, protocol.SocketEvents.CURRENT_HURRICANES, hurricanes);
     },

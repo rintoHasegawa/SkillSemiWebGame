@@ -38,13 +38,13 @@ type TickUpdatePublishParams = {
 };
 
 type TickPublishStep = {
-  key: "hurricaneSnapshot" | "hurricaneDelta" | "player" | "map";
+  key: "currentHurricanes" | "updateHurricanes" | "player" | "map";
   run: (params: TickUpdatePublishParams) => void;
 };
 
 const TICK_PUBLISH_STEPS: TickPublishStep[] = [
   {
-    key: "hurricaneSnapshot",
+    key: "currentHurricanes",
     run: ({ roomId, output, tickData }) => {
       if (tickData.hurricaneSync.snapshotUpdates.length === 0) {
         return;
@@ -57,7 +57,7 @@ const TICK_PUBLISH_STEPS: TickPublishStep[] = [
     },
   },
   {
-    key: "hurricaneDelta",
+    key: "updateHurricanes",
     run: ({ roomId, output, tickData }) => {
       if (tickData.hurricaneSync.deltaUpdates.length === 0) {
         return;

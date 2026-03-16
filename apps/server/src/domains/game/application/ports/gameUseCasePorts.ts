@@ -8,6 +8,7 @@ import type {
   BombPlacedPayload,
   HurricaneHitPayload,
   PlayerHitPayload,
+  CurrentHurricanesPayload,
   UpdateHurricanesPayload,
   domain,
   PlaceBombPayload,
@@ -71,7 +72,7 @@ export interface GameOutputPort {
   ): void;
   publishCurrentHurricanesToRoom(
     roomId: domain.room.Room["roomId"],
-    hurricanes: UpdateHurricanesPayload,
+    hurricanes: CurrentHurricanesPayload,
   ): void;
   publishUpdateHurricanesToRoom(
     roomId: domain.room.Room["roomId"],
