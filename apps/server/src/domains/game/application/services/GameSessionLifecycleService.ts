@@ -4,6 +4,7 @@
  */
 import { config } from "@server/config";
 import type {
+  ActiveBombSnapshot,
   ActiveBombRegistration,
   GameFieldConfig,
 } from "../ports/gameUseCasePorts";
@@ -68,6 +69,11 @@ export class GameSessionLifecycleService {
     return session.issueServerBombId();
   }
 
+  /** 指定プレイヤーのチームIDを返す，未参加時は UNKNOWN_TEAM_ID を返す */
+  public getPlayerTeamId(playerId: string): number {
+    return this.sessionRef.current?.getPlayerTeamId(playerId) ?? -1;
+  }
+
   /** 設置済み爆弾をアクティブレジストリに登録する */
   public registerActiveBomb(registration: ActiveBombRegistration): void {
     this.sessionRef.current?.registerActiveBomb(registration);
@@ -76,6 +82,11 @@ export class GameSessionLifecycleService {
   /** 指定爆弾の所有者の bombHitCount を加算する */
   public recordBombHitForOwner(bombId: string): void {
     this.sessionRef.current?.recordBombHitForOwner(bombId);
+  }
+
+  /** 現在アクティブな爆弾一覧を返す */
+  public getActiveBombs(): ActiveBombSnapshot[] {
+    return this.sessionRef.current?.getActiveBombs() ?? [];
   }
 
   public startRoomSession(

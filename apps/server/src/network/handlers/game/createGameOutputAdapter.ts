@@ -7,6 +7,7 @@ import { contracts as protocol, domain as domainNs } from "@repo/shared";
 import type {
   BombPlacedAckPayload,
   BombPlacedPayload,
+  HurricaneStatePayload,
   domain,
   GameStartPayload,
   GameResultPayload,
@@ -20,6 +21,7 @@ import type {
   UpdatePlayersPayload,
 } from "@repo/shared";
 import type {
+  ActiveBombSnapshot,
   BombPlacementOutputPort,
   PlayerHitOutputPort,
   GameOutputPort,
@@ -76,6 +78,10 @@ export const createGameOutputAdapter = (
   const { reliable } = common;
   const { roomManager, runtimeRegistry } = deps;
   const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
+  const hurricaneSnapshotByRoomId = new Map<
+    RoomId,
+    Map<string, HurricaneStatePayload>
+  >();
 
   const getConnectedSocketIdsInRoom = (roomId: RoomId): SocketId[] => {
     const room = roomManager.getRoomById(roomId);
@@ -95,6 +101,15 @@ export const createGameOutputAdapter = (
     }
 
     return gameManager.getRoomPlayers();
+  };
+
+  const getActiveBombsInRoom = (roomId: RoomId): ActiveBombSnapshot[] => {
+    const gameManager = runtimeRegistry.getGameManagerByRoomId(roomId);
+    if (!gameManager) {
+      return [];
+    }
+
+    return gameManager.getActiveBombs();
   };
 
   const getAoiWindowForViewer = (
@@ -177,6 +192,120 @@ export const createGameOutputAdapter = (
     });
   };
 
+  const syncVisibleBombsByViewer = (
+    roomId: RoomId,
+    viewerId: SocketId,
+    viewer: domain.game.player.PlayerData,
+    bombs: ActiveBombSnapshot[],
+  ): void => {
+    updateViewerAoiCellCache(roomId, viewerId, viewer);
+    const aoiWindow = getAoiWindowForViewer(viewer);
+    const visibleBombIds = realtimeRoomSyncState.getVisibleBombIds(roomId, viewerId);
+    const nextVisibleBombIds = new Set<string>();
+
+    bombs.forEach((bomb) => {
+      if (!isInViewerAoi(bomb, aoiWindow)) {
+        return;
+      }
+
+      nextVisibleBombIds.add(bomb.bombId);
+      if (visibleBombIds.has(bomb.bombId)) {
+        return;
+      }
+
+      if (viewerId === bomb.ownerPlayerId && !isBotPlayerId(bomb.ownerPlayerId)) {
+        return;
+      }
+
+      const payload: BombPlacedPayload = {
+        bombId: bomb.bombId,
+        ownerTeamId: bomb.ownerTeamId,
+        x: bomb.x,
+        y: bomb.y,
+        explodeAtElapsedMs: bomb.explodeAtElapsedMs,
+      };
+      reliable.emitToSocketById(viewerId, protocol.SocketEvents.BOMB_PLACED, payload);
+    });
+
+    visibleBombIds.clear();
+    nextVisibleBombIds.forEach((bombId) => {
+      visibleBombIds.add(bombId);
+    });
+  };
+
+  const replaceRoomHurricaneSnapshot = (
+    roomId: RoomId,
+    hurricanes: HurricaneStatePayload[],
+  ): void => {
+    const snapshotMap = new Map<string, HurricaneStatePayload>();
+    hurricanes.forEach((hurricane) => {
+      snapshotMap.set(hurricane.id, hurricane);
+    });
+    hurricaneSnapshotByRoomId.set(roomId, snapshotMap);
+  };
+
+  const upsertRoomHurricaneSnapshot = (
+    roomId: RoomId,
+    hurricanes: HurricaneStatePayload[],
+  ): void => {
+    const snapshotMap = hurricaneSnapshotByRoomId.get(roomId) ?? new Map();
+    hurricanes.forEach((hurricane) => {
+      snapshotMap.set(hurricane.id, hurricane);
+    });
+    hurricaneSnapshotByRoomId.set(roomId, snapshotMap);
+  };
+
+  const collectVisibleHurricanesByViewer = (
+    roomId: RoomId,
+    viewerId: SocketId,
+    viewer: domain.game.player.PlayerData,
+    hurricanes: Iterable<HurricaneStatePayload>,
+  ): HurricaneStatePayload[] => {
+    updateViewerAoiCellCache(roomId, viewerId, viewer);
+    const aoiWindow = getAoiWindowForViewer(viewer);
+    const visibleHurricanes: HurricaneStatePayload[] = [];
+
+    for (const hurricane of hurricanes) {
+      if (isInViewerAoi(hurricane, aoiWindow)) {
+        visibleHurricanes.push(hurricane);
+      }
+    }
+
+    return visibleHurricanes;
+  };
+
+  const syncVisibleHurricaneIdsByViewer = (
+    roomId: RoomId,
+    viewerId: SocketId,
+    hurricanes: HurricaneStatePayload[],
+  ): void => {
+    const visibleIdsCache = realtimeRoomSyncState.getVisibleHurricaneIds(
+      roomId,
+      viewerId,
+    );
+    visibleIdsCache.clear();
+    hurricanes.forEach((hurricane) => {
+      visibleIdsCache.add(hurricane.id);
+    });
+  };
+
+  const hasChangedVisibleHurricaneIds = (
+    previousVisibleIds: Set<string>,
+    nextVisibleHurricanes: HurricaneStatePayload[],
+  ): boolean => {
+    if (previousVisibleIds.size !== nextVisibleHurricanes.length) {
+      return true;
+    }
+
+    for (const hurricane of nextVisibleHurricanes) {
+      if (!previousVisibleIds.has(hurricane.id)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   const emitReliableToRoom = (
     roomId: RoomId,
     event: ReliableRoomEvent,
@@ -199,6 +328,7 @@ export const createGameOutputAdapter = (
       players: UpdatePlayersPayload,
     ) => {
       const roomPlayers = getPlayersInRoom(roomId);
+      const activeBombs = getActiveBombsInRoom(roomId);
       if (roomPlayers.length === 0) {
         return;
       }
@@ -212,6 +342,8 @@ export const createGameOutputAdapter = (
         if (!viewer) {
           return;
         }
+
+        syncVisibleBombsByViewer(roomId, viewerId, viewer, activeBombs);
 
         updateViewerAoiCellCache(roomId, viewerId, viewer);
         const aoiWindow = getAoiWindowForViewer(viewer);
@@ -265,16 +397,101 @@ export const createGameOutputAdapter = (
       roomId: RoomId,
       hurricanes: CurrentHurricanesPayload,
     ) => {
-      emitReliableToRoom(roomId, protocol.SocketEvents.CURRENT_HURRICANES, hurricanes);
+      replaceRoomHurricaneSnapshot(roomId, hurricanes);
+
+      const roomPlayers = getPlayersInRoom(roomId);
+      if (roomPlayers.length === 0) {
+        return;
+      }
+
+      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
+      const recipientSocketIds = getConnectedSocketIdsInRoom(roomId);
+
+      recipientSocketIds.forEach((viewerId) => {
+        const viewer = roomPlayerById.get(viewerId);
+        if (!viewer) {
+          return;
+        }
+
+        const visibleHurricanes = collectVisibleHurricanesByViewer(
+          roomId,
+          viewerId,
+          viewer,
+          hurricanes,
+        );
+        syncVisibleHurricaneIdsByViewer(roomId, viewerId, visibleHurricanes);
+
+        reliable.emitToSocketById(
+          viewerId,
+          protocol.SocketEvents.CURRENT_HURRICANES,
+          visibleHurricanes,
+        );
+      });
     },
     publishUpdateHurricanesToRoom: (
       roomId: RoomId,
       hurricanes: UpdateHurricanesPayload,
     ) => {
-      emitReliableToRoom(roomId, protocol.SocketEvents.UPDATE_HURRICANES, hurricanes);
+      upsertRoomHurricaneSnapshot(roomId, hurricanes);
+
+      const roomPlayers = getPlayersInRoom(roomId);
+      if (roomPlayers.length === 0) {
+        return;
+      }
+
+      const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
+      const recipientSocketIds = getConnectedSocketIdsInRoom(roomId);
+      const roomSnapshot = hurricaneSnapshotByRoomId.get(roomId);
+
+      recipientSocketIds.forEach((viewerId) => {
+        const viewer = roomPlayerById.get(viewerId);
+        if (!viewer) {
+          return;
+        }
+
+        const nextVisibleHurricanes = collectVisibleHurricanesByViewer(
+          roomId,
+          viewerId,
+          viewer,
+          roomSnapshot?.values() ?? [],
+        );
+        const previousVisibleIds = new Set(
+          realtimeRoomSyncState.getVisibleHurricaneIds(roomId, viewerId),
+        );
+        const hasMembershipChanged = hasChangedVisibleHurricaneIds(
+          previousVisibleIds,
+          nextVisibleHurricanes,
+        );
+
+        if (hasMembershipChanged) {
+          reliable.emitToSocketById(
+            viewerId,
+            protocol.SocketEvents.CURRENT_HURRICANES,
+            nextVisibleHurricanes,
+          );
+          syncVisibleHurricaneIdsByViewer(roomId, viewerId, nextVisibleHurricanes);
+          return;
+        }
+
+        const nextVisibleIdSet = new Set(nextVisibleHurricanes.map((hurricane) => hurricane.id));
+        const visibleUpdateHurricanes = hurricanes.filter((hurricane) => {
+          return nextVisibleIdSet.has(hurricane.id);
+        });
+        if (visibleUpdateHurricanes.length === 0) {
+          return;
+        }
+
+        reliable.emitToSocketById(
+          viewerId,
+          protocol.SocketEvents.UPDATE_HURRICANES,
+          visibleUpdateHurricanes,
+        );
+        syncVisibleHurricaneIdsByViewer(roomId, viewerId, nextVisibleHurricanes);
+      });
     },
     publishGameEndToRoom: (roomId: RoomId) => {
       realtimeRoomSyncState.resetRoom(roomId);
+      hurricaneSnapshotByRoomId.delete(roomId);
       emitReliableToRoom(roomId, protocol.SocketEvents.GAME_END);
     },
     publishGameResultToRoom: (roomId: RoomId, payload: GameResultPayload) => {
@@ -282,6 +499,7 @@ export const createGameOutputAdapter = (
     },
     publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => {
       realtimeRoomSyncState.resetRoom(roomId);
+      hurricaneSnapshotByRoomId.delete(roomId);
       emitReliableToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
     },
     publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => {

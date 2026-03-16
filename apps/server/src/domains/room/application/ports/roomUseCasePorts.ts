@@ -4,6 +4,7 @@
  */
 import { domain } from "@repo/shared";
 import type {
+  ActiveBombQueryPort,
   BombHitReportValidationPort,
   BombHitStatsPort,
   BombPlacementPort,
@@ -19,6 +20,7 @@ export type RoomScopedGamePort =
   & ReadyForGamePort
   & MovePlayerPort
   & BombPlacementPort
+  & ActiveBombQueryPort
   & BombHitReportValidationPort
   & BombHitStatsPort
   & DisconnectPlayerPort;

@@ -133,10 +133,11 @@ export type PlaceBombPayload = {
   explodeAtElapsedMs: number;
 };
 
-/** bomb-placed イベントで送受信する他プレイヤー向け爆弾確定情報，設置者識別は ownerSocketId で扱う */
+/** bomb-placed イベントで送受信する他プレイヤー向け爆弾確定情報 */
 export type BombPlacedPayload = {
   bombId: string;
-  ownerSocketId: string;
+  /** 設置者のチームID，受信側で色解決に利用する */
+  ownerTeamId: number;
   x: number;
   y: number;
   explodeAtElapsedMs: number;

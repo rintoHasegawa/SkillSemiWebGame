@@ -144,6 +144,7 @@ export interface BombPlacementPort {
   shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
   issueServerBombId(): string;
   registerActiveBomb(registration: ActiveBombRegistration): void;
+  getPlayerTeamId(playerId: string): number;
 }
 
 /** registerActiveBomb に渡す爆弾登録情報 */
@@ -154,6 +155,21 @@ export type ActiveBombRegistration = {
   y: number;
   explodeAtElapsedMs: number;
 };
+
+/** アクティブ爆弾参照で返す爆弾スナップショット型 */
+export type ActiveBombSnapshot = {
+  bombId: string;
+  ownerPlayerId: string;
+  ownerTeamId: number;
+  x: number;
+  y: number;
+  explodeAtElapsedMs: number;
+};
+
+/** アクティブ爆弾一覧を参照する入力ポート */
+export interface ActiveBombQueryPort {
+  getActiveBombs(): ActiveBombSnapshot[];
+}
 
 /** 被弾報告ユースケースが利用する重複排除入力ポート */
 export interface BombHitReportValidationPort {

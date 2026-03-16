@@ -4,7 +4,10 @@
  * 受信配列を描画コントローラーへ橋渡しする
  */
 import { Container } from "pixi.js";
-import type { UpdateHurricanesPayload } from "@repo/shared";
+import type {
+  CurrentHurricanesPayload,
+  UpdateHurricanesPayload,
+} from "@repo/shared";
 import { HurricaneOverlayController } from "@client/scenes/game/entities/hurricane/HurricaneOverlayController";
 
 /** HurricaneSyncHandler の初期化入力 */
@@ -19,6 +22,13 @@ export class HurricaneSyncHandler {
   constructor({ worldContainer }: HurricaneSyncHandlerOptions) {
     this.overlayController = new HurricaneOverlayController(worldContainer);
   }
+
+  /** current-hurricanes を描画へ置換反映する */
+  public handleCurrentHurricanes = (
+    payload: CurrentHurricanesPayload,
+  ): void => {
+    this.overlayController.replaceAll(payload);
+  };
 
   /** ハリケーン状態配列を描画へ反映する */
   public handleUpdateHurricanes = (payload: UpdateHurricanesPayload): void => {
