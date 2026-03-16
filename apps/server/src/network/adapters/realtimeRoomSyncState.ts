@@ -33,9 +33,24 @@ export type RealtimeRoomSyncStateStore = {
   ) => RoomPlayerPositionCache;
   getLastAoiCell: (roomId: RoomId, socketId: SocketId) => SocketAoiCell | undefined;
   setLastAoiCell: (roomId: RoomId, socketId: SocketId, cell: SocketAoiCell) => void;
-  getVisiblePlayerIds: (roomId: RoomId, socketId: SocketId) => Set<string>;
-  getVisibleBombIds: (roomId: RoomId, socketId: SocketId) => Set<string>;
-  getVisibleHurricaneIds: (roomId: RoomId, socketId: SocketId) => Set<string>;
+  getVisiblePlayerIdsSnapshot: (roomId: RoomId, socketId: SocketId) => Set<string>;
+  getVisibleBombIdsSnapshot: (roomId: RoomId, socketId: SocketId) => Set<string>;
+  getVisibleHurricaneIdsSnapshot: (roomId: RoomId, socketId: SocketId) => Set<string>;
+  replaceVisiblePlayerIds: (
+    roomId: RoomId,
+    socketId: SocketId,
+    nextIds: Iterable<string>,
+  ) => void;
+  replaceVisibleBombIds: (
+    roomId: RoomId,
+    socketId: SocketId,
+    nextIds: Iterable<string>,
+  ) => void;
+  replaceVisibleHurricaneIds: (
+    roomId: RoomId,
+    socketId: SocketId,
+    nextIds: Iterable<string>,
+  ) => void;
   resetRoom: (roomId: RoomId) => void;
 };
 
@@ -86,29 +101,68 @@ export const createRealtimeRoomSyncStateStore = (): RealtimeRoomSyncStateStore =
       aoiCellCache.set(socketId, cell);
       aoiCellCacheByRoomId.set(roomId, aoiCellCache);
     },
-    getVisiblePlayerIds: (roomId, socketId) => {
-      return getOrCreateSocketScopedCache(
+    getVisiblePlayerIdsSnapshot: (roomId, socketId) => {
+      const cache = getOrCreateSocketScopedCache(
         visiblePlayerIdsByRoomId,
         roomId,
         socketId,
         () => new Set<string>(),
       );
+      return new Set(cache);
     },
-    getVisibleBombIds: (roomId, socketId) => {
-      return getOrCreateSocketScopedCache(
+    getVisibleBombIdsSnapshot: (roomId, socketId) => {
+      const cache = getOrCreateSocketScopedCache(
         visibleBombIdsByRoomId,
         roomId,
         socketId,
         () => new Set<string>(),
       );
+      return new Set(cache);
     },
-    getVisibleHurricaneIds: (roomId, socketId) => {
-      return getOrCreateSocketScopedCache(
+    getVisibleHurricaneIdsSnapshot: (roomId, socketId) => {
+      const cache = getOrCreateSocketScopedCache(
         visibleHurricaneIdsByRoomId,
         roomId,
         socketId,
         () => new Set<string>(),
       );
+      return new Set(cache);
+    },
+    replaceVisiblePlayerIds: (roomId, socketId, nextIds) => {
+      const cache = getOrCreateSocketScopedCache(
+        visiblePlayerIdsByRoomId,
+        roomId,
+        socketId,
+        () => new Set<string>(),
+      );
+      cache.clear();
+      for (const nextId of nextIds) {
+        cache.add(nextId);
+      }
+    },
+    replaceVisibleBombIds: (roomId, socketId, nextIds) => {
+      const cache = getOrCreateSocketScopedCache(
+        visibleBombIdsByRoomId,
+        roomId,
+        socketId,
+        () => new Set<string>(),
+      );
+      cache.clear();
+      for (const nextId of nextIds) {
+        cache.add(nextId);
+      }
+    },
+    replaceVisibleHurricaneIds: (roomId, socketId, nextIds) => {
+      const cache = getOrCreateSocketScopedCache(
+        visibleHurricaneIdsByRoomId,
+        roomId,
+        socketId,
+        () => new Set<string>(),
+      );
+      cache.clear();
+      for (const nextId of nextIds) {
+        cache.add(nextId);
+      }
     },
     resetRoom: (roomId) => {
       playerPositionCacheByRoomId.delete(roomId);

@@ -120,8 +120,8 @@ export class GameManager {
   }
 
   /** 現在アクティブな爆弾一覧を返す */
-  getActiveBombs(): ActiveBombSnapshot[] {
-    return this.lifecycleService.getActiveBombs();
+  getActiveBombSnapshots(): ActiveBombSnapshot[] {
+    return this.lifecycleService.getActiveBombSnapshots();
   }
 
   dispose(): void {

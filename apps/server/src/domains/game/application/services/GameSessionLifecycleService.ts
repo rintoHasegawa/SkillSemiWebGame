@@ -85,8 +85,8 @@ export class GameSessionLifecycleService {
   }
 
   /** 現在アクティブな爆弾一覧を返す */
-  public getActiveBombs(): ActiveBombSnapshot[] {
-    return this.sessionRef.current?.getActiveBombs() ?? [];
+  public getActiveBombSnapshots(): ActiveBombSnapshot[] {
+    return this.sessionRef.current?.getActiveBombSnapshots() ?? [];
   }
 
   public startRoomSession(

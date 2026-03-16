@@ -43,7 +43,7 @@ export class ActiveBombRegistry {
   }
 
   /** 現在アクティブな爆弾のスナップショットを返す */
-  public getBombsSnapshot(): ActiveBomb[] {
+  public getActiveBombSnapshots(): ActiveBomb[] {
     return Array.from(this.bombs.values());
   }
 }

@@ -34,11 +34,22 @@ import {
 import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
-import { config } from "@server/config";
 import type {
   FindGameByRoomPort,
   FindRoomByIdPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
+import {
+  isTargetInAoiWindow,
+  resolveViewerAoiCell,
+  resolveViewerAoiWindow,
+  type AoiWindow,
+} from "./aoi/aoiVisibility";
+import {
+  getActiveBombSnapshotsInRoom,
+  getConnectedSocketIdsInRoom,
+  getRoomPlayers,
+  type RuntimeResolverDeps,
+} from "./runtime/gameRuntimeResolvers";
 
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
@@ -70,10 +81,7 @@ export type GameDisconnectOutputAdapter = Pick<
 /** 共通送信コンテキストからゲーム出力アダプターを生成する */
 export const createGameOutputAdapter = (
   common: CommonHandlerContext,
-  deps: {
-    roomManager: FindRoomByIdPort;
-    runtimeRegistry: FindGameByRoomPort;
-  },
+  deps: RuntimeResolverDeps,
 ): GameOutputAdapter => {
   const { reliable } = common;
   const { roomManager, runtimeRegistry } = deps;
@@ -83,61 +91,19 @@ export const createGameOutputAdapter = (
     Map<string, HurricaneStatePayload>
   >();
 
-  const getConnectedSocketIdsInRoom = (roomId: RoomId): SocketId[] => {
-    const room = roomManager.getRoomById(roomId);
-    if (!room) {
-      return [];
-    }
-
-    return room.players
-      .map((player) => player.id)
-      .filter((playerId) => !isBotPlayerId(playerId));
-  };
-
   const getPlayersInRoom = (roomId: RoomId): domain.game.player.PlayerData[] => {
-    const gameManager = runtimeRegistry.getGameManagerByRoomId(roomId);
-    if (!gameManager) {
-      return [];
-    }
-
-    return gameManager.getRoomPlayers();
+    return getRoomPlayers(deps, roomId);
   };
 
   const getActiveBombsInRoom = (roomId: RoomId): ActiveBombSnapshot[] => {
-    const gameManager = runtimeRegistry.getGameManagerByRoomId(roomId);
-    if (!gameManager) {
-      return [];
-    }
-
-    return gameManager.getActiveBombs();
-  };
-
-  const getAoiWindowForViewer = (
-    viewer: domain.game.player.PlayerData,
-  ): { minCol: number; maxCol: number; minRow: number; maxRow: number } => {
-    const centerCell = domainNs.game.aoi.resolveAoiCellFromPosition(
-      viewer.x,
-      viewer.y,
-      config.GAME_CONFIG.AOI_CELL_SIZE,
-    );
-
-    return domainNs.game.aoi.resolveAoiWindowFromCell(
-      centerCell,
-      config.GAME_CONFIG.AOI_WINDOW_COLS,
-      config.GAME_CONFIG.AOI_WINDOW_ROWS,
-    );
+    return getActiveBombSnapshotsInRoom(deps, roomId);
   };
 
   const isInViewerAoi = (
     target: { x: number; y: number },
-    aoiWindow: { minCol: number; maxCol: number; minRow: number; maxRow: number },
+    aoiWindow: AoiWindow,
   ): boolean => {
-    return domainNs.game.aoi.isPositionInAoiWindow(
-      target.x,
-      target.y,
-      aoiWindow,
-      config.GAME_CONFIG.AOI_CELL_SIZE,
-    );
+    return isTargetInAoiWindow(target, aoiWindow);
   };
 
   const updateViewerAoiCellCache = (
@@ -145,11 +111,7 @@ export const createGameOutputAdapter = (
     viewerId: SocketId,
     viewer: domain.game.player.PlayerData,
   ): void => {
-    const nextCell = domainNs.game.aoi.resolveAoiCellFromPosition(
-      viewer.x,
-      viewer.y,
-      config.GAME_CONFIG.AOI_CELL_SIZE,
-    );
+    const nextCell = resolveViewerAoiCell(viewer);
     const previousCell = realtimeRoomSyncState.getLastAoiCell(roomId, viewerId);
 
     if (previousCell && domainNs.game.aoi.isSameAoiCell(previousCell, nextCell)) {
@@ -164,7 +126,10 @@ export const createGameOutputAdapter = (
     viewerId: SocketId,
     visiblePlayers: domain.game.player.PlayerData[],
   ): void => {
-    const visibleIdsCache = realtimeRoomSyncState.getVisiblePlayerIds(roomId, viewerId);
+    const previousVisibleIds = realtimeRoomSyncState.getVisiblePlayerIdsSnapshot(
+      roomId,
+      viewerId,
+    );
     const viewerPositionCache = realtimeRoomSyncState.getPlayerPositionCache(
       roomId,
       viewerId,
@@ -172,12 +137,12 @@ export const createGameOutputAdapter = (
     const nextVisibleIds = new Set(visiblePlayers.map((player) => player.id));
 
     visiblePlayers.forEach((player) => {
-      if (!visibleIdsCache.has(player.id)) {
+      if (!previousVisibleIds.has(player.id)) {
         reliable.emitToSocketById(viewerId, protocol.SocketEvents.NEW_PLAYER, player);
       }
     });
 
-    visibleIdsCache.forEach((playerId) => {
+    previousVisibleIds.forEach((playerId) => {
       if (nextVisibleIds.has(playerId)) {
         return;
       }
@@ -186,10 +151,7 @@ export const createGameOutputAdapter = (
       reliable.emitToSocketById(viewerId, protocol.SocketEvents.REMOVE_PLAYER, playerId);
     });
 
-    visibleIdsCache.clear();
-    nextVisibleIds.forEach((playerId) => {
-      visibleIdsCache.add(playerId);
-    });
+    realtimeRoomSyncState.replaceVisiblePlayerIds(roomId, viewerId, nextVisibleIds);
   };
 
   const syncVisibleBombsByViewer = (
@@ -199,8 +161,11 @@ export const createGameOutputAdapter = (
     bombs: ActiveBombSnapshot[],
   ): void => {
     updateViewerAoiCellCache(roomId, viewerId, viewer);
-    const aoiWindow = getAoiWindowForViewer(viewer);
-    const visibleBombIds = realtimeRoomSyncState.getVisibleBombIds(roomId, viewerId);
+    const aoiWindow = resolveViewerAoiWindow(viewer);
+    const previousVisibleBombIds = realtimeRoomSyncState.getVisibleBombIdsSnapshot(
+      roomId,
+      viewerId,
+    );
     const nextVisibleBombIds = new Set<string>();
 
     bombs.forEach((bomb) => {
@@ -209,7 +174,7 @@ export const createGameOutputAdapter = (
       }
 
       nextVisibleBombIds.add(bomb.bombId);
-      if (visibleBombIds.has(bomb.bombId)) {
+      if (previousVisibleBombIds.has(bomb.bombId)) {
         return;
       }
 
@@ -227,10 +192,11 @@ export const createGameOutputAdapter = (
       reliable.emitToSocketById(viewerId, protocol.SocketEvents.BOMB_PLACED, payload);
     });
 
-    visibleBombIds.clear();
-    nextVisibleBombIds.forEach((bombId) => {
-      visibleBombIds.add(bombId);
-    });
+    realtimeRoomSyncState.replaceVisibleBombIds(
+      roomId,
+      viewerId,
+      nextVisibleBombIds,
+    );
   };
 
   const replaceRoomHurricaneSnapshot = (
@@ -262,7 +228,7 @@ export const createGameOutputAdapter = (
     hurricanes: Iterable<HurricaneStatePayload>,
   ): HurricaneStatePayload[] => {
     updateViewerAoiCellCache(roomId, viewerId, viewer);
-    const aoiWindow = getAoiWindowForViewer(viewer);
+    const aoiWindow = resolveViewerAoiWindow(viewer);
     const visibleHurricanes: HurricaneStatePayload[] = [];
 
     for (const hurricane of hurricanes) {
@@ -279,14 +245,12 @@ export const createGameOutputAdapter = (
     viewerId: SocketId,
     hurricanes: HurricaneStatePayload[],
   ): void => {
-    const visibleIdsCache = realtimeRoomSyncState.getVisibleHurricaneIds(
+    const nextVisibleIds = hurricanes.map((hurricane) => hurricane.id);
+    realtimeRoomSyncState.replaceVisibleHurricaneIds(
       roomId,
       viewerId,
+      nextVisibleIds,
     );
-    visibleIdsCache.clear();
-    hurricanes.forEach((hurricane) => {
-      visibleIdsCache.add(hurricane.id);
-    });
   };
 
   const hasChangedVisibleHurricaneIds = (
@@ -335,7 +299,7 @@ export const createGameOutputAdapter = (
 
       const quantizedPlayers = quantizeUpdatePlayersPayload(players);
       const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(roomId);
+      const recipientSocketIds = getConnectedSocketIdsInRoom(deps, roomId);
 
       recipientSocketIds.forEach((viewerId) => {
         const viewer = roomPlayerById.get(viewerId);
@@ -346,7 +310,7 @@ export const createGameOutputAdapter = (
         syncVisibleBombsByViewer(roomId, viewerId, viewer, activeBombs);
 
         updateViewerAoiCellCache(roomId, viewerId, viewer);
-        const aoiWindow = getAoiWindowForViewer(viewer);
+        const aoiWindow = resolveViewerAoiWindow(viewer);
 
         const visibleSnapshotPlayers = roomPlayers.filter((player) => {
           if (player.id === viewerId) {
@@ -405,7 +369,7 @@ export const createGameOutputAdapter = (
       }
 
       const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(roomId);
+      const recipientSocketIds = getConnectedSocketIdsInRoom(deps, roomId);
 
       recipientSocketIds.forEach((viewerId) => {
         const viewer = roomPlayerById.get(viewerId);
@@ -440,7 +404,7 @@ export const createGameOutputAdapter = (
       }
 
       const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(roomId);
+      const recipientSocketIds = getConnectedSocketIdsInRoom(deps, roomId);
       const roomSnapshot = hurricaneSnapshotByRoomId.get(roomId);
 
       recipientSocketIds.forEach((viewerId) => {
@@ -456,7 +420,7 @@ export const createGameOutputAdapter = (
           roomSnapshot?.values() ?? [],
         );
         const previousVisibleIds = new Set(
-          realtimeRoomSyncState.getVisibleHurricaneIds(roomId, viewerId),
+          realtimeRoomSyncState.getVisibleHurricaneIdsSnapshot(roomId, viewerId),
         );
         const hasMembershipChanged = hasChangedVisibleHurricaneIds(
           previousVisibleIds,
@@ -510,7 +474,7 @@ export const createGameOutputAdapter = (
     },
     publishBombPlacedToOthersInRoom: (
       roomId: RoomId,
-      ownerSocketId: string,
+      excludedSocketId: string,
       payload: BombPlacedPayload,
     ) => {
       const roomPlayers = getPlayersInRoom(roomId);
@@ -519,10 +483,10 @@ export const createGameOutputAdapter = (
       }
 
       const roomPlayerById = new Map(roomPlayers.map((player) => [player.id, player]));
-      const recipientSocketIds = getConnectedSocketIdsInRoom(roomId);
+      const recipientSocketIds = getConnectedSocketIdsInRoom(deps, roomId);
 
       recipientSocketIds.forEach((viewerId) => {
-        if (viewerId === ownerSocketId && !isBotPlayerId(ownerSocketId)) {
+        if (viewerId === excludedSocketId && !isBotPlayerId(excludedSocketId)) {
           return;
         }
 
@@ -532,7 +496,7 @@ export const createGameOutputAdapter = (
         }
 
         updateViewerAoiCellCache(roomId, viewerId, viewer);
-        const aoiWindow = getAoiWindowForViewer(viewer);
+        const aoiWindow = resolveViewerAoiWindow(viewer);
         if (!isInViewerAoi(payload, aoiWindow)) {
           return;
         }

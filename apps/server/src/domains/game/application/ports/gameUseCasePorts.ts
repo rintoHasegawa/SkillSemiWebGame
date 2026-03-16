@@ -99,7 +99,7 @@ export interface GameOutputPort {
 export interface BombPlacementOutputPort {
   publishBombPlacedToOthersInRoom(
     roomId: domain.room.Room["roomId"],
-    ownerSocketId: string,
+    excludedSocketId: string,
     payload: BombPlacedPayload,
   ): void;
   publishBombPlacedAckToSocket(
@@ -168,7 +168,7 @@ export type ActiveBombSnapshot = {
 
 /** アクティブ爆弾一覧を参照する入力ポート */
 export interface ActiveBombQueryPort {
-  getActiveBombs(): ActiveBombSnapshot[];
+  getActiveBombSnapshots(): ActiveBombSnapshot[];
 }
 
 /** 被弾報告ユースケースが利用する重複排除入力ポート */

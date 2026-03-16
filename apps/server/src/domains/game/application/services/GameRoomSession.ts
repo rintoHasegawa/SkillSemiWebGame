@@ -249,8 +249,8 @@ export class GameRoomSession {
   }
 
   /** 現在アクティブな爆弾一覧を返す */
-  public getActiveBombs(): ActiveBombSnapshot[] {
-    return this.bombStateStore.activeBombRegistry.getBombsSnapshot().map((bomb) => {
+  public getActiveBombSnapshots(): ActiveBombSnapshot[] {
+    return this.bombStateStore.activeBombRegistry.getActiveBombSnapshots().map((bomb) => {
       return {
         bombId: bomb.bombId,
         ownerPlayerId: bomb.ownerPlayerId,
