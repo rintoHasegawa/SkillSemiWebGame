@@ -7,6 +7,11 @@ import { config } from "@client/config";
 import { LocalPlayerController, RemotePlayerController } from "@client/scenes/game/entities/player/PlayerController";
 import type { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
+import {
+  expandWorldViewport,
+  isCircleIntersectingViewport,
+  resolveWorldViewport,
+} from "@client/scenes/game/application/culling/worldViewport";
 import type {
   LoopFrameContext,
   LoopFrameEffects,
@@ -29,10 +34,15 @@ type SimulationStepParams = {
 
 /** シミュレーション段の更新処理を担うステップ */
 export class SimulationStep implements LoopStep {
+  private static readonly OFFSCREEN_REMOTE_UPDATE_INTERVAL_FRAMES = 6;
+  private static readonly REMOTE_PLAYER_CULL_RADIUS_PX =
+    config.GAME_CONFIG.PLAYER_RADIUS_PX * config.GAME_CONFIG.PLAYER_RENDER_SCALE;
+
   private readonly moveSender: MoveSender;
   private readonly nowMsProvider: () => number;
   private lastPositionSentTime = 0;
   private wasMoving = false;
+  private frameCount = 0;
 
   constructor({ moveSender, nowMsProvider = () => performance.now() }: SimulationStepOptions) {
     this.moveSender = moveSender;
@@ -44,6 +54,7 @@ export class SimulationStep implements LoopStep {
     context: Readonly<LoopFrameContext>,
     effects: LoopFrameEffects,
   ): void {
+    this.frameCount += 1;
     const params: SimulationStepParams = {
       me: context.me,
       playerRepository: context.playerRepository,
@@ -52,9 +63,22 @@ export class SimulationStep implements LoopStep {
     };
 
     this.runLocalSimulation({ me: params.me, isMoving: params.movementState.isMoving });
+
+    const meDisplay = params.me.getDisplayObject();
+    const viewport = expandWorldViewport(
+      resolveWorldViewport(
+        meDisplay.x,
+        meDisplay.y,
+        context.app.screen.width,
+        context.app.screen.height,
+      ),
+      config.GAME_CONFIG.GRID_CELL_SIZE,
+    );
+
     this.runRemoteSimulation({
       playerRepository: params.playerRepository,
       deltaSeconds: params.deltaSeconds,
+      viewport,
     });
   }
 
@@ -82,10 +106,35 @@ export class SimulationStep implements LoopStep {
     this.wasMoving = isMoving;
   }
 
-  private runRemoteSimulation({ playerRepository, deltaSeconds }: Pick<SimulationStepParams, "playerRepository" | "deltaSeconds">) {
-    playerRepository.values().forEach((player) => {
+  private runRemoteSimulation({
+    playerRepository,
+    deltaSeconds,
+    viewport,
+  }: Pick<SimulationStepParams, "playerRepository" | "deltaSeconds"> & {
+    viewport: ReturnType<typeof resolveWorldViewport>;
+  }) {
+    const shouldTickOffscreen =
+      this.frameCount % SimulationStep.OFFSCREEN_REMOTE_UPDATE_INTERVAL_FRAMES === 0;
+
+    Object.values(playerRepository.toRecord()).forEach((player) => {
       if (player instanceof RemotePlayerController) {
-        player.tick(deltaSeconds);
+        const display = player.getDisplayObject();
+        const isVisible = isCircleIntersectingViewport(
+          display.x,
+          display.y,
+          SimulationStep.REMOTE_PLAYER_CULL_RADIUS_PX,
+          viewport,
+        );
+        display.visible = isVisible;
+
+        if (!isVisible && !shouldTickOffscreen) {
+          return;
+        }
+
+        const tickDeltaSeconds = isVisible
+          ? deltaSeconds
+          : deltaSeconds * SimulationStep.OFFSCREEN_REMOTE_UPDATE_INTERVAL_FRAMES;
+        player.tick(tickDeltaSeconds);
       }
     });
   }

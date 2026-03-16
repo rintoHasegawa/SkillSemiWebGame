@@ -9,6 +9,7 @@ import type {
   BombPlacedPayload,
   PlaceBombPayload,
 } from "@repo/shared";
+import type { WorldViewport } from "@client/scenes/game/application/culling/worldViewport";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { BombIdRegistry } from "./BombIdRegistry";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
@@ -120,6 +121,11 @@ export class BombManager {
   /** 爆弾状態を更新し終了済みを破棄する */
   public tick(): void {
     this.bombRuntimeSystem.tick(this.getElapsedMs());
+  }
+
+  /** 可視矩形に基づいて爆弾表示を切り替える */
+  public applyViewportCulling(viewport: WorldViewport, marginPx: number): void {
+    this.bombRepository.applyViewportCulling(viewport, marginPx);
   }
 
   /** 管理中の爆弾をすべて破棄する */

@@ -16,6 +16,7 @@ import { GameMapController } from "@client/scenes/game/entities/map/GameMapContr
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { GameNetworkEventReceiver } from "./network/receivers/GameNetworkEventReceiver";
 import { GameNetworkStateApplier } from "./network/handlers/GameNetworkStateApplier";
+import type { WorldViewport } from "@client/scenes/game/application/culling/worldViewport";
 
 const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 
@@ -92,5 +93,10 @@ export class GameNetworkSync {
   public unbind() {
     this.eventReceiver.unbind();
     this.stateApplier.dispose();
+  }
+
+  /** 可視矩形に基づいて画面外描画を抑制する */
+  public applyViewportCulling(viewport: WorldViewport, marginPx: number): void {
+    this.stateApplier.applyViewportCulling(viewport, marginPx);
   }
 }

@@ -34,7 +34,11 @@ export class BombRuntimeSystem {
   public tick(elapsedMs: number): void {
     this.bombRepository.forEachBomb((bomb, bombId) => {
       const previousState = bomb.getState();
-      bomb.tick(elapsedMs);
+      bomb.updateState(elapsedMs);
+
+      if (bomb.getDisplayObject().visible) {
+        bomb.render();
+      }
 
       if (previousState !== "exploded" && bomb.getState() === "exploded") {
         const position = bomb.getPosition();
