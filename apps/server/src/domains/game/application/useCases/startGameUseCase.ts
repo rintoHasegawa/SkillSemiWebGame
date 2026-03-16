@@ -72,10 +72,6 @@ const TICK_PUBLISH_STEPS: TickPublishStep[] = [
   {
     key: "player",
     run: ({ roomId, output, tickData }) => {
-      if (tickData.playerUpdates.length === 0) {
-        return;
-      }
-
       output.publishUpdatePlayersToRoom(roomId, tickData.playerUpdates);
     },
   },

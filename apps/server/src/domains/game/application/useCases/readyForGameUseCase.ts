@@ -8,6 +8,7 @@ import { config } from "@server/config";
 import { logEvent } from "@server/logging/logger";
 import { config as sharedConfig } from "@repo/shared";
 import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
+import { buildCurrentPlayersBootstrapPayload } from "../services/currentPlayersBootstrapBuilder";
 
 type ReadyForGameUseCaseParams = {
   socketId: string;
@@ -34,7 +35,8 @@ export const readyForGameUseCase = ({
   }
 
   const roomPlayers = gameManager.getRoomPlayers();
-  output.publishCurrentPlayersToSocket(roomPlayers);
+  const playerMetas = buildCurrentPlayersBootstrapPayload(socketId, roomPlayers);
+  output.publishCurrentPlayersToSocket(playerMetas);
 
   logEvent(logScopes.GAME_USE_CASE, {
     event: gameUseCaseLogEvents.READY_FOR_GAME,

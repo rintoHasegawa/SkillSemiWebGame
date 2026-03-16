@@ -84,6 +84,23 @@ export const createPlayerSyncService = (
     deps.realtimeRoomSyncState.replaceVisiblePlayerIds(roomId, viewerId, nextVisibleIds);
   };
 
+  const buildVisibleSnapshotPlayers = (
+    roomPlayers: domain.game.player.PlayerData[],
+    viewerId: SocketId,
+    aoiWindow: AoiWindow,
+    options: {
+      includeSelf: boolean;
+    },
+  ): domain.game.player.PlayerData[] => {
+    return roomPlayers.filter((player) => {
+      if (player.id === viewerId) {
+        return options.includeSelf;
+      }
+
+      return isInViewerAoi(player, aoiWindow);
+    });
+  };
+
   return {
     publishUpdatePlayersToRoom: (roomId, players) => {
       const activeBombs = getActiveBombSnapshotsInRoom(deps.runtimeDeps, roomId);
@@ -92,51 +109,53 @@ export const createPlayerSyncService = (
         runtimeDeps: deps.runtimeDeps,
         roomId,
         run: ({ viewerId, viewer, roomPlayers }) => {
-        deps.bombSyncService.syncVisibleBombsByViewer(
-          roomId,
-          viewerId,
-          viewer,
-          activeBombs,
-        );
+          deps.bombSyncService.syncVisibleBombsByViewer(
+            roomId,
+            viewerId,
+            viewer,
+            activeBombs,
+          );
 
-        deps.updateViewerAoiCellCache(roomId, viewerId, viewer);
-        const aoiWindow = resolveViewerAoiWindow(viewer);
+          deps.updateViewerAoiCellCache(roomId, viewerId, viewer);
+          const aoiWindow = resolveViewerAoiWindow(viewer);
 
-        const visibleSnapshotPlayers = roomPlayers.filter((player) => {
-          if (player.id === viewerId) {
-            return false;
+          const visibleSnapshotPlayers = buildVisibleSnapshotPlayers(
+            roomPlayers,
+            viewerId,
+            aoiWindow,
+            {
+              // ローカルプレイヤー実体生成のため，自分自身を初回同期対象に含める
+              includeSelf: true,
+            },
+          );
+          syncVisiblePlayersByViewer(roomId, viewerId, visibleSnapshotPlayers);
+
+          const visibleDeltaPlayers = quantizedPlayers.filter((player) => {
+            if (player.id === viewerId) {
+              return false;
+            }
+
+            return isInViewerAoi(player, aoiWindow);
+          });
+
+          const viewerPositionCache = deps.realtimeRoomSyncState.getPlayerPositionCache(
+            roomId,
+            viewerId,
+          );
+          const changedPlayers = collectChangedUpdatePlayersPayload(
+            visibleDeltaPlayers,
+            viewerPositionCache,
+          );
+
+          if (changedPlayers.length === 0) {
+            return;
           }
 
-          return isInViewerAoi(player, aoiWindow);
-        });
-        syncVisiblePlayersByViewer(roomId, viewerId, visibleSnapshotPlayers);
-
-        const visibleDeltaPlayers = quantizedPlayers.filter((player) => {
-          if (player.id === viewerId) {
-            return false;
-          }
-
-          return isInViewerAoi(player, aoiWindow);
-        });
-
-        const viewerPositionCache = deps.realtimeRoomSyncState.getPlayerPositionCache(
-          roomId,
-          viewerId,
-        );
-        const changedPlayers = collectChangedUpdatePlayersPayload(
-          visibleDeltaPlayers,
-          viewerPositionCache,
-        );
-
-        if (changedPlayers.length === 0) {
-          return;
-        }
-
-        deps.reliable.emitToSocketById(
-          viewerId,
-          protocol.SocketEvents.UPDATE_PLAYERS,
-          changedPlayers,
-        );
+          deps.reliable.emitToSocketById(
+            viewerId,
+            protocol.SocketEvents.UPDATE_PLAYERS,
+            changedPlayers,
+          );
         },
       });
     },
