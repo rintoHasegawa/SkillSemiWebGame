@@ -4,6 +4,7 @@
  * 固定スタイルと動的スタイル生成関数を提供する
  */
 import type { CSSProperties } from "react";
+import { safeBottom, safeRight } from "@client/styles/safeArea";
 
 /** 爆弾ボタン外枠の固定スタイル */
 export const BOMB_BUTTON_FRAME_STYLE: CSSProperties = {
@@ -19,8 +20,8 @@ export const BOMB_BUTTON_FRAME_STYLE: CSSProperties = {
 /** 爆弾ボタン入力領域の固定スタイル */
 export const BOMB_BUTTON_HIT_AREA_STYLE: CSSProperties = {
   position: "fixed",
-  right: "24px",
-  bottom: "28px",
+  right: safeRight(24),
+  bottom: safeBottom(28),
   width: "120px",
   height: "120px",
   borderRadius: "50%",

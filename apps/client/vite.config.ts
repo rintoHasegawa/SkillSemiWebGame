@@ -14,13 +14,28 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         workbox: {
+          // SPAとして index.html へフォールバックさせる
+          navigateFallback: 'index.html',
           // Socket.IO の通信をService Workerのキャッシュ対象から除外
           navigateFallbackDenylist: [/^\/socket\.io/],
-          runtimeCaching: [],
+          runtimeCaching: [
+            {
+              // 画像アセットをキャッシュして初回以降の読み込みを高速化
+              urlPattern: /\.(?:png|webp|svg)$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'image-assets',
+                expiration: {
+                  maxEntries: 30,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30日
+                },
+              },
+            },
+          ],
         },
         manifest: {
-          name: 'PaintBomb',
-          short_name: 'PaintBomb',
+          name: 'PixelPaintWar',
+          short_name: 'PxPaintWar',
           description: 'リアルタイム対戦ペイントゲーム',
           theme_color: '#111111',
           background_color: '#111111',

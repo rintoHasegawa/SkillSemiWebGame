@@ -56,8 +56,6 @@ export const TitleScene = ({
         style={{
           position: "fixed",
           inset: 0,
-          width: "100vw",
-          height: "100lvh",
           overflow: "hidden",
           backgroundImage: "url('/title.png')",
           backgroundSize: "cover",

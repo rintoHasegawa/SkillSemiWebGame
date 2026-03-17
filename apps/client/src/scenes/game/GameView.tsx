@@ -5,7 +5,7 @@
  */
 import { GameInputOverlay } from "./input/GameInputOverlay";
 import {
-  GAME_VIEW_BOMB_HIT_DEBUG_STYLE,
+  GAME_VIEW_HP_GAUGE_STYLE,
   GAME_VIEW_FEVER_TEXT_STYLE,
   GAME_VIEW_HURRICANE_WARNING_STYLE,
   GAME_VIEW_PIXI_LAYER_STYLE,
@@ -85,7 +85,7 @@ export const GameView = ({
       <style>{`@keyframes timerUrgentBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } } @keyframes feverPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } } @keyframes hurricaneWarningBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.5; } }`}</style>
       {/* タイマーUIの表示 */}
       <TimerOverlay timeLeft={timeLeft} />
-      <div style={GAME_VIEW_BOMB_HIT_DEBUG_STYLE}>HP: {heartGauge}</div>
+      <div style={GAME_VIEW_HP_GAUGE_STYLE}>HP: {heartGauge}</div>
       <TopRightHud
         teamPaintRates={teamPaintRates}
         remainingSeconds={remainingSeconds}

@@ -30,7 +30,7 @@ export const RESULT_ROOT_STYLE: CSSProperties = {
   boxSizing: "border-box",
   overscrollBehaviorX: "none",
   overscrollBehaviorY: "none",
-  touchAction: "pan-y",
+  touchAction: "none",
 };
 
 /** 結果発表タイトルのスタイル */
@@ -143,6 +143,7 @@ export const RESULT_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
   overflowY: "auto",
   overscrollBehaviorY: "contain",
   WebkitOverflowScrolling: "touch",
+  touchAction: "pan-y",
 };
 
 /** 順位表ヘッダー行のスタイル */
@@ -276,6 +277,7 @@ export const RESULT_PLAYER_STATS_SCROLL_BODY_STYLE: CSSProperties = {
   overflowY: "auto",
   overscrollBehaviorY: "contain",
   WebkitOverflowScrolling: "touch",
+  touchAction: "pan-y",
 };
 
 /** プレイヤースタッツ数値セルのスタイル */
@@ -355,6 +357,7 @@ export const RESULT_PLAYER_RANKING_SCROLL_BODY_STYLE: CSSProperties = {
   overflowY: "auto",
   overscrollBehaviorY: "contain",
   WebkitOverflowScrolling: "touch",
+  touchAction: "pan-y",
 };
 
 /** プレイヤーランキング数値セルのスタイル */

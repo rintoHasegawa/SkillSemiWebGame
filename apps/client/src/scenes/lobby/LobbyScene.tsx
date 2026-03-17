@@ -4,6 +4,22 @@ import type { FieldSizePreset, StartGameRequestPayload } from "@repo/shared";
 import { config } from "@client/config";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 import { LobbyRuleModal } from "./components/LobbyRuleModal";
+import {
+  LOBBY_BACK_BUTTON_STYLE,
+  LOBBY_BACKGROUND_STYLE,
+  LOBBY_CONTAINER_STYLE,
+  LOBBY_CONTROLS_BLOCK_STYLE,
+  LOBBY_LABEL_STYLE,
+  LOBBY_LEFT_INNER_STYLE,
+  LOBBY_LEFT_PANEL_STYLE,
+  LOBBY_PLAYER_LIST_HEADER_STYLE,
+  LOBBY_PLAYER_LIST_ITEM_STYLE,
+  LOBBY_PLAYER_LIST_PANEL_STYLE,
+  LOBBY_SELECT_STYLE,
+  LOBBY_START_BUTTON_STYLE,
+  LOBBY_TITLE_STYLE,
+  LOBBY_WAITING_STYLE,
+} from "./styles/LobbyScene.styles";
 
 type Props = {
   room: domain.room.Room | null;
@@ -95,11 +111,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   return (
     <>
       <style>{`
-        /* 全てのエレメントの幅・高さ計算に余白(padding)を含める魔法のCSS */
-        * {
-          box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         .lobby-main-layout {
           display: flex;
           flex-direction: row;
@@ -108,7 +120,6 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           gap: 20px;
           min-height: 0;
         }
-
         .lobby-player-list {
           list-style: none;
           padding: 0 10px 0 0;
@@ -117,117 +128,34 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           overflow-y: auto;
           flex-grow: 1;
           min-height: 0;
+          touch-action: pan-y;
         }
-
-        /* スクロールバーの見た目をスマホ・PCでスッキリさせる */
-        ::-webkit-scrollbar {
-          width: 8px;
-        }
-        ::-webkit-scrollbar-thumb {
-          background-color: #555;
-          border-radius: 4px;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background-color: #555; border-radius: 4px; }
       `}</style>
 
-      {/* 🌟🌟 追加：背景のWebPアニメーション 🌟🌟 */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100dvh",
-          backgroundImage: "url('/LobbyAni2.webp')", // ここで画像を読み込み
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          zIndex: 0, // UIの背面レイヤーとして表示する
-          pointerEvents: "none",
-          filter: "brightness(0.4)", // UIの文字を見やすくするために画像を少し暗くする
-        }}
-      />
+      {/* 背景アニメーション */}
+      <div style={LOBBY_BACKGROUND_STYLE} />
 
-      <div
-        className="lobby-container"
-        style={{
-          position: "fixed",
-          inset: 0,
-          padding: "20px",
-          color: "white",
-          // 🌟 変更：元の "#222" (真っ黒) から "transparent" (透明) に変更！
-          background: "transparent",
-          height: "100dvh",
-          width: "100vw",
-          overflowX: "hidden",
-          overflowY: "auto",
-          WebkitOverflowScrolling: "touch",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          zIndex: 1,
-        }}
-      >
+      <div className="lobby-container" style={LOBBY_CONTAINER_STYLE}>
         <button
           onClick={onBackToTitle}
-          style={{
-            ...OVERLAY_BUTTON_STYLE,
-            position: "absolute",
-            top: "20px",
-            left: "20px",
-          }}
+          style={{ ...OVERLAY_BUTTON_STYLE, ...LOBBY_BACK_BUTTON_STYLE }}
         >
           タイトルへ戻る
         </button>
 
-        <h2
-          style={{
-            fontSize: "clamp(1.5rem, 4vw, 2rem)",
-            margin: "0 0 15px 0",
-            // 🌟 追加：文字が背景に埋もれないように影をつける
-            textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
-          }}
-        >
+        <h2 style={LOBBY_TITLE_STYLE}>
           ルーム: {room.roomId} (待機中)
         </h2>
 
         <div className="lobby-main-layout">
           {/* 左半分: スタートボタン or 待機メッセージ */}
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              display: "flex",
-              flexDirection: "column",
-              padding: "4px 10px 10px",
-            }}
-          >
-            <div
-              style={{
-                width: "100%",
-                flexGrow: 1,
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "flex-start",
-                paddingTop: "2px",
-              }}
-            >
+          <div style={LOBBY_LEFT_PANEL_STYLE}>
+            <div style={LOBBY_LEFT_INNER_STYLE}>
               {isMeOwner ? (
-                <div
-                  style={{
-                    width: "100%",
-                    maxWidth: "350px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                  }}
-                >
-                  <label
-                    htmlFor="start-player-count"
-                    style={{
-                      fontSize: "0.95rem",
-                      fontWeight: 700,
-                      textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
-                    }}
-                  >
+                <div style={LOBBY_CONTROLS_BLOCK_STYLE}>
+                  <label htmlFor="start-player-count" style={LOBBY_LABEL_STYLE}>
                     ゲーム人数
                   </label>
                   <select
@@ -236,16 +164,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     onChange={(event) => {
                       setSelectedStartPlayerCount(Number(event.target.value));
                     }}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid rgba(255,255,255,0.4)",
-                      background: "rgba(0,0,0,0.55)",
-                      color: "white",
-                      fontSize: "1rem",
-                      fontWeight: 700,
-                    }}
+                    style={LOBBY_SELECT_STYLE}
                   >
                     {startPlayerCountOptions.map((count) => (
                       <option key={count} value={count}>
@@ -254,14 +173,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     ))}
                   </select>
 
-                  <label
-                    htmlFor="field-size-preset"
-                    style={{
-                      fontSize: "0.95rem",
-                      fontWeight: 700,
-                      textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
-                    }}
-                  >
+                  <label htmlFor="field-size-preset" style={LOBBY_LABEL_STYLE}>
                     フィールドサイズ
                   </label>
                   <select
@@ -270,16 +182,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     onChange={(event) => {
                       setSelectedFieldSizePreset(event.target.value as FieldSizePreset);
                     }}
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid rgba(255,255,255,0.4)",
-                      background: "rgba(0,0,0,0.55)",
-                      color: "white",
-                      fontSize: "1rem",
-                      fontWeight: 700,
-                    }}
+                    style={LOBBY_SELECT_STYLE}
                   >
                     {fieldPresetOptions.map((preset) => (
                       <option key={preset} value={preset}>
@@ -288,68 +191,26 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     ))}
                   </select>
 
-                  <button
-                    onClick={handleStart}
-                    style={{
-                      width: "100%",
-                      padding: "20px",
-                      fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
-                      cursor: "pointer",
-                      backgroundColor: "#4ade80",
-                      color: "#111",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontWeight: "bold",
-                      boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-                    }}
-                  >
+                  <button onClick={handleStart} style={LOBBY_START_BUTTON_STYLE}>
                     ゲームスタート
                   </button>
 
                   <button
-                    onClick={() => {
-                      setIsRuleModalOpen(true);
-                    }}
-                    style={{
-                      ...OVERLAY_BUTTON_STYLE,
-                      width: "100%",
-                    }}
+                    onClick={() => { setIsRuleModalOpen(true); }}
+                    style={{ ...OVERLAY_BUTTON_STYLE, width: "100%" }}
                   >
                     ルールを見る
                   </button>
                 </div>
               ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    maxWidth: "350px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "20px",
-                      fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
-                      backgroundColor: "#555",
-                      color: "#ccc",
-                      borderRadius: "8px",
-                      textAlign: "center",
-                      boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-                    }}
-                  >
+                <div style={LOBBY_CONTROLS_BLOCK_STYLE}>
+                  <div style={LOBBY_WAITING_STYLE}>
                     ホストの開始を待っています...
                   </div>
 
                   <button
-                    onClick={() => {
-                      setIsRuleModalOpen(true);
-                    }}
-                    style={{
-                      ...OVERLAY_BUTTON_STYLE,
-                      width: "100%",
-                    }}
+                    onClick={() => { setIsRuleModalOpen(true); }}
+                    style={{ ...OVERLAY_BUTTON_STYLE, width: "100%" }}
                   >
                     ルールを見る
                   </button>
@@ -359,49 +220,15 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           </div>
 
           {/* 右半分: 参加プレイヤーリスト */}
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              // 🌟 変更：ベタ塗りのグレーから、後ろの動画がうっすら透ける黒に変更！
-              background: "rgba(0, 0, 0, 0.6)",
-              padding: "20px",
-              borderRadius: "8px",
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-              boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
-              // 🌟 追加：透け感を引き立たせるための薄い枠線
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-            }}
-          >
-            <h3
-              style={{
-                borderBottom: "1px solid #555",
-                paddingBottom: "10px",
-                margin: "0 0 10px 0",
-                fontSize: "clamp(1rem, 3vw, 1.2rem)",
-              }}
-            >
+          <div style={LOBBY_PLAYER_LIST_PANEL_STYLE}>
+            <h3 style={LOBBY_PLAYER_LIST_HEADER_STYLE}>
               参加プレイヤー ({room.players.length}/{room.maxPlayers})
             </h3>
-            <ul
-              className="lobby-player-list"
-            >
+            <ul className="lobby-player-list">
               {room.players.map((p: domain.room.RoomMember) => (
-                <li
-                  key={p.id}
-                  style={{
-                    margin: "10px 0",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                  }}
-                >
+                <li key={p.id} style={LOBBY_PLAYER_LIST_ITEM_STYLE}>
                   <span>{p.id === myId ? "🟢" : "⚪"}</span>
-                  <span
-                    style={{ fontWeight: p.id === myId ? "bold" : "normal" }}
-                  >
+                  <span style={{ fontWeight: p.id === myId ? "bold" : "normal" }}>
                     {p.name}
                   </span>
                   {p.isOwner && <span style={{ fontSize: "0.9em" }}>👑</span>}
@@ -419,9 +246,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
 
       {isRuleModalOpen && (
         <LobbyRuleModal
-          onClose={() => {
-            setIsRuleModalOpen(false);
-          }}
+          onClose={() => { setIsRuleModalOpen(false); }}
         />
       )}
     </>
