@@ -21,8 +21,8 @@ export default defineConfig(({ mode }) => {
           runtimeCaching: [],
         },
         manifest: {
-          name: 'PaintBomb',
-          short_name: 'PaintBomb',
+          name: 'PixelPaintWar',
+          short_name: 'PxPaintWar',
           description: 'リアルタイム対戦ペイントゲーム',
           theme_color: '#111111',
           background_color: '#111111',

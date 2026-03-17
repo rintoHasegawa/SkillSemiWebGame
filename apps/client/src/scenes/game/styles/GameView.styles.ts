@@ -72,8 +72,8 @@ export const GAME_VIEW_PAINT_RATE_SQUARE_STYLE: CSSProperties = {
   fontSize: "14px",
 };
 
-/** 左上の被弾回数デバッグ表示スタイル */
-export const GAME_VIEW_BOMB_HIT_DEBUG_STYLE: CSSProperties = {
+/** 左上のHPゲージ表示スタイル */
+export const GAME_VIEW_HP_GAUGE_STYLE: CSSProperties = {
   position: "absolute",
   top: "20px",
   left: "max(16px, calc(16px + env(safe-area-inset-left)))",
