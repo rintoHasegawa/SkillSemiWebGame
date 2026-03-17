@@ -32,6 +32,7 @@ export const LOBBY_CONTAINER_STYLE: CSSProperties = {
   overflowX: "hidden",
   overflowY: "auto",
   WebkitOverflowScrolling: "touch",
+  touchAction: "pan-y",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",

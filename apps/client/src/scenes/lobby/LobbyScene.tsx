@@ -128,6 +128,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           overflow-y: auto;
           flex-grow: 1;
           min-height: 0;
+          touch-action: pan-y;
         }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background-color: #555; border-radius: 4px; }
