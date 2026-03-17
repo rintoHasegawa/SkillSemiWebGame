@@ -68,6 +68,13 @@ type NetworkBombHitReportLogPayload = {
   socketId: string;
 };
 
+/** NetworkのLOBBY_SETTINGS_UPDATE不正ペイロードログ契約 */
+type NetworkLobbySettingsUpdateLogPayload = {
+  event: typeof protocol.SocketEvents.LOBBY_SETTINGS_UPDATE;
+  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  socketId: string;
+};
+
 /** Networkスコープのログ契約ユニオン */
 type NetworkLogPayload =
   | NetworkConnectLogPayload
@@ -76,7 +83,8 @@ type NetworkLogPayload =
   | NetworkPingLogPayload
   | NetworkMoveLogPayload
   | NetworkPlaceBombLogPayload
-  | NetworkBombHitReportLogPayload;
+  | NetworkBombHitReportLogPayload
+  | NetworkLobbySettingsUpdateLogPayload;
 
 /** GameUseCaseのSTART_GAMEログ契約 */
 type GameUseCaseStartGameLogPayload = {

@@ -4,6 +4,7 @@
  */
 import type {
   domain,
+  LobbySettingsUpdatePayload,
   PlaceBombPayload,
   BombHitReportPayload,
   StartGameRequestPayload,
@@ -100,6 +101,33 @@ export const isStartGamePayload = (
     || fieldSizePreset === "LARGE"
     || fieldSizePreset === "XLARGE"
   );
+};
+
+/** LOBBY_SETTINGS_UPDATEイベントのペイロードがロビー設定情報であるか判定する */
+export const isLobbySettingsUpdatePayload = (
+  value: unknown,
+): value is LobbySettingsUpdatePayload => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const { targetPlayerCount, fieldSizePreset } = candidate;
+
+  const isValidCount = (
+    typeof targetPlayerCount === "number" &&
+    Number.isInteger(targetPlayerCount) &&
+    targetPlayerCount > 0
+  );
+
+  const isValidPreset = (
+    fieldSizePreset === "SMALL"
+    || fieldSizePreset === "MEDIUM"
+    || fieldSizePreset === "LARGE"
+    || fieldSizePreset === "XLARGE"
+  );
+
+  return isValidCount && isValidPreset;
 };
 
 /** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */

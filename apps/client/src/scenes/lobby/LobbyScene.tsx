@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { domain } from "@repo/shared";
 import type { FieldSizePreset, StartGameRequestPayload } from "@repo/shared";
 import { config } from "@client/config";
+import { socketManager } from "@client/network/SocketManager";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 import { LobbyRuleModal } from "./components/LobbyRuleModal";
 import { LobbyStartConfirmModal } from "./components/LobbyStartConfirmModal";
@@ -10,6 +11,9 @@ import {
   LOBBY_BACKGROUND_STYLE,
   LOBBY_CONTAINER_STYLE,
   LOBBY_CONTROLS_BLOCK_STYLE,
+  LOBBY_HOST_SETTINGS_LABEL_STYLE,
+  LOBBY_HOST_SETTINGS_STYLE,
+  LOBBY_HOST_SETTINGS_VALUE_STYLE,
   LOBBY_LABEL_STYLE,
   LOBBY_LEFT_INNER_STYLE,
   LOBBY_LEFT_PANEL_STYLE,
@@ -88,6 +92,18 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
       return prev;
     });
   }, [minimumStartPlayerCount, maxStartPlayerCount]);
+
+  // ホストが設定を変更したらサーバーに通知して全員に反映する
+  useEffect(() => {
+    if (!isMeOwner) {
+      return;
+    }
+
+    socketManager.lobby.updateLobbySettings({
+      targetPlayerCount: selectedStartPlayerCount,
+      fieldSizePreset: selectedFieldSizePreset,
+    });
+  }, [isMeOwner, selectedStartPlayerCount, selectedFieldSizePreset]);
 
   const handleStartClick = () => {
     setIsStartConfirmVisible(true);
@@ -217,6 +233,23 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                 <div style={LOBBY_CONTROLS_BLOCK_STYLE}>
                   <div style={LOBBY_WAITING_STYLE}>
                     ホストの開始を待っています...
+                  </div>
+
+                  <div style={LOBBY_HOST_SETTINGS_STYLE}>
+                    <div>
+                      <div style={LOBBY_HOST_SETTINGS_LABEL_STYLE}>ゲーム人数</div>
+                      <div style={LOBBY_HOST_SETTINGS_VALUE_STYLE}>
+                        {room.targetPlayerCount != null
+                          ? `${room.targetPlayerCount}人`
+                          : "未設定"}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={LOBBY_HOST_SETTINGS_LABEL_STYLE}>フィールドサイズ</div>
+                      <div style={LOBBY_HOST_SETTINGS_VALUE_STYLE}>
+                        {toFieldPresetLabel(room.fieldSizePreset)}
+                      </div>
+                    </div>
                   </div>
 
                   <button

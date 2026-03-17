@@ -25,6 +25,8 @@ export interface Room {
   status: RoomPhase;
   maxPlayers: number;
   fieldSizePreset: FieldSizePreset;
+  /** ホストがロビーで選択したゲーム参加人数 */
+  targetPlayerCount?: number;
 }
 
 /** ルーム参加時に送信するペイロード */

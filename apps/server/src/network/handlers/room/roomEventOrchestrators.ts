@@ -5,12 +5,14 @@
  * 本ファイルではランタイム未解決ログ対象イベントを扱わない
  */
 import { domain } from "@repo/shared";
+import type { LobbySettingsUpdatePayload } from "@repo/shared";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";
 import type {
   JoinRoomEventRoomUseCasePort,
   JoinRoomEventRuntimeUseCasePort,
+  LobbySettingsUpdateEventRoomUseCasePort,
 } from "@server/network/types/connectionPorts";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 
@@ -25,6 +27,35 @@ export type JoinRoomOrchestratorDeps = {
 
 /** JOIN_ROOMイベントの入力ペイロード型 */
 export type JoinRoomEventPayload = Parameters<typeof handleJoinRoomEvent>[1];
+
+/** LOBBY_SETTINGS_UPDATEイベント調停で利用する依存集合 */
+export type LobbySettingsUpdateOrchestratorDeps = {
+  socketId: string;
+  roomManager: LobbySettingsUpdateEventRoomUseCasePort;
+  output: RoomOutputAdapter;
+};
+
+/** LOBBY_SETTINGS_UPDATEイベントを調停してルーム設定を更新し全員に通知する */
+export const handleLobbySettingsUpdateEvent = (
+  deps: LobbySettingsUpdateOrchestratorDeps,
+  payload: LobbySettingsUpdatePayload,
+): void => {
+  const room = deps.roomManager.getRoomByOwnerId(deps.socketId);
+  if (!room) {
+    return;
+  }
+
+  const updatedRoom = deps.roomManager.updateLobbySettings(
+    room.roomId,
+    payload.targetPlayerCount,
+    payload.fieldSizePreset,
+  );
+  if (!updatedRoom) {
+    return;
+  }
+
+  deps.output.publishRoomUpdateToRoom(room.roomId, updatedRoom);
+};
 
 /** JOIN_ROOMイベントを調停して参加ユースケースを実行する */
 export const handleJoinRoomEvent = async (

@@ -5,7 +5,11 @@
  */
 import type { Socket } from "socket.io-client";
 import { contracts as protocol } from "@repo/shared";
-import type { ServerToClientPayloadOf, StartGameRequestPayload } from "@repo/shared";
+import type {
+  LobbySettingsUpdatePayload,
+  ServerToClientPayloadOf,
+  StartGameRequestPayload,
+} from "@repo/shared";
 import { createClientSocketEventBridge } from "./socketEventBridge";
 
 /** ロビー画面で利用する通信操作の契約 */
@@ -26,6 +30,7 @@ type LobbyHandler = {
     ) => void,
   ) => void;
   startGame: (payload?: StartGameRequestPayload) => void;
+  updateLobbySettings: (payload: LobbySettingsUpdatePayload) => void;
 };
 
 /** ロビー画面向けのソケットハンドラを生成する */
@@ -45,6 +50,9 @@ export const createLobbyHandler = (socket: Socket): LobbyHandler => {
     },
     startGame: (payload) => {
       emitEvent(protocol.SocketEvents.START_GAME, payload ?? {});
+    },
+    updateLobbySettings: (payload) => {
+      emitEvent(protocol.SocketEvents.LOBBY_SETTINGS_UPDATE, payload);
     },
   };
 };

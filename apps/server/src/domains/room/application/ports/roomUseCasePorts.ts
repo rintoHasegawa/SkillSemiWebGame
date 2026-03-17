@@ -85,6 +85,15 @@ export interface DeleteRoomPort {
   deleteRoom(roomId: string): boolean;
 }
 
+/** ロビー設定更新操作ポート */
+export interface UpdateLobbySettingsPort {
+  updateLobbySettings(
+    roomId: string,
+    targetPlayerCount: number,
+    fieldSizePreset: domain.room.Room["fieldSizePreset"],
+  ): domain.room.Room | undefined;
+}
+
 /** ルーム参加後にゲームランタイムを確保する操作ポート */
 export interface EnsureGameRuntimePort {
   ensureGameManagerForRoom(roomId: string): void;
