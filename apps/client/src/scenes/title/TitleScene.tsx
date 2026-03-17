@@ -100,7 +100,7 @@ export const TitleScene = ({
               alignItems: "center",
               width: "90%",
               maxWidth: "400px",
-              transform: "translateY(-6vh)",
+              transform: "translateY(-12vh)",
               backgroundColor: "rgba(0, 0, 0, 0.4)",
               padding: "20px",
               borderRadius: "12px",
