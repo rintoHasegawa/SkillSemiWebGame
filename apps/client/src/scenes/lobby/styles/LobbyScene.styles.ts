@@ -112,6 +112,31 @@ export const LOBBY_START_BUTTON_STYLE: CSSProperties = {
   borderRadius: "8px",
   fontWeight: "bold",
   boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+  marginTop: "clamp(8px, 2dvh, 16px)",
+};
+
+
+/** 非オーナー向けホスト設定表示カードのスタイル */
+export const LOBBY_HOST_SETTINGS_STYLE: CSSProperties = {
+  padding: "12px 16px",
+  backgroundColor: "rgba(0,0,0,0.5)",
+  border: "1px solid rgba(255,255,255,0.2)",
+  borderRadius: "8px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+};
+
+/** 非オーナー向けホスト設定ラベルのスタイル */
+export const LOBBY_HOST_SETTINGS_LABEL_STYLE: CSSProperties = {
+  fontSize: "0.8rem",
+  color: "#aaa",
+};
+
+/** 非オーナー向けホスト設定値のスタイル */
+export const LOBBY_HOST_SETTINGS_VALUE_STYLE: CSSProperties = {
+  fontSize: "1.1rem",
+  fontWeight: 700,
 };
 
 /** 非オーナー待機表示のスタイル */

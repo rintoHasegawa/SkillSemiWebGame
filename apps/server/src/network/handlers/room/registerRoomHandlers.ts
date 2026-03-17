@@ -7,29 +7,38 @@ import { contracts as protocol } from "@repo/shared";
 import type {
   JoinRoomEventRoomUseCasePort,
   JoinRoomEventRuntimeUseCasePort,
+  LobbySettingsUpdateEventRoomUseCasePort,
 } from "@server/network/types/connectionPorts";
 import { createSocketRegistrationContext } from "@server/network/handlers/registration";
-import { isJoinRoomPayload } from "@server/network/validation/socketPayloadValidators";
+import {
+  isJoinRoomPayload,
+  isLobbySettingsUpdatePayload,
+} from "@server/network/validation/socketPayloadValidators";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
+import type { LobbySettingsUpdatePayload } from "@repo/shared";
 import {
   handleJoinRoomEvent,
+  handleLobbySettingsUpdateEvent,
   type JoinRoomEventPayload,
   type JoinRoomOrchestratorDeps,
+  type LobbySettingsUpdateOrchestratorDeps,
 } from "./roomEventOrchestrators";
 import {
   registerGuardedEvent,
   type GuardedEventDefinition,
 } from "@server/network/handlers/eventDefinitionRegistrar";
 
+type RoomHandlerRoomUseCasePort = JoinRoomEventRoomUseCasePort & LobbySettingsUpdateEventRoomUseCasePort;
+
 type JoinRoomEventDefinition = GuardedEventDefinition<
   typeof protocol.SocketEvents.JOIN_ROOM,
   JoinRoomEventPayload
 >;
 
-/** ルーム受信イベントごとの入力検証関数を保持するテーブル */
-const roomPayloadValidators = {
-  [protocol.SocketEvents.JOIN_ROOM]: isJoinRoomPayload,
-} as const;
+type LobbySettingsUpdateEventDefinition = GuardedEventDefinition<
+  typeof protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
+  LobbySettingsUpdatePayload
+>;
 
 /** ルームイベント調停で利用する依存束を生成する */
 const createJoinRoomOrchestratorDeps = (
@@ -49,38 +58,66 @@ const createJoinRoomOrchestratorDeps = (
   };
 };
 
+/** ロビー設定更新イベント調停で利用する依存束を生成する */
+const createLobbySettingsUpdateOrchestratorDeps = (
+  socket: Socket,
+  roomManager: LobbySettingsUpdateEventRoomUseCasePort,
+  roomOutputAdapter: RoomOutputAdapter,
+): LobbySettingsUpdateOrchestratorDeps => {
+  return {
+    socketId: socket.id,
+    roomManager,
+    output: roomOutputAdapter,
+  };
+};
+
 /** JOIN_ROOMイベント定義を生成する */
 const createJoinRoomEventDefinition = (
   deps: JoinRoomOrchestratorDeps,
 ): JoinRoomEventDefinition => {
   return {
     event: protocol.SocketEvents.JOIN_ROOM,
-    validator: roomPayloadValidators[protocol.SocketEvents.JOIN_ROOM],
+    validator: isJoinRoomPayload,
     orchestrate: async (payload) => {
       await handleJoinRoomEvent(deps, payload);
     },
   };
 };
 
-/** ルーム参加イベントを検証して参加ユースケースへ連携する */
+/** LOBBY_SETTINGS_UPDATEイベント定義を生成する */
+const createLobbySettingsUpdateEventDefinition = (
+  deps: LobbySettingsUpdateOrchestratorDeps,
+): LobbySettingsUpdateEventDefinition => {
+  return {
+    event: protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
+    validator: isLobbySettingsUpdatePayload,
+    orchestrate: (payload) => {
+      handleLobbySettingsUpdateEvent(deps, payload);
+    },
+  };
+};
+
+/** ルーム関連イベントを検証してユースケースへ連携する */
 export const registerRoomHandlers = (
   socket: Socket,
-  roomManager: JoinRoomEventRoomUseCasePort,
+  roomManager: RoomHandlerRoomUseCasePort,
   runtimeRegistry: JoinRoomEventRuntimeUseCasePort,
   roomOutputAdapter: RoomOutputAdapter,
 ) => {
-  const orchestratorDeps = createJoinRoomOrchestratorDeps(
+  const { onEvent, guardOnEvent } = createSocketRegistrationContext(socket);
+
+  const joinRoomDeps = createJoinRoomOrchestratorDeps(
     socket,
     roomManager,
     runtimeRegistry,
     roomOutputAdapter,
   );
-  const { onEvent, guardOnEvent } = createSocketRegistrationContext(socket);
-
-  // 検証が必要なイベントを宣言的に登録する
-  const joinRoomEventDefinition = createJoinRoomEventDefinition(
-    orchestratorDeps,
+  const lobbySettingsDeps = createLobbySettingsUpdateOrchestratorDeps(
+    socket,
+    roomManager,
+    roomOutputAdapter,
   );
 
-  registerGuardedEvent(onEvent, guardOnEvent, joinRoomEventDefinition);
+  registerGuardedEvent(onEvent, guardOnEvent, createJoinRoomEventDefinition(joinRoomDeps));
+  registerGuardedEvent(onEvent, guardOnEvent, createLobbySettingsUpdateEventDefinition(lobbySettingsDeps));
 };

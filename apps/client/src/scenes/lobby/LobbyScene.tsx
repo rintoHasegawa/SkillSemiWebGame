@@ -2,13 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { domain } from "@repo/shared";
 import type { FieldSizePreset, StartGameRequestPayload } from "@repo/shared";
 import { config } from "@client/config";
+import { socketManager } from "@client/network/SocketManager";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 import { LobbyRuleModal } from "./components/LobbyRuleModal";
+import { LobbyStartConfirmModal } from "./components/LobbyStartConfirmModal";
 import {
   LOBBY_BACK_BUTTON_STYLE,
   LOBBY_BACKGROUND_STYLE,
   LOBBY_CONTAINER_STYLE,
   LOBBY_CONTROLS_BLOCK_STYLE,
+  LOBBY_HOST_SETTINGS_LABEL_STYLE,
+  LOBBY_HOST_SETTINGS_STYLE,
+  LOBBY_HOST_SETTINGS_VALUE_STYLE,
   LOBBY_LABEL_STYLE,
   LOBBY_LEFT_INNER_STYLE,
   LOBBY_LEFT_PANEL_STYLE,
@@ -72,6 +77,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   const [selectedFieldSizePreset, setSelectedFieldSizePreset] =
     useState<FieldSizePreset>(config.GAME_CONFIG.DEFAULT_FIELD_PRESET);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
+  const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
 
   useEffect(() => {
     setSelectedStartPlayerCount((prev) => {
@@ -87,11 +93,32 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     });
   }, [minimumStartPlayerCount, maxStartPlayerCount]);
 
-  const handleStart = () => {
+  // ホストが設定を変更したらサーバーに通知して全員に反映する
+  useEffect(() => {
+    if (!isMeOwner) {
+      return;
+    }
+
+    socketManager.lobby.updateLobbySettings({
+      targetPlayerCount: selectedStartPlayerCount,
+      fieldSizePreset: selectedFieldSizePreset,
+    });
+  }, [isMeOwner, selectedStartPlayerCount, selectedFieldSizePreset]);
+
+  const handleStartClick = () => {
+    setIsStartConfirmVisible(true);
+  };
+
+  const handleStartConfirm = () => {
+    setIsStartConfirmVisible(false);
     onStart({
       targetPlayerCount: selectedStartPlayerCount,
       fieldSizePreset: selectedFieldSizePreset,
     });
+  };
+
+  const handleStartCancel = () => {
+    setIsStartConfirmVisible(false);
   };
 
   const toFieldPresetLabel = (preset: FieldSizePreset): string => {
@@ -191,7 +218,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     ))}
                   </select>
 
-                  <button onClick={handleStart} style={LOBBY_START_BUTTON_STYLE}>
+                  <button onClick={handleStartClick} style={LOBBY_START_BUTTON_STYLE}>
                     ゲームスタート
                   </button>
 
@@ -206,6 +233,23 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                 <div style={LOBBY_CONTROLS_BLOCK_STYLE}>
                   <div style={LOBBY_WAITING_STYLE}>
                     ホストの開始を待っています...
+                  </div>
+
+                  <div style={LOBBY_HOST_SETTINGS_STYLE}>
+                    <div>
+                      <div style={LOBBY_HOST_SETTINGS_LABEL_STYLE}>ゲーム人数</div>
+                      <div style={LOBBY_HOST_SETTINGS_VALUE_STYLE}>
+                        {room.targetPlayerCount != null
+                          ? `${room.targetPlayerCount}人`
+                          : "未設定"}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={LOBBY_HOST_SETTINGS_LABEL_STYLE}>フィールドサイズ</div>
+                      <div style={LOBBY_HOST_SETTINGS_VALUE_STYLE}>
+                        {toFieldPresetLabel(room.fieldSizePreset)}
+                      </div>
+                    </div>
                   </div>
 
                   <button
@@ -247,6 +291,13 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
       {isRuleModalOpen && (
         <LobbyRuleModal
           onClose={() => { setIsRuleModalOpen(false); }}
+        />
+      )}
+
+      {isStartConfirmVisible && (
+        <LobbyStartConfirmModal
+          onConfirm={handleStartConfirm}
+          onCancel={handleStartCancel}
         />
       )}
     </>

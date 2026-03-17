@@ -18,6 +18,7 @@ import type {
   FindRoomByPlayerPort,
   JoinRoomPort,
   RoomPhaseTransitionPort,
+  UpdateLobbySettingsPort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
 
 /** 接続時のルーム処理で利用する入力ポート集合 */
@@ -48,6 +49,11 @@ export type GameEventRuntimeUseCasePort = Pick<
 /** ルーム参加イベント調停で利用するルーム依存ポート */
 export type JoinRoomEventRoomUseCasePort = Pick<ConnectionRoomPort, "addPlayerToRoom">;
 
+/** ロビー設定更新イベント調停で利用するルーム依存ポート */
+export type LobbySettingsUpdateEventRoomUseCasePort =
+  & Pick<ConnectionRoomPort, "getRoomByOwnerId">
+  & UpdateLobbySettingsPort;
+
 /** ルーム参加イベント調停で利用するランタイム依存ポート */
 export type JoinRoomEventRuntimeUseCasePort = Pick<
   ConnectionRuntimePort,
@@ -59,7 +65,8 @@ export type SocketConnectionRoomPort =
   & ConnectionRoomPort
   & DisconnectRoomPort
   & FindRoomByIdPort
-  & DeleteRoomPort;
+  & DeleteRoomPort
+  & UpdateLobbySettingsPort;
 
 /** ソケット接続全体で利用するランタイム管理ポート集合 */
 export type SocketConnectionRuntimePort =

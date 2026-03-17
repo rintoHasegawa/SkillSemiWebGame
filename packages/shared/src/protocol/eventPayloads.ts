@@ -10,6 +10,7 @@ export type { PingPayload, PongPayload } from "./payloads/commonPayloads";
 /** ロビーイベントのペイロード型を再公開する */
 export type {
   JoinRoomPayload,
+  LobbySettingsUpdatePayload,
   RoomJoinRejectedPayload,
   RoomUpdatePayload,
 } from "./payloads/lobbyPayloads";

@@ -13,3 +13,9 @@ export type RoomJoinRejectedPayload = roomTypes.JoinRoomRejectedPayload;
 
 /** ROOM_UPDATE イベントで送受信するルーム状態情報 */
 export type RoomUpdatePayload = roomTypes.Room;
+
+/** LOBBY_SETTINGS_UPDATE イベントでホストが送信するロビー設定情報 */
+export type LobbySettingsUpdatePayload = {
+  targetPlayerCount: number;
+  fieldSizePreset: roomTypes.Room["fieldSizePreset"];
+};

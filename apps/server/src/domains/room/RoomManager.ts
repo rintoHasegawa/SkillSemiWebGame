@@ -63,6 +63,22 @@ export class RoomManager {
     return this.roomPhaseService.markRoomWaiting(roomId);
   }
 
+  // ロビー設定（ゲーム人数・フィールドサイズ）を更新してルームを返す
+  public updateLobbySettings(
+    roomId: string,
+    targetPlayerCount: number,
+    fieldSizePreset: domain.room.Room["fieldSizePreset"],
+  ): domain.room.Room | undefined {
+    const room = this.rooms.get(roomId);
+    if (!room || room.status !== domain.room.RoomPhase.WAITING) {
+      return undefined;
+    }
+
+    room.targetPlayerCount = targetPlayerCount;
+    room.fieldSizePreset = fieldSizePreset;
+    return room;
+  }
+
   // ルームを削除する
   public deleteRoom(roomId: string): boolean {
     return this.rooms.delete(roomId);
