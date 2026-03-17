@@ -15,6 +15,7 @@ import {
   isLobbySettingsUpdatePayload,
 } from "@server/network/validation/socketPayloadValidators";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
+import type { LobbySettingsUpdatePayload } from "@repo/shared";
 import {
   handleJoinRoomEvent,
   handleLobbySettingsUpdateEvent,
@@ -36,7 +37,7 @@ type JoinRoomEventDefinition = GuardedEventDefinition<
 
 type LobbySettingsUpdateEventDefinition = GuardedEventDefinition<
   typeof protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
-  LobbySettingsUpdateOrchestratorDeps["roomManager"] extends infer _ ? Parameters<typeof handleLobbySettingsUpdateEvent>[1] : never
+  LobbySettingsUpdatePayload
 >;
 
 /** ルームイベント調停で利用する依存束を生成する */
