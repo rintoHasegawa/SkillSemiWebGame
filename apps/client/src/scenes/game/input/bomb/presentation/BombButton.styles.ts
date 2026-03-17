@@ -19,8 +19,8 @@ export const BOMB_BUTTON_FRAME_STYLE: CSSProperties = {
 /** 爆弾ボタン入力領域の固定スタイル */
 export const BOMB_BUTTON_HIT_AREA_STYLE: CSSProperties = {
   position: "fixed",
-  right: "24px",
-  bottom: "28px",
+  right: "max(24px, calc(24px + env(safe-area-inset-right)))",
+  bottom: "max(28px, calc(28px + env(safe-area-inset-bottom)))",
   width: "120px",
   height: "120px",
   borderRadius: "50%",

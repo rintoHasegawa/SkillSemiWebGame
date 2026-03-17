@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: 'autoUpdate',
         workbox: {
+          // SPAとして index.html へフォールバックさせる
+          navigateFallback: 'index.html',
           // Socket.IO の通信をService Workerのキャッシュ対象から除外
           navigateFallbackDenylist: [/^\/socket\.io/],
           runtimeCaching: [],

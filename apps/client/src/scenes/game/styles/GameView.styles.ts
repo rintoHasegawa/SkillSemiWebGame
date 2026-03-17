@@ -36,7 +36,7 @@ export const GAME_VIEW_TIMER_STYLE: CSSProperties = {
 export const GAME_VIEW_TOP_RIGHT_OVERLAY_STYLE: CSSProperties = {
   position: "absolute",
   top: "20px",
-  right: "16px",
+  right: "max(16px, calc(16px + env(safe-area-inset-right)))",
   zIndex: 24,
   display: "flex",
   alignItems: "flex-start",
@@ -76,7 +76,7 @@ export const GAME_VIEW_PAINT_RATE_SQUARE_STYLE: CSSProperties = {
 export const GAME_VIEW_BOMB_HIT_DEBUG_STYLE: CSSProperties = {
   position: "absolute",
   top: "20px",
-  left: "16px",
+  left: "max(16px, calc(16px + env(safe-area-inset-left)))",
   zIndex: 12,
   color: "white",
   fontSize: "14px",
