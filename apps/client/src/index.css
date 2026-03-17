@@ -23,6 +23,16 @@ body,
   background: #111;
   overflow: hidden;
   overscroll-behavior: none;
+  /* タッチ操作によるピンチズーム・スクロールジェスチャーを無効化 */
+  touch-action: none;
+}
+
+#app {
+  /* safe-area-inset対応：ノッチ・ホームバー領域へのはみ出しを防止 */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 a {

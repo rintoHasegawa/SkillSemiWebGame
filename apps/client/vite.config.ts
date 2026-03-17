@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import path from 'node:path'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import { config } from './src/config/index.ts'
 
 export default defineConfig(({ mode }) => {
@@ -8,7 +9,44 @@ export default defineConfig(({ mode }) => {
   const socketPath = config.NETWORK_CONFIG.SOCKET_IO_PATH
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        workbox: {
+          // Socket.IO の通信をService Workerのキャッシュ対象から除外
+          navigateFallbackDenylist: [/^\/socket\.io/],
+          runtimeCaching: [],
+        },
+        manifest: {
+          name: 'PaintBomb',
+          short_name: 'PaintBomb',
+          description: 'リアルタイム対戦ペイントゲーム',
+          theme_color: '#111111',
+          background_color: '#111111',
+          display: 'fullscreen',
+          orientation: 'landscape',
+          icons: [
+            {
+              src: '/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+            },
+            {
+              src: '/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+            },
+            {
+              src: '/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+        },
+      }),
+    ],
     resolve: {
       alias: {
         '@client': path.resolve(__dirname, 'src'),
