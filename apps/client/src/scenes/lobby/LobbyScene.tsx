@@ -4,6 +4,7 @@ import type { FieldSizePreset, StartGameRequestPayload } from "@repo/shared";
 import { config } from "@client/config";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 import { LobbyRuleModal } from "./components/LobbyRuleModal";
+import { LobbyStartConfirmModal } from "./components/LobbyStartConfirmModal";
 import {
   LOBBY_BACK_BUTTON_STYLE,
   LOBBY_BACKGROUND_STYLE,
@@ -72,6 +73,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   const [selectedFieldSizePreset, setSelectedFieldSizePreset] =
     useState<FieldSizePreset>(config.GAME_CONFIG.DEFAULT_FIELD_PRESET);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
+  const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
 
   useEffect(() => {
     setSelectedStartPlayerCount((prev) => {
@@ -87,11 +89,20 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     });
   }, [minimumStartPlayerCount, maxStartPlayerCount]);
 
-  const handleStart = () => {
+  const handleStartClick = () => {
+    setIsStartConfirmVisible(true);
+  };
+
+  const handleStartConfirm = () => {
+    setIsStartConfirmVisible(false);
     onStart({
       targetPlayerCount: selectedStartPlayerCount,
       fieldSizePreset: selectedFieldSizePreset,
     });
+  };
+
+  const handleStartCancel = () => {
+    setIsStartConfirmVisible(false);
   };
 
   const toFieldPresetLabel = (preset: FieldSizePreset): string => {
@@ -191,7 +202,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     ))}
                   </select>
 
-                  <button onClick={handleStart} style={LOBBY_START_BUTTON_STYLE}>
+                  <button onClick={handleStartClick} style={LOBBY_START_BUTTON_STYLE}>
                     ゲームスタート
                   </button>
 
@@ -247,6 +258,13 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
       {isRuleModalOpen && (
         <LobbyRuleModal
           onClose={() => { setIsRuleModalOpen(false); }}
+        />
+      )}
+
+      {isStartConfirmVisible && (
+        <LobbyStartConfirmModal
+          onConfirm={handleStartConfirm}
+          onCancel={handleStartCancel}
         />
       )}
     </>

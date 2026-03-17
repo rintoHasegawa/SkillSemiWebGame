@@ -112,7 +112,9 @@ export const LOBBY_START_BUTTON_STYLE: CSSProperties = {
   borderRadius: "8px",
   fontWeight: "bold",
   boxShadow: "0 4px 6px rgba(0,0,0,0.3)",
+  marginTop: "clamp(8px, 2dvh, 16px)",
 };
+
 
 /** 非オーナー待機表示のスタイル */
 export const LOBBY_WAITING_STYLE: CSSProperties = {
