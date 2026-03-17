@@ -18,7 +18,20 @@ export default defineConfig(({ mode }) => {
           navigateFallback: 'index.html',
           // Socket.IO の通信をService Workerのキャッシュ対象から除外
           navigateFallbackDenylist: [/^\/socket\.io/],
-          runtimeCaching: [],
+          runtimeCaching: [
+            {
+              // 画像アセットをキャッシュして初回以降の読み込みを高速化
+              urlPattern: /\.(?:png|webp|svg)$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'image-assets',
+                expiration: {
+                  maxEntries: 30,
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30日
+                },
+              },
+            },
+          ],
         },
         manifest: {
           name: 'PixelPaintWar',
