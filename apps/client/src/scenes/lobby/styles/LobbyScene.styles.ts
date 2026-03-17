@@ -78,7 +78,7 @@ export const LOBBY_CONTROLS_BLOCK_STYLE: CSSProperties = {
   maxWidth: "350px",
   display: "flex",
   flexDirection: "column",
-  gap: "12px",
+  gap: "clamp(6px, 1.5dvh, 12px)",
 };
 
 /** セレクトラベルのスタイル */
@@ -103,7 +103,7 @@ export const LOBBY_SELECT_STYLE: CSSProperties = {
 /** ゲームスタートボタンのスタイル */
 export const LOBBY_START_BUTTON_STYLE: CSSProperties = {
   width: "100%",
-  padding: "20px",
+  padding: "clamp(10px, 2.5dvh, 20px)",
   fontSize: "clamp(1.2rem, 3vw, 1.8rem)",
   cursor: "pointer",
   backgroundColor: "#4ade80",
