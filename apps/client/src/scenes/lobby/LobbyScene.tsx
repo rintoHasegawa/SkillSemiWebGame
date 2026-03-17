@@ -4,7 +4,9 @@ import type { FieldSizePreset, StartGameRequestPayload } from "@repo/shared";
 import { config } from "@client/config";
 import { socketManager } from "@client/network/SocketManager";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
+import { GearIcon } from "./components/GearIcon";
 import { LobbyRuleModal } from "./components/LobbyRuleModal";
+import { LobbySettingsModal } from "./components/LobbySettingsModal";
 import { LobbyStartConfirmModal } from "./components/LobbyStartConfirmModal";
 import {
   LOBBY_BACK_BUTTON_STYLE,
@@ -14,13 +16,12 @@ import {
   LOBBY_HOST_SETTINGS_LABEL_STYLE,
   LOBBY_HOST_SETTINGS_STYLE,
   LOBBY_HOST_SETTINGS_VALUE_STYLE,
-  LOBBY_LABEL_STYLE,
   LOBBY_LEFT_INNER_STYLE,
   LOBBY_LEFT_PANEL_STYLE,
   LOBBY_PLAYER_LIST_HEADER_STYLE,
   LOBBY_PLAYER_LIST_ITEM_STYLE,
   LOBBY_PLAYER_LIST_PANEL_STYLE,
-  LOBBY_SELECT_STYLE,
+  LOBBY_SETTINGS_GEAR_BUTTON_STYLE,
   LOBBY_START_BUTTON_STYLE,
   LOBBY_TITLE_STYLE,
   LOBBY_WAITING_STYLE,
@@ -78,6 +79,7 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     useState<FieldSizePreset>(config.GAME_CONFIG.DEFAULT_FIELD_PRESET);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   useEffect(() => {
     setSelectedStartPlayerCount((prev) => {
@@ -172,6 +174,16 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           タイトルへ戻る
         </button>
 
+        {isMeOwner && (
+          <button
+            onClick={() => { setIsSettingsModalOpen(true); }}
+            style={LOBBY_SETTINGS_GEAR_BUTTON_STYLE}
+            aria-label="ゲーム設定"
+          >
+            <GearIcon size={22} />
+          </button>
+        )}
+
         <h2 style={LOBBY_TITLE_STYLE}>
           ルーム: {room.roomId} (待機中)
         </h2>
@@ -182,42 +194,6 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
             <div style={LOBBY_LEFT_INNER_STYLE}>
               {isMeOwner ? (
                 <div style={LOBBY_CONTROLS_BLOCK_STYLE}>
-                  <label htmlFor="start-player-count" style={LOBBY_LABEL_STYLE}>
-                    ゲーム人数
-                  </label>
-                  <select
-                    id="start-player-count"
-                    value={selectedStartPlayerCount}
-                    onChange={(event) => {
-                      setSelectedStartPlayerCount(Number(event.target.value));
-                    }}
-                    style={LOBBY_SELECT_STYLE}
-                  >
-                    {startPlayerCountOptions.map((count) => (
-                      <option key={count} value={count}>
-                        {count}人
-                      </option>
-                    ))}
-                  </select>
-
-                  <label htmlFor="field-size-preset" style={LOBBY_LABEL_STYLE}>
-                    フィールドサイズ
-                  </label>
-                  <select
-                    id="field-size-preset"
-                    value={selectedFieldSizePreset}
-                    onChange={(event) => {
-                      setSelectedFieldSizePreset(event.target.value as FieldSizePreset);
-                    }}
-                    style={LOBBY_SELECT_STYLE}
-                  >
-                    {fieldPresetOptions.map((preset) => (
-                      <option key={preset} value={preset}>
-                        {toFieldPresetLabel(preset)}
-                      </option>
-                    ))}
-                  </select>
-
                   <button onClick={handleStartClick} style={LOBBY_START_BUTTON_STYLE}>
                     ゲームスタート
                   </button>
@@ -298,6 +274,19 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
         <LobbyStartConfirmModal
           onConfirm={handleStartConfirm}
           onCancel={handleStartCancel}
+        />
+      )}
+
+      {isSettingsModalOpen && (
+        <LobbySettingsModal
+          startPlayerCountOptions={startPlayerCountOptions}
+          selectedStartPlayerCount={selectedStartPlayerCount}
+          onChangeStartPlayerCount={setSelectedStartPlayerCount}
+          fieldPresetOptions={fieldPresetOptions}
+          selectedFieldSizePreset={selectedFieldSizePreset}
+          onChangeFieldSizePreset={setSelectedFieldSizePreset}
+          toFieldPresetLabel={toFieldPresetLabel}
+          onClose={() => { setIsSettingsModalOpen(false); }}
         />
       )}
     </>
