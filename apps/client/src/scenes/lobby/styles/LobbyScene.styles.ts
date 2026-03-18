@@ -30,7 +30,7 @@ export const LOBBY_CONTAINER_STYLE: CSSProperties = {
   height: "100dvh",
   width: "100vw",
   overflowX: "hidden",
-  overflowY: "auto",
+  overflowY: "hidden",
   WebkitOverflowScrolling: "touch",
   touchAction: "pan-y",
   display: "flex",
@@ -78,9 +78,11 @@ export const LOBBY_TITLE_STYLE: CSSProperties = {
 export const LOBBY_LEFT_PANEL_STYLE: CSSProperties = {
   flex: 1,
   minWidth: 0,
+  minHeight: 0,
   display: "flex",
   flexDirection: "column",
   padding: "4px 10px 10px",
+  overflowY: "auto",
 };
 
 /** 左パネル内コントロール群ラッパーのスタイル */
