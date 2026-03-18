@@ -2,10 +2,7 @@
  * GameManager
  * ゲームセッション集合の生成，更新，参照管理を統括する
  */
-import type {
-  domain,
-  GameResultPayload,
-} from "@repo/shared";
+
 import { Player } from "./entities/player/Player.js";
 import { GameRoomSession } from "./application/services/GameRoomSession";
 import type { GameSessionCallbacks } from "./application/services/GameRoomSession";
@@ -75,12 +72,14 @@ export class GameManager {
     playerNamesById: Record<string, string>,
     fieldConfig: GameFieldConfig,
     callbacks: GameSessionCallbacks,
+    teamPreferences?: Record<string, number | null>,
   ) {
     this.lifecycleService.startRoomSession(
       playerIds,
       playerNamesById,
       fieldConfig,
       callbacks,
+      teamPreferences,
     );
   }
 

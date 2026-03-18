@@ -1,8 +1,9 @@
 /**
  * LobbySettingsModal
- * ホスト用のゲーム設定（人数・フィールドサイズ）を変更するモーダル
+ * ホスト用のゲーム設定（人数・フィールドサイズ・チーム割り当て方式）を変更するモーダル
  */
 import type { FieldSizePreset } from "@repo/shared";
+import type { TeamAssignmentMode } from "@repo/shared";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 import {
   LOBBY_SETTINGS_MODAL_BODY_STYLE,
@@ -23,6 +24,8 @@ type LobbySettingsModalProps = {
   selectedFieldSizePreset: FieldSizePreset;
   onChangeFieldSizePreset: (preset: FieldSizePreset) => void;
   toFieldPresetLabel: (preset: FieldSizePreset) => string;
+  selectedTeamAssignmentMode: TeamAssignmentMode;
+  onChangeTeamAssignmentMode: (mode: TeamAssignmentMode) => void;
   onClose: () => void;
 };
 
@@ -35,6 +38,8 @@ export const LobbySettingsModal = ({
   selectedFieldSizePreset,
   onChangeFieldSizePreset,
   toFieldPresetLabel,
+  selectedTeamAssignmentMode,
+  onChangeTeamAssignmentMode,
   onClose,
 }: LobbySettingsModalProps) => {
   return (
@@ -86,6 +91,26 @@ export const LobbySettingsModal = ({
                   {toFieldPresetLabel(preset)}
                 </option>
               ))}
+            </select>
+          </div>
+
+          <div style={LOBBY_SETTINGS_MODAL_FIELD_STYLE}>
+            <label
+              htmlFor="settings-modal-team-assignment-mode"
+              style={LOBBY_SETTINGS_MODAL_LABEL_STYLE}
+            >
+              チームの決め方
+            </label>
+            <select
+              id="settings-modal-team-assignment-mode"
+              value={selectedTeamAssignmentMode}
+              onChange={(event) => {
+                onChangeTeamAssignmentMode(event.target.value as TeamAssignmentMode);
+              }}
+              style={LOBBY_SETTINGS_MODAL_SELECT_STYLE}
+            >
+              <option value="random">ランダム（自動割り当て）</option>
+              <option value="player_select">プレイヤーが選択</option>
             </select>
           </div>
         </div>

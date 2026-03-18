@@ -4,6 +4,7 @@
  * ルーム参加前後の契約を共有する
  */
 import type * as roomTypes from "../../domains/room/room.type";
+export type { TeamAssignmentMode } from "../../domains/room/room.type";
 
 /** JOIN_ROOM イベントで送受信するルーム参加情報 */
 export type JoinRoomPayload = roomTypes.JoinRoomPayload;
@@ -18,4 +19,19 @@ export type RoomUpdatePayload = roomTypes.Room;
 export type LobbySettingsUpdatePayload = {
   targetPlayerCount: number;
   fieldSizePreset: roomTypes.Room["fieldSizePreset"];
+  teamAssignmentMode: roomTypes.TeamAssignmentMode;
+};
+
+/** SELECT_TEAM イベントでプレイヤーが送信するチーム選択情報 */
+export type SelectTeamPayload = {
+  /** 選択したチームID（null = ランダム割り当て） */
+  preferredTeamId: number | null;
+};
+
+/** SELECT_TEAM_REJECTED イベントでサーバーが送信するチーム選択拒否情報 */
+export type SelectTeamRejectedPayload = {
+  /** 拒否されたチームID */
+  preferredTeamId: number;
+  /** 拒否理由 */
+  reason: "team_full";
 };

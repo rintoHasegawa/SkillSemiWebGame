@@ -113,6 +113,13 @@ export const startGameCoordinator = ({
     return;
   }
 
+  // player_selectモード時は各プレイヤーの希望チームIDを収集する
+  const teamPreferences = updatedRoom.teamAssignmentMode === "player_select"
+    ? Object.fromEntries(
+        updatedRoom.players.map((p) => [p.id, p.preferredTeamId]),
+      )
+    : undefined;
+
   startGameUseCase({
     roomId: updatedRoom.roomId,
     fieldConfig: {
@@ -122,6 +129,7 @@ export const startGameCoordinator = ({
     },
     playerIds: sessionPlayerIds,
     playerNamesById,
+    teamPreferences,
     gameSession: gameManager,
     bombStore: gameManager,
     onGameEnd: () => {

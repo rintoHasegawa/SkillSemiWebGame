@@ -36,6 +36,7 @@ export interface StartGamePort {
     playerNamesById: Record<string, string>,
     fieldConfig: GameFieldConfig,
     callbacks: GameSessionCallbacks,
+    teamPreferences?: Record<string, number | null>,
   ): void;
   getRoomStartTime(): number | undefined;
   getRoomFieldConfig(): GameFieldConfig | undefined;

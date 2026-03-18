@@ -35,6 +35,10 @@ const invalidPayloadLogByEvent = {
     event: protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
     result: logResults.IGNORED_INVALID_PAYLOAD,
   },
+  [protocol.SocketEvents.SELECT_TEAM]: {
+    event: protocol.SocketEvents.SELECT_TEAM,
+    result: logResults.IGNORED_INVALID_PAYLOAD,
+  },
 } as const;
 
 type PayloadGuardEventName = keyof typeof invalidPayloadLogByEvent;

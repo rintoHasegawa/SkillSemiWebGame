@@ -15,4 +15,5 @@ export type {
   JoinRoomPayload,
   JoinRoomRejectedReason,
   JoinRoomRejectedPayload,
+  TeamAssignmentMode,
 } from "./room.type";

@@ -11,6 +11,7 @@ import type {
   JoinRoomResult,
   RoomDisconnectResult,
   RoomPhaseTransitionResult,
+  SelectTeamResult,
 } from "./application/ports/roomUseCasePorts";
 
 /** ルーム操作の公開インターフェースを提供するマネージャ */
@@ -63,11 +64,12 @@ export class RoomManager {
     return this.roomPhaseService.markRoomWaiting(roomId);
   }
 
-  // ロビー設定（ゲーム人数・フィールドサイズ）を更新してルームを返す
+  // ロビー設定（ゲーム人数・フィールドサイズ・チーム割り当て方式）を更新してルームを返す
   public updateLobbySettings(
     roomId: string,
     targetPlayerCount: number,
     fieldSizePreset: domain.room.Room["fieldSizePreset"],
+    teamAssignmentMode: domain.room.TeamAssignmentMode,
   ): domain.room.Room | undefined {
     const room = this.rooms.get(roomId);
     if (!room || room.status !== domain.room.RoomPhase.WAITING) {
@@ -76,7 +78,41 @@ export class RoomManager {
 
     room.targetPlayerCount = targetPlayerCount;
     room.fieldSizePreset = fieldSizePreset;
+    room.teamAssignmentMode = teamAssignmentMode;
     return room;
+  }
+
+  // プレイヤーのチーム選択を更新して所属ルームを返す
+  // プレイヤーのチーム選択を更新する，チームが満員なら team_full を返す
+  public selectTeam(
+    playerId: string,
+    preferredTeamId: number | null,
+  ): SelectTeamResult {
+    const room = this.roomQueryService.getRoomByPlayerId(playerId);
+    if (!room || room.status !== domain.room.RoomPhase.WAITING) {
+      return { status: "not_found" };
+    }
+
+    const member = room.players.find((p) => p.id === playerId);
+    if (!member) {
+      return { status: "not_found" };
+    }
+
+    // チーム指定がある場合は人数上限を確認する（上限 = ゲーム人数 / 4）
+    if (preferredTeamId !== null) {
+      const maxPerTeam = Math.floor(
+        (room.targetPlayerCount ?? room.maxPlayers) / 4,
+      );
+      const currentCount = room.players.filter(
+        (p) => p.preferredTeamId === preferredTeamId && p.id !== playerId,
+      ).length;
+      if (currentCount >= maxPerTeam) {
+        return { status: "team_full", teamId: preferredTeamId };
+      }
+    }
+
+    member.preferredTeamId = preferredTeamId;
+    return { status: "ok", room };
   }
 
   // ルームを削除する

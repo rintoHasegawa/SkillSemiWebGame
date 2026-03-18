@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { domain } from "@repo/shared";
-import type { FieldSizePreset, StartGameRequestPayload } from "@repo/shared";
+import type { FieldSizePreset, StartGameRequestPayload, TeamAssignmentMode } from "@repo/shared";
 import { config } from "@client/config";
 import { socketManager } from "@client/network/SocketManager";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
@@ -26,6 +26,18 @@ import {
   LOBBY_TITLE_STYLE,
   LOBBY_WAITING_STYLE,
 } from "./styles/LobbyScene.styles";
+
+/** チームIDを1始まりの表示ラベルに変換する */
+const toTeamLabel = (teamId: number): string => `チーム${teamId + 1}`;
+
+/** チーム選択のオプション（チームID 0〜3 + ランダム） */
+const TEAM_SELECT_OPTIONS: Array<{ value: number | null; label: string }> = [
+  { value: null, label: "ランダム" },
+  { value: 0, label: toTeamLabel(0) },
+  { value: 1, label: toTeamLabel(1) },
+  { value: 2, label: toTeamLabel(2) },
+  { value: 3, label: toTeamLabel(3) },
+];
 
 type Props = {
   room: domain.room.Room | null;
@@ -77,6 +89,9 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   }, []);
   const [selectedFieldSizePreset, setSelectedFieldSizePreset] =
     useState<FieldSizePreset>(config.GAME_CONFIG.DEFAULT_FIELD_PRESET);
+  const [selectedTeamAssignmentMode, setSelectedTeamAssignmentMode] =
+    useState<TeamAssignmentMode>("random");
+  const [teamFullMessage, setTeamFullMessage] = useState<string | null>(null);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -104,8 +119,9 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     socketManager.lobby.updateLobbySettings({
       targetPlayerCount: selectedStartPlayerCount,
       fieldSizePreset: selectedFieldSizePreset,
+      teamAssignmentMode: selectedTeamAssignmentMode,
     });
-  }, [isMeOwner, selectedStartPlayerCount, selectedFieldSizePreset]);
+  }, [isMeOwner, selectedStartPlayerCount, selectedFieldSizePreset, selectedTeamAssignmentMode]);
 
   const handleStartClick = () => {
     setIsStartConfirmVisible(true);
@@ -123,6 +139,19 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     setIsStartConfirmVisible(false);
   };
 
+  useEffect(() => {
+    const handler = () => {
+      setTeamFullMessage("このチームは満員です。別のチームを選んでください。");
+      setTimeout(() => { setTeamFullMessage(null); }, 3000);
+    };
+    socketManager.lobby.onSelectTeamRejected(handler);
+    return () => { socketManager.lobby.offSelectTeamRejected(handler); };
+  }, []);
+
+  const handleSelectTeam = (preferredTeamId: number | null) => {
+    socketManager.lobby.selectTeam({ preferredTeamId });
+  };
+
   const toFieldPresetLabel = (preset: FieldSizePreset): string => {
     const range = config.GAME_CONFIG.FIELD_PRESETS[preset].recommendedPlayers;
     const baseLabel =
@@ -136,6 +165,13 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
 
     return `${baseLabel} (${range.min}-${range.max}人目安)`;
   };
+
+  // 自分のチーム選択状態を取得する
+  const myPreferredTeamId = room.players.find((p) => p.id === myId)?.preferredTeamId ?? null;
+
+  // チーム割り当て方式のラベルを取得する
+  const teamAssignmentModeLabel =
+    room.teamAssignmentMode === "player_select" ? "プレイヤーが選択" : "ランダム";
 
   return (
     <>
@@ -226,6 +262,12 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                         {toFieldPresetLabel(room.fieldSizePreset)}
                       </div>
                     </div>
+                    <div>
+                      <div style={LOBBY_HOST_SETTINGS_LABEL_STYLE}>チームの決め方</div>
+                      <div style={LOBBY_HOST_SETTINGS_VALUE_STYLE}>
+                        {teamAssignmentModeLabel}
+                      </div>
+                    </div>
                   </div>
 
                   <button
@@ -234,6 +276,36 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                   >
                     ルールを見る
                   </button>
+                </div>
+              )}
+
+              {/* player_selectモード時の全員向けチーム選択UI */}
+              {room.teamAssignmentMode === "player_select" && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={LOBBY_HOST_SETTINGS_LABEL_STYLE}>チームを選ぶ</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                    {TEAM_SELECT_OPTIONS.map(({ value, label }) => {
+                      const isSelected = myPreferredTeamId === value;
+                      return (
+                        <button
+                          key={String(value)}
+                          onClick={() => { handleSelectTeam(value); }}
+                          style={{
+                            ...OVERLAY_BUTTON_STYLE,
+                            opacity: isSelected ? 1 : 0.6,
+                            outline: isSelected ? "2px solid white" : "none",
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {teamFullMessage && (
+                    <div style={{ marginTop: 8, color: "#ff6b6b", fontSize: "0.9rem", fontWeight: 700 }}>
+                      {teamFullMessage}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -252,6 +324,11 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     {p.name}
                   </span>
                   {p.isOwner && <span style={{ fontSize: "0.9em" }}>👑</span>}
+                  {room.teamAssignmentMode === "player_select" && (
+                    <span style={{ marginLeft: "auto", fontSize: "0.85em", opacity: 0.8 }}>
+                      {p.preferredTeamId !== null ? toTeamLabel(p.preferredTeamId) : "ランダム"}
+                    </span>
+                  )}
                   {p.isReady && (
                     <span style={{ marginLeft: "auto", fontSize: "0.9em" }}>
                       ✅
@@ -286,6 +363,8 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
           selectedFieldSizePreset={selectedFieldSizePreset}
           onChangeFieldSizePreset={setSelectedFieldSizePreset}
           toFieldPresetLabel={toFieldPresetLabel}
+          selectedTeamAssignmentMode={selectedTeamAssignmentMode}
+          onChangeTeamAssignmentMode={setSelectedTeamAssignmentMode}
           onClose={() => { setIsSettingsModalOpen(false); }}
         />
       )}

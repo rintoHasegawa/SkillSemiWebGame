@@ -9,12 +9,17 @@ import type { FieldSizePreset } from "../../config/gameConfig";
 /** ルーム進行フェーズ状態型 */
 export type RoomPhase = "waiting" | "playing" | "result";
 
+/** チーム割り当て方式 */
+export type TeamAssignmentMode = "random" | "player_select";
+
 /** ルーム所属プレイヤー情報 */
 export interface RoomMember {
   id: string;
   name: string;
   isOwner: boolean;
   isReady: boolean;
+  /** player_selectモード時にプレイヤーが選択したチームID（null = ランダム） */
+  preferredTeamId: number | null;
 }
 
 /** ルーム全体状態データ */
@@ -27,6 +32,8 @@ export interface Room {
   fieldSizePreset: FieldSizePreset;
   /** ホストがロビーで選択したゲーム参加人数 */
   targetPlayerCount?: number;
+  /** ホストが選択したチーム割り当て方式 */
+  teamAssignmentMode: TeamAssignmentMode;
 }
 
 /** ルーム参加時に送信するペイロード */

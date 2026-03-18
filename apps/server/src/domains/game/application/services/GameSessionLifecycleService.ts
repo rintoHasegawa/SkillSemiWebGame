@@ -8,10 +8,6 @@ import type {
   ActiveBombRegistration,
   GameFieldConfig,
 } from "../ports/gameUseCasePorts";
-import type {
-  domain,
-  GameResultPayload,
-} from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import {
   gameDomainLogEvents,
@@ -94,6 +90,7 @@ export class GameSessionLifecycleService {
     playerNamesById: Record<string, string>,
     fieldConfig: GameFieldConfig,
     callbacks: GameSessionCallbacks,
+    teamPreferences?: Record<string, number | null>,
   ) {
     if (this.sessionRef.current) {
       logEvent(logScopes.GAME_SESSION_LIFECYCLE_SERVICE, {
@@ -110,6 +107,7 @@ export class GameSessionLifecycleService {
       playerIds,
       playerNamesById,
       fieldConfig,
+      teamPreferences,
     );
 
     this.activePlayerIds.clear();

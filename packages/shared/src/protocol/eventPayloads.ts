@@ -13,6 +13,9 @@ export type {
   LobbySettingsUpdatePayload,
   RoomJoinRejectedPayload,
   RoomUpdatePayload,
+  SelectTeamPayload,
+  SelectTeamRejectedPayload,
+  TeamAssignmentMode,
 } from "./payloads/lobbyPayloads";
 
 /** ゲームイベントのペイロード型を再公開する */

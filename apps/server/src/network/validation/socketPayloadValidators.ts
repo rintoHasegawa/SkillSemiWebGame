@@ -7,6 +7,7 @@ import type {
   LobbySettingsUpdatePayload,
   PlaceBombPayload,
   BombHitReportPayload,
+  SelectTeamPayload,
   StartGameRequestPayload,
 } from "@repo/shared";
 import type { PingPayload } from "@repo/shared";
@@ -112,7 +113,7 @@ export const isLobbySettingsUpdatePayload = (
   }
 
   const candidate = value as Record<string, unknown>;
-  const { targetPlayerCount, fieldSizePreset } = candidate;
+  const { targetPlayerCount, fieldSizePreset, teamAssignmentMode } = candidate;
 
   const isValidCount = (
     typeof targetPlayerCount === "number" &&
@@ -127,7 +128,29 @@ export const isLobbySettingsUpdatePayload = (
     || fieldSizePreset === "XLARGE"
   );
 
-  return isValidCount && isValidPreset;
+  const isValidMode = (
+    teamAssignmentMode === "random"
+    || teamAssignmentMode === "player_select"
+  );
+
+  return isValidCount && isValidPreset && isValidMode;
+};
+
+/** SELECT_TEAMイベントのペイロードがチーム選択情報であるか判定する */
+export const isSelectTeamPayload = (
+  value: unknown,
+): value is SelectTeamPayload => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const { preferredTeamId } = candidate;
+
+  return (
+    preferredTeamId === null
+    || (typeof preferredTeamId === "number" && Number.isInteger(preferredTeamId) && preferredTeamId >= 0)
+  );
 };
 
 /** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */

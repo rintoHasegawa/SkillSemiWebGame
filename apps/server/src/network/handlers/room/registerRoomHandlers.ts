@@ -8,27 +8,34 @@ import type {
   JoinRoomEventRoomUseCasePort,
   JoinRoomEventRuntimeUseCasePort,
   LobbySettingsUpdateEventRoomUseCasePort,
+  SelectTeamEventRoomUseCasePort,
 } from "@server/network/types/connectionPorts";
 import { createSocketRegistrationContext } from "@server/network/handlers/registration";
 import {
   isJoinRoomPayload,
   isLobbySettingsUpdatePayload,
+  isSelectTeamPayload,
 } from "@server/network/validation/socketPayloadValidators";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
-import type { LobbySettingsUpdatePayload } from "@repo/shared";
+import type { LobbySettingsUpdatePayload, SelectTeamPayload } from "@repo/shared";
 import {
   handleJoinRoomEvent,
   handleLobbySettingsUpdateEvent,
+  handleSelectTeamEvent,
   type JoinRoomEventPayload,
   type JoinRoomOrchestratorDeps,
   type LobbySettingsUpdateOrchestratorDeps,
+  type SelectTeamOrchestratorDeps,
 } from "./roomEventOrchestrators";
 import {
   registerGuardedEvent,
   type GuardedEventDefinition,
 } from "@server/network/handlers/eventDefinitionRegistrar";
 
-type RoomHandlerRoomUseCasePort = JoinRoomEventRoomUseCasePort & LobbySettingsUpdateEventRoomUseCasePort;
+type RoomHandlerRoomUseCasePort =
+  & JoinRoomEventRoomUseCasePort
+  & LobbySettingsUpdateEventRoomUseCasePort
+  & SelectTeamEventRoomUseCasePort;
 
 type JoinRoomEventDefinition = GuardedEventDefinition<
   typeof protocol.SocketEvents.JOIN_ROOM,
@@ -38,6 +45,11 @@ type JoinRoomEventDefinition = GuardedEventDefinition<
 type LobbySettingsUpdateEventDefinition = GuardedEventDefinition<
   typeof protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
   LobbySettingsUpdatePayload
+>;
+
+type SelectTeamEventDefinition = GuardedEventDefinition<
+  typeof protocol.SocketEvents.SELECT_TEAM,
+  SelectTeamPayload
 >;
 
 /** ルームイベント調停で利用する依存束を生成する */
@@ -71,6 +83,19 @@ const createLobbySettingsUpdateOrchestratorDeps = (
   };
 };
 
+/** チーム選択イベント調停で利用する依存束を生成する */
+const createSelectTeamOrchestratorDeps = (
+  socket: Socket,
+  roomManager: SelectTeamEventRoomUseCasePort,
+  roomOutputAdapter: RoomOutputAdapter,
+): SelectTeamOrchestratorDeps => {
+  return {
+    socketId: socket.id,
+    roomManager,
+    output: roomOutputAdapter,
+  };
+};
+
 /** JOIN_ROOMイベント定義を生成する */
 const createJoinRoomEventDefinition = (
   deps: JoinRoomOrchestratorDeps,
@@ -97,6 +122,19 @@ const createLobbySettingsUpdateEventDefinition = (
   };
 };
 
+/** SELECT_TEAMイベント定義を生成する */
+const createSelectTeamEventDefinition = (
+  deps: SelectTeamOrchestratorDeps,
+): SelectTeamEventDefinition => {
+  return {
+    event: protocol.SocketEvents.SELECT_TEAM,
+    validator: isSelectTeamPayload,
+    orchestrate: (payload) => {
+      handleSelectTeamEvent(deps, payload);
+    },
+  };
+};
+
 /** ルーム関連イベントを検証してユースケースへ連携する */
 export const registerRoomHandlers = (
   socket: Socket,
@@ -117,7 +155,13 @@ export const registerRoomHandlers = (
     roomManager,
     roomOutputAdapter,
   );
+  const selectTeamDeps = createSelectTeamOrchestratorDeps(
+    socket,
+    roomManager,
+    roomOutputAdapter,
+  );
 
   registerGuardedEvent(onEvent, guardOnEvent, createJoinRoomEventDefinition(joinRoomDeps));
   registerGuardedEvent(onEvent, guardOnEvent, createLobbySettingsUpdateEventDefinition(lobbySettingsDeps));
+  registerGuardedEvent(onEvent, guardOnEvent, createSelectTeamEventDefinition(selectTeamDeps));
 };
