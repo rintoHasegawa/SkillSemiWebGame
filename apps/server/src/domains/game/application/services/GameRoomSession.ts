@@ -123,6 +123,9 @@ export class GameRoomSession {
       callbacks: loopCallbacks,
     });
 
+    // startDelayMs の待機中にJITとボット初期状態を準備する
+    this.gameLoop.warmUp();
+
     if (startDelayMs === 0) {
       this.gameLoop.start();
       return;

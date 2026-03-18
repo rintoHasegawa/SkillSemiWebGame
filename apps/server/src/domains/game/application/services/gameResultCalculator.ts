@@ -17,7 +17,7 @@ type PlayerStatsSource = {
 
 /** グリッド色配列とプレイヤー情報からゲーム結果ペイロードを生成する */
 export const buildGameResultPayload = (
-  gridColors: number[],
+  gridColors: readonly number[],
   players?: PlayerStatsSource[],
 ): GameResultPayload => {
   const { TEAM_COUNT } = config.GAME_CONFIG;

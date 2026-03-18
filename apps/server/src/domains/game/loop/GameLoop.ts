@@ -24,6 +24,7 @@ import {
   isBotPlayerId,
   type BotPlayerId,
 } from "../application/services/bot/index.js";
+import { chooseNextTarget } from "../application/services/bot/policies/TargetSelectionPolicy.js";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 import type { ActiveBombRegistry } from "../entities/bomb/ActiveBombRegistry.js";
 import { HurricaneSystem } from "./HurricaneSystem";
@@ -56,6 +57,15 @@ type PlayerGridCacheEntry = PlayerGridEntry & { player: Player };
 
 type DamageSource = "bomb" | "hurricane";
 
+/** 1秒間のパフォーマンス統計蓄積バッファ */
+type PerfAccumulator = {
+  windowStartMs: number;
+  tickCount: number;
+  totalTickMs: number;
+  maxTickMs: number;
+  totalPayloadBytes: number;
+};
+
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
   private loopId: NodeJS.Timeout | null = null;
@@ -71,6 +81,13 @@ export class GameLoop {
   private botTurnOrchestrator: BotTurnOrchestrator;
   private readonly botReceivedHitCountById = new Map<string, number>();
   private readonly hurricaneSystem: HurricaneSystem;
+  private perfAccumulator: PerfAccumulator = {
+    windowStartMs: 0,
+    tickCount: 0,
+    totalTickMs: 0,
+    maxTickMs: 0,
+    totalPayloadBytes: 0,
+  };
 
   private readonly roomId: string;
   private readonly tickRate: number;
@@ -94,6 +111,56 @@ export class GameLoop {
     this.callbacks = options.callbacks;
   }
 
+  /**
+   * ゲーム開始前にJITコンパイルを誘発し，ボットごとに初期目標距離をずらす
+   * startDelayMs の待機中に呼ぶことで tick1 の chooseNextTarget 集中を防ぐ
+   */
+  public warmUp(): void {
+    const nowMs = Date.now();
+    const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
+    const maxChain = 4;
+    let botIndex = 0;
+
+    this.players.forEach((player) => {
+      if (
+        !isBotPlayerId(player.id) &&
+        !this.disconnectedBotControlledPlayerIds.has(player.id)
+      ) {
+        return;
+      }
+
+      // decide() を1回呼んでJITコンパイルを誘発する
+      this.botTurnOrchestrator.decide(
+        player.id as BotPlayerId,
+        player,
+        gridColorsSnapshot,
+        nowMs,
+        0,
+      );
+
+      // ボットごとに chooseNextTarget をチェーンして初期目標距離をずらす
+      const chainCount = (botIndex % maxChain) + 1;
+      const currentCol = Math.floor(player.x);
+      const currentRow = Math.floor(player.y);
+      let targetCol = currentCol;
+      let targetRow = currentRow;
+      for (let i = 0; i < chainCount; i++) {
+        const next = chooseNextTarget(targetCol, targetRow, gridColorsSnapshot, this.mapSize);
+        targetCol = next.col;
+        targetRow = next.row;
+      }
+
+      // チェーンで求めた目標を BotTurnOrchestrator の状態に上書きする
+      this.botTurnOrchestrator.overrideTarget(
+        player.id as BotPlayerId,
+        targetCol,
+        targetRow,
+      );
+
+      botIndex++;
+    });
+  }
+
   start() {
     // 既にループが回っている場合は何もしない
     if (this.isRunning) return;
@@ -104,6 +171,13 @@ export class GameLoop {
       nowMs + config.GAME_CONFIG.GAME_DURATION_SEC * 1000;
     this.nextTickAtMs = nowMs + this.tickRate;
     this.lastSentPlayers.clear();
+    this.perfAccumulator = {
+      windowStartMs: nowMs,
+      tickCount: 0,
+      totalTickMs: 0,
+      maxTickMs: 0,
+      totalPayloadBytes: 0,
+    };
     this.isRunning = true;
     this.scheduleNextTick();
 
@@ -161,11 +235,11 @@ export class GameLoop {
   }
 
   private processSingleTick(): void {
-    const monotonicNowMs = performance.now();
+    const tickStartMs = performance.now();
     const wallClockNowMs = Date.now();
     const elapsedMs = Math.max(
       0,
-      Math.round(monotonicNowMs - this.startMonotonicTimeMs),
+      Math.round(tickStartMs - this.startMonotonicTimeMs),
     );
     this.hurricaneSystem.ensureSpawned(elapsedMs);
     this.hurricaneSystem.update(this.tickRate / 1000);
@@ -175,12 +249,63 @@ export class GameLoop {
     this.detectBotBombHits(elapsedMs, wallClockNowMs);
     const tickData = this.buildTickData(elapsedMs);
     this.callbacks.onTick(tickData);
+
+    // パフォーマンス統計を蓄積し，1秒ごとにログ出力する
+    const tickMs = performance.now() - tickStartMs;
+    const payloadBytes = JSON.stringify(tickData).length;
+    this.accumulatePerfStats(tickMs, payloadBytes);
+  }
+
+  /** tick処理時間とペイロードサイズを蓄積し，1秒経過でログを出力する */
+  private accumulatePerfStats(tickMs: number, payloadBytes: number): void {
+    const acc = this.perfAccumulator;
+    acc.tickCount += 1;
+    acc.totalTickMs += tickMs;
+    acc.maxTickMs = Math.max(acc.maxTickMs, tickMs);
+    acc.totalPayloadBytes += payloadBytes;
+
+    const windowMs = performance.now() - acc.windowStartMs;
+    if (windowMs < 1000) return;
+
+    const playerCount = this.players.size;
+    const avgTickMs =
+      acc.tickCount > 0
+        ? Math.round((acc.totalTickMs / acc.tickCount) * 10) / 10
+        : 0;
+    const maxTickMs = Math.round(acc.maxTickMs * 10) / 10;
+    const cpuUsagePct =
+      Math.round((acc.totalTickMs / windowMs) * 1000) / 10;
+    const avgPayloadBytesPerTick =
+      acc.tickCount > 0 ? Math.round(acc.totalPayloadBytes / acc.tickCount) : 0;
+    const outboundBytesPerSec = avgPayloadBytesPerTick * playerCount * acc.tickCount;
+
+    logEvent(logScopes.GAME_LOOP, {
+      event: gameDomainLogEvents.PERF_STATS,
+      result: logResults.STATS,
+      roomId: this.roomId,
+      playerCount,
+      tickCount: acc.tickCount,
+      avgTickMs,
+      maxTickMs,
+      cpuUsagePct,
+      avgPayloadBytesPerTick,
+      outboundBytesPerSec,
+    });
+
+    // ウィンドウをリセット
+    this.perfAccumulator = {
+      windowStartMs: performance.now(),
+      tickCount: 0,
+      totalTickMs: 0,
+      maxTickMs: 0,
+      totalPayloadBytes: 0,
+    };
   }
 
   private updateBotPlayers(
     nowMs: number,
     elapsedMs: number,
-    gridColorsSnapshot: number[],
+    gridColorsSnapshot: readonly number[],
   ): void {
     this.players.forEach((player) => {
       if (

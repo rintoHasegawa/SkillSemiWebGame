@@ -37,7 +37,7 @@ export class BotTurnOrchestrator {
   public decide(
     botPlayerId: BotPlayerId,
     player: Player,
-    gridColors: number[],
+    gridColors: readonly number[],
     nowMs: number,
     elapsedMs: number,
   ): BotDecision {
@@ -144,6 +144,15 @@ export class BotTurnOrchestrator {
     this.stateStore.update(botPlayerId, (state) => ({
       ...state,
       stunUntilMs: Math.max(state.stunUntilMs, respawnAtMs),
+    }));
+  }
+
+  /** warmUp時に初期目標を外部から上書きする */
+  public overrideTarget(botPlayerId: BotPlayerId, col: number, row: number): void {
+    this.stateStore.update(botPlayerId, (state) => ({
+      ...state,
+      targetCol: col,
+      targetRow: row,
     }));
   }
 
