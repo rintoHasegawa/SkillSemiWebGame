@@ -36,6 +36,15 @@ export type LobbyGameSettings = {
   teamAssignmentMode: TeamAssignmentMode;
 };
 
+/** プレイヤーリストの並び順 */
+type PlayerSortKey = "join" | "team" | "name";
+
+const PLAYER_SORT_OPTIONS_BASE: Array<{ value: PlayerSortKey; label: string; teamOnly?: boolean }> = [
+  { value: "join", label: "入った順" },
+  { value: "team", label: "チーム順", teamOnly: true },
+  { value: "name", label: "名前順" },
+];
+
 const TEAM_COLOR_LABELS = ["赤チーム", "青チーム", "緑チーム", "黄チーム"] as const;
 
 /** チームIDを色名ラベルに変換する */
@@ -137,6 +146,32 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [playerSortKey, setPlayerSortKey] = useState<PlayerSortKey>("join");
+
+  const isPlayerSelect = room.teamAssignmentMode === "player_select";
+
+  // チーム選択モードでないときは「チーム順」を選択肢から除外し，選択中ならリセットする
+  const playerSortOptions = useMemo(
+    () => PLAYER_SORT_OPTIONS_BASE.filter((o) => !o.teamOnly || isPlayerSelect),
+    [isPlayerSelect],
+  );
+  useEffect(() => {
+    if (!isPlayerSelect && playerSortKey === "team") {
+      setPlayerSortKey("join");
+    }
+  }, [isPlayerSelect, playerSortKey]);
+
+  // ソート済みプレイヤーリスト
+  const sortedPlayers = useMemo(() => {
+    if (playerSortKey === "join") return room.players;
+    const sorted = [...room.players];
+    if (playerSortKey === "team") {
+      sorted.sort((a, b) => (a.preferredTeamId ?? Infinity) - (b.preferredTeamId ?? Infinity));
+    } else {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return sorted;
+  }, [room.players, playerSortKey]);
 
   useEffect(() => {
     setGameSettings((prev) => {
@@ -267,8 +302,8 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
 
                   <TeamSelectField
                     id="team-select-owner"
-                    disabled={room.teamAssignmentMode !== "player_select"}
-                    value={room.teamAssignmentMode === "player_select" && myPreferredTeamId !== null ? String(myPreferredTeamId) : ""}
+                    disabled={!isPlayerSelect}
+                    value={isPlayerSelect && myPreferredTeamId !== null ? String(myPreferredTeamId) : ""}
                     onChange={handleSelectTeam}
                     teamFullMessage={teamFullMessage}
                   />
@@ -311,8 +346,8 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
 
                   <TeamSelectField
                     id="team-select-member"
-                    disabled={room.teamAssignmentMode !== "player_select"}
-                    value={room.teamAssignmentMode === "player_select" && myPreferredTeamId !== null ? String(myPreferredTeamId) : ""}
+                    disabled={!isPlayerSelect}
+                    value={isPlayerSelect && myPreferredTeamId !== null ? String(myPreferredTeamId) : ""}
                     onChange={handleSelectTeam}
                     teamFullMessage={teamFullMessage}
                   />
@@ -323,19 +358,42 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
 
           {/* 右半分: 参加プレイヤーリスト */}
           <div style={LOBBY_PLAYER_LIST_PANEL_STYLE}>
-            <h3 style={LOBBY_PLAYER_LIST_HEADER_STYLE}>
-              参加プレイヤー ({room.players.length}/{room.maxPlayers})
-            </h3>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #555", paddingBottom: "10px", marginBottom: "10px" }}>
+              <h3 style={{ ...LOBBY_PLAYER_LIST_HEADER_STYLE, border: "none", padding: 0, margin: 0 }}>
+                参加プレイヤー ({room.players.length}/{room.maxPlayers})
+              </h3>
+              <select
+                value={playerSortKey}
+                onChange={(e) => { setPlayerSortKey(e.target.value as PlayerSortKey); }}
+                style={{ ...LOBBY_SELECT_STYLE, width: "auto", padding: "4px 8px", fontSize: "0.85rem" }}
+              >
+                {playerSortOptions.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
             <ul className="lobby-player-list">
-              {room.players.map((p: domain.room.RoomMember) => (
+              {sortedPlayers.map((p: domain.room.RoomMember) => (
                 <li key={p.id} style={LOBBY_PLAYER_LIST_ITEM_STYLE}>
                   <span>{p.id === myId ? "🟢" : "⚪"}</span>
-                  <span style={{ fontWeight: p.id === myId ? "bold" : "normal" }}>
+                  <span style={{
+                    fontWeight: p.id === myId ? "bold" : "normal",
+                    color: isPlayerSelect && p.preferredTeamId !== null
+                      ? config.GAME_CONFIG.TEAM_COLORS[p.preferredTeamId]
+                      : undefined,
+                  }}>
                     {p.name}
                   </span>
                   {p.isOwner && <span style={{ fontSize: "0.9em" }}>👑</span>}
-                  {room.teamAssignmentMode === "player_select" && (
-                    <span style={{ marginLeft: "auto", fontSize: "0.85em", opacity: 0.8 }}>
+                  {isPlayerSelect && (
+                    <span style={{
+                      marginLeft: "auto",
+                      fontSize: "0.85em",
+                      opacity: 0.8,
+                      color: p.preferredTeamId !== null
+                        ? config.GAME_CONFIG.TEAM_COLORS[p.preferredTeamId]
+                        : undefined,
+                    }}>
                       {p.preferredTeamId !== null ? toTeamLabel(p.preferredTeamId) : "ランダム"}
                     </span>
                   )}
