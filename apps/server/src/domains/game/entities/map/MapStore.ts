@@ -47,8 +47,8 @@ export class MapStore {
     return updates;
   }
 
-  /** 現在のマップ塗り状態をスナップショットとして返す */
-  public getGridColorsSnapshot(): number[] {
-    return [...this.gridColors];
+  /** 現在のマップ塗り状態を読み取り専用参照として返す（コピーなし） */
+  public getGridColorsSnapshot(): readonly number[] {
+    return this.gridColors;
   }
 }

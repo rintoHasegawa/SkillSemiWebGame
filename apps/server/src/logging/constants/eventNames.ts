@@ -27,6 +27,7 @@ export const gameDomainLogEvents = {
   PLAYER_MOVE: "PLAYER_MOVE",
   PLAYER_REMOVE: "PLAYER_REMOVE",
   GAME_LOOP: "GAME_LOOP",
+  PERF_STATS: "PERF_STATS",
 } as const;
 
 /** Roomドメインサービスログで利用するイベント名定数 */

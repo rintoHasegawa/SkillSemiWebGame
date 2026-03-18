@@ -37,7 +37,7 @@ export class BotTurnOrchestrator {
   public decide(
     botPlayerId: BotPlayerId,
     player: Player,
-    gridColors: number[],
+    gridColors: readonly number[],
     nowMs: number,
     elapsedMs: number,
   ): BotDecision {

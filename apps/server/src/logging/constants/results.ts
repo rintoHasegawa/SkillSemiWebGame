@@ -32,6 +32,7 @@ export const logResults = {
   REMOVED: "removed",
   SESSION_DISPOSED_EMPTY_ROOM: "session_disposed_empty_room",
   STARTED: "started",
+  STATS: "stats",
   STOPPED: "stopped",
   TRANSFERRED: "transferred",
 } as const;

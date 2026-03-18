@@ -199,14 +199,40 @@ type GamePlayerOperationServiceLogPayload =
   | GamePlayerOperationServiceMoveLogPayload
   | GamePlayerOperationServiceRemoveLogPayload;
 
-/** GameLoopスコープのログ契約 */
-type GameLoopLogPayload = {
+/** GameLoopのライフサイクルログ契約 */
+type GameLoopLifecycleLogPayload = {
   event: typeof gameDomainLogEvents.GAME_LOOP;
   result:
     | typeof logResults.STARTED
     | typeof logResults.STOPPED;
   roomId: string;
 };
+
+/** GameLoopの1秒間パフォーマンス統計ログ契約 */
+type GameLoopPerfStatsLogPayload = {
+  event: typeof gameDomainLogEvents.PERF_STATS;
+  result: typeof logResults.STATS;
+  roomId: string;
+  /** ルーム内プレイヤー数 */
+  playerCount: number;
+  /** 1秒間に処理したtick数（期待値: 20） */
+  tickCount: number;
+  /** tick処理の平均時間（ms） */
+  avgTickMs: number;
+  /** tick処理の最大時間（ms） */
+  maxTickMs: number;
+  /** tick処理時間の合計 / 計測ウィンドウ × 100（%） */
+  cpuUsagePct: number;
+  /** 1tickあたりの平均ペイロードサイズ（bytes，JSON推定値） */
+  avgPayloadBytesPerTick: number;
+  /** 1秒間の送信バイト数推定（avgPayloadBytesPerTick × playerCount × tickCount） */
+  outboundBytesPerSec: number;
+};
+
+/** GameLoopスコープのログ契約 */
+type GameLoopLogPayload =
+  | GameLoopLifecycleLogPayload
+  | GameLoopPerfStatsLogPayload;
 
 /** GameRoomSessionスコープのログ契約 */
 type GameRoomSessionLogPayload = {

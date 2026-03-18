@@ -21,7 +21,7 @@ const toGridIndex = (col: number, row: number, cols: number): number => {
 };
 
 const getCellTeamId = (
-  gridColors: number[],
+  gridColors: readonly number[],
   col: number,
   row: number,
   cols: number,
@@ -33,7 +33,7 @@ const getCellTeamId = (
 export const chooseNextTarget = (
   col: number,
   row: number,
-  gridColors: number[],
+  gridColors: readonly number[],
   size: MapGridSize,
 ): BotTarget => {
   const { UNPAINTED_PRIORITY_STRENGTH } = config.BOT_AI_CONFIG;
