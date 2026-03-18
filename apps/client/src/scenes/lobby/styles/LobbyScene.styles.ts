@@ -162,8 +162,8 @@ export const LOBBY_HOST_SETTINGS_VALUE_STYLE: CSSProperties = {
 
 /** 非オーナー待機表示のスタイル */
 export const LOBBY_WAITING_STYLE: CSSProperties = {
-  padding: "20px",
-  fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
+  padding: "clamp(8px, 2dvh, 20px) 16px",
+  fontSize: "clamp(0.95rem, 2.5vw, 1.2rem)",
   backgroundColor: "#555",
   color: "#ccc",
   borderRadius: "8px",
