@@ -3,7 +3,7 @@
  * LobbyScene の描画スタイル定数を集約する
  */
 import type { CSSProperties } from "react";
-import { safeLeft, safeTop } from "@client/styles/safeArea";
+import { safeLeft, safeRight, safeTop } from "@client/styles/safeArea";
 
 /** 背景アニメーション画像レイヤーのスタイル */
 export const LOBBY_BACKGROUND_STYLE: CSSProperties = {
@@ -44,6 +44,27 @@ export const LOBBY_BACK_BUTTON_STYLE: CSSProperties = {
   position: "absolute",
   top: safeTop(20),
   left: safeLeft(20),
+};
+
+/** 歯車（設定）ボタンのスタイル */
+export const LOBBY_SETTINGS_GEAR_BUTTON_STYLE: CSSProperties = {
+  position: "absolute",
+  top: safeTop(16),
+  right: safeRight(16),
+  width: "42px",
+  height: "42px",
+  padding: 0,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: "50%",
+  border: "1px solid rgba(255,255,255,0.35)",
+  background: "rgba(0,0,0,0.55)",
+  color: "white",
+  cursor: "pointer",
+  backdropFilter: "blur(6px)",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+  transition: "background 0.2s, transform 0.2s",
 };
 
 /** ルームタイトルのスタイル */
@@ -141,8 +162,8 @@ export const LOBBY_HOST_SETTINGS_VALUE_STYLE: CSSProperties = {
 
 /** 非オーナー待機表示のスタイル */
 export const LOBBY_WAITING_STYLE: CSSProperties = {
-  padding: "20px",
-  fontSize: "clamp(1.2rem, 3vw, 1.5rem)",
+  padding: "clamp(8px, 2dvh, 20px) 16px",
+  fontSize: "clamp(0.95rem, 2.5vw, 1.2rem)",
   backgroundColor: "#555",
   color: "#ccc",
   borderRadius: "8px",

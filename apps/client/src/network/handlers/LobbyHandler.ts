@@ -7,6 +7,8 @@ import type { Socket } from "socket.io-client";
 import { contracts as protocol } from "@repo/shared";
 import type {
   LobbySettingsUpdatePayload,
+  SelectTeamPayload,
+  SelectTeamRejectedPayload,
   ServerToClientPayloadOf,
   StartGameRequestPayload,
 } from "@repo/shared";
@@ -31,6 +33,9 @@ type LobbyHandler = {
   ) => void;
   startGame: (payload?: StartGameRequestPayload) => void;
   updateLobbySettings: (payload: LobbySettingsUpdatePayload) => void;
+  selectTeam: (payload: SelectTeamPayload) => void;
+  onSelectTeamRejected: (callback: (payload: SelectTeamRejectedPayload) => void) => void;
+  offSelectTeamRejected: (callback: (payload: SelectTeamRejectedPayload) => void) => void;
 };
 
 /** ロビー画面向けのソケットハンドラを生成する */
@@ -53,6 +58,15 @@ export const createLobbyHandler = (socket: Socket): LobbyHandler => {
     },
     updateLobbySettings: (payload) => {
       emitEvent(protocol.SocketEvents.LOBBY_SETTINGS_UPDATE, payload);
+    },
+    selectTeam: (payload) => {
+      emitEvent(protocol.SocketEvents.SELECT_TEAM, payload);
+    },
+    onSelectTeamRejected: (callback) => {
+      onEvent(protocol.SocketEvents.SELECT_TEAM_REJECTED, callback);
+    },
+    offSelectTeamRejected: (callback) => {
+      offEvent(protocol.SocketEvents.SELECT_TEAM_REJECTED, callback);
     },
   };
 };

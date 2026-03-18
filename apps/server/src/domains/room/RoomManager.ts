@@ -7,10 +7,13 @@ import { RoomJoinService } from "./application/services/RoomJoinService";
 import { RoomExitService } from "./application/services/RoomExitService";
 import { RoomPhaseService } from "./application/services/RoomPhaseService";
 import { RoomQueryService } from "./application/services/RoomQueryService";
+import { RoomSettingsService } from "./application/services/RoomSettingsService";
+import { RoomTeamService } from "./application/services/RoomTeamService";
 import type {
   JoinRoomResult,
   RoomDisconnectResult,
   RoomPhaseTransitionResult,
+  SelectTeamResult,
 } from "./application/ports/roomUseCasePorts";
 
 /** ルーム操作の公開インターフェースを提供するマネージャ */
@@ -20,12 +23,16 @@ export class RoomManager {
   private roomExitService: RoomExitService;
   private roomPhaseService: RoomPhaseService;
   private roomQueryService: RoomQueryService;
+  private roomSettingsService: RoomSettingsService;
+  private roomTeamService: RoomTeamService;
 
   constructor() {
     this.roomJoinService = new RoomJoinService(this.rooms);
     this.roomExitService = new RoomExitService(this.rooms);
     this.roomPhaseService = new RoomPhaseService(this.rooms);
     this.roomQueryService = new RoomQueryService(this.rooms);
+    this.roomSettingsService = new RoomSettingsService(this.rooms);
+    this.roomTeamService = new RoomTeamService(this.roomQueryService);
   }
 
   // ルームにプレイヤーを追加する，ルームが未作成なら新規作成する
@@ -63,20 +70,22 @@ export class RoomManager {
     return this.roomPhaseService.markRoomWaiting(roomId);
   }
 
-  // ロビー設定（ゲーム人数・フィールドサイズ）を更新してルームを返す
+  // ロビー設定（ゲーム人数・フィールドサイズ・チーム割り当て方式）を更新してルームを返す
   public updateLobbySettings(
     roomId: string,
     targetPlayerCount: number,
     fieldSizePreset: domain.room.Room["fieldSizePreset"],
+    teamAssignmentMode: domain.room.TeamAssignmentMode,
   ): domain.room.Room | undefined {
-    const room = this.rooms.get(roomId);
-    if (!room || room.status !== domain.room.RoomPhase.WAITING) {
-      return undefined;
-    }
+    return this.roomSettingsService.updateLobbySettings(roomId, targetPlayerCount, fieldSizePreset, teamAssignmentMode);
+  }
 
-    room.targetPlayerCount = targetPlayerCount;
-    room.fieldSizePreset = fieldSizePreset;
-    return room;
+  // プレイヤーのチーム選択を更新する，チームが満員なら team_full を返す
+  public selectTeam(
+    playerId: string,
+    preferredTeamId: number | null,
+  ): SelectTeamResult {
+    return this.roomTeamService.selectTeam(playerId, preferredTeamId);
   }
 
   // ルームを削除する

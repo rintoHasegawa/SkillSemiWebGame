@@ -15,6 +15,8 @@ export const SocketEvents = {
   ROOM_JOIN_REJECTED: "room-join-rejected",
   ROOM_UPDATE: "room-update",
   LOBBY_SETTINGS_UPDATE: "lobby-settings-update",
+  SELECT_TEAM: "select-team",
+  SELECT_TEAM_REJECTED: "select-team-rejected",
   START_GAME: "start-game",
   GAME_START: "game-start",
   READY_FOR_GAME: "ready-for-game",

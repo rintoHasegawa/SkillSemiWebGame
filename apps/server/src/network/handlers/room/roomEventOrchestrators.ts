@@ -5,7 +5,7 @@
  * 本ファイルではランタイム未解決ログ対象イベントを扱わない
  */
 import { domain } from "@repo/shared";
-import type { LobbySettingsUpdatePayload } from "@repo/shared";
+import type { LobbySettingsUpdatePayload, SelectTeamPayload } from "@repo/shared";
 import { joinRoomUseCase } from "@server/domains/room/application/useCases/joinRoomUseCase";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";
@@ -13,6 +13,7 @@ import type {
   JoinRoomEventRoomUseCasePort,
   JoinRoomEventRuntimeUseCasePort,
   LobbySettingsUpdateEventRoomUseCasePort,
+  SelectTeamEventRoomUseCasePort,
 } from "@server/network/types/connectionPorts";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 
@@ -35,6 +36,13 @@ export type LobbySettingsUpdateOrchestratorDeps = {
   output: RoomOutputAdapter;
 };
 
+/** SELECT_TEAMイベント調停で利用する依存集合 */
+export type SelectTeamOrchestratorDeps = {
+  socketId: string;
+  roomManager: SelectTeamEventRoomUseCasePort;
+  output: RoomOutputAdapter;
+};
+
 /** LOBBY_SETTINGS_UPDATEイベントを調停してルーム設定を更新し全員に通知する */
 export const handleLobbySettingsUpdateEvent = (
   deps: LobbySettingsUpdateOrchestratorDeps,
@@ -45,16 +53,46 @@ export const handleLobbySettingsUpdateEvent = (
     return;
   }
 
+  // 値に変化がなければ更新・配信をスキップする
+  if (
+    room.targetPlayerCount === payload.targetPlayerCount &&
+    room.fieldSizePreset === payload.fieldSizePreset &&
+    room.teamAssignmentMode === payload.teamAssignmentMode
+  ) {
+    return;
+  }
+
   const updatedRoom = deps.roomManager.updateLobbySettings(
     room.roomId,
     payload.targetPlayerCount,
     payload.fieldSizePreset,
+    payload.teamAssignmentMode,
   );
   if (!updatedRoom) {
     return;
   }
 
   deps.output.publishRoomUpdateToRoom(room.roomId, updatedRoom);
+};
+
+/** SELECT_TEAMイベントを調停してプレイヤーのチーム選択を更新し全員に通知する */
+export const handleSelectTeamEvent = (
+  deps: SelectTeamOrchestratorDeps,
+  payload: SelectTeamPayload,
+): void => {
+  const result = deps.roomManager.selectTeam(
+    deps.socketId,
+    payload.preferredTeamId,
+  );
+
+  if (result.status === "team_full") {
+    deps.output.publishSelectTeamRejectedToSocket(result.teamId);
+    return;
+  }
+
+  if (result.status === "ok") {
+    deps.output.publishRoomUpdateToRoom(result.room.roomId, result.room);
+  }
 };
 
 /** JOIN_ROOMイベントを調停して参加ユースケースを実行する */

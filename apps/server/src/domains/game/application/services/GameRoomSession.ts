@@ -51,6 +51,7 @@ export class GameRoomSession {
     playerIds: string[],
     playerNamesById: Record<string, string>,
     fieldConfig: GameFieldConfig,
+    teamPreferences?: Record<string, number | null>,
   ) {
     this.players = new Map();
     this.mapStore = new MapStore({
@@ -61,10 +62,11 @@ export class GameRoomSession {
     this.fieldConfig = fieldConfig;
 
     playerIds.forEach((playerId) => {
-      // 現在のプレイヤー構成から人数が最も少ないチームを算出する
-      const assignedTeamId = TeamAssignmentService.getBalancedTeamId(
-        this.players,
-      );
+      // player_selectモードの希望チームIDがあればそれを使い，なければバランス割り当てする
+      const preferredTeamId = teamPreferences?.[playerId] ?? null;
+      const assignedTeamId = preferredTeamId !== null
+        ? preferredTeamId
+        : TeamAssignmentService.getBalancedTeamId(this.players);
 
       // 算出したチームIDを指定してプレイヤーを生成する
       const playerName = playerNamesById[playerId] ?? playerId;

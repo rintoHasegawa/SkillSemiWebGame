@@ -22,6 +22,7 @@ export class RoomJoinService {
         status: domain.room.RoomPhase.WAITING,
         maxPlayers: config.GAME_CONFIG.MAX_PLAYERS_PER_ROOM,
         fieldSizePreset: config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
+        teamAssignmentMode: "random",
       };
       this.rooms.set(roomId, room);
       logEvent(logScopes.ROOM_JOIN_SERVICE, {
@@ -75,6 +76,7 @@ export class RoomJoinService {
       name: playerName,
       isOwner: room.ownerId === socketId,
       isReady: false,
+      preferredTeamId: null,
     };
 
     room.players.push(newPlayer);

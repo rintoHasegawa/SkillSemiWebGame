@@ -28,6 +28,12 @@ export const createRoomOutputAdapter = (
     publishJoinRejectedToSocket: (payload: domain.room.JoinRoomRejectedPayload) => {
       reliable.emitToSocket(protocol.SocketEvents.ROOM_JOIN_REJECTED, payload);
     },
+    publishSelectTeamRejectedToSocket: (teamId: number) => {
+      reliable.emitToSocket(protocol.SocketEvents.SELECT_TEAM_REJECTED, {
+        preferredTeamId: teamId,
+        reason: "team_full" as const,
+      });
+    },
   };
 };
 

@@ -35,6 +35,7 @@ export type JoinRoomResult = {
 export interface RoomOutputPort {
   publishRoomUpdateToRoom(roomId: domain.room.Room["roomId"], room: domain.room.Room): void;
   publishJoinRejectedToSocket(payload: domain.room.JoinRoomRejectedPayload): void;
+  publishSelectTeamRejectedToSocket(teamId: number): void;
 }
 
 /** ルーム参加ユースケースが利用する参加操作ポート */
@@ -70,10 +71,10 @@ export interface RoomPhaseTransitionPort {
 }
 
 /** ルーム状態遷移の実行結果 */
-export type RoomPhaseTransitionResult = {
-  status: "updated" | "not_found" | "invalid_transition";
-  room?: domain.room.Room;
-};
+export type RoomPhaseTransitionResult =
+  | { status: "updated"; room: domain.room.Room }
+  | { status: "not_found" }
+  | { status: "invalid_transition" };
 
 /** ルームIDでの存在確認に利用する参照ポート */
 export interface FindRoomByIdPort {
@@ -91,7 +92,22 @@ export interface UpdateLobbySettingsPort {
     roomId: string,
     targetPlayerCount: number,
     fieldSizePreset: domain.room.Room["fieldSizePreset"],
+    teamAssignmentMode: domain.room.Room["teamAssignmentMode"],
   ): domain.room.Room | undefined;
+}
+
+/** チーム選択の結果 */
+export type SelectTeamResult =
+  | { status: "ok"; room: domain.room.Room }
+  | { status: "team_full"; teamId: number }
+  | { status: "not_found" };
+
+/** チーム選択操作ポート */
+export interface SelectTeamPort {
+  selectTeam(
+    playerId: string,
+    preferredTeamId: domain.room.RoomMember["preferredTeamId"],
+  ): SelectTeamResult;
 }
 
 /** ルーム参加後にゲームランタイムを確保する操作ポート */

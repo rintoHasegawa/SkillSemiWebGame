@@ -21,6 +21,7 @@ type StartGameUseCaseParams = {
   fieldConfig: GameFieldConfig;
   playerIds: string[];
   playerNamesById: Record<string, string>;
+  teamPreferences?: Record<string, number | null>;
   gameSession: StartGamePort;
   bombStore: BombPlacementPort;
   onGameEnd: () => void;
@@ -109,6 +110,7 @@ export const startGameUseCase = ({
   fieldConfig,
   playerIds,
   playerNamesById,
+  teamPreferences,
   gameSession,
   bombStore,
   onGameEnd,
@@ -156,6 +158,7 @@ export const startGameUseCase = ({
         });
       },
     },
+    teamPreferences,
   );
 
   const startTime = gameSession.getRoomStartTime() || Date.now();

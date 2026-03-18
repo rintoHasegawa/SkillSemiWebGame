@@ -75,6 +75,13 @@ type NetworkLobbySettingsUpdateLogPayload = {
   socketId: string;
 };
 
+/** NetworkのSELECT_TEAM不正ペイロードログ契約 */
+type NetworkSelectTeamLogPayload = {
+  event: typeof protocol.SocketEvents.SELECT_TEAM;
+  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  socketId: string;
+};
+
 /** Networkスコープのログ契約ユニオン */
 type NetworkLogPayload =
   | NetworkConnectLogPayload
@@ -84,7 +91,8 @@ type NetworkLogPayload =
   | NetworkMoveLogPayload
   | NetworkPlaceBombLogPayload
   | NetworkBombHitReportLogPayload
-  | NetworkLobbySettingsUpdateLogPayload;
+  | NetworkLobbySettingsUpdateLogPayload
+  | NetworkSelectTeamLogPayload;
 
 /** GameUseCaseのSTART_GAMEログ契約 */
 type GameUseCaseStartGameLogPayload = {
