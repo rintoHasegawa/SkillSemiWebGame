@@ -2,13 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { domain } from "@repo/shared";
 import type { FieldSizePreset, StartGameRequestPayload, TeamAssignmentMode } from "@repo/shared";
 import { config } from "@client/config";
-
-/** ホスト側で管理するゲーム設定 */
-export type LobbyGameSettings = {
-  targetPlayerCount: number;
-  fieldSizePreset: FieldSizePreset;
-  teamAssignmentMode: TeamAssignmentMode;
-};
 import { socketManager } from "@client/network/SocketManager";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 import { GearIcon } from "./components/GearIcon";
@@ -36,6 +29,13 @@ import {
   LOBBY_WAITING_STYLE,
 } from "./styles/LobbyScene.styles";
 
+/** ホスト側で管理するゲーム設定 */
+export type LobbyGameSettings = {
+  targetPlayerCount: number;
+  fieldSizePreset: FieldSizePreset;
+  teamAssignmentMode: TeamAssignmentMode;
+};
+
 const TEAM_COLOR_LABELS = ["赤チーム", "青チーム", "緑チーム", "黄チーム"] as const;
 
 /** チームIDを色名ラベルに変換する */
@@ -49,6 +49,44 @@ const TEAM_SELECT_OPTIONS: Array<{ value: number | null; label: string }> = [
   { value: 2, label: toTeamLabel(2) },
   { value: 3, label: toTeamLabel(3) },
 ];
+
+type TeamSelectFieldProps = {
+  id: string;
+  disabled: boolean;
+  value: string;
+  onChange: (preferredTeamId: number | null) => void;
+  teamFullMessage: string | null;
+};
+
+/** チーム選択プルダウン（ランダムモード時はdisabled） */
+const TeamSelectField = ({ id, disabled, value, onChange, teamFullMessage }: TeamSelectFieldProps) => (
+  <div>
+    <label htmlFor={id} style={LOBBY_LABEL_STYLE}>
+      チームを選ぶ
+    </label>
+    <select
+      id={id}
+      disabled={disabled}
+      value={value}
+      onChange={(e) => {
+        const val = e.target.value;
+        onChange(val === "" ? null : Number(val));
+      }}
+      style={{ ...LOBBY_SELECT_STYLE, marginTop: 6 }}
+    >
+      {TEAM_SELECT_OPTIONS.map(({ value: optVal, label }) => (
+        <option key={String(optVal)} value={optVal === null ? "" : String(optVal)}>
+          {label}
+        </option>
+      ))}
+    </select>
+    {teamFullMessage && (
+      <div style={{ marginTop: 6, color: "#ff6b6b", fontSize: "0.9rem", fontWeight: 700 }}>
+        {teamFullMessage}
+      </div>
+    )}
+  </div>
+);
 
 type Props = {
   room: domain.room.Room | null;
@@ -227,33 +265,13 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     ルールを見る
                   </button>
 
-                  {/* チーム選択プルダウン（ランダムモード時はdisabled） */}
-                  <div>
-                    <label htmlFor="team-select-owner" style={LOBBY_LABEL_STYLE}>
-                      チームを選ぶ
-                    </label>
-                    <select
-                      id="team-select-owner"
-                      disabled={room.teamAssignmentMode !== "player_select"}
-                      value={room.teamAssignmentMode === "player_select" && myPreferredTeamId !== null ? String(myPreferredTeamId) : ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        handleSelectTeam(val === "" ? null : Number(val));
-                      }}
-                      style={{ ...LOBBY_SELECT_STYLE, marginTop: 6 }}
-                    >
-                      {TEAM_SELECT_OPTIONS.map(({ value, label }) => (
-                        <option key={String(value)} value={value === null ? "" : String(value)}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                    {teamFullMessage && (
-                      <div style={{ marginTop: 6, color: "#ff6b6b", fontSize: "0.9rem", fontWeight: 700 }}>
-                        {teamFullMessage}
-                      </div>
-                    )}
-                  </div>
+                  <TeamSelectField
+                    id="team-select-owner"
+                    disabled={room.teamAssignmentMode !== "player_select"}
+                    value={room.teamAssignmentMode === "player_select" && myPreferredTeamId !== null ? String(myPreferredTeamId) : ""}
+                    onChange={handleSelectTeam}
+                    teamFullMessage={teamFullMessage}
+                  />
                 </div>
               ) : (
                 <div style={LOBBY_CONTROLS_BLOCK_STYLE}>
@@ -291,34 +309,13 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
                     ルールを見る
                   </button>
 
-                  {/* player_selectモード時のチーム選択プルダウン */}
-                  {/* チーム選択プルダウン（ランダムモード時はdisabled） */}
-                  <div>
-                    <label htmlFor="team-select-member" style={LOBBY_LABEL_STYLE}>
-                      チームを選ぶ
-                    </label>
-                    <select
-                      id="team-select-member"
-                      disabled={room.teamAssignmentMode !== "player_select"}
-                      value={room.teamAssignmentMode === "player_select" && myPreferredTeamId !== null ? String(myPreferredTeamId) : ""}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        handleSelectTeam(val === "" ? null : Number(val));
-                      }}
-                      style={{ ...LOBBY_SELECT_STYLE, marginTop: 6 }}
-                    >
-                      {TEAM_SELECT_OPTIONS.map(({ value, label }) => (
-                        <option key={String(value)} value={value === null ? "" : String(value)}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                    {teamFullMessage && (
-                      <div style={{ marginTop: 6, color: "#ff6b6b", fontSize: "0.9rem", fontWeight: 700 }}>
-                        {teamFullMessage}
-                      </div>
-                    )}
-                  </div>
+                  <TeamSelectField
+                    id="team-select-member"
+                    disabled={room.teamAssignmentMode !== "player_select"}
+                    value={room.teamAssignmentMode === "player_select" && myPreferredTeamId !== null ? String(myPreferredTeamId) : ""}
+                    onChange={handleSelectTeam}
+                    teamFullMessage={teamFullMessage}
+                  />
                 </div>
               )}
             </div>
