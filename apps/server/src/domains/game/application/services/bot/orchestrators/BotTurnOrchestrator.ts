@@ -147,6 +147,15 @@ export class BotTurnOrchestrator {
     }));
   }
 
+  /** warmUp時に初期目標を外部から上書きする */
+  public overrideTarget(botPlayerId: BotPlayerId, col: number, row: number): void {
+    this.stateStore.update(botPlayerId, (state) => ({
+      ...state,
+      targetCol: col,
+      targetRow: row,
+    }));
+  }
+
   public clear(): void {
     this.stateStore.clear();
     this.respawnAtMsByBotId.clear();

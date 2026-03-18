@@ -24,6 +24,7 @@ import {
   isBotPlayerId,
   type BotPlayerId,
 } from "../application/services/bot/index.js";
+import { chooseNextTarget } from "../application/services/bot/policies/TargetSelectionPolicy.js";
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 import type { ActiveBombRegistry } from "../entities/bomb/ActiveBombRegistry.js";
 import { HurricaneSystem } from "./HurricaneSystem";
@@ -111,28 +112,52 @@ export class GameLoop {
   }
 
   /**
-   * ゲーム開始前にJITコンパイルを誘発し，全ボットの初期目標を設定する
-   * startDelayMs の待機中に呼ぶことで tick1 のスパイクを抑制する
+   * ゲーム開始前にJITコンパイルを誘発し，ボットごとに初期目標距離をずらす
+   * startDelayMs の待機中に呼ぶことで tick1 の chooseNextTarget 集中を防ぐ
    */
   public warmUp(): void {
     const nowMs = Date.now();
     const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
+    const maxChain = 4;
+    let botIndex = 0;
 
     this.players.forEach((player) => {
       if (
-        isBotPlayerId(player.id) ||
-        this.disconnectedBotControlledPlayerIds.has(player.id)
+        !isBotPlayerId(player.id) &&
+        !this.disconnectedBotControlledPlayerIds.has(player.id)
       ) {
-        // decide() を呼んでJITコンパイルを誘発し初期目標を隣接セルに設定する
-        // 戻り値は使用しない（位置更新・爆弾設置コールバックは発火しない）
-        this.botTurnOrchestrator.decide(
-          player.id as BotPlayerId,
-          player,
-          gridColorsSnapshot,
-          nowMs,
-          0,
-        );
+        return;
       }
+
+      // decide() を1回呼んでJITコンパイルを誘発する
+      this.botTurnOrchestrator.decide(
+        player.id as BotPlayerId,
+        player,
+        gridColorsSnapshot,
+        nowMs,
+        0,
+      );
+
+      // ボットごとに chooseNextTarget をチェーンして初期目標距離をずらす
+      const chainCount = (botIndex % maxChain) + 1;
+      const currentCol = Math.floor(player.x);
+      const currentRow = Math.floor(player.y);
+      let targetCol = currentCol;
+      let targetRow = currentRow;
+      for (let i = 0; i < chainCount; i++) {
+        const next = chooseNextTarget(targetCol, targetRow, gridColorsSnapshot, this.mapSize);
+        targetCol = next.col;
+        targetRow = next.row;
+      }
+
+      // チェーンで求めた目標を BotTurnOrchestrator の状態に上書きする
+      this.botTurnOrchestrator.overrideTarget(
+        player.id as BotPlayerId,
+        targetCol,
+        targetRow,
+      );
+
+      botIndex++;
     });
   }
 
