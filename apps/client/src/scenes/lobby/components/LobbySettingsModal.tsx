@@ -3,8 +3,9 @@
  * ホスト用のゲーム設定（人数・フィールドサイズ・チーム割り当て方式）を変更するモーダル
  */
 import type { FieldSizePreset } from "@repo/shared";
-import type { TeamAssignmentMode } from "@repo/shared";
+import { config } from "@client/config";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
+import type { LobbyGameSettings } from "../LobbyScene";
 import {
   LOBBY_SETTINGS_MODAL_BODY_STYLE,
   LOBBY_SETTINGS_MODAL_FIELD_STYLE,
@@ -18,28 +19,31 @@ import {
 
 type LobbySettingsModalProps = {
   startPlayerCountOptions: number[];
-  selectedStartPlayerCount: number;
-  onChangeStartPlayerCount: (count: number) => void;
-  fieldPresetOptions: FieldSizePreset[];
-  selectedFieldSizePreset: FieldSizePreset;
-  onChangeFieldSizePreset: (preset: FieldSizePreset) => void;
-  toFieldPresetLabel: (preset: FieldSizePreset) => string;
-  selectedTeamAssignmentMode: TeamAssignmentMode;
-  onChangeTeamAssignmentMode: (mode: TeamAssignmentMode) => void;
+  settings: LobbyGameSettings;
+  onChangeSettings: (settings: LobbyGameSettings) => void;
   onClose: () => void;
+};
+
+const FIELD_PRESET_OPTIONS = Object.keys(config.GAME_CONFIG.FIELD_PRESETS) as FieldSizePreset[];
+
+export const toFieldPresetLabel = (preset: FieldSizePreset): string => {
+  const range = config.GAME_CONFIG.FIELD_PRESETS[preset].recommendedPlayers;
+  const baseLabel =
+    preset === "SMALL"
+      ? "小"
+      : preset === "MEDIUM"
+        ? "中"
+        : preset === "LARGE"
+          ? "大"
+          : "極大";
+  return `${baseLabel} (${range.min}-${range.max}人目安)`;
 };
 
 /** ホスト用ゲーム設定ポップアップ */
 export const LobbySettingsModal = ({
   startPlayerCountOptions,
-  selectedStartPlayerCount,
-  onChangeStartPlayerCount,
-  fieldPresetOptions,
-  selectedFieldSizePreset,
-  onChangeFieldSizePreset,
-  toFieldPresetLabel,
-  selectedTeamAssignmentMode,
-  onChangeTeamAssignmentMode,
+  settings,
+  onChangeSettings,
   onClose,
 }: LobbySettingsModalProps) => {
   return (
@@ -57,9 +61,9 @@ export const LobbySettingsModal = ({
             </label>
             <select
               id="settings-modal-start-player-count"
-              value={selectedStartPlayerCount}
+              value={settings.targetPlayerCount}
               onChange={(event) => {
-                onChangeStartPlayerCount(Number(event.target.value));
+                onChangeSettings({ ...settings, targetPlayerCount: Number(event.target.value) });
               }}
               style={LOBBY_SETTINGS_MODAL_SELECT_STYLE}
             >
@@ -80,13 +84,13 @@ export const LobbySettingsModal = ({
             </label>
             <select
               id="settings-modal-field-size-preset"
-              value={selectedFieldSizePreset}
+              value={settings.fieldSizePreset}
               onChange={(event) => {
-                onChangeFieldSizePreset(event.target.value as FieldSizePreset);
+                onChangeSettings({ ...settings, fieldSizePreset: event.target.value as FieldSizePreset });
               }}
               style={LOBBY_SETTINGS_MODAL_SELECT_STYLE}
             >
-              {fieldPresetOptions.map((preset) => (
+              {FIELD_PRESET_OPTIONS.map((preset) => (
                 <option key={preset} value={preset}>
                   {toFieldPresetLabel(preset)}
                 </option>
@@ -103,9 +107,12 @@ export const LobbySettingsModal = ({
             </label>
             <select
               id="settings-modal-team-assignment-mode"
-              value={selectedTeamAssignmentMode}
+              value={settings.teamAssignmentMode}
               onChange={(event) => {
-                onChangeTeamAssignmentMode(event.target.value as TeamAssignmentMode);
+                onChangeSettings({
+                  ...settings,
+                  teamAssignmentMode: event.target.value as LobbyGameSettings["teamAssignmentMode"],
+                });
               }}
               style={LOBBY_SETTINGS_MODAL_SELECT_STYLE}
             >

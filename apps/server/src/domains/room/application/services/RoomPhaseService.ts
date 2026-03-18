@@ -16,10 +16,7 @@ export class RoomPhaseService {
     }
 
     if (room.status === domain.room.RoomPhase.PLAYING) {
-      return {
-        status: "invalid_transition",
-        room,
-      };
+      return { status: "invalid_transition" };
     }
 
     room.status = domain.room.RoomPhase.PLAYING;
@@ -36,10 +33,7 @@ export class RoomPhaseService {
     }
 
     if (room.status === domain.room.RoomPhase.WAITING) {
-      return {
-        status: "invalid_transition",
-        room,
-      };
+      return { status: "invalid_transition" };
     }
 
     room.status = domain.room.RoomPhase.WAITING;

@@ -68,9 +68,6 @@ export const startGameCoordinator = ({
   }
 
   const updatedRoom = transitionResult.room;
-  if (!updatedRoom) {
-    return;
-  }
 
   const resolvedFieldSizePreset: FieldSizePreset =
     requestedFieldSizePreset

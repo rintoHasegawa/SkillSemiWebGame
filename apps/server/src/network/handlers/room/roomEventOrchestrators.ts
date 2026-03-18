@@ -53,6 +53,15 @@ export const handleLobbySettingsUpdateEvent = (
     return;
   }
 
+  // 値に変化がなければ更新・配信をスキップする
+  if (
+    room.targetPlayerCount === payload.targetPlayerCount &&
+    room.fieldSizePreset === payload.fieldSizePreset &&
+    room.teamAssignmentMode === payload.teamAssignmentMode
+  ) {
+    return;
+  }
+
   const updatedRoom = deps.roomManager.updateLobbySettings(
     room.roomId,
     payload.targetPlayerCount,

@@ -2,11 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { domain } from "@repo/shared";
 import type { FieldSizePreset, StartGameRequestPayload, TeamAssignmentMode } from "@repo/shared";
 import { config } from "@client/config";
+
+/** ホスト側で管理するゲーム設定 */
+export type LobbyGameSettings = {
+  targetPlayerCount: number;
+  fieldSizePreset: FieldSizePreset;
+  teamAssignmentMode: TeamAssignmentMode;
+};
 import { socketManager } from "@client/network/SocketManager";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
 import { GearIcon } from "./components/GearIcon";
 import { LobbyRuleModal } from "./components/LobbyRuleModal";
-import { LobbySettingsModal } from "./components/LobbySettingsModal";
+import { LobbySettingsModal, toFieldPresetLabel } from "./components/LobbySettingsModal";
 import { LobbyStartConfirmModal } from "./components/LobbyStartConfirmModal";
 import {
   LOBBY_BACK_BUTTON_STYLE,
@@ -79,33 +86,22 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     return options;
   }, [minimumStartPlayerCount, maxStartPlayerCount]);
 
-  const [selectedStartPlayerCount, setSelectedStartPlayerCount] = useState(
-    minimumStartPlayerCount,
-  );
-  const fieldPresetOptions = useMemo(() => {
-    return Object.keys(
-      config.GAME_CONFIG.FIELD_PRESETS,
-    ) as FieldSizePreset[];
-  }, []);
-  const [selectedFieldSizePreset, setSelectedFieldSizePreset] =
-    useState<FieldSizePreset>(config.GAME_CONFIG.DEFAULT_FIELD_PRESET);
-  const [selectedTeamAssignmentMode, setSelectedTeamAssignmentMode] =
-    useState<TeamAssignmentMode>("random");
+  const [gameSettings, setGameSettings] = useState<LobbyGameSettings>({
+    targetPlayerCount: minimumStartPlayerCount,
+    fieldSizePreset: config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
+    teamAssignmentMode: "random",
+  });
   const [teamFullMessage, setTeamFullMessage] = useState<string | null>(null);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   useEffect(() => {
-    setSelectedStartPlayerCount((prev) => {
-      if (prev < minimumStartPlayerCount || prev > maxStartPlayerCount) {
-        return minimumStartPlayerCount;
+    setGameSettings((prev) => {
+      const count = prev.targetPlayerCount;
+      if (count < minimumStartPlayerCount || count > maxStartPlayerCount || count % teamUnit !== 0) {
+        return { ...prev, targetPlayerCount: minimumStartPlayerCount };
       }
-
-      if (prev % teamUnit !== 0) {
-        return minimumStartPlayerCount;
-      }
-
       return prev;
     });
   }, [minimumStartPlayerCount, maxStartPlayerCount]);
@@ -117,11 +113,11 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     }
 
     socketManager.lobby.updateLobbySettings({
-      targetPlayerCount: selectedStartPlayerCount,
-      fieldSizePreset: selectedFieldSizePreset,
-      teamAssignmentMode: selectedTeamAssignmentMode,
+      targetPlayerCount: gameSettings.targetPlayerCount,
+      fieldSizePreset: gameSettings.fieldSizePreset,
+      teamAssignmentMode: gameSettings.teamAssignmentMode,
     });
-  }, [isMeOwner, selectedStartPlayerCount, selectedFieldSizePreset, selectedTeamAssignmentMode]);
+  }, [isMeOwner, gameSettings.targetPlayerCount, gameSettings.fieldSizePreset, gameSettings.teamAssignmentMode]);
 
   const handleStartClick = () => {
     setIsStartConfirmVisible(true);
@@ -130,8 +126,8 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   const handleStartConfirm = () => {
     setIsStartConfirmVisible(false);
     onStart({
-      targetPlayerCount: selectedStartPlayerCount,
-      fieldSizePreset: selectedFieldSizePreset,
+      targetPlayerCount: gameSettings.targetPlayerCount,
+      fieldSizePreset: gameSettings.fieldSizePreset,
     });
   };
 
@@ -150,20 +146,6 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
 
   const handleSelectTeam = (preferredTeamId: number | null) => {
     socketManager.lobby.selectTeam({ preferredTeamId });
-  };
-
-  const toFieldPresetLabel = (preset: FieldSizePreset): string => {
-    const range = config.GAME_CONFIG.FIELD_PRESETS[preset].recommendedPlayers;
-    const baseLabel =
-      preset === "SMALL"
-        ? "小"
-        : preset === "MEDIUM"
-          ? "中"
-          : preset === "LARGE"
-            ? "大"
-            : "極大";
-
-    return `${baseLabel} (${range.min}-${range.max}人目安)`;
   };
 
   // 自分のチーム選択状態を取得する
@@ -357,14 +339,8 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
       {isSettingsModalOpen && (
         <LobbySettingsModal
           startPlayerCountOptions={startPlayerCountOptions}
-          selectedStartPlayerCount={selectedStartPlayerCount}
-          onChangeStartPlayerCount={setSelectedStartPlayerCount}
-          fieldPresetOptions={fieldPresetOptions}
-          selectedFieldSizePreset={selectedFieldSizePreset}
-          onChangeFieldSizePreset={setSelectedFieldSizePreset}
-          toFieldPresetLabel={toFieldPresetLabel}
-          selectedTeamAssignmentMode={selectedTeamAssignmentMode}
-          onChangeTeamAssignmentMode={setSelectedTeamAssignmentMode}
+          settings={gameSettings}
+          onChangeSettings={setGameSettings}
           onClose={() => { setIsSettingsModalOpen(false); }}
         />
       )}

@@ -71,10 +71,10 @@ export interface RoomPhaseTransitionPort {
 }
 
 /** ルーム状態遷移の実行結果 */
-export type RoomPhaseTransitionResult = {
-  status: "updated" | "not_found" | "invalid_transition";
-  room?: domain.room.Room;
-};
+export type RoomPhaseTransitionResult =
+  | { status: "updated"; room: domain.room.Room }
+  | { status: "not_found" }
+  | { status: "invalid_transition" };
 
 /** ルームIDでの存在確認に利用する参照ポート */
 export interface FindRoomByIdPort {
