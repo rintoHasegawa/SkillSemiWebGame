@@ -24,7 +24,7 @@ export const LOBBY_BACKGROUND_STYLE: CSSProperties = {
 export const LOBBY_CONTAINER_STYLE: CSSProperties = {
   position: "fixed",
   inset: 0,
-  padding: "20px",
+  padding: `${safeTop(20)} ${safeRight(20)} 20px ${safeLeft(20)}`,
   color: "white",
   background: "transparent",
   height: "100dvh",
