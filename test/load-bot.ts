@@ -289,6 +289,9 @@ function createBot(index: number, counters: Stats, url: string): Bot {
         const blastRadius =
           GAME_CONFIG.BOMB_RADIUS_GRID + GAME_CONFIG.PLAYER_RADIUS;
         if (dist <= blastRadius) {
+          // ローカルで即スタンを適用（実クライアントと同様の即時フィードバック）
+          // hitCount は server からの player-hit で管理するため applyDamage は呼ばない
+          applyHitStun(GAME_CONFIG.PLAYER_HIT_STUN_MS);
           socket.emit("bomb-hit-report", { bombId });
         }
         trackedBombs.delete(bombId);
