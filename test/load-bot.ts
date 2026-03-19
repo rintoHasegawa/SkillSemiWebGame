@@ -165,6 +165,8 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   let moveTimer: NodeJS.Timeout | null = null;
   let pingTimer: NodeJS.Timeout | null = null;
   let bombCheckTimer: NodeJS.Timeout | null = null;
+  // startTime まで待つカウントダウンタイマー
+  let gameplayStartTimer: NodeJS.Timeout | null = null;
 
   // フィールドサイズ（game-start で上書きされる）
   let fieldMaxX = MAX_X;
@@ -385,6 +387,10 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   };
 
   const stopAllTimers = () => {
+    if (gameplayStartTimer) {
+      clearTimeout(gameplayStartTimer);
+      gameplayStartTimer = null;
+    }
     if (moveTimer) {
       clearInterval(moveTimer);
       moveTimer = null;
@@ -424,7 +430,6 @@ function createBot(index: number, counters: Stats, url: string): Bot {
 
   socket.on("game-start", (payload?: GameStartPayload) => {
     counters.gameStarts += 1;
-    gameStarted = true;
 
     if (payload) {
       // サーバー時計基準でクロックオフセットを補正
@@ -457,7 +462,13 @@ function createBot(index: number, counters: Stats, url: string): Bot {
       readySent = true;
     }
 
-    startBombCheckTimer();
+    // startTime まで待ってからゲームプレイを開始（移動・爆弾）
+    const delayMs = Math.max(0, (gameStartTimeMs ?? getServerNow()) - getServerNow());
+    gameplayStartTimer = setTimeout(() => {
+      gameStarted = true;
+      startMoveTimer();
+      startBombCheckTimer();
+    }, delayMs);
   });
 
   // 初期プレイヤー一覧（自分の座標・チームIDを同期）
@@ -473,9 +484,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
       }
     }
 
-    if (gameStarted) {
-      startMoveTimer();
-    }
+    // 移動タイマーの開始は gameplayStartTimer に委ねる
   });
 
   // 他プレイヤーの位置差分（update-players は追跡用途のみ，ボット制御には不要）
