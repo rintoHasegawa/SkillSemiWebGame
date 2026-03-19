@@ -15,7 +15,6 @@ import {
   MOVE_TICK_MS,
   BOT_SPEED,
   BOT_RADIUS,
-  BOMB_COOLDOWN_MS,
   BOMB_FUSE_MS,
   ROOM_ID,
   SOCKET_PATH,
@@ -119,7 +118,7 @@ console.log("Load test starting...", {
   moveTickMs: MOVE_TICK_MS,
   botSpeed: BOT_SPEED,
   botRadius: BOT_RADIUS,
-  bombCooldownMs: BOMB_COOLDOWN_MS,
+  bombCooldownMs: GAME_CONFIG.BOMB_NORMAL_COOLDOWN_MS,
   bombFuseMs: BOMB_FUSE_MS,
   botCanPlaceBomb: BOT_CAN_PLACE_BOMB,
   maxX: MAX_X,
@@ -202,9 +201,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   // 爆弾
   let lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
   let bombRequestSerial = 0;
-  // requestId → bombId のマッピング（ack受信後に確定）
-  const pendingBombRequestIds = new Set<string>();
-  // 追跡中の爆弾一覧（自分 + 他プレイヤー）
+  // 追跡中の爆弾一覧（他プレイヤー設置分）
   const trackedBombs = new Map<string, TrackedBomb>();
 
   // ハリケーン状態
@@ -325,7 +322,6 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     const requestId = `${index}-${bombRequestSerial}`;
     const explodeAtElapsedMs = elapsedMs + BOMB_FUSE_MS;
 
-    pendingBombRequestIds.add(requestId);
     socket.emit("place-bomb", {
       requestId,
       x: posX,
@@ -542,11 +538,9 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     });
   });
 
-  // 自分の爆弾設置確定（requestId → bombId マッピング）
-  socket.on("bomb-placed-ack", (payload: BombPlacedAckPayload) => {
-    pendingBombRequestIds.delete(payload.requestId);
-    // 自分の爆弾も追跡対象に追加（爆発時に自分が範囲外なら報告しない）
-    // サーバー側で自爆は処理しないため追加不要
+  // 自分の爆弾設置確定（受信のみ）
+  socket.on("bomb-placed-ack", (_payload: BombPlacedAckPayload) => {
+    // 自爆はサーバー側で処理しないため追跡不要
   });
 
   // 被弾通知（自分または他プレイヤー）
