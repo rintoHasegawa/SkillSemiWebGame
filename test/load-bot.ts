@@ -543,16 +543,20 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     applyDamage();
   });
 
-  // ゲーム終了
+  // ゲーム終了: タイマーを止めて切断
   socket.on("game-end", () => {
     gameEnded = true;
     stopAllTimers();
+    socket.disconnect();
   });
 
-  // 最終結果（受信のみ）
+  // 最終結果受信後も切断（game-end が先に来るが念のため）
   socket.on("game-result", () => {
-    gameEnded = true;
-    stopAllTimers();
+    if (!gameEnded) {
+      gameEnded = true;
+      stopAllTimers();
+      socket.disconnect();
+    }
   });
 
   socket.on("disconnect", () => {
