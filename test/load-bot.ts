@@ -83,6 +83,7 @@ type HurricaneStatePayload = {
 // 追跡中の爆弾
 type TrackedBomb = {
   bombId: string;
+  ownerTeamId: number;
   x: number;
   y: number;
   explodeAtElapsedMs: number;
@@ -171,12 +172,21 @@ function createBot(index: number, counters: Stats, url: string): Bot {
 
   let posX = BOT_RADIUS + Math.random() * (MAX_X - BOT_RADIUS * 2);
   let posY = BOT_RADIUS + Math.random() * (MAX_Y - BOT_RADIUS * 2);
+  // リスポーン時に戻る初期座標（current-players で確定）
+  let spawnX = posX;
+  let spawnY = posY;
   let dirX = 1;
   let dirY = 0;
 
   let gameStarted = false;
   let gameEnded = false;
   let readySent = false;
+
+  // 自分のチームID（current-players で確定，友軍撃ちチェックに使用）
+  let myTeamId: number | null = null;
+
+  // 被弾カウント（5回でリスポーン）
+  let hitCount = 0;
 
   // サーバーとのクロックオフセット補正（serverNow - Date.now()）
   let clockOffsetMs = 0;
@@ -242,6 +252,22 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     }
   };
 
+  // 被弾処理（爆弾・ハリケーン共通）: カウント管理とリスポーン判定
+  const applyDamage = () => {
+    hitCount += 1;
+    if (hitCount >= GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
+      // リスポーン: 2000ms スタン後に初期座標へ戻る
+      hitCount = 0;
+      applyHitStun(GAME_CONFIG.PLAYER_RESPAWN_STUN_MS);
+      setTimeout(() => {
+        posX = spawnX;
+        posY = spawnY;
+      }, GAME_CONFIG.PLAYER_RESPAWN_STUN_MS);
+    } else {
+      applyHitStun(GAME_CONFIG.PLAYER_HIT_STUN_MS);
+    }
+  };
+
   // 爆弾範囲内チェック + bomb-hit-report 送信
   const checkAndReportBombHits = () => {
     const elapsedMs = getElapsedMs();
@@ -249,7 +275,12 @@ function createBot(index: number, counters: Stats, url: string): Bot {
 
     for (const [bombId, bomb] of trackedBombs) {
       if (elapsedMs >= bomb.explodeAtElapsedMs) {
-        // 爆弾が爆発したタイミング
+        // 友軍撃ちは無効（同チームの爆弾には反応しない）
+        if (myTeamId !== null && bomb.ownerTeamId === myTeamId) {
+          trackedBombs.delete(bombId);
+          continue;
+        }
+        // 爆弾が爆発したタイミングで範囲内なら被弾報告
         const dx = posX - bomb.x;
         const dy = posY - bomb.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -429,12 +460,17 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     startBombCheckTimer();
   });
 
-  // 初期プレイヤー一覧（自分の座標を同期）
+  // 初期プレイヤー一覧（自分の座標・チームIDを同期）
   socket.on("current-players", (players: CurrentPlayerPayload[]) => {
     const self = players.find((p) => p.id === socket.id);
-    if (self && "x" in self && "y" in self) {
-      posX = self.x;
-      posY = self.y;
+    if (self) {
+      myTeamId = self.teamId;
+      if ("x" in self && "y" in self) {
+        posX = self.x;
+        posY = self.y;
+        spawnX = self.x;
+        spawnY = self.y;
+      }
     }
 
     if (gameStarted) {
@@ -480,13 +516,14 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   // ハリケーン被弾
   socket.on("hurricane-hit", (payload: { playerId: string }) => {
     if (payload.playerId !== socket.id) return;
-    applyHitStun(GAME_CONFIG.PLAYER_HIT_STUN_MS);
+    applyDamage();
   });
 
   // 他プレイヤーの爆弾設置通知
   socket.on("bomb-placed", (payload: BombPlacedPayload) => {
     trackedBombs.set(payload.bombId, {
       bombId: payload.bombId,
+      ownerTeamId: payload.ownerTeamId,
       x: payload.x,
       y: payload.y,
       explodeAtElapsedMs: payload.explodeAtElapsedMs,
@@ -503,8 +540,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   // 被弾通知（自分または他プレイヤー）
   socket.on("player-hit", (payload: { playerId: string }) => {
     if (payload.playerId !== socket.id) return;
-    // リスポーン判定はサーバーが行うが，スタン時間はクライアントで制御
-    applyHitStun(GAME_CONFIG.PLAYER_HIT_STUN_MS);
+    applyDamage();
   });
 
   // ゲーム終了
