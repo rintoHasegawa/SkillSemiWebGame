@@ -198,6 +198,9 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   // 被弾スタン状態
   let stunUntilMs = 0;
 
+  // リスポーン待機フラグ（スタン明けのtickMoveで座標リセットを確実に先行させる）
+  let pendingRespawn = false;
+
   // 爆弾
   let lastBombPlacedElapsedMs = Number.NEGATIVE_INFINITY;
   let bombRequestSerial = 0;
@@ -255,13 +258,10 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   const applyDamage = () => {
     hitCount += 1;
     if (hitCount >= GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
-      // リスポーン: 2000ms スタン後に初期座標へ戻る
+      // リスポーン: スタン後にtickMove内で確実に座標リセットする
       hitCount = 0;
+      pendingRespawn = true;
       applyHitStun(GAME_CONFIG.PLAYER_RESPAWN_STUN_MS);
-      setTimeout(() => {
-        posX = spawnX;
-        posY = spawnY;
-      }, GAME_CONFIG.PLAYER_RESPAWN_STUN_MS);
     } else {
       applyHitStun(GAME_CONFIG.PLAYER_HIT_STUN_MS);
     }
@@ -286,9 +286,8 @@ function createBot(index: number, counters: Stats, url: string): Bot {
         const blastRadius =
           GAME_CONFIG.BOMB_RADIUS_GRID + GAME_CONFIG.PLAYER_RADIUS;
         if (dist <= blastRadius) {
-          // ローカルで即スタンを適用（実クライアントと同様の即時フィードバック）
-          // hitCount は server からの player-hit で管理するため applyDamage は呼ばない
-          applyHitStun(GAME_CONFIG.PLAYER_HIT_STUN_MS);
+          // server は player-hit を被弾者自身へ送らないため，ここで hitCount を自前管理する
+          applyDamage();
           socket.emit("bomb-hit-report", { bombId });
         }
         trackedBombs.delete(bombId);
@@ -333,6 +332,14 @@ function createBot(index: number, counters: Stats, url: string): Bot {
 
   const tickMove = () => {
     if (!BOT_CAN_MOVE || isStunned()) return;
+
+    // スタン明けのリスポーン: 移動計算より先に座標と方向をリセット
+    if (pendingRespawn) {
+      pendingRespawn = false;
+      posX = spawnX;
+      posY = spawnY;
+      updateDirection();
+    }
 
     // ハリケーンがいれば回避方向へ
     applyHurricaneAvoidance();
@@ -543,7 +550,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     // 自爆はサーバー側で処理しないため追跡不要
   });
 
-  // 被弾通知（自分または他プレイヤー）
+  // 被弾通知（server は被弾者自身を除外して送信するため自分宛は届かない。念のため残す）
   socket.on("player-hit", (payload: { playerId: string }) => {
     if (payload.playerId !== socket.id) return;
     applyDamage();
