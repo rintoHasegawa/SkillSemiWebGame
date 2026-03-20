@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "postinstall": "[ -f .env.local ] || cp .env.local.example .env.local",
     "start": "node --env-file=.env.local --loader ts-node/esm load-bot.ts"
   },
   "dependencies": {

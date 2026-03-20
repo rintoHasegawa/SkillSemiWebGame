@@ -70,7 +70,7 @@ export const TitleScene = ({
           cursor: showForm ? "default" : "pointer",
         }}
         // 🌟 追加：背景のどこかをタップしたらフォームを表示する
-        onClick={() => {
+        onPointerDown={() => {
           if (!showForm) setShowForm(true);
         }}
       >
