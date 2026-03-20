@@ -38,17 +38,12 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
     setActiveTab,
   } = useResultView(result);
 
-  if (!result) {
-    return (
-      <div style={{ color: "white", padding: 40 }}>結果を読み込み中...</div>
-    );
-  }
-
+  // hooksはearly returnより前に呼ぶ必要があるため，resultがnullの場合はフォールバック値を使用
   const winnerTeamId = useMemo(
     () =>
-      result.rankings.find((row) => row.rank === 1)?.teamId ??
-      result.rankings[0]?.teamId,
-    [result.rankings],
+      result?.rankings.find((row) => row.rank === 1)?.teamId ??
+      result?.rankings[0]?.teamId,
+    [result?.rankings],
   );
   const winnerColor = useMemo(
     () => config.GAME_CONFIG.TEAM_COLORS[winnerTeamId ?? -1] ?? "#888888",
@@ -60,11 +55,17 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
   const finalGridColors = useMemo(
     () =>
       Array.from({ length: totalCells }, (_, index) => {
-        const teamId = result.finalGridColors?.[index];
+        const teamId = result?.finalGridColors?.[index];
         return typeof teamId === "number" ? teamId : -1;
       }),
-    [result.finalGridColors, totalCells],
+    [result?.finalGridColors, totalCells],
   );
+
+  if (!result) {
+    return (
+      <div style={{ color: "white", padding: 40 }}>結果を読み込み中...</div>
+    );
+  }
 
   return (
     <div
@@ -72,7 +73,7 @@ export const ResultScene = ({ result, onBackToTitle }: Props) => {
         ...RESULT_ROOT_STYLE,
         cursor: isRankingVisible ? "default" : "pointer",
       }}
-      onClick={() => {
+      onPointerDown={() => {
         if (isRankingVisible) {
           return;
         }
