@@ -61,6 +61,7 @@
         │   ├── input/
         │   │   ├── GameInputOverlay.tsx       # 入力オーバーレイ
         │   │   ├── bomb/                      # 爆弾ボタンUI
+        │   │   ├── hooks/                     # 入力共通フック
         │   │   ├── minimap/                   # ミニマップUI
         │   │   ├── joystick/
         │   │   │   ├── common/                # スティック定数・型
@@ -113,11 +114,13 @@
     │   │   │   ├── ports/
     │   │   │   │   └── gameUseCasePorts.ts    # ユースケース入出力境界
     │   │   │   ├── services/
-    │   │   │   │   ├── GameSessionLifecycleService.ts  # セッション管理
-    │   │   │   │   ├── GamePlayerOperationService.ts   # プレイヤー操作
-    │   │   │   │   ├── TeamAssignmentService.ts        # チーム割当
-    │   │   │   │   ├── gameResultCalculator.ts         # 結果算出
-    │   │   │   │   └── bot/                            # Bot AIシステム
+    │   │   │   │   ├── GameSessionLifecycleService.ts      # セッション管理
+    │   │   │   │   ├── GamePlayerOperationService.ts       # プレイヤー操作
+    │   │   │   │   ├── GameRoomSession.ts                  # ルームセッション
+    │   │   │   │   ├── TeamAssignmentService.ts            # チーム割当
+    │   │   │   │   ├── currentPlayersBootstrapBuilder.ts   # 初期プレイヤー構築
+    │   │   │   │   ├── gameResultCalculator.ts             # 結果算出
+    │   │   │   │   └── bot/                                # Bot AIシステム
     │   │   │   └── useCases/                   # ゲームユースケース
     │   │   ├── entities/
     │   │   │   ├── bomb/                       # 爆弾エンティティ
@@ -139,13 +142,30 @@
     └── network/
         ├── SocketManager.ts                    # WS接続管理
         ├── adapters/
-        │   └── socketEmitters.ts              # 送信アダプタ
+        │   ├── socketEmitters.ts              # 送信アダプタ
+        │   ├── gamePayloadSanitizers.ts       # ゲームペイロード検証・整形
+        │   └── realtimeRoomSyncState.ts       # リアルタイムルーム同期状態
         ├── handlers/
         │   ├── CommonHandler.ts               # 共通WSハンドラ
+        │   ├── connectionEventLogger.ts       # 接続イベントログ
+        │   ├── createOutputAdapters.ts        # 出力アダプタ生成
+        │   ├── eventDefinitionRegistrar.ts    # イベント定義登録
+        │   ├── orchestratorEventLogger.ts     # オーケストレータログ
+        │   ├── payloadGuard.ts                # ペイロードガード
+        │   ├── registerConnectionHandlers.ts  # 接続ハンドラ登録
+        │   ├── socketEventBridge.ts           # イベントブリッジ
+        │   ├── registration/                  # 接続登録コンテキスト
         │   ├── game/
-        │   │   └── registerGameHandlers.ts    # ゲーム受信イベント配線
+        │   │   ├── registerGameHandlers.ts    # ゲーム受信イベント配線
+        │   │   ├── createGameOutputAdapter.ts # ゲーム出力アダプタ生成
+        │   │   ├── gameEventOrchestrators.ts  # ゲームイベントオーケストレータ
+        │   │   ├── aoi/                       # 視認範囲フィルタ処理
+        │   │   ├── runtime/                   # ゲームランタイム解決
+        │   │   └── services/                  # ゲーム同期サービス群
         │   └── room/
-        │       └── registerRoomHandlers.ts    # ルーム受信イベント配線
+        │       ├── registerRoomHandlers.ts    # ルーム受信イベント配線
+        │       ├── createRoomOutputAdapter.ts # ルーム出力アダプタ生成
+        │       └── roomEventOrchestrators.ts  # ルームイベントオーケストレータ
         ├── bootstrap/
         │   ├── boot.ts                        # 起動配線
         │   ├── createHttpServer.ts            # HTTP生成
@@ -178,12 +198,14 @@
     │   │   └── app.type.ts                     # アプリ型
     │   ├── game/
     │   │   ├── aoi/                            # 視認範囲 (Area of Interest)
-    │   │   ├── bombHit/                        # 爆弾判定ロジック
+    │   │   ├── bombHit/                        # 爆弾判定ロジック・型
     │   │   ├── gridMap/
     │   │   │   ├── gridMap.logic.ts            # マップ計算
-    │   │   │   └── gridMap.type.ts             # マップ型定義
+    │   │   │   ├── gridMap.type.ts             # マップ型定義
+    │   │   │   └── groupedCellUpdates.ts       # セル更新グループ化
     │   │   ├── player/
-    │   │   │   └── player.type.ts              # プレイヤー型
+    │   │   │   ├── player.type.ts              # プレイヤー型
+    │   │   │   └── moveSync.ts                 # 移動同期ロジック
     │   │   └── tick/                           # ティックシステム
     │   └── room/
     │       ├── room.const.ts                   # ルーム定数
