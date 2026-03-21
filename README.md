@@ -16,8 +16,14 @@
 | バックエンド | Node.js + TypeScript |
 | 通信 | Socket.IO (WebSocket) |
 | 描画 | Pixi.js (WebGL) |
+| PWA | vite-plugin-pwa (インストール対応・フルスクリーン動作) |
 | パッケージ管理 | pnpm workspaces (monorepo) |
 | 開発環境 | Docker Dev Container |
+
+## 推奨プレイ環境
+
+スマートフォン・タブレットでプレイする場合は、ブラウザの「ホーム画面に追加」からWeb Appとしてインストールすることを推奨します。
+フルスクリーン・横向き固定で快適にプレイできます。
 
 ## 開発環境のセットアップ
 

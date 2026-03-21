@@ -87,6 +87,14 @@ Pixel Paint War - 開発環境・技術スタック定義書
     ・UI Library: React 18 + @pixi/react
         - 採用理由: 充実したエコシステムとPixi.jsとのReact統合による効率的なUI構築のため．
     ・Network: socket.io-client
+    ・PWA: vite-plugin-pwa
+        - 表示モード: fullscreen（横向き固定）
+        - manifest・service worker を自動生成
+        - Workbox キャッシュ戦略:
+            ・画像アセット: CacheFirst（最大30件，有効期限30日）
+            ・Socket.IO 通信（/socket.io）: キャッシュ対象外
+            ・SPA ナビゲーション: index.html にフォールバック
+        - アイコン: icon-180.png（iOS）/ icon-192.png / icon-512.png（maskable）
 
 3-3. バックエンド (Server)
     ・Runtime: Node.js
