@@ -1,7 +1,7 @@
 {
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {
-      "file": "docs/02_Guide/GUIDE_03_Git運用ルール.txt"
+      "file": "docs/01_GUIDE/GUIDE_03_Git運用ルール.txt"
     }
   ]
 }

@@ -11,7 +11,7 @@
 1-1. 対象範囲
 
 ■ 対象ファイル
-・テスト実行用スクリプト: /workspace/test/load-bot.mjs
+・テスト実行用スクリプト: /workspace/test/load-bot.ts
 ・テスト用依存定義: /workspace/test/package.json
 
 ■ 対象外
