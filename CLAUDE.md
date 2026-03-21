@@ -191,3 +191,14 @@ $ pnpm --filter client build
 - 対象: `apps/client/src`，`apps/server/src`，`packages/shared/src` 配下の変更
 - 既存の記載粒度（代表的なファイル・フォルダのみ）に合わせて追記・修正する
 - ファイル単体の追加でも，同階層に未記載のディレクトリが生じた場合は追記する
+
+---
+
+## 7. ゲーム定数変更時のSPEC更新
+
+`packages/shared/src/config/gameConfig.ts` の定数値を変更した場合は，`docs/04_SPEC/` 配下の対応する仕様書を合わせて更新すること．
+
+- 対象: `GAME_CONFIG` 内の時間・距離・回数などの数値定数
+- 特に影響が大きいファイル:
+  - `SPEC_03_ゲームプレイ仕様.txt`（制限時間，ボム・ハリケーン・被弾の各パラメータ）
+  - `SPEC_04_HUD_UI仕様.txt`（表示切替のしきい値，クールダウン時間）
