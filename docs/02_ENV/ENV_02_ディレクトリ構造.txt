@@ -1,0 +1,235 @@
+========================================================================
+ソースコードディレクトリ構造 (Source Code Directory Structure)
+========================================================================
+
+1. 概要 (Overview)
+------------------------------------------------------------------------
+本ドキュメントは apps/client/src，apps/server/src，packages/shared/src 配下の
+ソースコード構造を定義する．
+プロジェクト全体の構成（設定ファイル・インフラ）については ENV_01 を参照すること．
+
+
+2. クライアント (apps/client/src)
+------------------------------------------------------------------------
+
+2-1. 構成一覧
+    src/
+    ├── app.tsx                                 # ルートUI
+    ├── index.css                               # 全体スタイル
+    ├── main.tsx                                # 起動エントリ
+    ├── vite-env.d.ts                           # Vite型定義
+    ├── assets/                                 # 画像素材
+    ├── components/
+    │   └── LandscapeOnlyGate.tsx              # 横向き制御ゲート
+    ├── config/
+    │   └── index.ts                           # クライアント設定
+    ├── hooks/
+    │   ├── useAppFlow.ts                      # 画面遷移フック
+    │   ├── useSocketSubscriptions.ts          # WS購読フック
+    │   ├── application/                       # アプリケーション層フック
+    │   └── types/                             # フック型定義
+    ├── network/
+    │   ├── SocketManager.ts                   # WSクライアント
+    │   └── handlers/
+    │       ├── CommonHandler.ts               # 共通WSハンドラ
+    │       ├── GameHandler.ts                 # ゲームWSハンドラ
+    │       ├── GameSyncHandler.ts             # ゲーム同期ハンドラ
+    │       ├── LobbyHandler.ts                # ロビーWSハンドラ
+    │       ├── TitleHandler.ts                # タイトルWSハンドラ
+    │       └── socketEventBridge.ts           # イベントブリッジ
+    ├── styles/
+    │   └── safeArea.ts                        # セーフエリア定義
+    └── scenes/
+        ├── game/
+        │   ├── GameManager.ts                 # ゲーム制御
+        │   ├── GameScene.tsx                   # ゲーム画面
+        │   ├── GameView.tsx                    # ゲーム描画
+        │   ├── application/                    # ゲームアプリケーション層
+        │   ├── entities/
+        │   │   ├── bomb/                      # 爆弾エンティティ
+        │   │   ├── hurricane/                 # ハリケーンエンティティ
+        │   │   ├── map/
+        │   │   │   ├── GameMapController.ts   # マップ制御
+        │   │   │   ├── GameMapModel.ts        # マップモデル
+        │   │   │   └── GameMapView.ts         # マップ描画
+        │   │   └── player/
+        │   │       ├── PlayerController.ts    # プレイヤー制御
+        │   │       ├── PlayerModel.ts         # プレイヤーモデル
+        │   │       ├── PlayerRepository.ts    # プレイヤーリポジトリ
+        │   │       └── PlayerView.ts          # プレイヤー描画
+        │   ├── hooks/                         # ゲーム画面フック
+        │   ├── input/
+        │   │   ├── GameInputOverlay.tsx       # 入力オーバーレイ
+        │   │   ├── bomb/                      # 爆弾ボタンUI
+        │   │   ├── hooks/                     # 入力共通フック
+        │   │   ├── minimap/                   # ミニマップUI
+        │   │   ├── joystick/
+        │   │   │   ├── common/                # スティック定数・型
+        │   │   │   ├── model/                 # スティックモデル
+        │   │   │   ├── hooks/                 # スティック制御フック
+        │   │   │   └── presentation/          # スティック描画
+        │   │   └── presentation/              # 入力UI共通表示
+        │   ├── presentation/                   # ゲームHUD
+        │   └── styles/                         # ゲーム画面スタイル
+        ├── lobby/
+        │   ├── LobbyScene.tsx                  # ロビー画面
+        │   ├── components/                    # モーダル・設定UI
+        │   ├── presentation/                  # ロビー表示ロジック
+        │   └── styles/                        # ロビースタイル
+        ├── result/
+        │   ├── ResultScene.tsx                # 結果画面
+        │   ├── components/                    # ランキング・統計表示
+        │   ├── hooks/                         # 結果画面フック
+        │   ├── styles/                        # 結果画面スタイル
+        │   └── types/                         # 結果画面型定義
+        ├── shared/
+        │   └── styles/                        # シーン共通スタイル
+        └── title/
+            └── TitleScene.tsx                  # タイトル画面
+
+2-2. 設計方針
+    ・scenes/ 配下にシーン単位（title, lobby, game, result）で分割する
+    ・各シーンは MVC ベースの構成とし，entities/ に描画対象を集約する
+    ・network/ 層がサーバーとの通信を担当し，scenes/ 内から直接 protocol を参照しない
+
+
+3. サーバー (apps/server/src)
+------------------------------------------------------------------------
+
+3-1. 構成一覧
+    src/
+    ├── index.ts                                # サーバー起点
+    ├── application/
+    │   └── coordinators/                       # アプリ統合制御
+    ├── common/                                 # 共通ユーティリティ
+    ├── config/                                 # サーバー設定
+    ├── logging/
+    │   ├── logger.ts                           # ログ出力
+    │   ├── constants/                          # ログ定数
+    │   └── contracts/                          # ログ契約型
+    ├── domains/
+    │   ├── game/
+    │   │   ├── GameManager.ts                  # ゲーム状態管理
+    │   │   ├── application/
+    │   │   │   ├── ports/
+    │   │   │   │   └── gameUseCasePorts.ts    # ユースケース入出力境界
+    │   │   │   ├── services/
+    │   │   │   │   ├── GameSessionLifecycleService.ts      # セッション管理
+    │   │   │   │   ├── GamePlayerOperationService.ts       # プレイヤー操作
+    │   │   │   │   ├── GameRoomSession.ts                  # ルームセッション
+    │   │   │   │   ├── TeamAssignmentService.ts            # チーム割当
+    │   │   │   │   ├── currentPlayersBootstrapBuilder.ts   # 初期プレイヤー構築
+    │   │   │   │   ├── gameResultCalculator.ts             # 結果算出
+    │   │   │   │   └── bot/                                # Bot AIシステム
+    │   │   │   └── useCases/                   # ゲームユースケース
+    │   │   ├── entities/
+    │   │   │   ├── bomb/                       # 爆弾エンティティ
+    │   │   │   ├── map/
+    │   │   │   │   └── MapStore.ts             # マップ状態保持
+    │   │   │   └── player/
+    │   │   │       └── Player.ts               # サーバーPlayer
+    │   │   └── loop/
+    │   │       ├── GameLoop.ts                 # 固定ループ (20Hz)
+    │   │       ├── HurricaneSystem.ts          # ハリケーン制御
+    │   │       └── hurricane/                  # ハリケーン詳細処理
+    │   └── room/
+    │       ├── RoomManager.ts                  # ルーム管理
+    │       └── application/
+    │           ├── ports/
+    │           │   └── roomUseCasePorts.ts     # ユースケース入出力境界
+    │           ├── services/                    # ルームサービス群
+    │           └── useCases/                    # ルームユースケース
+    └── network/
+        ├── SocketManager.ts                    # WS接続管理
+        ├── adapters/
+        │   ├── socketEmitters.ts              # 送信アダプタ
+        │   ├── gamePayloadSanitizers.ts       # ゲームペイロード検証・整形
+        │   └── realtimeRoomSyncState.ts       # リアルタイムルーム同期状態
+        ├── handlers/
+        │   ├── CommonHandler.ts               # 共通WSハンドラ
+        │   ├── connectionEventLogger.ts       # 接続イベントログ
+        │   ├── createOutputAdapters.ts        # 出力アダプタ生成
+        │   ├── eventDefinitionRegistrar.ts    # イベント定義登録
+        │   ├── orchestratorEventLogger.ts     # オーケストレータログ
+        │   ├── payloadGuard.ts                # ペイロードガード
+        │   ├── registerConnectionHandlers.ts  # 接続ハンドラ登録
+        │   ├── socketEventBridge.ts           # イベントブリッジ
+        │   ├── registration/                  # 接続登録コンテキスト
+        │   ├── game/
+        │   │   ├── registerGameHandlers.ts    # ゲーム受信イベント配線
+        │   │   ├── createGameOutputAdapter.ts # ゲーム出力アダプタ生成
+        │   │   ├── gameEventOrchestrators.ts  # ゲームイベントオーケストレータ
+        │   │   ├── aoi/                       # 視認範囲フィルタ処理
+        │   │   ├── runtime/                   # ゲームランタイム解決
+        │   │   └── services/                  # ゲーム同期サービス群
+        │   └── room/
+        │       ├── registerRoomHandlers.ts    # ルーム受信イベント配線
+        │       ├── createRoomOutputAdapter.ts # ルーム出力アダプタ生成
+        │       └── roomEventOrchestrators.ts  # ルームイベントオーケストレータ
+        ├── bootstrap/
+        │   ├── boot.ts                        # 起動配線
+        │   ├── createHttpServer.ts            # HTTP生成
+        │   ├── createIo.ts                    # Socket.IO生成
+        │   └── createServerRuntime.ts         # ランタイム生成
+        ├── types/                              # ネットワーク型定義
+        └── validation/                         # ペイロード検証
+
+3-2. 設計方針
+    ・domains/ にビジネスロジックを集約し，game/ と room/ に分離する
+    ・network/ 層が Socket.IO の接続管理・イベント配線を担当する
+    ・domains/ は protocol を直接参照せず，ports/ 経由で network 層と連携する
+    ・loop/ 配下にサーバーティック（20Hz）とハリケーンシステムを配置する
+
+
+4. 共有パッケージ (packages/shared/src)
+------------------------------------------------------------------------
+
+4-1. 構成一覧
+    src/
+    ├── index.ts                                # 共有エクスポート
+    ├── config/
+    │   ├── index.ts                            # 設定エクスポート
+    │   ├── gameConfig.ts                       # 共通定数
+    │   ├── networkConfig.ts                    # 通信設定
+    │   └── teamValidators.ts                   # チーム検証
+    ├── domains/
+    │   ├── app/
+    │   │   ├── app.const.ts                    # アプリ定数
+    │   │   └── app.type.ts                     # アプリ型
+    │   ├── game/
+    │   │   ├── aoi/                            # 視認範囲 (Area of Interest)
+    │   │   ├── bombHit/                        # 爆弾判定ロジック・型
+    │   │   ├── gridMap/
+    │   │   │   ├── gridMap.logic.ts            # マップ計算
+    │   │   │   ├── gridMap.type.ts             # マップ型定義
+    │   │   │   └── groupedCellUpdates.ts       # セル更新グループ化
+    │   │   ├── player/
+    │   │   │   ├── player.type.ts              # プレイヤー型
+    │   │   │   └── moveSync.ts                 # 移動同期ロジック
+    │   │   └── tick/                           # ティックシステム
+    │   └── room/
+    │       ├── room.const.ts                   # ルーム定数
+    │       └── room.type.ts                    # ルーム型
+    └── protocol/
+        ├── socketEvents.ts                    # イベント名定義
+        ├── eventPayloads.ts                   # ペイロード再公開
+        ├── eventPayloadMaps.ts                # 型マッピング
+        ├── socketEventBridge.ts               # 型安全ブリッジ
+        ├── events.ts                          # イベント再公開
+        ├── bombIdentity.ts                    # 爆弾一意性保証
+        ├── payloads/
+        │   ├── commonPayloads.ts              # 共通ペイロード型
+        │   ├── gamePayloads.ts                # ゲームペイロード型
+        │   ├── lobbyPayloads.ts               # ロビーペイロード型
+        │   └── playerHitEffectPayloads.ts     # ヒットエフェクト型
+        └── maps/
+            ├── commonEventPayloadMap.ts        # 共通イベントマップ
+            ├── gameEventPayloadMap.ts          # ゲームイベントマップ
+            └── lobbyEventPayloadMap.ts         # ロビーイベントマップ
+
+4-2. 設計方針
+    ・client と server の両方から import される「真実の定義場所」として機能する
+    ・config/ にゲーム定数・通信設定を集約する
+    ・domains/ にドメインロジック（移動計算・マップ・判定）を配置する
+    ・protocol/ にソケットイベント定義・ペイロード型・型マッピングを一元管理する
+    ・protocol/events.ts は再公開専用とし，型本体を置かない（GUIDE_05 参照）
