@@ -1,0 +1,71 @@
+========================================================================
+Render デプロイ手順 (Render Deployment Guide)
+========================================================================
+
+1. 概要 (Overview)
+------------------------------------------------------------------------
+
+1-1. 目的
+    本ドキュメントは，Pixel Paint War を Render にデプロイする手順を記す．
+    環境変数の詳細については ENV_08_環境変数設定.txt を参照すること．
+
+1-2. 構成
+    Render 上で以下の2サービスを運用する．
+
+    ・client サービス: Vite でビルドした静的ファイルを配信
+    ・server サービス: Node.js バックエンドを動作させる Web Service
+
+
+2. 環境変数の設定 (Environment Variables)
+------------------------------------------------------------------------
+
+2-1. client サービスへの設定
+    VITE_PROD_SERVER_URL はビルド時に埋め込まれるため，
+    server サービスではなく client サービス側で設定すること．
+
+    1. Render ダッシュボードで client サービスを開く
+    2. 「Environment」タブを開く
+    3. 以下の環境変数を追加する
+        Key: VITE_PROD_SERVER_URL
+        Value: https://<your-server-domain>
+    4. 保存後に「Manual Deploy」または自動デプロイで再ビルドする
+
+    ※ 値を変更した場合は必ず再デプロイ（再ビルド）すること
+
+
+3. デプロイ手順 (Deployment Steps)
+------------------------------------------------------------------------
+
+3-1. server サービスの設定
+    1. Render ダッシュボードで「New +」→「Web Service」を選択する
+    2. リポジトリを接続する
+    3. 以下の設定を行う
+        ・Environment: Node
+        ・Build Command: pnpm --filter @repo/shared build && pnpm --filter server build
+        ・Start Command: node apps/server/dist/index.js
+    4. 「Create Web Service」で作成する
+
+3-2. client サービスの設定
+    1. Render ダッシュボードで「New +」→「Static Site」を選択する
+    2. リポジトリを接続する
+    3. 以下の設定を行う
+        ・Build Command: pnpm --filter @repo/shared build && pnpm --filter client build
+        ・Publish Directory: apps/client/dist
+    4. 2章の手順で環境変数 VITE_PROD_SERVER_URL を設定する
+    5. 「Create Static Site」で作成する
+
+3-3. 動作確認
+    1. server サービスのログで起動エラーがないことを確認する
+    2. client サービスの URL にブラウザからアクセスしてゲーム画面を確認する
+
+
+4. 再デプロイ手順 (Redeployment)
+------------------------------------------------------------------------
+
+4-1. コード変更時
+    main ブランチへのマージを契機に自動デプロイが走る（Auto-Deploy 有効時）．
+    手動で行う場合は各サービスの「Manual Deploy」ボタンを押す．
+
+4-2. 環境変数変更時
+    client サービスの環境変数を変更した場合は，
+    変更後に必ず再デプロイ（再ビルド）を実施すること．

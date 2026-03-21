@@ -202,3 +202,5 @@ $ pnpm --filter client build
 - 特に影響が大きいファイル:
   - `SPEC_03_ゲームプレイ仕様.txt`（制限時間，ボム・ハリケーン・被弾の各パラメータ）
   - `SPEC_04_HUD_UI仕様.txt`（表示切替のしきい値，クールダウン時間）
+
+設定値（config）の配置ルールと定数一覧は `packages/shared/src/config/README.md` を参照すること．
