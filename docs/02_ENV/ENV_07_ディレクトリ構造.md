@@ -1,0 +1,175 @@
+# ソースコードディレクトリ構造 (Source Code Directory Structure)
+
+## 概要 (Overview)
+
+本ドキュメントは apps/client/src，apps/server/src，packages/shared/src 配下のソースコード構造を定義する．
+プロジェクト全体の構成（設定ファイル・インフラ）については ENV_01_技術スタック.md を参照すること．
+
+記載粒度: 全フォルダを漏れなく記載する．ファイルはエントリーポイント（index.ts・main.tsx 等）のみ明記する．
+フォルダを追加・削除・移動した場合は本ドキュメントを合わせて更新すること．
+
+## クライアント (apps/client/src)
+
+### 構成一覧 (Structure Overview)
+
+```text
+src/
+├── main.tsx                        # 起動エントリ
+├── app.tsx                         # ルートUI
+├── components/                     # 共通コンポーネント
+├── config/                         # クライアント設定
+├── hooks/                          # グローバルフック
+│   ├── application/                # アプリケーション層フック
+│   └── types/                      # フック型定義
+├── network/                        # サーバー通信層
+│   └── handlers/                   # WSハンドラ・イベントブリッジ
+├── styles/                         # 全体スタイル
+└── scenes/                         # 画面シーン群
+    ├── game/                       # ゲーム画面
+    │   ├── application/            # ゲームアプリケーション層
+    │   │   ├── assets/             # ゲームアセット管理
+    │   │   ├── combat/             # 戦闘処理
+    │   │   ├── culling/            # 描画カリング
+    │   │   ├── lifecycle/          # ライフサイクル管理
+    │   │   ├── loopSteps/          # ゲームループステップ
+    │   │   ├── network/            # ゲームネットワーク処理
+    │   │   │   ├── adapters/       # ネットワークアダプタ
+    │   │   │   ├── handlers/       # ネットワークハンドラ
+    │   │   │   └── receivers/      # 受信処理
+    │   │   ├── orchestrators/      # オーケストレータ
+    │   │   ├── runtime/            # ランタイム管理
+    │   │   ├── time/               # 時刻・タイマー管理
+    │   │   └── ui/                 # UI制御
+    │   ├── entities/               # 描画・状態管理エンティティ
+    │   │   ├── bomb/               # 爆弾エンティティ
+    │   │   ├── hurricane/          # ハリケーンエンティティ
+    │   │   ├── map/                # マップエンティティ
+    │   │   └── player/             # プレイヤーエンティティ
+    │   ├── hooks/                  # ゲーム画面フック
+    │   ├── input/                  # 入力UI群
+    │   │   ├── bomb/               # 爆弾ボタンUI
+    │   │   │   ├── hooks/          # 爆弾ボタンフック
+    │   │   │   └── presentation/   # 爆弾ボタン表示
+    │   │   ├── hooks/              # 入力共通フック
+    │   │   ├── joystick/           # ジョイスティックUI
+    │   │   │   ├── common/         # スティック定数・型
+    │   │   │   ├── hooks/          # スティック制御フック
+    │   │   │   ├── model/          # スティックモデル
+    │   │   │   └── presentation/   # スティック描画
+    │   │   ├── minimap/            # ミニマップUI
+    │   │   │   ├── hooks/          # ミニマップフック
+    │   │   │   └── presentation/   # ミニマップ表示
+    │   │   └── presentation/       # 入力UI共通表示
+    │   ├── presentation/           # ゲームHUD
+    │   └── styles/                 # ゲーム画面スタイル
+    ├── lobby/                      # ロビー画面
+    │   ├── components/             # ロビーUIコンポーネント
+    │   ├── presentation/           # ロビー表示ロジック
+    │   └── styles/                 # ロビースタイル
+    ├── result/                     # リザルト画面
+    │   ├── components/             # リザルトUIコンポーネント
+    │   ├── hooks/                  # リザルト画面フック
+    │   ├── styles/                 # リザルト画面スタイル
+    │   └── types/                  # リザルト画面型定義
+    ├── shared/                     # シーン間共通リソース
+    │   └── styles/                 # シーン共通スタイル
+    └── title/                      # タイトル画面
+```
+
+### 設計方針 (Design Policy)
+
+- scenes/ 配下にシーン単位（title，lobby，game，result）で分割する
+- 各シーンは MVC ベースの構成とし，entities/ に描画対象を集約する
+- network/ 層がサーバーとの通信を担当し，scenes/ 内から直接 protocol を参照しない
+
+## サーバー (apps/server/src)
+
+### 構成一覧 (Structure Overview)
+
+```text
+src/
+├── index.ts                        # サーバー起点
+├── application/                    # アプリケーション統合層
+│   └── coordinators/               # アプリ統合制御
+├── common/                         # 共通ユーティリティ
+├── config/                         # サーバー設定
+├── logging/                        # ログ出力基盤
+│   ├── constants/                  # ログ定数
+│   └── contracts/                  # ログ契約型
+├── domains/                        # ビジネスロジック層
+│   ├── game/                       # ゲームドメイン
+│   │   ├── application/            # ゲームアプリケーション層
+│   │   │   ├── ports/              # ユースケース入出力境界
+│   │   │   ├── services/           # ゲームサービス群
+│   │   │   │   └── bot/            # Bot AIシステム
+│   │   │   │       ├── adapters/   # Botアダプタ
+│   │   │   │       ├── combat/     # Bot戦闘行動
+│   │   │   │       ├── movement/   # Bot移動処理
+│   │   │   │       ├── orchestrators/ # Botオーケストレータ
+│   │   │   │       ├── policies/   # Bot行動ポリシー
+│   │   │   │       ├── roster/     # Bot管理・編成
+│   │   │   │       ├── state/      # Bot状態管理
+│   │   │   │       └── types/      # Bot型定義
+│   │   │   └── useCases/           # ゲームユースケース
+│   │   ├── entities/               # ゲームエンティティ
+│   │   │   ├── bomb/               # 爆弾エンティティ
+│   │   │   ├── map/                # マップ状態
+│   │   │   └── player/             # プレイヤーエンティティ
+│   │   └── loop/                   # ゲームループ
+│   │       └── hurricane/          # ハリケーン詳細処理
+│   └── room/                       # ルームドメイン
+│       └── application/            # ルームアプリケーション層
+│           ├── ports/              # ユースケース入出力境界
+│           ├── services/           # ルームサービス群
+│           └── useCases/           # ルームユースケース
+└── network/                        # Socket.IO通信層
+    ├── adapters/                   # 送信アダプタ群
+    ├── bootstrap/                  # 起動配線
+    ├── handlers/                   # イベントハンドラ群
+    │   ├── game/                   # ゲームイベントハンドラ
+    │   │   ├── aoi/                # 視認範囲フィルタ処理
+    │   │   ├── input/              # ゲーム入力ハンドラ
+    │   │   ├── runtime/            # ゲームランタイム解決
+    │   │   └── services/           # ゲーム同期サービス群
+    │   ├── registration/           # 接続登録コンテキスト
+    │   └── room/                   # ルームハンドラ群
+    ├── types/                      # ネットワーク型定義
+    └── validation/                 # ペイロード検証
+```
+
+### 設計方針 (Design Policy)
+
+- domains/ にビジネスロジックを集約し，game/ と room/ に分離する
+- network/ 層が Socket.IO の接続管理・イベント配線を担当する
+- domains/ は protocol を直接参照せず，ports/ 経由で network 層と連携する
+- loop/ 配下にサーバーティック（20Hz）とハリケーンシステムを配置する
+
+## 共有パッケージ (packages/shared/src)
+
+### 構成一覧 (Structure Overview)
+
+```text
+src/
+├── index.ts                        # 共有エクスポート
+├── config/                         # 共通設定・定数
+├── domains/                        # 共有ドメインロジック
+│   ├── app/                        # アプリ定数・型
+│   ├── game/                       # ゲームドメイン共有ロジック
+│   │   ├── aoi/                    # 視認範囲ロジック
+│   │   ├── bombHit/                # 爆弾判定ロジック
+│   │   ├── gridMap/                # マップ計算・型
+│   │   ├── player/                 # プレイヤー型・移動同期
+│   │   └── tick/                   # ティックシステム
+│   └── room/                       # ルーム定数・型
+└── protocol/                       # ソケットイベント定義
+    ├── maps/                       # イベント方向別型マップ
+    └── payloads/                   # イベントペイロード型
+```
+
+### 設計方針 (Design Policy)
+
+- client と server の両方から import される「真実の定義場所」として機能する
+- config/ にゲーム定数・通信設定を集約する
+- domains/ にドメインロジック（移動計算・マップ・判定）を配置する
+- protocol/ にソケットイベント定義・ペイロード型・型マッピングを一元管理する
+- protocol/events.ts は再公開専用とし，型本体を置かない（`.claude/rules/protocol-changes.md` 参照）
