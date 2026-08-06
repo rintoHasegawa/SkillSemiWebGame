@@ -67,7 +67,35 @@ pnpm --filter client preview
 
 ## テスト (Test)
 
-自動ユニットテストのスクリプトは未整備である（各 package.json の `test` はスタブ）．現状のテストは `/workspace/test` の負荷テスト（load-bot）のみ．
+### ユニットテスト (Unit Test)
+
+shared・server・client のユニットテストは Vitest で実行する（テストファイルは `src` 配下に `*.test.ts` として同居）．
+
+```bash
+pnpm --filter @repo/shared test
+```
+
+shared のユニットテストを実行する（`vitest run`）．
+
+```bash
+pnpm --filter server test
+```
+
+サーバのユニットテストを実行する（`vitest run`）．
+
+```bash
+pnpm --filter client test
+```
+
+クライアントのユニットテストを実行する（`vitest run`）．
+
+```bash
+pnpm -r test
+```
+
+全パッケージのユニットテストをまとめて実行する．
+
+### 負荷テスト (Load Test)
 
 ```bash
 cd /workspace/test && pnpm install
