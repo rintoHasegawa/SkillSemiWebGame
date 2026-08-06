@@ -11,10 +11,14 @@ Monorepo構成とDocker(Dev Containers)を使用し，迅速に開発を開始�
 
 開発メンバー全員（管理者・参加者問わず）が以下のツールをインストールする．
 
-1. Docker Engine (Linux環境)
+1. Docker実行環境
 
    - 開発環境の実体（コンテナ）を動かすために必須である．
-   - インストール手順 (Ubuntu/Debian系の例): ターミナルで以下のコマンドを順に実行する．
+   - OSごとの選択肢:
+     - Windows: WSL2（Ubuntu等）を導入し，WSL2内に Docker Engine をインストールする（Docker Desktop でも可）
+     - Mac: Docker Desktop（最新版）をインストールする
+     - Linux: Docker Engine をインストールする
+   - インストール手順 (Ubuntu/Debian系・WSL2内含む): ターミナルで以下のコマンドを順に実行する．
 
      ```bash
      # 1. 公式GPG鍵とリポジトリのセットアップ
@@ -128,7 +132,7 @@ Monorepo構成とDocker(Dev Containers)を使用し，迅速に開発を開始�
    ※ エラー時の対応: 「sh: vite: not found」等のエラーが出る場合は，自動インストールが完了していない可能性があります．ターミナルで `pnpm install` を手動実行するか，上記「コンテナでの再起動 (Reopen in Container)」の「Rebuild Container」を試してください．
 
    - ブラウザでの確認: ターミナルに「➜  Local:   http://localhost:5173/」と表示されたら，Google Chrome等のブラウザを開き，アドレスバーに上記URLを貼り付けて実行する．
-   - 正常動作の判断基準: 画面に「Vite + Preact」のロゴと「Vite + Preact + TypeScript」といったテキストが表示されていれば，フロントエンドの環境構築は成功である．
+   - 正常動作の判断基準: ゲームのタイトル画面が表示されれば，フロントエンドの環境構築は成功である．
 
 ## 開発ツールの確認 (Tools Verification)
 
@@ -148,44 +152,18 @@ Dockerコンテナ起動完了後，定義済みのツールが正しく自動�
 
 ### AI アシスタント設定 (AI Assistant Setup)
 
-- GitHub Copilot Pro
-  - VS Code 右下のアイコンから，GitHubアカウントへのログイン状態を確認する．
+- Claude Code
+  - コンテナ内のターミナルで `claude` コマンドを実行し，初回はログイン（認証）を行う．
+  - 運用ルールは `docs/01_GUIDE/GUIDE_02_エージェント運用ルール.md` を参照する．
+- GitHub Copilot
+  - devcontainer に拡張機能が含まれるが，使用は任意である．
 
 ## 構成確認 (Project Structure)
 
 ### ディレクトリ構成 (Directory Layout)
 
-コンテナ内で以下のディレクトリ構造が見えていることを確認する．
-
-```text
-SkillSemiWebGame/                  <-- プロジェクトルート
-├── .devcontainer/                 <-- Docker設定
-├── .git/
-├── docker-compose.yml             <-- Docker構成
-├── package.json                   <-- ルート定義
-├── pnpm-workspace.yaml            <-- ワークスペース定義
-├── node_modules/                  <-- 依存ライブラリ
-│
-├── apps/                          <-- アプリケーション格納用
-│   ├── client/                    <-- フロントエンド (Vite + Preact)
-│   │   ├── src/
-│   │   │   ├── main.tsx
-│   │   │   └── ...
-│   │   ├── package.json           <-- pixi.js, @repo/shared 依存あり
-│   │   └── vite.config.ts
-│   │
-│   └── server/                    <-- バックエンド (Node.js)
-│       ├── src/
-│       │   └── index.ts           <-- エントリーポイント
-│       └── package.json           <-- ws, @repo/shared 依存あり
-│
-└── packages/                      <-- 共通パッケージ格納用
-    └── shared/                    <-- 共通ロジック
-        ├── dist/                  <-- ビルド成果物
-        ├── src/
-        │   └── index.ts
-        └── package.json
-```
+コンテナ内で `apps/client`・`apps/server`・`packages/shared` を含む Monorepo 構成が見えていることを確認する．
+ルート構成の全体像は [ENV_01_技術スタック.md](ENV_01_技術スタック.md)，ソースコード（src/ 配下）の詳細は [ENV_07_ディレクトリ構造.md](ENV_07_ディレクトリ構造.md) を参照する．
 
 ## 動作確認 (Verification)
 
@@ -214,21 +192,9 @@ pnpm --filter @repo/shared build
      ```
 
    - ブラウザでの確認: ターミナルに「➜  Local:   http://localhost:5173/」と表示されたら，Google Chrome等のブラウザを開き，アドレスバーに上記URLを貼り付けて実行する．
-   - 正常動作の判断基準: 画面に「Vite + Preact」のロゴと「Vite + Preact + TypeScript」といったテキストが表示されていれば，フロントエンドの環境構築は成功である．
+   - 正常動作の判断基準: ゲームのタイトル画面が表示されれば，フロントエンドの環境構築は成功である．
 
 2. Server (バックエンド) の動作確認
-
-   - テスト用コードの作成: 動作確認用のエントリーポイントを作成する．
-
-     ```bash
-     touch apps/server/src/index.ts
-     ```
-
-     ファイルに以下の内容を記述する．
-
-     ```ts
-     console.log("Server is running!");
-     ```
 
    - コマンド:
 
@@ -236,7 +202,7 @@ pnpm --filter @repo/shared build
      pnpm --filter server dev
      ```
 
-   - 正常動作の判断基準: ターミナルに「Server is running!」と出力されれば構築成功である．
+   - 正常動作の判断基準: ターミナルにサーバの起動ログ（リッスン開始のメッセージ）が出力され，エラーで停止しなければ構築成功である．
 
 3. 終了方法 (重要)
 
@@ -244,43 +210,9 @@ pnpm --filter @repo/shared build
 
 ## (応用) 本番ビルドの動作確認 (Production Build Check)
 
-開発環境(Dev Container)ではなく，本番環境と同様のDockerイメージを作成し，正しくビルド・起動できるかを確認する手順である．
+本番環境と同様のDockerイメージを作成し，正しくビルド・起動できるかを確認する．
 「機能開発が終わった後」や「プルリクエストを出す前」に実施することを推奨する．
 
-### 準備 (Preparation)
+具体的なコマンド（起動・ログ確認・停止）とトラブルシューティングは [ENV_05_Docker運用操作ガイド.md](ENV_05_Docker運用操作ガイド.md) の「本番環境」を参照すること．
 
-Dev Containerを閉じ，ホストOS（Windows/Mac）のターミナルを開く．
-
-※ Dev Container内からはDockerコマンドが使用できない場合があるため．
-
-### ビルドと起動 (Build and Launch)
-
-プロジェクトルートで以下のコマンドを実行する．
-
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
-```
-
-### 動作確認 (Verification)
-
-1. ログ確認
-
-   ```bash
-   docker compose -f docker-compose.prod.yml logs -f
-   ```
-
-   Serverが起動していることを確認する．
-
-2. ブラウザ確認
-
-   `http://localhost:3001`
-
-   ※ ポート番号が開発用(3000/5173)と異なり 3001 に設定されている点に注意．
-
-### 終了と削除 (Shutdown and Cleanup)
-
-確認が終わったら必ず環境を停止・削除する．
-
-```bash
-docker compose -f docker-compose.prod.yml down
-```
+※ Dev Container内からはDockerコマンドが使用できない場合があるため，Dev Containerを閉じてホストOSのターミナルで実行する．

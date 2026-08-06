@@ -60,21 +60,13 @@ ngrok config add-authtoken [あなたのAuthtoken]
 
 ## デバッグ実行手順 (Execution Steps)
 
-### Client設定の修正 (Update Configuration)
+### Client設定の確認 (Verify Configuration)
 
-開発サーバーが外部 (ngrok) からの接続を受け付けるよう，設定を変更する．
+開発サーバーが外部 (ngrok) からの接続を受け付けるためには，Vite の起動オプションに `--host` が必要である．
 
-#### package.json の編集 (Edit package.json)
+#### package.json の確認 (Check package.json)
 
-`apps/client/package.json` を開き，`scripts` ブロックの `dev` コマンドに `--host` オプションを追加する．
-
-**修正前**
-
-```json
-"dev": "vite"
-```
-
-**修正後**
+`apps/client/package.json` の `scripts` ブロックで，`dev` コマンドに `--host` オプションが付いていることを確認する（現在は設定済み）．
 
 ```json
 "dev": "vite --host"

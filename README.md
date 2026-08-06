@@ -12,7 +12,7 @@
 
 | 区分 | 技術 |
 |---|---|
-| フロントエンド | Vite + Preact + TypeScript |
+| フロントエンド | Vite + React + TypeScript |
 | バックエンド | Node.js + TypeScript |
 | 通信 | Socket.IO (WebSocket) |
 | 描画 | Pixi.js (WebGL) |

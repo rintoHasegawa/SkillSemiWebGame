@@ -43,7 +43,7 @@ Microsoftによって開発されたオープンソースのプログラミン�
 
 ## AI活用型開発における利点 (Benefits in AI-Assisted Development)
 
-本プロジェクトの方針である「AI活用型開発（Gemini Pro / GitHub Copilot Pro）」において，TypeScriptはJavaScriptと比較して以下の決定的な優位性を持つ．
+本プロジェクトの方針である「AI活用型開発」（現在は Claude Code を主体とする．過去は Gemini Pro / GitHub Copilot Pro を使用）において，TypeScriptはJavaScriptと比較して以下の決定的な優位性を持つ．
 
 ### コンテキストの正確な伝達 (Accurate Context Communication)
 

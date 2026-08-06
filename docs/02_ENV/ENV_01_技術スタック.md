@@ -17,9 +17,8 @@
 
 ### AI活用型開発 (AI-Assisted Development)
 
-- 採用ツール:
-  - Gemini Pro (学校提供ライセンス)
-  - GitHub Copilot Pro (GitHub Student Developer Pack)
+- 採用ツール: Claude Code（実装・テスト・ドキュメント整備の主体．運用ルールは `docs/01_GUIDE/GUIDE_02_エージェント運用ルール.md` を参照）
+  - ※ 過去には GitHub Copilot Pro / Gemini Pro を使用していた
 - 言語選定の優位性: TypeScriptを採用することで厳密な型定義(Type/Interface)を保持する．これによりAIがコードの文脈や意図を正確に解釈可能となり，型のないJavaScriptと比較して，コード生成・補完・リファクタリングの精度が著しく向上する．
 
 ## プロジェクト構成 (Project Structure)
@@ -108,7 +107,7 @@ root/
 
 - Linter: ESLint
 - Formatter: Prettier
-- AI Assistant: GitHub Copilot Pro, Gemini Pro
+- AI Assistant: Claude Code
 
 ### インフラ・コンテナ技術 (Infrastructure)
 
@@ -127,71 +126,8 @@ root/
 ## 開発マシンの前提条件 (Prerequisites)
 
 本プロジェクトは Docker (Dev Containers) による開発環境統一を推奨する．
-これにより，ホストOS（Windows/Mac）の環境を汚さずに構築が可能となる．
-
-### 【必須】ホストマシンにインストールするもの (Required on Host Machine)
-
-以下のツールのみ，開発者のPC（ホストOS）にインストールが必要である．
-
-1. Docker実行環境
-
-   - Docker Desktop (最新版)
-   - WSL2 (Windowsの場合必須)
-
-2. エディタ
-
-   - VS Code (Visual Studio Code)
-
-3. VS Code 拡張機能
-
-   - Dev Containers (ID: ms-vscode-remote.remote-containers)
-
-   ※ これが「必須」である．これさえあれば，以下の開発ツール群は自動セットアップされる．
-
-4. アカウント・AI
-
-   - GitHub Copilot Pro (Student)
-   - Gemini Pro (学校提供ライセンス)
-
-### 【自動】コンテナ内に構築されるもの（インストール不要）(Auto-Installed in Container)
-
-以下のツールは `devcontainer.json` に定義済みであり，コンテナ起動時に自動的にインストール・設定されるため，手動導入は不要である．
-
-1. Runtime & Package Manager
-
-   - Node.js (v20.x LTS)
-   - pnpm (Latest)
-
-2. VS Code 拡張機能 (コンテナ内)
-
-   - ESLint
-   - Prettier
-   - EditorConfig
-   - Hex Editor
-
-※ ホスト側で `node -v` や `pnpm -v` を実行する必要はなく，全て VS Code の「ターミナル (コンテナ接続済)」で行う．
+ホスト側に必要なツールと具体的なセットアップ手順は [ENV_02_環境構築手順.md](ENV_02_環境構築手順.md) に一本化しているため，そちらを参照すること．
 
 ## 実装上の重要ルール (Implementation Rules)
 
-### ロジックの一元管理 (Single Source of Logic)
-
-- 「移動速度」「ヒット判定」「マップ更新」の計算式は必ず `packages/shared` に記述する．
-- Client と Server で別の計算式を書くことを禁止する（同期ズレ防止）．
-
-### 座標系 (Coordinate System)
-
-- 内部計算: Float (浮動小数点)
-- 通信データ: Integer (整数 / 100倍して送信など圧縮を考慮)
-- 描画: Float (補間処理あり)
-
-### 依存方向 (Dependency Direction)
-
-- OK: Client -> Shared
-- OK: Server -> Shared
-- NG: Client -> Server / Server -> Client (直接参照禁止)
-
-### 通信境界の責務分離 (Network Boundary Responsibilities)
-
-- SocketEvents の解決（イベント名の参照）は `apps/server/src/network` 配下に集約する．
-- `apps/server/src/domains` 配下では `protocol` を直接 import せず，意味名の Publisher 関数を受け取って利用する．
-- Socket の接続制御・受信イベント登録・切断順序制御は network 層が担当し，業務ロジック判断は domain 層が担当する．
+ロジックの一元管理・座標系・依存方向・通信境界の責務分離などの指示型ルールは `.claude/rules/project-structure.md` に定義されており，client / server / shared のソース編集時に自動ロードされる．
