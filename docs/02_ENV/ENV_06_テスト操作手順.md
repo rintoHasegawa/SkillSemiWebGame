@@ -15,6 +15,7 @@
 
 - アプリ本体のビルドと起動手順
 - 本番運用の監視設定
+- ユニットテスト（Vitest）: 実行コマンドは [ENV_04_開発コマンド](ENV_04_開発コマンド.md)，方針は `.claude/rules/testing.md` を参照
 
 ## 前提条件 (Prerequisites)
 

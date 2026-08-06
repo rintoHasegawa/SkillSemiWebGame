@@ -14,6 +14,7 @@
   - 全イベントを JSON 形式で送受信（開発効率とデバッグ容易性を優先）
 - 描画: WebGL 2D (Pixi.js)
 - 同期: サーバー権限 (Authoritative) + クライアント予測 (Prediction)
+- テスト: Vitest（shared・server・client のユニットテスト．方針は `.claude/rules/testing.md`，コマンドは [ENV_04_開発コマンド](ENV_04_開発コマンド.md) を参照）
 
 ### AI活用型開発 (AI-Assisted Development)
 
