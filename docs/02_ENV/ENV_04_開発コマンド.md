@@ -69,7 +69,7 @@ pnpm --filter client preview
 
 ### ユニットテスト (Unit Test)
 
-shared・server のユニットテストは Vitest で実行する（テストファイルは `src` 配下に `*.test.ts` として同居）．
+shared・server・client のユニットテストは Vitest で実行する（テストファイルは `src` 配下に `*.test.ts` として同居）．
 
 ```bash
 pnpm --filter @repo/shared test
@@ -82,6 +82,18 @@ pnpm --filter server test
 ```
 
 サーバのユニットテストを実行する（`vitest run`）．
+
+```bash
+pnpm --filter client test
+```
+
+クライアントのユニットテストを実行する（`vitest run`）．
+
+```bash
+pnpm -r test
+```
+
+全パッケージのユニットテストをまとめて実行する．
 
 ### 負荷テスト (Load Test)
 
