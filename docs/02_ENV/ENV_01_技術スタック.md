@@ -34,18 +34,18 @@ root/
 │   │   ├── index.html                                  # HTMLエントリ
 │   │   ├── package.json                                # 依存・スクリプト
 │   │   ├── public/                                     # 公開アセット (SVG・PNG等)
-│   │   ├── src/                                        # ※ 詳細は ENV_07 参照
+│   │   ├── src/                                        # ソースコード
 │   │   ├── tsconfig.json                               # TS設定
 │   │   └── vite.config.ts                              # Vite設定
 │   └── server/                                         # 【権限】バックエンド (Node.js)
 │       ├── package.json                                # 依存・スクリプト
 │       ├── tsconfig.json                               # TS設定
-│       └── src/                                        # ※ 詳細は ENV_07 参照
+│       └── src/                                        # ソースコード
 ├── packages/
 │   └── shared/                                         # 【最重要】「真実」の定義場所（型，定数，純粋ロジック）
 │       ├── package.json                                # 依存・公開設定
 │       ├── tsconfig.json                               # TS設定
-│       └── src/                                        # ※ 詳細は ENV_07 参照
+│       └── src/                                        # ソースコード
 ├── test/                                                # 負荷テスト用スクリプト群
 │   ├── load-bot.ts                                      # 負荷テスト実行
 │   ├── load-bot.constants.ts                            # 負荷テスト定数
@@ -66,7 +66,7 @@ root/
 
 ※ shared は client/server 両方から import して使用する．
 
-※ ソースコード (src/) の詳細構造は [ENV_07_ディレクトリ構造.md](ENV_07_ディレクトリ構造.md) を参照．
+※ ソースコード (src/) 配下の各フォルダの責務は，各ファイル先頭のドキュメントコメント（`.claude/rules/coding-style.md`）とアーキテクチャルール（`.claude/rules/project-structure.md`）を参照．
 
 ## 技術スタック詳細 (Tech Stack)
 

@@ -163,7 +163,7 @@ Dockerコンテナ起動完了後，定義済みのツールが正しく自動�
 ### ディレクトリ構成 (Directory Layout)
 
 コンテナ内で `apps/client`・`apps/server`・`packages/shared` を含む Monorepo 構成が見えていることを確認する．
-ルート構成の全体像は [ENV_01_技術スタック.md](ENV_01_技術スタック.md)，ソースコード（src/ 配下）の詳細は [ENV_07_ディレクトリ構造.md](ENV_07_ディレクトリ構造.md) を参照する．
+ルート構成の全体像は [ENV_01_技術スタック.md](ENV_01_技術スタック.md) を参照する．
 
 ## 動作確認 (Verification)
 

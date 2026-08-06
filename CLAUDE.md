@@ -8,8 +8,7 @@
 
 ## 必須ルール（コード実装時）
 
-- コメント規則・アーキテクチャ配置ルール・プロトコル追加手順・ゲーム定数変更時の SPEC 更新は `.claude/rules/`（coding-style / project-structure / protocol-changes / game-config-spec）に定義されており，該当ファイル編集時に自動ロードされる
-- ファイル・ディレクトリの追加・削除・移動を行った場合は，`docs/02_ENV/ENV_07_ディレクトリ構造.md` を合わせて更新する（対象: `apps/client/src`，`apps/server/src`，`packages/shared/src` 配下．既存の記載粒度に合わせる）
+- コーディング規約・アーキテクチャ配置・テスト方針・エラー処理・プロトコル追加手順・ゲーム定数変更時の SPEC 更新は `.claude/rules/`（coding-style / project-structure / testing / error-handling / protocol-changes / game-config-spec）に定義されており，該当ファイル編集時に自動ロードされる
 
 ### Git 運用
 
@@ -59,7 +58,7 @@
 - エージェント運用ルール: docs/01_GUIDE/GUIDE_02_エージェント運用ルール.md
 - チーム開発ルール: docs/01_GUIDE/GUIDE_03_チーム開発ルール.md
 - ※ Git 規約・ドキュメント書式・命名規則・進捗記録は `.claude/rules/`（git-conventions / markdown-style / docs-naming / progress-log）に定義されている（git-conventions は常時，他は該当ファイル編集時に自動ロード）
-- ※ プロジェクト固有規約も `.claude/rules/`（coding-style / project-structure / protocol-changes / game-config-spec）にある
+- ※ プロジェクト固有規約も `.claude/rules/`（coding-style / project-structure / testing / error-handling / protocol-changes / game-config-spec）にある
 
 ### 02_ENV（環境）
 
@@ -69,7 +68,6 @@
 - 開発コマンド: docs/02_ENV/ENV_04_開発コマンド.md
 - Docker運用操作ガイド: docs/02_ENV/ENV_05_Docker運用操作ガイド.md
 - テスト操作手順: docs/02_ENV/ENV_06_テスト操作手順.md
-- ディレクトリ構造: docs/02_ENV/ENV_07_ディレクトリ構造.md
 - スマホ実機デバッグ手順: docs/02_ENV/ENV_08_スマホ実機デバッグ手順.md
 - 環境変数設定: docs/02_ENV/ENV_09_環境変数設定.md
 - Renderデプロイ手順: docs/02_ENV/ENV_10_Renderデプロイ手順.md

@@ -4,7 +4,7 @@ paths: ["apps/client/src/**", "apps/server/src/**", "packages/shared/src/**"]
 
 # アーキテクチャ・配置ルール (Project Structure Rules)
 
-client / server / shared のソースを編集するときは必ず以下に従うこと．各パッケージ内のディレクトリ構成の詳細は `docs/02_ENV/ENV_07_ディレクトリ構造.md` を参照する．
+client / server / shared のソースを編集するときは必ず以下に従うこと．各フォルダの責務は配下ファイル先頭のドキュメントコメントから読み取る．
 
 ## ロジックの一元管理 (Single Source of Logic)
 
