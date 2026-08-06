@@ -22,13 +22,13 @@ Issue #289「現行仕様を固定するテストの整備」の拡張計画で�
 | # | 対象 | 主なファイル | 状態 |
 | --- | --- | --- | --- |
 | 1 | server `entities/bomb`（7） | ActiveBombRegistry・bombDedup・bombHitReport・bombIdentity・bombPayloadValidation・bombPlacement・BombStateStore | 完了（135 件） |
-| 2 | server `entities/map`（4） | mapContestResolver・mapGrid・mapPainting・MapStore | 未着手 |
-| 3 | server `entities/player`（4） | playerMovement・playerPosition・playerSpawn・Player | 未着手 |
-| 4 | server `loop/`（5） | HurricaneHitService・HurricaneMotionService・HurricaneSyncService・HurricaneSystem・GameLoop（テスト可能な範囲） | 未着手 |
-| 5 | server `network/` 純ロジック（約 10） | socketPayloadValidators・payloadGuard・gamePayloadSanitizers・aoiVisibility・bombSyncService・hurricaneSyncService・playerSyncService・roomViewerSyncContext・realtimeRoomSyncState・syncDelta | 未着手 |
-| 6 | server 残り | coordinators（5）・BotTurnOrchestrator | 未着手 |
-| 7 | shared 残り | config/teamValidators・protocol のランタイムロジック（bombIdentity・socketEventBridge 等） | 未着手 |
-| 8 | client 純ロジック | Vitest 導入＋appFlowReducer・time 系（ClockSyncService・SyncIntervalPolicy 等）・sync handler 系・culling | 未着手 |
+| 2 | server `entities/map`（4） | mapContestResolver・mapGrid・mapPainting・MapStore | 完了（94 件） |
+| 3 | server `entities/player`（4） | playerMovement・playerPosition・playerSpawn・Player | 完了（97 件） |
+| 4 | server `loop/`（5） | HurricaneHitService・HurricaneMotionService・HurricaneSyncService・HurricaneSystem・GameLoop（テスト可能な範囲） | 完了（119 件） |
+| 5 | server `network/` 純ロジック（約 10） | socketPayloadValidators・payloadGuard・gamePayloadSanitizers・aoiVisibility・bombSyncService・hurricaneSyncService・playerSyncService・roomViewerSyncContext・realtimeRoomSyncState・syncDelta（＋ gameRuntimeResolvers） | 完了（344 件） |
+| 6 | server 残り | coordinators（5）・BotTurnOrchestrator・イベントオーケストレータ（game/room） | 完了（114 件） |
+| 7 | shared 残り | config/teamValidators・protocol のランタイムロジック（bombIdentity・socketEventBridge 等） | 完了（82 件） |
+| 8 | client 純ロジック | Vitest 導入＋appFlowReducer・time 系（ClockSyncService・SyncIntervalPolicy 等）・sync handler 系・culling | 完了（265 件） |
 
 ## 進捗の更新 (Progress Tracking)
 
