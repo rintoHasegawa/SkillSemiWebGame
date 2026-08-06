@@ -12,7 +12,7 @@
 
 | 区分 | 技術 |
 |---|---|
-| フロントエンド | Vite + Preact + TypeScript |
+| フロントエンド | Vite + React + TypeScript |
 | バックエンド | Node.js + TypeScript |
 | 通信 | Socket.IO (WebSocket) |
 | 描画 | Pixi.js (WebGL) |
@@ -47,7 +47,7 @@ pnpm --filter client dev
 pnpm --filter server dev
 ```
 
-詳細は [ENV_04_環境構築手順書.txt](docs/02_ENV/ENV_04_環境構築手順書.txt) を参照してください。
+詳細は [ENV_02_環境構築手順.md](docs/02_ENV/ENV_02_環境構築手順.md) を参照してください。
 
 ## デプロイ
 
@@ -58,9 +58,9 @@ pnpm --filter server dev
 
 | デプロイ先 | ドキュメント |
 |---|---|
-| Render | [ENV_09_Renderデプロイ手順.txt](docs/02_ENV/ENV_09_Renderデプロイ手順.txt) |
-| 研究室サーバ（Nginx + Docker） | [ENV_10_研究室サーバデプロイ手順書.txt](docs/02_ENV/ENV_10_研究室サーバデプロイ手順書.txt) |
-| 環境変数一覧 | [ENV_08_環境変数設定.txt](docs/02_ENV/ENV_08_環境変数設定.txt) |
+| Render | [ENV_10_Renderデプロイ手順.md](docs/02_ENV/ENV_10_Renderデプロイ手順.md) |
+| 研究室サーバ（Nginx + Docker） | [ENV_11_研究室サーバデプロイ手順.md](docs/02_ENV/ENV_11_研究室サーバデプロイ手順.md) |
+| 環境変数一覧 | [ENV_09_環境変数設定.md](docs/02_ENV/ENV_09_環境変数設定.md) |
 
 ## ドキュメント
 
@@ -68,44 +68,44 @@ pnpm --filter server dev
 
 | ドキュメント | 内容 |
 |---|---|
-| [GUIDE_01_ドキュメント作成ガイド.txt](docs/01_GUIDE/GUIDE_01_ドキュメント作成ガイド.txt) | ドキュメントの書き方・フォーマット規則 |
-| [GUIDE_02_ファイル命名規則.txt](docs/01_GUIDE/GUIDE_02_ファイル命名規則.txt) | ファイル・ディレクトリの命名規則 |
-| [GUIDE_03_Git運用ルール.txt](docs/01_GUIDE/GUIDE_03_Git運用ルール.txt) | ブランチ・コミットの運用ルール |
-| [GUIDE_04_コードコメント規則.txt](docs/01_GUIDE/GUIDE_04_コードコメント規則.txt) | コードコメントの書き方 |
-| [GUIDE_05_プロトコル追加手順.txt](docs/01_GUIDE/GUIDE_05_プロトコル追加手順.txt) | Socket.IOイベントの追加手順 |
+| [GUIDE_01_プロジェクト立ち上げフロー.md](docs/01_GUIDE/GUIDE_01_プロジェクト立ち上げフロー.md) | AIと協働するプロジェクト立ち上げの流れ |
+| [GUIDE_02_エージェント運用ルール.md](docs/01_GUIDE/GUIDE_02_エージェント運用ルール.md) | `/implement` のエージェントチーム運用 |
+| [GUIDE_03_チーム開発ルール.md](docs/01_GUIDE/GUIDE_03_チーム開発ルール.md) | 直列運用・セルフマージ等のチームルール |
+
+Git規約・ドキュメント書式・ファイル命名・コードコメント・プロトコル追加手順は [`.claude/rules/`](.claude/rules/) に定義されており、Claude Codeに自動ロードされます。
 
 ### 環境・構成
 
 | ドキュメント | 内容 |
 |---|---|
-| [ENV_01_環境構築・技術スタック.txt](docs/02_ENV/ENV_01_環境構築・技術スタック.txt) | 技術スタックとプロジェクト構成 |
-| [ENV_02_ディレクトリ構造.txt](docs/02_ENV/ENV_02_ディレクトリ構造.txt) | ソースコードのディレクトリ構造 |
-| [ENV_04_環境構築手順書.txt](docs/02_ENV/ENV_04_環境構築手順書.txt) | 開発環境のセットアップ手順 |
-| [ENV_05_Docker運用操作ガイド.txt](docs/02_ENV/ENV_05_Docker運用操作ガイド.txt) | Dockerの運用・操作コマンド |
+| [ENV_01_技術スタック.md](docs/02_ENV/ENV_01_技術スタック.md) | 技術スタックとプロジェクト構成 |
+| [ENV_02_環境構築手順.md](docs/02_ENV/ENV_02_環境構築手順.md) | 開発環境のセットアップ手順 |
+| [ENV_04_開発コマンド.md](docs/02_ENV/ENV_04_開発コマンド.md) | 日常の開発コマンド一覧 |
+| [ENV_05_Docker運用操作ガイド.md](docs/02_ENV/ENV_05_Docker運用操作ガイド.md) | Dockerの運用・操作コマンド |
 
 ### 仕様
 
 | ドキュメント | 内容 |
 |---|---|
-| [SPEC_01_ゲーム概要_画面遷移.txt](docs/04_SPEC/SPEC_01_ゲーム概要_画面遷移.txt) | ゲーム概要・画面遷移フロー |
-| [SPEC_02_ロビー仕様.txt](docs/04_SPEC/SPEC_02_ロビー仕様.txt) | ロビー画面の仕様 |
-| [SPEC_03_ゲームプレイ仕様.txt](docs/04_SPEC/SPEC_03_ゲームプレイ仕様.txt) | ゲームプレイの詳細仕様 |
-| [SPEC_04_HUD_UI仕様.txt](docs/04_SPEC/SPEC_04_HUD_UI仕様.txt) | HUD・UIの仕様 |
-| [SPEC_05_リザルト仕様.txt](docs/04_SPEC/SPEC_05_リザルト仕様.txt) | リザルト画面の仕様 |
+| [SPEC_01_ゲーム概要_画面遷移.md](docs/04_SPEC/SPEC_01_ゲーム概要_画面遷移.md) | ゲーム概要・画面遷移フロー |
+| [SPEC_02_ロビー仕様.md](docs/04_SPEC/SPEC_02_ロビー仕様.md) | ロビー画面の仕様 |
+| [SPEC_03_ゲームプレイ仕様.md](docs/04_SPEC/SPEC_03_ゲームプレイ仕様.md) | ゲームプレイの詳細仕様 |
+| [SPEC_04_HUD_UI仕様.md](docs/04_SPEC/SPEC_04_HUD_UI仕様.md) | HUD・UIの仕様 |
+| [SPEC_05_リザルト仕様.md](docs/04_SPEC/SPEC_05_リザルト仕様.md) | リザルト画面の仕様 |
 
 ### 技術詳細
 
 | ドキュメント | 内容 |
 |---|---|
-| [TECH_01_通信最適化.txt](docs/05_TECH/TECH_01_通信最適化.txt) | 通信量削減・最適化の実装方針 |
-| [TECH_02_時刻同期_ラグ対策.txt](docs/05_TECH/TECH_02_時刻同期_ラグ対策.txt) | 時刻同期・ラグ補正の実装方針 |
-| [TECH_03_描画最適化.txt](docs/05_TECH/TECH_03_描画最適化.txt) | 描画パフォーマンス最適化の実装方針 |
+| [TECH_01_通信最適化.md](docs/05_TECH/TECH_01_通信最適化.md) | 通信量削減・最適化の実装方針 |
+| [TECH_02_時刻同期_ラグ対策.md](docs/05_TECH/TECH_02_時刻同期_ラグ対策.md) | 時刻同期・ラグ補正の実装方針 |
+| [TECH_03_描画最適化.md](docs/05_TECH/TECH_03_描画最適化.md) | 描画パフォーマンス最適化の実装方針 |
 
 ### テスト
 
 | ドキュメント | 内容 |
 |---|---|
-| [TEST_01_負荷テスト仕様.txt](docs/06_TEST/TEST_01_負荷テスト仕様.txt) | 負荷テストの仕様・実行手順 |
+| [TEST_01_負荷テスト仕様.md](docs/06_TEST/TEST_01_負荷テスト仕様.md) | 負荷テストの仕様・実行手順 |
 
 ## 作者
 

@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit|Glob|Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/restrict_repo_access.py"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash .claude/hooks/check_sync.sh", "timeout": 10 }
+        ]
+      }
+    ]
+  }
+}

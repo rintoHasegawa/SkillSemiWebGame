@@ -31,3 +31,5 @@ coverage/
 
 # Unignore packages (Fix for parent gitignore)
 !packages/
+# Claude Code 個人設定 (GUIDE_03)
+.claude/settings.local.json
