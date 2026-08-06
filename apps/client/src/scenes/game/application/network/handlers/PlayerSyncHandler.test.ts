@@ -4,7 +4,7 @@
  * 生成種別の分岐・自分自身の除外・再生成と削除の副作用を検証する
  */
 import { Container } from "pixi.js";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import {
@@ -48,6 +48,10 @@ const createHandler = (myId = "me") => {
 
   return { handler, playerRepository, addedChildren, removedChildren };
 };
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("PlayerSyncHandler", () => {
   it("新規参加プレイヤーをリポジトリへ登録すること", () => {

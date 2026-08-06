@@ -259,8 +259,9 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
       { id: "socket-2", x: 1.23456, y: 2.98765 },
     ]);
 
-    expect(filterEvent(calls, protocol.SocketEvents.UPDATE_PLAYERS)[0]?.payload)
-      .toEqual([{ id: "socket-2", x: 1.23, y: 2.99 }]);
+    expect(
+      filterEvent(calls, protocol.SocketEvents.UPDATE_PLAYERS)[0]?.payload,
+    ).toEqual([{ id: "socket-2", x: 1.23, y: 2.99 }]);
   });
 
   it("受信者自身の座標はUPDATE_PLAYERSへ含めないこと", () => {
@@ -490,7 +491,8 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
       { id: "socket-unknown", x: 1, y: 1 },
     ]);
 
-    expect(filterEvent(calls, protocol.SocketEvents.UPDATE_PLAYERS)[0]?.payload)
-      .toEqual([{ id: "socket-unknown", x: 1, y: 1 }]);
+    expect(
+      filterEvent(calls, protocol.SocketEvents.UPDATE_PLAYERS)[0]?.payload,
+    ).toEqual([{ id: "socket-unknown", x: 1, y: 1 }]);
   });
 });

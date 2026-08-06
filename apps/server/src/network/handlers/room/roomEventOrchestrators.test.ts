@@ -15,6 +15,10 @@ import {
   logScopes,
   roomUseCaseLogEvents,
 } from "@server/logging/index";
+import type {
+  LobbySettingsUpdateEventRoomUseCasePort,
+  SelectTeamEventRoomUseCasePort,
+} from "@server/network/types/connectionPorts";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 import {
   handleJoinRoomEvent,
@@ -69,63 +73,73 @@ const createOutputStub = () => {
   } satisfies RoomOutputAdapter;
 };
 
+let logSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+type LobbySettingsDepsParams = {
+  currentRoom: domain.room.Room | undefined;
+  updatedRoom: domain.room.Room | undefined;
+};
+
+/** オーナー参照と更新結果を固定した依存集合スタブを生成する */
+const createLobbySettingsDeps = ({
+  currentRoom,
+  updatedRoom,
+}: LobbySettingsDepsParams) => {
+  return {
+    socketId: "socket-1",
+    roomManager: {
+      getRoomByOwnerId: vi.fn<
+        LobbySettingsUpdateEventRoomUseCasePort["getRoomByOwnerId"]
+      >(() => currentRoom),
+      updateLobbySettings: vi.fn<
+        LobbySettingsUpdateEventRoomUseCasePort["updateLobbySettings"]
+      >(() => updatedRoom),
+    },
+    output: createOutputStub(),
+  };
+};
+
 describe("handleLobbySettingsUpdateEvent", () => {
-  beforeEach(() => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("設定が変化した場合は更新後ルームを全員へ配信すること", () => {
-    const room = createRoom();
     const updatedRoom = createRoom({ targetPlayerCount: 8 });
-    const output = createOutputStub();
+    const deps = createLobbySettingsDeps({
+      currentRoom: createRoom(),
+      updatedRoom,
+    });
 
-    handleLobbySettingsUpdateEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByOwnerId: vi.fn(() => room),
-          updateLobbySettings: vi.fn(() => updatedRoom),
-        },
-        output,
-      },
-      {
-        targetPlayerCount: 8,
-        fieldSizePreset: "MEDIUM",
-        teamAssignmentMode: "random",
-      },
-    );
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 8,
+      fieldSizePreset: "MEDIUM",
+      teamAssignmentMode: "random",
+    });
 
-    expect(output.publishRoomUpdateToRoom).toHaveBeenCalledWith(
+    expect(deps.output.publishRoomUpdateToRoom).toHaveBeenCalledWith(
       "room-1",
       updatedRoom,
     );
   });
 
   it("受信した設定値でルーム更新を依頼すること", () => {
-    const room = createRoom();
-    const updateLobbySettings = vi.fn(() => createRoom());
+    const deps = createLobbySettingsDeps({
+      currentRoom: createRoom(),
+      updatedRoom: createRoom(),
+    });
 
-    handleLobbySettingsUpdateEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByOwnerId: vi.fn(() => room),
-          updateLobbySettings,
-        },
-        output: createOutputStub(),
-      },
-      {
-        targetPlayerCount: 8,
-        fieldSizePreset: "LARGE",
-        teamAssignmentMode: "player_select",
-      },
-    );
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 8,
+      fieldSizePreset: "LARGE",
+      teamAssignmentMode: "player_select",
+    });
 
-    expect(updateLobbySettings).toHaveBeenCalledWith(
+    expect(deps.roomManager.updateLobbySettings).toHaveBeenCalledWith(
       "room-1",
       8,
       "LARGE",
@@ -134,210 +148,131 @@ describe("handleLobbySettingsUpdateEvent", () => {
   });
 
   it("オーナーのルームが無い場合は更新しないこと", () => {
-    const updateLobbySettings = vi.fn(() => createRoom());
-    const output = createOutputStub();
+    const deps = createLobbySettingsDeps({
+      currentRoom: undefined,
+      updatedRoom: createRoom(),
+    });
 
-    handleLobbySettingsUpdateEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByOwnerId: vi.fn(() => undefined),
-          updateLobbySettings,
-        },
-        output,
-      },
-      {
-        targetPlayerCount: 8,
-        fieldSizePreset: "LARGE",
-        teamAssignmentMode: "random",
-      },
-    );
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 8,
+      fieldSizePreset: "LARGE",
+      teamAssignmentMode: "random",
+    });
 
-    expect(updateLobbySettings).not.toHaveBeenCalled();
-    expect(output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+    expect(deps.roomManager.updateLobbySettings).not.toHaveBeenCalled();
+    expect(deps.output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
   });
 
   it("全設定値が現在値と同じ場合は更新も配信もしないこと", () => {
-    const updateLobbySettings = vi.fn(() => createRoom());
-    const output = createOutputStub();
+    const deps = createLobbySettingsDeps({
+      currentRoom: createRoom(),
+      updatedRoom: createRoom(),
+    });
 
-    handleLobbySettingsUpdateEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByOwnerId: vi.fn(() => createRoom()),
-          updateLobbySettings,
-        },
-        output,
-      },
-      {
-        targetPlayerCount: 4,
-        fieldSizePreset: "MEDIUM",
-        teamAssignmentMode: "random",
-      },
-    );
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 4,
+      fieldSizePreset: "MEDIUM",
+      teamAssignmentMode: "random",
+    });
 
-    expect(updateLobbySettings).not.toHaveBeenCalled();
-    expect(output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+    expect(deps.roomManager.updateLobbySettings).not.toHaveBeenCalled();
+    expect(deps.output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
   });
 
   it("チーム割り当て方式だけが変化した場合も更新すること", () => {
-    const updateLobbySettings = vi.fn(() => createRoom());
+    const deps = createLobbySettingsDeps({
+      currentRoom: createRoom(),
+      updatedRoom: createRoom(),
+    });
 
-    handleLobbySettingsUpdateEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByOwnerId: vi.fn(() => createRoom()),
-          updateLobbySettings,
-        },
-        output: createOutputStub(),
-      },
-      {
-        targetPlayerCount: 4,
-        fieldSizePreset: "MEDIUM",
-        teamAssignmentMode: "player_select",
-      },
-    );
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 4,
+      fieldSizePreset: "MEDIUM",
+      teamAssignmentMode: "player_select",
+    });
 
-    expect(updateLobbySettings).toHaveBeenCalled();
+    expect(deps.roomManager.updateLobbySettings).toHaveBeenCalled();
   });
 
   it("更新結果が取得できない場合は配信しないこと", () => {
-    const output = createOutputStub();
+    const deps = createLobbySettingsDeps({
+      currentRoom: createRoom(),
+      updatedRoom: undefined,
+    });
 
-    handleLobbySettingsUpdateEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByOwnerId: vi.fn(() => createRoom()),
-          updateLobbySettings: vi.fn(() => undefined),
-        },
-        output,
-      },
-      {
-        targetPlayerCount: 8,
-        fieldSizePreset: "MEDIUM",
-        teamAssignmentMode: "random",
-      },
-    );
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 8,
+      fieldSizePreset: "MEDIUM",
+      teamAssignmentMode: "random",
+    });
 
-    expect(output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+    expect(deps.output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
   });
 });
 
+/** チーム選択結果を固定した依存集合スタブを生成する */
+const createSelectTeamDeps = (result: SelectTeamResult) => {
+  return {
+    socketId: "socket-1",
+    roomManager: {
+      // 本調停は getRoomByPlayerId を呼ばないためポート充足用の固定値とする
+      getRoomByPlayerId: vi.fn<
+        SelectTeamEventRoomUseCasePort["getRoomByPlayerId"]
+      >(() => createRoom()),
+      selectTeam: vi.fn<SelectTeamEventRoomUseCasePort["selectTeam"]>(
+        () => result,
+      ),
+    },
+    output: createOutputStub(),
+  };
+};
+
 describe("handleSelectTeamEvent", () => {
-  beforeEach(() => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("選択が成立した場合は更新後ルームを全員へ配信すること", () => {
     const room = createRoom();
-    const output = createOutputStub();
-    const result: SelectTeamResult = { status: "ok", room };
+    const deps = createSelectTeamDeps({ status: "ok", room });
 
-    handleSelectTeamEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByPlayerId: vi.fn(() => room),
-          selectTeam: vi.fn(() => result),
-        },
-        output,
-      },
-      { preferredTeamId: 1 },
+    handleSelectTeamEvent(deps, { preferredTeamId: 1 });
+
+    expect(deps.output.publishRoomUpdateToRoom).toHaveBeenCalledWith(
+      "room-1",
+      room,
     );
-
-    expect(output.publishRoomUpdateToRoom).toHaveBeenCalledWith("room-1", room);
   });
 
   it("受信した希望チームIDで選択処理を依頼すること", () => {
-    const room = createRoom();
-    const selectTeam = vi.fn<() => SelectTeamResult>(() => ({
-      status: "ok",
-      room,
-    }));
+    const deps = createSelectTeamDeps({ status: "ok", room: createRoom() });
 
-    handleSelectTeamEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByPlayerId: vi.fn(() => room),
-          selectTeam,
-        },
-        output: createOutputStub(),
-      },
-      { preferredTeamId: 2 },
-    );
+    handleSelectTeamEvent(deps, { preferredTeamId: 2 });
 
-    expect(selectTeam).toHaveBeenCalledWith("socket-1", 2);
+    expect(deps.roomManager.selectTeam).toHaveBeenCalledWith("socket-1", 2);
   });
 
   it("チーム満員の場合は拒否通知を送ること", () => {
-    const output = createOutputStub();
+    const deps = createSelectTeamDeps({ status: "team_full", teamId: 3 });
 
-    handleSelectTeamEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByPlayerId: vi.fn(() => createRoom()),
-          selectTeam: vi.fn<() => SelectTeamResult>(() => ({
-            status: "team_full",
-            teamId: 3,
-          })),
-        },
-        output,
-      },
-      { preferredTeamId: 3 },
+    handleSelectTeamEvent(deps, { preferredTeamId: 3 });
+
+    expect(deps.output.publishSelectTeamRejectedToSocket).toHaveBeenCalledWith(
+      3,
     );
-
-    expect(output.publishSelectTeamRejectedToSocket).toHaveBeenCalledWith(3);
   });
 
   it("チーム満員の場合はルーム更新を配信しないこと", () => {
-    const output = createOutputStub();
+    const deps = createSelectTeamDeps({ status: "team_full", teamId: 3 });
 
-    handleSelectTeamEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByPlayerId: vi.fn(() => createRoom()),
-          selectTeam: vi.fn<() => SelectTeamResult>(() => ({
-            status: "team_full",
-            teamId: 3,
-          })),
-        },
-        output,
-      },
-      { preferredTeamId: 3 },
-    );
+    handleSelectTeamEvent(deps, { preferredTeamId: 3 });
 
-    expect(output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+    expect(deps.output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
   });
 
   it("対象が見つからない場合は何も配信しないこと", () => {
-    const output = createOutputStub();
+    const deps = createSelectTeamDeps({ status: "not_found" });
 
-    handleSelectTeamEvent(
-      {
-        socketId: "socket-1",
-        roomManager: {
-          getRoomByPlayerId: vi.fn(() => undefined),
-          selectTeam: vi.fn<() => SelectTeamResult>(() => ({
-            status: "not_found",
-          })),
-        },
-        output,
-      },
-      { preferredTeamId: null },
-    );
+    handleSelectTeamEvent(deps, { preferredTeamId: null });
 
-    expect(output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
-    expect(output.publishSelectTeamRejectedToSocket).not.toHaveBeenCalled();
+    expect(deps.output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+    expect(deps.output.publishSelectTeamRejectedToSocket).not.toHaveBeenCalled();
   });
 });
 
@@ -358,9 +293,7 @@ const createJoinDeps = ({ status }: JoinDepsParams) => {
       ensureGameManagerForRoom: vi.fn<(roomId: string) => void>(),
     },
     output: createOutputStub(),
-    joinRoom: vi.fn<(roomId: string) => Promise<void>>(() =>
-      Promise.resolve(),
-    ),
+    joinRoom: vi.fn<(roomId: string) => Promise<void>>(() => Promise.resolve()),
     room,
   };
 };
@@ -371,16 +304,6 @@ const joinPayload: domain.room.JoinRoomPayload = {
 };
 
 describe("handleJoinRoomEvent", () => {
-  let logSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("参加成功時はソケットをルームへ参加させること", async () => {
     const deps = createJoinDeps({ status: "joined" });
 
@@ -481,8 +404,9 @@ describe("handleJoinRoomEvent", () => {
     await handleJoinRoomEvent(joinedDeps, joinPayload);
     await handleJoinRoomEvent(rejectedDeps, joinPayload);
 
-    expect(joinedDeps.runtimeRegistry.ensureGameManagerForRoom)
-      .toHaveBeenCalledWith("room-1");
+    expect(
+      joinedDeps.runtimeRegistry.ensureGameManagerForRoom,
+    ).toHaveBeenCalledWith("room-1");
     expect(
       rejectedDeps.runtimeRegistry.ensureGameManagerForRoom,
     ).not.toHaveBeenCalled();

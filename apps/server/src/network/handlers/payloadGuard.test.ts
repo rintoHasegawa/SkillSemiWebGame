@@ -35,17 +35,17 @@ const createRecordingValidator = () => {
   return { validator, receivedPayloads };
 };
 
+let logSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("createPayloadGuard.isValidPayload", () => {
-  let logSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    logSpy.mockRestore();
-  });
-
   it("検証関数がtrueを返す場合はtrueを返すこと", () => {
     const guard = createPayloadGuard("socket-1");
 
@@ -209,16 +209,6 @@ describe("createPayloadGuard.isValidPayload", () => {
 });
 
 describe("createPayloadGuard.guardOnEvent", () => {
-  let logSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    logSpy.mockRestore();
-  });
-
   it("イベントを束縛したガード関数を返すこと", () => {
     const guard = createPayloadGuard("socket-1");
 

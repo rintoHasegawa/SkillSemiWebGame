@@ -176,16 +176,18 @@ const createDeps = ({
   };
 };
 
+let logSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+  vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("handlePingEvent", () => {
-  beforeEach(() => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("受信したクライアント時刻とサーバー時刻でPONGを返すこと", () => {
     const deps = createDeps({});
 
@@ -207,15 +209,6 @@ describe("handlePingEvent", () => {
 });
 
 describe("handleStartGameEvent", () => {
-  beforeEach(() => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("要求プリセットを反映してセッションを開始すること", () => {
     const gameManager = createGameManagerStub();
     const deps = createDeps({ room: createRoom(), gameManager });
@@ -252,15 +245,6 @@ describe("handleStartGameEvent", () => {
 });
 
 describe("handleReadyForGameEvent", () => {
-  beforeEach(() => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("ランタイム解決時は現在プレイヤー一覧を送ること", () => {
     const gameManager = createGameManagerStub();
     gameManager.getRoomPlayers.mockReturnValue([
@@ -285,17 +269,6 @@ describe("handleReadyForGameEvent", () => {
 });
 
 describe("handleMoveEvent", () => {
-  let logSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("量子化した座標で移動を適用すること", () => {
     const gameManager = createGameManagerStub();
     const deps = createDeps({ room: createRoom(), gameManager });
@@ -339,17 +312,6 @@ describe("handleMoveEvent", () => {
 });
 
 describe("handlePlaceBombEvent", () => {
-  let logSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("設置した爆弾を他プレイヤーへ配信すること", () => {
     const gameManager = createGameManagerStub();
     const deps = createDeps({ room: createRoom(), gameManager });
@@ -439,17 +401,6 @@ describe("handlePlaceBombEvent", () => {
 });
 
 describe("handleBombHitReportEvent", () => {
-  let logSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("被弾報告を同一ルームの他プレイヤーへ配信すること", () => {
     const deps = createDeps({
       room: createRoom(),

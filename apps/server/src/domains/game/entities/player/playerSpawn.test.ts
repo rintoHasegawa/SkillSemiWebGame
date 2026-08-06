@@ -14,14 +14,14 @@ const { GRID_COLS, GRID_ROWS, TEAM_COUNT } = config.GAME_CONFIG;
 
 const mapSize = { gridCols: 10, gridRows: 10 };
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("createSpawnedPlayer", () => {
   beforeEach(() => {
     // ばらつきを0に固定して基準座標のみを検証できるようにする
     vi.spyOn(Math, "random").mockReturnValue(0.5);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it("Playerのインスタンスを返すこと", () => {
@@ -62,10 +62,6 @@ describe("createSpawnedPlayer", () => {
 describe("createSpawnedPlayer のチーム別基準座標", () => {
   beforeEach(() => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it("teamId0は左上（2,2）にスポーンすること", () => {
@@ -123,10 +119,6 @@ describe("createSpawnedPlayer のチーム別基準座標", () => {
 });
 
 describe("createSpawnedPlayer のばらつき加算", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("Math.randomが0のとき基準座標から-1された座標になること", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const player = createSpawnedPlayer("socket-1", "たろう", 0, mapSize);
@@ -159,10 +151,6 @@ describe("createSpawnedPlayer のばらつき加算", () => {
 });
 
 describe("createSpawnedPlayer の座標クランプ", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("上限を超える座標はgridCols-1へクランプされること", () => {
     vi.spyOn(Math, "random").mockReturnValue(1);
     const player = createSpawnedPlayer("socket-1", "たろう", 0, {
@@ -209,10 +197,6 @@ describe("createSpawnedPlayer のマップサイズ既定値", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("mapSize未指定の場合はconfigの既定グリッドを基準にすること", () => {
     const player = createSpawnedPlayer("socket-1", "たろう", 1);
 
@@ -233,10 +217,6 @@ describe("createSpawnedPlayer のマップサイズ既定値", () => {
 });
 
 describe("createSpawnedPlayer の初期位置保持", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("initialXがスポーン後のxと一致すること", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.25);
     const player = createSpawnedPlayer("socket-1", "たろう", 0, mapSize);

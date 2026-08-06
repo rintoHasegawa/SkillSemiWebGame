@@ -118,9 +118,12 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
   it("AOI内の未送信爆弾を受信者へ送信すること", () => {
     const { service, calls } = setupService();
 
-    service.syncVisibleBombsByViewer("room-1", "socket-1", createPlayer("socket-1"), [
-      createBomb(),
-    ]);
+    service.syncVisibleBombsByViewer(
+      "room-1",
+      "socket-1",
+      createPlayer("socket-1"),
+      [createBomb()],
+    );
 
     expect(calls).toEqual([
       {

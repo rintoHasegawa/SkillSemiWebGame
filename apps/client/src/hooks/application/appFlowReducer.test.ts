@@ -194,8 +194,11 @@ describe("appFlowReducer", () => {
       { type: "setPlaying" },
     );
 
-    expect({ room: next.room, myId: next.myId, playerName: next.playerName })
-      .toEqual({ room, myId: "socket-1", playerName: "たろう" });
+    expect({
+      room: next.room,
+      myId: next.myId,
+      playerName: next.playerName,
+    }).toEqual({ room, myId: "socket-1", playerName: "たろう" });
   });
 
   it("setResult で結果を設定しリザルトへ遷移すること", () => {
