@@ -1,0 +1,513 @@
+/**
+ * gameEventOrchestrators.test
+ * ゲーム受信イベント調停の現行挙動を固定する characterization test
+ * ユースケースへの入力値変換とランタイム未解決時のログ分岐を検証する
+ */
+import { contracts as protocol, domain } from "@repo/shared";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type {
+  RoomPhaseTransitionResult,
+  RoomScopedGamePort,
+} from "@server/domains/room/application/ports/roomUseCasePorts";
+import { logResults, logScopes } from "@server/logging/index";
+import type { GameOutputAdapter } from "./createGameOutputAdapter";
+import {
+  handleBombHitReportEvent,
+  handleMoveEvent,
+  handlePingEvent,
+  handlePlaceBombEvent,
+  handleReadyForGameEvent,
+  handleStartGameEvent,
+  type GameEventOrchestratorDeps,
+} from "./gameEventOrchestrators";
+
+const FIXED_NOW_MS = 1_700_000_000_000;
+
+/** テスト用のルーム状態を生成する */
+const createRoom = (): domain.room.Room => {
+  return {
+    roomId: "room-1",
+    ownerId: "socket-1",
+    players: [
+      {
+        id: "socket-1",
+        name: "name-1",
+        isOwner: true,
+        isReady: false,
+        preferredTeamId: null,
+      },
+    ],
+    status: domain.room.RoomPhase.WAITING,
+    maxPlayers: 100,
+    fieldSizePreset: "MEDIUM",
+    teamAssignmentMode: "random",
+  };
+};
+
+type GameManagerStubParams = {
+  shouldBroadcastBombPlaced?: boolean;
+  shouldBroadcastBombHitReport?: boolean;
+};
+
+/** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
+const createGameManagerStub = ({
+  shouldBroadcastBombPlaced = true,
+  shouldBroadcastBombHitReport = true,
+}: GameManagerStubParams = {}) => {
+  return {
+    startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
+    getRoomStartTime: vi.fn<RoomScopedGamePort["getRoomStartTime"]>(
+      () => undefined,
+    ),
+    getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
+      () => undefined,
+    ),
+    getRoomPlayers: vi.fn<RoomScopedGamePort["getRoomPlayers"]>(() => []),
+    movePlayer: vi.fn<RoomScopedGamePort["movePlayer"]>(),
+    shouldBroadcastBombPlaced: vi.fn<
+      RoomScopedGamePort["shouldBroadcastBombPlaced"]
+    >(() => shouldBroadcastBombPlaced),
+    issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
+      () => "bomb-1",
+    ),
+    registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
+    getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 2),
+    getActiveBombSnapshots: vi.fn<
+      RoomScopedGamePort["getActiveBombSnapshots"]
+    >(() => []),
+    shouldBroadcastBombHitReport: vi.fn<
+      RoomScopedGamePort["shouldBroadcastBombHitReport"]
+    >(() => shouldBroadcastBombHitReport),
+    recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
+    removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
+    replaceDisconnectedPlayerWithBot: vi.fn<
+      RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
+    >(() => false),
+  } satisfies RoomScopedGamePort;
+};
+
+/** 送信内容を記録するゲーム出力アダプタースタブを生成する */
+const createOutputStub = () => {
+  return {
+    publishPongToSocket: vi.fn<GameOutputAdapter["publishPongToSocket"]>(),
+    publishUpdatePlayersToRoom: vi.fn<
+      GameOutputAdapter["publishUpdatePlayersToRoom"]
+    >(),
+    publishMapCellUpdatesToRoom: vi.fn<
+      GameOutputAdapter["publishMapCellUpdatesToRoom"]
+    >(),
+    publishCurrentHurricanesToRoom: vi.fn<
+      GameOutputAdapter["publishCurrentHurricanesToRoom"]
+    >(),
+    publishUpdateHurricanesToRoom: vi.fn<
+      GameOutputAdapter["publishUpdateHurricanesToRoom"]
+    >(),
+    publishGameEndToRoom: vi.fn<GameOutputAdapter["publishGameEndToRoom"]>(),
+    publishGameResultToRoom: vi.fn<
+      GameOutputAdapter["publishGameResultToRoom"]
+    >(),
+    publishGameStartToRoom: vi.fn<GameOutputAdapter["publishGameStartToRoom"]>(),
+    publishCurrentPlayersToSocket: vi.fn<
+      GameOutputAdapter["publishCurrentPlayersToSocket"]
+    >(),
+    publishGameStartToSocket: vi.fn<
+      GameOutputAdapter["publishGameStartToSocket"]
+    >(),
+    publishBombPlacedToOthersInRoom: vi.fn<
+      GameOutputAdapter["publishBombPlacedToOthersInRoom"]
+    >(),
+    publishBombPlacedAckToSocket: vi.fn<
+      GameOutputAdapter["publishBombPlacedAckToSocket"]
+    >(),
+    publishPlayerHitToOthersInRoom: vi.fn<
+      GameOutputAdapter["publishPlayerHitToOthersInRoom"]
+    >(),
+    publishPlayerHitToRoom: vi.fn<GameOutputAdapter["publishPlayerHitToRoom"]>(),
+    publishHurricaneHitToRoom: vi.fn<
+      GameOutputAdapter["publishHurricaneHitToRoom"]
+    >(),
+  } satisfies GameOutputAdapter;
+};
+
+type DepsParams = {
+  room?: domain.room.Room;
+  gameManager?: RoomScopedGamePort;
+};
+
+/** ゲームイベント調停で利用する依存集合スタブを生成する */
+const createDeps = ({
+  room,
+  gameManager,
+}: DepsParams): GameEventOrchestratorDeps & {
+  output: ReturnType<typeof createOutputStub>;
+} => {
+  const transition: RoomPhaseTransitionResult = room
+    ? { status: "updated", room }
+    : { status: "not_found" };
+
+  return {
+    socketId: "socket-1",
+    roomManager: {
+      getRoomByOwnerId: vi.fn<
+        (ownerId: string) => domain.room.Room | undefined
+      >(() => room),
+      getRoomByPlayerId: vi.fn<
+        (playerId: string) => domain.room.Room | undefined
+      >(() => room),
+      markRoomPlaying: vi.fn<(roomId: string) => RoomPhaseTransitionResult>(
+        () => transition,
+      ),
+      markRoomWaiting: vi.fn<(roomId: string) => RoomPhaseTransitionResult>(
+        () => transition,
+      ),
+      deleteRoom: vi.fn<(roomId: string) => boolean>(() => true),
+    },
+    runtimeRegistry: {
+      getGameManagerByRoomId: vi.fn<
+        (roomId: string) => RoomScopedGamePort | undefined
+      >(() => gameManager),
+      getGameManagerByPlayerId: vi.fn<
+        (playerId: string) => RoomScopedGamePort | undefined
+      >(() => gameManager),
+      cleanupGameManagerForRoom: vi.fn<(roomId: string) => void>(),
+    },
+    output: createOutputStub(),
+  };
+};
+
+describe("handlePingEvent", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("受信したクライアント時刻とサーバー時刻でPONGを返すこと", () => {
+    const deps = createDeps({});
+
+    handlePingEvent(deps, 123);
+
+    expect(deps.output.publishPongToSocket).toHaveBeenCalledWith({
+      clientTime: 123,
+      serverTime: FIXED_NOW_MS,
+    });
+  });
+
+  it("ランタイム解決を行わずにPONGを返すこと", () => {
+    const deps = createDeps({});
+
+    handlePingEvent(deps, 0);
+
+    expect(deps.roomManager.getRoomByPlayerId).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleStartGameEvent", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("要求プリセットを反映してセッションを開始すること", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleStartGameEvent(deps, {
+      targetPlayerCount: 8,
+      fieldSizePreset: "SMALL",
+    });
+
+    expect(gameManager.startRoomSession.mock.calls[0]?.[2]).toEqual({
+      fieldSizePreset: "SMALL",
+      gridCols: 24,
+      gridRows: 24,
+    });
+  });
+
+  it("要求人数を反映したプレイヤーIDでセッションを開始すること", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleStartGameEvent(deps, { targetPlayerCount: 8 });
+
+    expect(gameManager.startRoomSession.mock.calls[0]?.[0]).toHaveLength(8);
+  });
+
+  it("オーナーのルームが無い場合はセッションを開始しないこと", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: undefined, gameManager });
+
+    handleStartGameEvent(deps, {});
+
+    expect(gameManager.startRoomSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleReadyForGameEvent", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("ランタイム解決時は現在プレイヤー一覧を送ること", () => {
+    const gameManager = createGameManagerStub();
+    gameManager.getRoomPlayers.mockReturnValue([
+      { id: "socket-1", name: "name-1", x: 1, y: 2, teamId: 0 },
+    ]);
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleReadyForGameEvent(deps);
+
+    expect(deps.output.publishCurrentPlayersToSocket).toHaveBeenCalledWith([
+      { id: "socket-1", name: "name-1", teamId: 0, x: 1, y: 2 },
+    ]);
+  });
+
+  it("ランタイム未解決時は空のプレイヤー一覧を送ること", () => {
+    const deps = createDeps({ room: createRoom(), gameManager: undefined });
+
+    handleReadyForGameEvent(deps);
+
+    expect(deps.output.publishCurrentPlayersToSocket).toHaveBeenCalledWith([]);
+  });
+});
+
+describe("handleMoveEvent", () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("量子化した座標で移動を適用すること", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleMoveEvent(deps, { x: 1.234_5, y: 2.345_6 });
+
+    expect(gameManager.movePlayer).toHaveBeenCalledWith("socket-1", 1.23, 2.35);
+  });
+
+  it("ランタイム未解決時は移動を適用しないこと", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: undefined, gameManager });
+
+    handleMoveEvent(deps, { x: 1, y: 2 });
+
+    expect(gameManager.movePlayer).not.toHaveBeenCalled();
+  });
+
+  it("ランタイム未解決時はignored_missing_roomを記録すること", () => {
+    const deps = createDeps({ room: undefined, gameManager: undefined });
+
+    handleMoveEvent(deps, { x: 1, y: 2 });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: protocol.SocketEvents.MOVE,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "socket-1",
+    });
+  });
+
+  it("ランタイム解決時はignored_missing_roomを記録しないこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub(),
+    });
+
+    handleMoveEvent(deps, { x: 1, y: 2 });
+
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("handlePlaceBombEvent", () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("設置した爆弾を他プレイヤーへ配信すること", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handlePlaceBombEvent(deps, {
+      requestId: "req-1",
+      x: 3,
+      y: 4,
+      explodeAtElapsedMs: 5_000,
+    });
+
+    expect(deps.output.publishBombPlacedToOthersInRoom).toHaveBeenCalledWith(
+      "room-1",
+      "socket-1",
+      { bombId: "bomb-1", ownerTeamId: 2, x: 3, y: 4, explodeAtElapsedMs: 5_000 },
+    );
+  });
+
+  it("設置者本人へACKを返すこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub(),
+    });
+
+    handlePlaceBombEvent(deps, {
+      requestId: "req-1",
+      x: 3,
+      y: 4,
+      explodeAtElapsedMs: 5_000,
+    });
+
+    expect(deps.output.publishBombPlacedAckToSocket).toHaveBeenCalledWith(
+      "socket-1",
+      { requestId: "req-1", bombId: "bomb-1" },
+    );
+  });
+
+  it("重複排除判定に現在時刻を渡すこと", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handlePlaceBombEvent(deps, {
+      requestId: "req-1",
+      x: 3,
+      y: 4,
+      explodeAtElapsedMs: 5_000,
+    });
+
+    expect(gameManager.shouldBroadcastBombPlaced).toHaveBeenCalledWith(
+      "socket-1:req-1",
+      FIXED_NOW_MS,
+    );
+  });
+
+  it("重複要求の場合は配信しないこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({ shouldBroadcastBombPlaced: false }),
+    });
+
+    handlePlaceBombEvent(deps, {
+      requestId: "req-1",
+      x: 3,
+      y: 4,
+      explodeAtElapsedMs: 5_000,
+    });
+
+    expect(deps.output.publishBombPlacedToOthersInRoom).not.toHaveBeenCalled();
+  });
+
+  it("ランタイム未解決時はignored_missing_roomを記録すること", () => {
+    const deps = createDeps({ room: undefined, gameManager: undefined });
+
+    handlePlaceBombEvent(deps, {
+      requestId: "req-1",
+      x: 3,
+      y: 4,
+      explodeAtElapsedMs: 5_000,
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: protocol.SocketEvents.PLACE_BOMB,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "socket-1",
+    });
+  });
+});
+
+describe("handleBombHitReportEvent", () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("被弾報告を同一ルームの他プレイヤーへ配信すること", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub(),
+    });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(deps.output.publishPlayerHitToOthersInRoom).toHaveBeenCalledWith(
+      "room-1",
+      "socket-1",
+      { playerId: "socket-1" },
+    );
+  });
+
+  it("被弾報告を爆弾所有者のスタッツへ記録すること", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(gameManager.recordBombHitForOwner).toHaveBeenCalledWith("bomb-1");
+  });
+
+  it("重複排除判定に現在時刻を渡すこと", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(gameManager.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
+      "socket-1:bomb-1",
+      FIXED_NOW_MS,
+    );
+  });
+
+  it("重複報告の場合は配信しないこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({
+        shouldBroadcastBombHitReport: false,
+      }),
+    });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(deps.output.publishPlayerHitToOthersInRoom).not.toHaveBeenCalled();
+  });
+
+  it("ランタイム未解決時はignored_missing_roomを記録すること", () => {
+    const deps = createDeps({ room: undefined, gameManager: undefined });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: protocol.SocketEvents.BOMB_HIT_REPORT,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "socket-1",
+    });
+  });
+});
