@@ -1,8 +1,10 @@
 /**
  * bombHit.logic
  * 爆弾とプレイヤーの円当たり判定を行う純関数を提供する
- * 同チーム無効判定と二乗距離比較をまとめて扱う
+ * 同チーム無効判定と collision の重なり判定をまとめて扱う
  */
+import { isUnknownTeamId } from "../../../config/teamValidators";
+import { checkCircleOverlap } from "../collision";
 import type { BombHitCheckInput, BombHitCheckResult } from "./bombHit.type";
 
 /** 爆弾とプレイヤーの当たり判定を実行する */
@@ -10,16 +12,15 @@ export const checkBombHit = ({
   bomb,
   player,
 }: BombHitCheckInput): BombHitCheckResult => {
-  const isSameTeam = bomb.teamId === player.teamId;
-  const deltaX = bomb.x - player.x;
-  const deltaY = bomb.y - player.y;
-  const distanceSquared = deltaX * deltaX + deltaY * deltaY;
-  const sumRadius = bomb.radius + player.radius;
-  const thresholdSquared = sumRadius * sumRadius;
-  const isHit = !isSameTeam && distanceSquared < thresholdSquared;
+  // 未確定teamId（UNKNOWN_TEAM_ID）は同一チームの根拠にならないため同チーム扱いしない
+  const isSameTeam =
+    bomb.teamId === player.teamId && !isUnknownTeamId(bomb.teamId);
+
+  const { isOverlapping, distanceSquared, thresholdSquared } =
+    checkCircleOverlap({ circleA: bomb, circleB: player });
 
   return {
-    isHit,
+    isHit: !isSameTeam && isOverlapping,
     isSameTeam,
     distanceSquared,
     thresholdSquared,

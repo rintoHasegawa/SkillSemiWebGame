@@ -1,10 +1,11 @@
 /**
  * bombHit.logic.test
- * 爆弾とプレイヤーの円当たり判定の現行挙動を固定する characterization test
- * 同チーム除外・境界距離・半径0や負値の扱いを検証する
+ * 爆弾とプレイヤーの円当たり判定を検証する
+ * 同チーム除外・未確定teamIdの扱い・境界距離・半径0や負値の扱いを検証する
  */
 import { describe, expect, it } from "vitest";
 
+import { UNKNOWN_TEAM_ID } from "../../../config/gameConfig";
 import type { TeamCollisionCircle } from "./bombHit.type";
 import { checkBombHit } from "./bombHit.logic";
 
@@ -170,10 +171,57 @@ describe("checkBombHit", () => {
     expect(result.isHit).toBe(true);
   });
 
-  it("teamId が同じ -1 同士の場合は同チーム扱いで命中と判定しないこと", () => {
+  it("双方の teamId が未確定（-1）の場合は同チームと判定しないこと", () => {
     const result = checkBombHit({
-      bomb: createBomb({ teamId: -1 }),
-      player: createPlayer({ teamId: -1 }),
+      bomb: createBomb({ teamId: UNKNOWN_TEAM_ID }),
+      player: createPlayer({ teamId: UNKNOWN_TEAM_ID }),
+    });
+
+    expect(result.isSameTeam).toBe(false);
+  });
+
+  it("双方の teamId が未確定（-1）でも爆風内なら命中と判定すること", () => {
+    const result = checkBombHit({
+      bomb: createBomb({ teamId: UNKNOWN_TEAM_ID }),
+      player: createPlayer({ x: 1, y: 0, teamId: UNKNOWN_TEAM_ID }),
+    });
+
+    expect(result.isHit).toBe(true);
+  });
+
+  it("爆弾の teamId のみ未確定（-1）の場合は同チームと判定しないこと", () => {
+    const result = checkBombHit({
+      bomb: createBomb({ teamId: UNKNOWN_TEAM_ID }),
+      player: createPlayer({ teamId: 0 }),
+    });
+
+    expect(result.isSameTeam).toBe(false);
+    expect(result.isHit).toBe(true);
+  });
+
+  it("プレイヤーの teamId のみ未確定（-1）の場合は同チームと判定しないこと", () => {
+    const result = checkBombHit({
+      bomb: createBomb({ teamId: 0 }),
+      player: createPlayer({ teamId: UNKNOWN_TEAM_ID }),
+    });
+
+    expect(result.isSameTeam).toBe(false);
+    expect(result.isHit).toBe(true);
+  });
+
+  it("teamId が未確定（-1）でも爆風外なら命中と判定しないこと", () => {
+    const result = checkBombHit({
+      bomb: createBomb({ teamId: UNKNOWN_TEAM_ID }),
+      player: createPlayer({ x: 3, y: 0, teamId: UNKNOWN_TEAM_ID }),
+    });
+
+    expect(result.isHit).toBe(false);
+  });
+
+  it("有効な teamId が一致する場合は従来どおり同チームと判定すること", () => {
+    const result = checkBombHit({
+      bomb: createBomb({ teamId: 0 }),
+      player: createPlayer({ teamId: 0 }),
     });
 
     expect(result.isSameTeam).toBe(true);

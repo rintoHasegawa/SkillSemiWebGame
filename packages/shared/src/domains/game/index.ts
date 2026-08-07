@@ -10,6 +10,8 @@ export * as tick from "./tick";
 export * as player from "./player";
 /** グリッドマップサブドメインを再公開する */
 export * as gridMap from "./gridMap";
+/** 円当たり判定サブドメインを再公開する */
+export * as collision from "./collision";
 /** 爆弾当たり判定サブドメインを再公開する */
 export * as bombHit from "./bombHit";
 /** AOIサブドメインを再公開する */
