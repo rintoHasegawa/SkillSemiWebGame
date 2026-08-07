@@ -15,6 +15,7 @@ import {
   isPlaceBombPayload,
   isStartGamePayload,
 } from "@server/network/validation/socketPayloadValidators";
+import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { createSocketRegistrationContext } from "@server/network/handlers/registration";
 import type { GameOutputAdapter } from "./createGameOutputAdapter";
 import {
@@ -62,18 +63,29 @@ const gamePayloadValidators = {
   [protocol.SocketEvents.BOMB_HIT_REPORT]: isBombHitReportPayload,
 } as const;
 
+/** ゲームイベントハンドラ登録で受け取る入力パラメータ */
+export type RegisterGameHandlersParams = {
+  socket: Socket;
+  roomManager: GameEventRoomUseCasePort;
+  runtimeRegistry: GameEventRuntimeUseCasePort;
+  gameOutputAdapter: GameOutputAdapter;
+  roomOutputAdapter: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
+};
+
 /** ゲームイベント調停で利用する依存束を生成する */
-const createGameOrchestratorDeps = (
-  socket: Socket,
-  roomManager: GameEventRoomUseCasePort,
-  runtimeRegistry: GameEventRuntimeUseCasePort,
-  gameOutputAdapter: GameOutputAdapter,
-): GameEventOrchestratorDeps => {
+const createGameOrchestratorDeps = ({
+  socket,
+  roomManager,
+  runtimeRegistry,
+  gameOutputAdapter,
+  roomOutputAdapter,
+}: RegisterGameHandlersParams): GameEventOrchestratorDeps => {
   return {
     socketId: socket.id,
     roomManager,
     runtimeRegistry,
     output: gameOutputAdapter,
+    roomOutput: roomOutputAdapter,
   };
 };
 
@@ -155,19 +167,11 @@ const createReadyForGameEventDefinition = (
 };
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
-export const registerGameHandlers = (
-  socket: Socket,
-  roomManager: GameEventRoomUseCasePort,
-  runtimeRegistry: GameEventRuntimeUseCasePort,
-  gameOutputAdapter: GameOutputAdapter,
-) => {
-  const orchestratorDeps = createGameOrchestratorDeps(
-    socket,
-    roomManager,
-    runtimeRegistry,
-    gameOutputAdapter,
+export const registerGameHandlers = (params: RegisterGameHandlersParams) => {
+  const orchestratorDeps = createGameOrchestratorDeps(params);
+  const { onEvent, guardOnEvent } = createSocketRegistrationContext(
+    params.socket,
   );
-  const { onEvent, guardOnEvent } = createSocketRegistrationContext(socket);
 
   // 検証が必要なイベントを宣言的に登録する
   const pingEventDefinition = createPingEventDefinition(orchestratorDeps);

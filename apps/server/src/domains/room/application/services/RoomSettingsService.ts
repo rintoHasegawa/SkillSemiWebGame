@@ -2,6 +2,7 @@
  * RoomSettingsService
  * ロビー設定（ゲーム人数・フィールドサイズ・チーム割り当て方式）の更新処理を提供する
  * 不正なゲーム人数は反映せず，ログを残して更新を破棄する
+ * ゲーム開始時に確定したフィールドサイズの反映も担う
  */
 import { domain } from "@repo/shared";
 import { config } from "@server/config";
@@ -37,6 +38,21 @@ export class RoomSettingsService {
     room.targetPlayerCount = targetPlayerCount;
     room.fieldSizePreset = fieldSizePreset;
     room.teamAssignmentMode = teamAssignmentMode;
+    return room;
+  }
+
+  // ゲーム開始時に確定したフィールドサイズを反映する
+  // 開始直前はplayingへ遷移済みのため，updateLobbySettingsと違いフェーズは問わない
+  public applyFieldSizePreset(
+    roomId: string,
+    fieldSizePreset: domain.room.Room["fieldSizePreset"],
+  ): domain.room.Room | undefined {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      return undefined;
+    }
+
+    room.fieldSizePreset = fieldSizePreset;
     return room;
   }
 

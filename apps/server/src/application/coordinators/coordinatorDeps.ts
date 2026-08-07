@@ -3,6 +3,7 @@
  * コーディネータが利用する依存束ね型を定義する
  */
 import type {
+  ApplyFieldSizePresetPort,
   CleanupGameRuntimePort,
   DeleteRoomPort,
   DisconnectRoomPort,
@@ -15,7 +16,11 @@ import type { CoordinatorRuntimeDeps } from "./runtimeCoordinatorSupport";
 
 /** START_GAME調停で利用する依存集合 */
 export type StartGameCoordinatorDeps = {
-  roomManager: FindRoomByOwnerPort & RoomPhaseTransitionPort & DeleteRoomPort;
+  roomManager:
+    & FindRoomByOwnerPort
+    & RoomPhaseTransitionPort
+    & ApplyFieldSizePresetPort
+    & DeleteRoomPort;
   runtimeRegistry: FindGameByRoomPort & CleanupGameRuntimePort;
 };
 

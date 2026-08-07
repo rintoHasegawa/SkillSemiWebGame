@@ -2,7 +2,7 @@
  * payloadByScope
  * スコープごとのログペイロード型契約を提供する
  */
-import { contracts as protocol } from "@repo/shared";
+import { contracts as protocol, type FieldSizePreset } from "@repo/shared";
 import { gameDomainLogEvents, gameUseCaseLogEvents, roomDomainLogEvents, roomUseCaseLogEvents } from "../constants/eventNames";
 import { logResults } from "../constants/results";
 import { logScopes } from "../constants/scopes";
@@ -101,9 +101,19 @@ type GameUseCaseStartGameLogPayload = {
     | typeof logResults.IGNORED_NO_ROOM
     | typeof logResults.IGNORED_ALREADY_PLAYING
     | typeof logResults.IGNORED_ROOM_NOT_FOUND
+    | typeof logResults.IGNORED_MISSING_RUNTIME
     | typeof logResults.ACCEPTED;
   socketId: string;
   roomId?: string;
+  /** 開始したセッションの参加人数（accepted時のみ） */
+  totalPlayers?: number;
+  /** 開始時に確定したフィールドサイズ（accepted時のみ） */
+  fieldSizePreset?: FieldSizePreset;
+  /**
+   * playing遷移の取り消し結果（ignored_missing_runtime時のみ）
+   * RoomPhaseTransitionResultのstatusに対応する
+   */
+  rollbackStatus?: "updated" | "not_found" | "invalid_transition";
 };
 
 /** GameUseCaseのREADY_FOR_GAMEログ契約 */

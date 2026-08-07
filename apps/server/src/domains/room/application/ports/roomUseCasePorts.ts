@@ -96,6 +96,14 @@ export interface UpdateLobbySettingsPort {
   ): domain.room.Room | undefined;
 }
 
+/** ゲーム開始時に確定したフィールドサイズを反映する操作ポート */
+export interface ApplyFieldSizePresetPort {
+  applyFieldSizePreset(
+    roomId: string,
+    fieldSizePreset: domain.room.Room["fieldSizePreset"],
+  ): domain.room.Room | undefined;
+}
+
 /** チーム選択の結果 */
 export type SelectTeamResult =
   | { status: "ok"; room: domain.room.Room }

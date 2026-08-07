@@ -16,6 +16,7 @@ export const logResults = {
   IGNORED_DUPLICATE: "ignored_duplicate",
   IGNORED_INVALID_PAYLOAD: "ignored_invalid_payload",
   IGNORED_MISSING_ROOM: "ignored_missing_room",
+  IGNORED_MISSING_RUNTIME: "ignored_missing_runtime",
   IGNORED_NO_ROOM: "ignored_no_room",
   IGNORED_PLAYER_NOT_FOUND: "ignored_player_not_found",
   IGNORED_PLAYER_NOT_IN_SESSION: "ignored_player_not_in_session",

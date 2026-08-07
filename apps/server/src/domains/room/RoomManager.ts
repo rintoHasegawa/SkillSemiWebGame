@@ -80,6 +80,14 @@ export class RoomManager {
     return this.roomSettingsService.updateLobbySettings(roomId, targetPlayerCount, fieldSizePreset, teamAssignmentMode);
   }
 
+  // ゲーム開始時に確定したフィールドサイズを反映してルームを返す
+  public applyFieldSizePreset(
+    roomId: string,
+    fieldSizePreset: domain.room.Room["fieldSizePreset"],
+  ): domain.room.Room | undefined {
+    return this.roomSettingsService.applyFieldSizePreset(roomId, fieldSizePreset);
+  }
+
   // プレイヤーのチーム選択を更新する，チームが満員なら team_full を返す
   public selectTeam(
     playerId: string,

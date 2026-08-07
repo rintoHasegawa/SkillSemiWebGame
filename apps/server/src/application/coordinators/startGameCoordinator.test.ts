@@ -1,7 +1,8 @@
 /**
  * startGameCoordinator.test
- * START_GAME調停の現行挙動を固定する characterization test
+ * START_GAME調停の仕様適合を検証するテスト
  * ルーム未検出・状態遷移失敗の分岐，フィールド設定解決とBot補充，終了時の後始末を検証する
+ * ランタイム未解決時はwaitingへロールバックしROOM_UPDATEで通知する（Issue #291）
  */
 import { domain } from "@repo/shared";
 import type { FieldSizePreset } from "@repo/shared";
@@ -9,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { StartGameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
+  RoomOutputPort,
   RoomPhaseTransitionResult,
   RoomScopedGamePort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
@@ -17,6 +19,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
+import { RoomManager } from "@server/domains/room/RoomManager";
 import { startGameCoordinator } from "./startGameCoordinator";
 
 const FIXED_NOW_MS = 1_700_000_000_000;
@@ -91,17 +94,24 @@ const createGameManagerStub = (startTime?: number) => {
 type DepsParams = {
   room?: domain.room.Room;
   transitionResult?: RoomPhaseTransitionResult;
+  rollbackResult?: RoomPhaseTransitionResult;
   gameManager?: RoomScopedGamePort;
+  canApplyFieldSizePreset?: boolean;
 };
 
-/** ルーム管理とランタイム管理のスタブを生成する */
+/** ルーム管理・ランタイム管理・ルーム出力のスタブを生成する */
 const createDeps = ({
   room,
   transitionResult,
+  rollbackResult,
   gameManager,
+  canApplyFieldSizePreset = true,
 }: DepsParams) => {
   const resolvedTransition: RoomPhaseTransitionResult =
     transitionResult ??
+    (room ? { status: "updated", room } : { status: "not_found" });
+  const resolvedRollback: RoomPhaseTransitionResult =
+    rollbackResult ??
     (room ? { status: "updated", room } : { status: "not_found" });
 
   return {
@@ -113,8 +123,22 @@ const createDeps = ({
         () => resolvedTransition,
       ),
       markRoomWaiting: vi.fn<(roomId: string) => RoomPhaseTransitionResult>(
-        () => resolvedTransition,
+        () => resolvedRollback,
       ),
+      // 実サービスと同じく，反映したルームを返す（未検出時はundefined）
+      applyFieldSizePreset: vi.fn<
+        (
+          roomId: string,
+          fieldSizePreset: domain.room.Room["fieldSizePreset"],
+        ) => domain.room.Room | undefined
+      >((_roomId, fieldSizePreset) => {
+        if (!room || !canApplyFieldSizePreset) {
+          return undefined;
+        }
+
+        room.fieldSizePreset = fieldSizePreset;
+        return room;
+      }),
       deleteRoom: vi.fn<(roomId: string) => boolean>(() => true),
     },
     runtimeRegistry: {
@@ -122,6 +146,11 @@ const createDeps = ({
         (roomId: string) => RoomScopedGamePort | undefined
       >(() => gameManager),
       cleanupGameManagerForRoom: vi.fn<(roomId: string) => void>(),
+    },
+    roomOutput: {
+      publishRoomUpdateToRoom: vi.fn<
+        RoomOutputPort["publishRoomUpdateToRoom"]
+      >(),
     },
   };
 };
@@ -328,17 +357,73 @@ describe("startGameCoordinator", () => {
     });
   });
 
-  it("解決したプリセットをルーム状態へ書き戻すこと", () => {
+  it("解決したプリセットをルーム管理経由で反映すること", () => {
     const room = createRoom({ fieldSizePreset: "MEDIUM" });
+    const deps = createDeps({ room, gameManager: createGameManagerStub() });
 
     startGameCoordinator({
       ownerId: "socket-1",
       requestedFieldSizePreset: "XLARGE",
-      ...createDeps({ room, gameManager: createGameManagerStub() }),
+      ...deps,
       output: createOutputStub(),
     });
 
-    expect(room.fieldSizePreset).toBe("XLARGE");
+    expect(deps.roomManager.applyFieldSizePreset).toHaveBeenCalledWith(
+      "room-1",
+      "XLARGE",
+    );
+  });
+
+  it("プリセットが変化した場合はROOM_UPDATEで配信すること", () => {
+    const room = createRoom({ fieldSizePreset: "MEDIUM" });
+    const deps = createDeps({ room, gameManager: createGameManagerStub() });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      requestedFieldSizePreset: "XLARGE",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    expect(deps.roomOutput.publishRoomUpdateToRoom).toHaveBeenCalledWith(
+      "room-1",
+      expect.objectContaining({ fieldSizePreset: "XLARGE" }),
+    );
+  });
+
+  it("プリセットが変化しない場合はROOM_UPDATEを配信しないこと", () => {
+    const room = createRoom({ fieldSizePreset: "MEDIUM" });
+    const deps = createDeps({ room, gameManager: createGameManagerStub() });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      requestedFieldSizePreset: "MEDIUM",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    expect(deps.roomOutput.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+  });
+
+  it("プリセット反映がルーム未検出でもセッションは開始すること", () => {
+    const gameManager = createGameManagerStub();
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      requestedFieldSizePreset: "XLARGE",
+      ...createDeps({
+        room: createRoom({ fieldSizePreset: "MEDIUM" }),
+        gameManager,
+        canApplyFieldSizePreset: false,
+      }),
+      output: createOutputStub(),
+    });
+
+    expect(gameManager.startRoomSession.mock.calls[0]?.[2]).toEqual({
+      fieldSizePreset: "XLARGE",
+      gridCols: 54,
+      gridRows: 54,
+    });
   });
 
   it("開始受理時にプレイヤー数とプリセットを記録すること", () => {
@@ -450,7 +535,7 @@ describe("startGameCoordinator", () => {
     expect(output.publishGameStartToRoom).not.toHaveBeenCalled();
   });
 
-  it("ゲームランタイムが解決できない場合でもルームはplaying遷移済みであること", () => {
+  it("ゲームランタイムが解決できない場合はルームをwaitingへ戻すこと", () => {
     const deps = createDeps({ room: createRoom(), gameManager: undefined });
 
     startGameCoordinator({
@@ -459,8 +544,158 @@ describe("startGameCoordinator", () => {
       output: createOutputStub(),
     });
 
-    expect(deps.roomManager.markRoomPlaying).toHaveBeenCalledWith("room-1");
-    expect(deps.roomManager.markRoomWaiting).not.toHaveBeenCalled();
+    expect(deps.roomManager.markRoomWaiting).toHaveBeenCalledWith("room-1");
+  });
+
+  it("ゲームランタイムが解決できない場合はignored_missing_runtimeを記録すること", () => {
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...createDeps({ room: createRoom(), gameManager: undefined }),
+      output: createOutputStub(),
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.START_GAME,
+      result: logResults.IGNORED_MISSING_RUNTIME,
+      roomId: "room-1",
+      socketId: "socket-1",
+      rollbackStatus: "updated",
+    });
+  });
+
+  it("ゲームランタイムが解決できない場合はacceptedを記録しないこと", () => {
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...createDeps({ room: createRoom(), gameManager: undefined }),
+      output: createOutputStub(),
+    });
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      `[${logScopes.GAME_USE_CASE}]`,
+      expect.objectContaining({ result: logResults.ACCEPTED }),
+    );
+  });
+
+  it("ロールバック成功時はwaiting復帰をROOM_UPDATEで配信すること", () => {
+    const room = createRoom();
+    const deps = createDeps({ room, gameManager: undefined });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    expect(deps.roomOutput.publishRoomUpdateToRoom).toHaveBeenCalledWith(
+      "room-1",
+      room,
+    );
+  });
+
+  it("ロールバックがnot_foundの場合はrollbackStatusにnot_foundを記録すること", () => {
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...createDeps({
+        room: createRoom(),
+        rollbackResult: { status: "not_found" },
+        gameManager: undefined,
+      }),
+      output: createOutputStub(),
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.START_GAME,
+      result: logResults.IGNORED_MISSING_RUNTIME,
+      roomId: "room-1",
+      socketId: "socket-1",
+      rollbackStatus: "not_found",
+    });
+  });
+
+  it("ロールバックがnot_foundの場合はROOM_UPDATEを配信しないこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      rollbackResult: { status: "not_found" },
+      gameManager: undefined,
+    });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    expect(deps.roomOutput.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+  });
+
+  it("ロールバックがinvalid_transitionの場合はrollbackStatusを記録すること", () => {
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...createDeps({
+        room: createRoom(),
+        rollbackResult: { status: "invalid_transition" },
+        gameManager: undefined,
+      }),
+      output: createOutputStub(),
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.START_GAME,
+      result: logResults.IGNORED_MISSING_RUNTIME,
+      roomId: "room-1",
+      socketId: "socket-1",
+      rollbackStatus: "invalid_transition",
+    });
+  });
+
+  it("ロールバックがinvalid_transitionの場合はROOM_UPDATEを配信しないこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      rollbackResult: { status: "invalid_transition" },
+      gameManager: undefined,
+    });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    expect(deps.roomOutput.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+  });
+
+  it("ゲームランタイムが解決できない場合はプリセットを反映しないこと", () => {
+    const deps = createDeps({ room: createRoom(), gameManager: undefined });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      requestedFieldSizePreset: "XLARGE",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    expect(deps.roomManager.applyFieldSizePreset).not.toHaveBeenCalled();
+  });
+
+  it("ランタイム未解決時は実ルーム管理でも状態がwaitingへ戻ること", () => {
+    // Issue #291: playing のまま残ると以後のJOIN_ROOMが拒否され続けるため実体で検証する
+    const roomManager = new RoomManager();
+    roomManager.addPlayerToRoom("room-1", "socket-1", "name-1");
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      roomManager,
+      runtimeRegistry: {
+        getGameManagerByRoomId: () => undefined,
+        cleanupGameManagerForRoom: () => undefined,
+      },
+      output: createOutputStub(),
+      roomOutput: { publishRoomUpdateToRoom: vi.fn() },
+    });
+
+    expect(roomManager.getRoomById("room-1")?.status).toBe(
+      domain.room.RoomPhase.WAITING,
+    );
   });
 
   it("player_selectモードの場合は希望チームIDを渡すこと", () => {

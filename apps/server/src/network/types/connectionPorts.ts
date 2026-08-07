@@ -7,6 +7,7 @@ import type {
   DisconnectCoordinatorDeps,
 } from "@server/application/coordinators/coordinatorDeps";
 import type {
+  ApplyFieldSizePresetPort,
   CleanupGameRuntimePort,
   DeleteRoomPort,
   DisconnectRoomPort,
@@ -39,7 +40,7 @@ type ConnectionRuntimePort =
 export type GameEventRoomUseCasePort = Pick<
   ConnectionRoomPort,
   "getRoomByOwnerId" | "getRoomByPlayerId" | "markRoomPlaying" | "markRoomWaiting"
-> & DeleteRoomPort;
+> & ApplyFieldSizePresetPort & DeleteRoomPort;
 
 /** ゲームイベント調停で利用するランタイム依存ポート */
 export type GameEventRuntimeUseCasePort = Pick<
@@ -73,6 +74,7 @@ export type SocketConnectionRoomPort =
   & FindRoomByIdPort
   & DeleteRoomPort
   & UpdateLobbySettingsPort
+  & ApplyFieldSizePresetPort
   & SelectTeamPort;
 
 /** ソケット接続全体で利用するランタイム管理ポート集合 */
