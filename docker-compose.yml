@@ -20,6 +20,8 @@ services:
       - claude-config:/home/node/.claude
       # GitHub CLI の認証 (~/.config/gh)
       - gh-config:/home/node/.config/gh
+      # Claude Code CLI 本体 (~/.local/bin のリンクと ~/.local/share/claude の実体)
+      - claude-local:/home/node/.local
 
     # コマンドの上書き (コンテナを常時起動させる)
     command: sleep infinity
@@ -44,3 +46,4 @@ volumes:
   node_modules:
   claude-config:
   gh-config:
+  claude-local:
