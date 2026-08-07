@@ -8,7 +8,8 @@
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20",
       "pnpm": "latest"
-    }
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
   "customizations": {
@@ -27,11 +28,9 @@
     }
   },
 
-  // 【修正箇所】
-  // 1. sudo chown ... : node_modules の所有権を node ユーザーに強制変更
-  // 2. pnpm install   : その後、安全にインストールを実行
-  // 3. build          : 最後にビルド
-  "postCreateCommand": "sudo chown -R node:node /workspace/node_modules && pnpm install && pnpm --filter @repo/shared build",
+  // セットアップ処理は postcreate.sh に集約
+  // (所有権修正・認証情報の復元・gh 連携・pnpm install・shared ビルド)
+  "postCreateCommand": "bash .devcontainer/postcreate.sh",
 
   "remoteUser": "node"
 }
