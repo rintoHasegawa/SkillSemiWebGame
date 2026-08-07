@@ -23,6 +23,29 @@ VS Code の Dev Containers 機能を使用する．
 2. 「Dev Containers: Rebuild Container」を選択する．
 3. キャッシュを無視したい場合は「Rebuild Without Cache」を選択する．
 
+※ 認証情報（GitHub CLI / Claude Code）はボリュームに永続化されているため，Rebuild しても再ログインは不要である（次節参照）．
+
+### 認証情報の永続化 (Auth Persistence)
+
+GitHub CLI と Claude Code の認証情報は Docker の名前付きボリュームに保存され，コンテナを Rebuild しても消えない．
+
+| ボリューム名 | マウント先 | 内容 |
+| --- | --- | --- |
+| `claude-config` | `/home/node/.claude` | Claude Code の認証・設定・セッション履歴 |
+| `gh-config` | `/home/node/.config/gh` | GitHub CLI の認証 |
+
+- 環境変数 `CLAUDE_CONFIG_DIR=/home/node/.claude` により，Claude Code の設定ファイル一式がボリューム内に配置される（`docker-compose.yml` で定義）．
+- コンテナ作成時に `.devcontainer/postcreate.sh` が以下を自動実行する:
+  - ボリュームの所有権を `node` ユーザーに修正
+  - `.devcontainer/.auth-seed/` に退避された認証情報があれば，ボリュームが空のときのみ復元
+  - `gh` 認証済みの場合は `gh auth setup-git` を実行（git push/pull で gh の認証を使用）
+- `.devcontainer/.auth-seed/` は gitignore 済みの一時退避場所である．ボリュームへの復元が済んだら削除してよい．
+
+#### 注意点 (Cautions)
+
+- `docker volume rm claude-config gh-config` や `docker volume prune` を実行すると認証情報が消え，`gh auth login` と Claude Code のログインを再度行う必要がある．
+- ボリュームは初回ログイン後に自動的に内容が保存されるため，日常的な操作は不要である．
+
 ## 本番環境 (Production Environment)
 
 手動で Docker Compose コマンドを実行する．

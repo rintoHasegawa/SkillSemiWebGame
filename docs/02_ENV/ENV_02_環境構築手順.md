@@ -150,10 +150,23 @@ Dockerコンテナ起動完了後，定義済みのツールが正しく自動�
 - Hex Editor
 - GitHub Copilot
 
+### GitHub CLI の認証 (GitHub CLI Authentication)
+
+Issue・PR 操作に使用する GitHub CLI (`gh`) は devcontainer の feature として自動導入される．初回のみ認証を行う．
+
+```bash
+gh auth login
+```
+
+- 認証情報は Docker ボリューム（`gh-config`）に永続化されるため，コンテナを Rebuild しても再ログインは不要である．
+- git の credential helper 設定（`gh auth setup-git`）はコンテナ作成時に `postcreate.sh` が自動実行する．
+- ※ GitHub Projects を操作する場合は `gh auth refresh -s project` で `project` スコープを追加する．
+
 ### AI アシスタント設定 (AI Assistant Setup)
 
 - Claude Code
-  - コンテナ内のターミナルで `claude` コマンドを実行し，初回はログイン（認証）を行う．
+  - コンテナ内のターミナルで `claude` コマンドを実行し，初回のみログイン（認証）を行う．
+  - 認証情報・設定は Docker ボリューム（`claude-config`）に永続化されるため，コンテナを Rebuild しても再ログインは不要である（詳細は [ENV_05_Docker運用操作ガイド.md](ENV_05_Docker運用操作ガイド.md) の「認証情報の永続化」を参照）．
   - 運用ルールは `docs/01_GUIDE/GUIDE_02_エージェント運用ルール.md` を参照する．
 - GitHub Copilot
   - devcontainer に拡張機能が含まれるが，使用は任意である．
