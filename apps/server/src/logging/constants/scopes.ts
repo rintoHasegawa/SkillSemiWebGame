@@ -14,6 +14,7 @@ export const logScopes = {
   GAME_SESSION_LIFECYCLE_SERVICE: "GameSessionLifecycleService",
   ROOM_JOIN_SERVICE: "RoomJoinService",
   ROOM_EXIT_SERVICE: "RoomExitService",
+  ROOM_SETTINGS_SERVICE: "RoomSettingsService",
 } as const;
 
 /** ログ出力で利用するスコープ名型 */

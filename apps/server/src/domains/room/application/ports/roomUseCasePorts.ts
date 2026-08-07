@@ -100,6 +100,7 @@ export interface UpdateLobbySettingsPort {
 export type SelectTeamResult =
   | { status: "ok"; room: domain.room.Room }
   | { status: "team_full"; teamId: number }
+  | { status: "invalid_team" }
   | { status: "not_found" };
 
 /** チーム選択操作ポート */

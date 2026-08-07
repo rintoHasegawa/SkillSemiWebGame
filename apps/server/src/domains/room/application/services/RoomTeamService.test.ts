@@ -1,7 +1,8 @@
 /**
  * RoomTeamService.test
- * チーム選択サービスの現行挙動を固定する characterization test
- * status ユニオン（ok/team_full/not_found）の全分岐と上限境界を検証する
+ * チーム選択サービスの仕様適合を検証するテスト
+ * status ユニオン（ok/team_full/invalid_team/not_found）の全分岐と上限境界を検証する
+ * 有効チームIDは SPEC_03（0〜3の4チーム）を基準とする
  */
 import { domain } from "@repo/shared";
 import { describe, expect, it } from "vitest";
@@ -159,11 +160,81 @@ describe("RoomTeamService", () => {
     });
   });
 
-  it("チーム上限を超える値の指定でも上限判定のみで扱うこと", () => {
+  it.each([0, 1, 2, 3])(
+    "有効チームID %i の指定は範囲外として扱わないこと",
+    (teamId) => {
+      const { service } = createService({ targetPlayerCount: 8 });
+
+      expect(service.selectTeam("socket-1", teamId).status).not.toBe(
+        "invalid_team",
+      );
+    },
+  );
+
+  it("チーム数と同じ4の指定ではinvalid_teamを返すこと", () => {
+    const { service } = createService({ targetPlayerCount: 8 });
+
+    expect(service.selectTeam("socket-1", 4)).toEqual({
+      status: "invalid_team",
+    });
+  });
+
+  it("チーム範囲を超える値の指定ではinvalid_teamを返すこと", () => {
+    const { service } = createService({ targetPlayerCount: 8 });
+
+    expect(service.selectTeam("socket-1", 99)).toEqual({
+      status: "invalid_team",
+    });
+  });
+
+  it("チーム範囲を超える値の指定では希望チームIDを保存しないこと", () => {
     const { room, service } = createService({ targetPlayerCount: 8 });
 
     service.selectTeam("socket-1", 99);
 
-    expect(room.players[0]?.preferredTeamId).toBe(99);
+    expect(room.players[0]?.preferredTeamId).toBeNull();
+  });
+
+  it("負のチームIDの指定ではinvalid_teamを返すこと", () => {
+    const { service } = createService({ targetPlayerCount: 8 });
+
+    expect(service.selectTeam("socket-1", -1)).toEqual({
+      status: "invalid_team",
+    });
+  });
+
+  it("非整数のチームIDの指定ではinvalid_teamを返すこと", () => {
+    const { service } = createService({ targetPlayerCount: 8 });
+
+    expect(service.selectTeam("socket-1", 1.5)).toEqual({
+      status: "invalid_team",
+    });
+  });
+
+  it("NaNのチームIDの指定ではinvalid_teamを返すこと", () => {
+    const { service } = createService({ targetPlayerCount: 8 });
+
+    expect(service.selectTeam("socket-1", Number.NaN)).toEqual({
+      status: "invalid_team",
+    });
+  });
+
+  it("所属ルームがない場合でも範囲外チームIDはinvalid_teamを返すこと", () => {
+    const { service } = createService({ targetPlayerCount: 8 });
+
+    expect(service.selectTeam("socket-9", 99)).toEqual({
+      status: "invalid_team",
+    });
+  });
+
+  it("既存の希望チームは範囲外指定で書き換えられないこと", () => {
+    const { room, service } = createService({
+      targetPlayerCount: 8,
+      members: [{ id: "socket-1", preferredTeamId: 2 }],
+    });
+
+    service.selectTeam("socket-1", 99);
+
+    expect(room.players[0]?.preferredTeamId).toBe(2);
   });
 });

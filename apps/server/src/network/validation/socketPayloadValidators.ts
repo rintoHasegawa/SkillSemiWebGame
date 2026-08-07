@@ -11,6 +11,7 @@ import type {
   StartGameRequestPayload,
 } from "@repo/shared";
 import type { PingPayload } from "@repo/shared";
+import { config as sharedConfig } from "@repo/shared";
 import { isPlaceBombPayload as isValidPlaceBombPayload } from "@server/domains/game/entities/bomb/bombPayloadValidation";
 
 const isFiniteNumber = (value: unknown): value is number => {
@@ -19,6 +20,16 @@ const isFiniteNumber = (value: unknown): value is number => {
 
 const isNonEmptyString = (value: unknown): value is string => {
   return typeof value === "string" && value.trim().length > 0;
+};
+
+// 配列や null を除外し，フィールド参照可能なオブジェクトのみを通す
+const isPayloadObject = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+};
+
+// 人数指定に利用できる正の整数か判定する
+const isPositiveInteger = (value: unknown): value is number => {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
 };
 
 /** PINGイベントのペイロードが数値であるか判定する */
@@ -30,12 +41,11 @@ export const isPingPayload = (value: unknown): value is PingPayload => {
 export const isMovePayload = (
   value: unknown,
 ): value is domain.game.player.MovePayload => {
-  if (typeof value !== "object" || value === null) {
+  if (!isPayloadObject(value)) {
     return false;
   }
 
-  const candidate = value as Record<string, unknown>;
-  return isFiniteNumber(candidate.x) && isFiniteNumber(candidate.y);
+  return isFiniteNumber(value.x) && isFiniteNumber(value.y);
 };
 
 /** PLACE_BOMBイベントのペイロードが爆弾設置要求であるか判定する */
@@ -49,58 +59,34 @@ export const isPlaceBombPayload = (
 export const isBombHitReportPayload = (
   value: unknown,
 ): value is BombHitReportPayload => {
-  if (typeof value !== "object" || value === null) {
+  if (!isPayloadObject(value)) {
     return false;
   }
 
-  const candidate = value as Record<string, unknown>;
-  return isNonEmptyString(candidate.bombId);
+  return isNonEmptyString(value.bombId);
 };
 
 /** START_GAMEイベントのペイロードが開始要求情報であるか判定する */
 export const isStartGamePayload = (
   value: unknown,
 ): value is StartGameRequestPayload => {
-  if (typeof value !== "object" || value === null) {
+  if (!isPayloadObject(value)) {
     return false;
   }
 
-  const candidate = value as Record<string, unknown>;
-  const targetPlayerCount = candidate.targetPlayerCount;
-  const fieldSizePreset = candidate.fieldSizePreset;
+  const { targetPlayerCount, fieldSizePreset } = value;
 
-  if (targetPlayerCount === undefined) {
-    if (fieldSizePreset === undefined) {
-      return true;
-    }
-
-    return (
-      fieldSizePreset === "SMALL"
-      || fieldSizePreset === "MEDIUM"
-      || fieldSizePreset === "LARGE"
-      || fieldSizePreset === "XLARGE"
-    );
-  }
-
-  const isValidTargetPlayerCount = (
-    typeof targetPlayerCount === "number" &&
-    Number.isInteger(targetPlayerCount) &&
-    targetPlayerCount > 0
-  );
-
-  if (!isValidTargetPlayerCount) {
+  // 各項目は省略可能とし，指定された場合のみ内容を検証する
+  if (
+    targetPlayerCount !== undefined
+    && !isPositiveInteger(targetPlayerCount)
+  ) {
     return false;
-  }
-
-  if (fieldSizePreset === undefined) {
-    return true;
   }
 
   return (
-    fieldSizePreset === "SMALL"
-    || fieldSizePreset === "MEDIUM"
-    || fieldSizePreset === "LARGE"
-    || fieldSizePreset === "XLARGE"
+    fieldSizePreset === undefined
+    || sharedConfig.isFieldSizePreset(fieldSizePreset)
   );
 };
 
@@ -108,48 +94,39 @@ export const isStartGamePayload = (
 export const isLobbySettingsUpdatePayload = (
   value: unknown,
 ): value is LobbySettingsUpdatePayload => {
-  if (typeof value !== "object" || value === null) {
+  if (!isPayloadObject(value)) {
     return false;
   }
 
-  const candidate = value as Record<string, unknown>;
-  const { targetPlayerCount, fieldSizePreset, teamAssignmentMode } = candidate;
-
-  const isValidCount = (
-    typeof targetPlayerCount === "number" &&
-    Number.isInteger(targetPlayerCount) &&
-    targetPlayerCount > 0
-  );
-
-  const isValidPreset = (
-    fieldSizePreset === "SMALL"
-    || fieldSizePreset === "MEDIUM"
-    || fieldSizePreset === "LARGE"
-    || fieldSizePreset === "XLARGE"
-  );
+  const { targetPlayerCount, fieldSizePreset, teamAssignmentMode } = value;
 
   const isValidMode = (
     teamAssignmentMode === "random"
     || teamAssignmentMode === "player_select"
   );
 
-  return isValidCount && isValidPreset && isValidMode;
+  return (
+    isPositiveInteger(targetPlayerCount)
+    && sharedConfig.isFieldSizePreset(fieldSizePreset)
+    && isValidMode
+  );
 };
 
 /** SELECT_TEAMイベントのペイロードがチーム選択情報であるか判定する */
 export const isSelectTeamPayload = (
   value: unknown,
 ): value is SelectTeamPayload => {
-  if (typeof value !== "object" || value === null) {
+  if (!isPayloadObject(value)) {
     return false;
   }
 
-  const candidate = value as Record<string, unknown>;
-  const { preferredTeamId } = candidate;
+  const { preferredTeamId } = value;
 
+  // null（ランダム希望）以外は有効チーム範囲（0〜TEAM_COUNT-1）に限定する
   return (
     preferredTeamId === null
-    || (typeof preferredTeamId === "number" && Number.isInteger(preferredTeamId) && preferredTeamId >= 0)
+    || (typeof preferredTeamId === "number"
+      && sharedConfig.isKnownTeamId(preferredTeamId))
   );
 };
 
@@ -157,12 +134,9 @@ export const isSelectTeamPayload = (
 export const isJoinRoomPayload = (
   value: unknown,
 ): value is domain.room.JoinRoomPayload => {
-  if (typeof value !== "object" || value === null) {
+  if (!isPayloadObject(value)) {
     return false;
   }
 
-  const candidate = value as Record<string, unknown>;
-  return (
-    isNonEmptyString(candidate.roomId) && isNonEmptyString(candidate.playerName)
-  );
+  return isNonEmptyString(value.roomId) && isNonEmptyString(value.playerName);
 };

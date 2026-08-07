@@ -1,7 +1,8 @@
 /**
  * socketPayloadValidators.test
- * 受信ペイロード型ガード群の現行挙動を固定する characterization test
- * 正常系と非オブジェクト・型不一致・境界値の失敗分岐を検証する
+ * 受信ペイロード型ガード群の仕様適合を検証するテスト
+ * 正常系と非オブジェクト・配列・型不一致・境界値の失敗分岐を検証する
+ * チームIDの有効範囲は SPEC_03（チームID 0〜3）を基準とする
  */
 import { describe, expect, it } from "vitest";
 
@@ -107,10 +108,14 @@ describe("isMovePayload", () => {
     expect(isMovePayload({})).toBe(false);
   });
 
-  it("座標を持つ配列の場合もtrueを返すこと", () => {
+  it("空配列の場合はfalseを返すこと", () => {
+    expect(isMovePayload([])).toBe(false);
+  });
+
+  it("座標を持つ配列の場合はfalseを返すこと", () => {
     const arrayWithCoordinates = Object.assign([], { x: 1, y: 2 });
 
-    expect(isMovePayload(arrayWithCoordinates)).toBe(true);
+    expect(isMovePayload(arrayWithCoordinates)).toBe(false);
   });
 });
 
@@ -189,6 +194,16 @@ describe("isBombHitReportPayload", () => {
 
   it("文字列の場合はfalseを返すこと", () => {
     expect(isBombHitReportPayload("bomb-1")).toBe(false);
+  });
+
+  it("空配列の場合はfalseを返すこと", () => {
+    expect(isBombHitReportPayload([])).toBe(false);
+  });
+
+  it("bombIdを持つ配列の場合もfalseを返すこと", () => {
+    expect(isBombHitReportPayload(Object.assign([], { bombId: "bomb-1" }))).toBe(
+      false,
+    );
   });
 });
 
@@ -281,8 +296,14 @@ describe("isStartGamePayload", () => {
     expect(isStartGamePayload(4)).toBe(false);
   });
 
-  it("空配列の場合はtrueを返すこと", () => {
-    expect(isStartGamePayload([])).toBe(true);
+  it("空配列の場合はfalseを返すこと", () => {
+    expect(isStartGamePayload([])).toBe(false);
+  });
+
+  it("目標人数を持つ配列の場合もfalseを返すこと", () => {
+    expect(isStartGamePayload(Object.assign([], { targetPlayerCount: 4 }))).toBe(
+      false,
+    );
   });
 });
 
@@ -395,6 +416,20 @@ describe("isLobbySettingsUpdatePayload", () => {
   it("文字列の場合はfalseを返すこと", () => {
     expect(isLobbySettingsUpdatePayload("settings")).toBe(false);
   });
+
+  it("空配列の場合はfalseを返すこと", () => {
+    expect(isLobbySettingsUpdatePayload([])).toBe(false);
+  });
+
+  it("全フィールドを持つ配列の場合もfalseを返すこと", () => {
+    const arrayPayload = Object.assign([], {
+      targetPlayerCount: 4,
+      fieldSizePreset: "MEDIUM",
+      teamAssignmentMode: "random",
+    });
+
+    expect(isLobbySettingsUpdatePayload(arrayPayload)).toBe(false);
+  });
 });
 
 describe("isSelectTeamPayload", () => {
@@ -402,20 +437,29 @@ describe("isSelectTeamPayload", () => {
     expect(isSelectTeamPayload({ preferredTeamId: null })).toBe(true);
   });
 
-  it("preferredTeamIdが0の場合はtrueを返すこと", () => {
-    expect(isSelectTeamPayload({ preferredTeamId: 0 })).toBe(true);
+  it.each([0, 1, 2, 3])(
+    "preferredTeamIdが有効チームID %i の場合はtrueを返すこと",
+    (teamId) => {
+      expect(isSelectTeamPayload({ preferredTeamId: teamId })).toBe(true);
+    },
+  );
+
+  it("preferredTeamIdがチーム数と同じ4の場合はfalseを返すこと", () => {
+    expect(isSelectTeamPayload({ preferredTeamId: 4 })).toBe(false);
   });
 
-  it("preferredTeamIdが正の整数の場合はtrueを返すこと", () => {
-    expect(isSelectTeamPayload({ preferredTeamId: 3 })).toBe(true);
-  });
-
-  it("preferredTeamIdがチーム数を超える整数でもtrueを返すこと", () => {
-    expect(isSelectTeamPayload({ preferredTeamId: 999 })).toBe(true);
+  it("preferredTeamIdがチーム数を超える整数の場合はfalseを返すこと", () => {
+    expect(isSelectTeamPayload({ preferredTeamId: 999 })).toBe(false);
   });
 
   it("preferredTeamIdが負値の場合はfalseを返すこと", () => {
     expect(isSelectTeamPayload({ preferredTeamId: -1 })).toBe(false);
+  });
+
+  it("preferredTeamIdがInfinityの場合はfalseを返すこと", () => {
+    expect(
+      isSelectTeamPayload({ preferredTeamId: Number.POSITIVE_INFINITY }),
+    ).toBe(false);
   });
 
   it("preferredTeamIdが小数の場合はfalseを返すこと", () => {
@@ -444,6 +488,16 @@ describe("isSelectTeamPayload", () => {
 
   it("数値の場合はfalseを返すこと", () => {
     expect(isSelectTeamPayload(1)).toBe(false);
+  });
+
+  it("空配列の場合はfalseを返すこと", () => {
+    expect(isSelectTeamPayload([])).toBe(false);
+  });
+
+  it("希望チームIDを持つ配列の場合もfalseを返すこと", () => {
+    expect(isSelectTeamPayload(Object.assign([], { preferredTeamId: 1 }))).toBe(
+      false,
+    );
   });
 });
 
@@ -506,5 +560,18 @@ describe("isJoinRoomPayload", () => {
 
   it("文字列の場合はfalseを返すこと", () => {
     expect(isJoinRoomPayload("room-1")).toBe(false);
+  });
+
+  it("空配列の場合はfalseを返すこと", () => {
+    expect(isJoinRoomPayload([])).toBe(false);
+  });
+
+  it("必須フィールドを持つ配列の場合もfalseを返すこと", () => {
+    const arrayPayload = Object.assign([], {
+      roomId: "room-1",
+      playerName: "taro",
+    });
+
+    expect(isJoinRoomPayload(arrayPayload)).toBe(false);
   });
 });
