@@ -6,7 +6,6 @@
 
 /** 爆弾当たり判定の型を再公開する */
 export type {
-  CollisionCircle,
   TeamCollisionCircle,
   BombHitCheckInput,
   BombHitCheckResult,

@@ -1,7 +1,7 @@
 /**
  * playerSpawn.test
- * プレイヤー生成時のスポーン座標決定の現行挙動を固定する characterization test
- * teamId ごとの基準位置・ばらつき加算・座標クランプの境界条件を検証する
+ * プレイヤー生成時のスポーン座標決定を検証する
+ * teamId ごとの基準位置・範囲外teamIdの検証・ばらつき加算・座標クランプの境界条件を検証する
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -88,33 +88,59 @@ describe("createSpawnedPlayer のチーム別基準座標", () => {
     expect([player.x, player.y]).toEqual([2, 8]);
   });
 
-  it("TEAM_COUNTと同じteamIdは剰余でteamId0と同じ位置になること", () => {
-    const player = createSpawnedPlayer("socket-1", "たろう", TEAM_COUNT, mapSize);
+  it("有効なteamId（0〜TEAM_COUNT-1）では例外を投げないこと", () => {
+    const validTeamIds = Array.from({ length: TEAM_COUNT }, (_, i) => i);
 
-    expect([player.x, player.y]).toEqual([2, 2]);
+    validTeamIds.forEach((teamId) => {
+      expect(() =>
+        createSpawnedPlayer("socket-1", "たろう", teamId, mapSize),
+      ).not.toThrow();
+    });
+  });
+});
+
+describe("createSpawnedPlayer の teamId 検証", () => {
+  beforeEach(() => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
   });
 
-  it("TEAM_COUNT+3のteamIdは剰余でteamId3と同じ位置になること", () => {
-    const player = createSpawnedPlayer(
-      "socket-1",
-      "たろう",
-      TEAM_COUNT + 3,
-      mapSize,
-    );
-
-    expect([player.x, player.y]).toEqual([2, 8]);
+  it("TEAM_COUNTと同じteamIdは範囲外として例外を投げること", () => {
+    expect(() =>
+      createSpawnedPlayer("socket-1", "たろう", TEAM_COUNT, mapSize),
+    ).toThrow(`Invalid teamId: ${TEAM_COUNT}`);
   });
 
-  it("負のteamIdはどのcaseにも一致せずマップ中央にスポーンすること", () => {
-    const player = createSpawnedPlayer("socket-1", "たろう", -1, mapSize);
-
-    expect([player.x, player.y]).toEqual([5, 5]);
+  it("TEAM_COUNT+3のteamIdは範囲外として例外を投げること", () => {
+    expect(() =>
+      createSpawnedPlayer("socket-1", "たろう", TEAM_COUNT + 3, mapSize),
+    ).toThrow(`Invalid teamId: ${TEAM_COUNT + 3}`);
   });
 
-  it("小数のteamIdはどのcaseにも一致せずマップ中央にスポーンすること", () => {
-    const player = createSpawnedPlayer("socket-1", "たろう", 1.5, mapSize);
+  it("未確定teamId（-1）は範囲外として例外を投げること", () => {
+    expect(() =>
+      createSpawnedPlayer("socket-1", "たろう", -1, mapSize),
+    ).toThrow("Invalid teamId: -1");
+  });
 
-    expect([player.x, player.y]).toEqual([5, 5]);
+  it("小数のteamIdは整数でないため例外を投げること", () => {
+    expect(() =>
+      createSpawnedPlayer("socket-1", "たろう", 1.5, mapSize),
+    ).toThrow("Invalid teamId: 1.5");
+  });
+
+  it("NaNのteamIdは整数でないため例外を投げること", () => {
+    expect(() =>
+      createSpawnedPlayer("socket-1", "たろう", Number.NaN, mapSize),
+    ).toThrow("Invalid teamId: NaN");
+  });
+
+  it("範囲外teamIdでは座標決定前に例外を投げMath.randomを呼ばないこと", () => {
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+    expect(() =>
+      createSpawnedPlayer("socket-1", "たろう", -1, mapSize),
+    ).toThrow();
+    expect(randomSpy).not.toHaveBeenCalled();
   });
 });
 
@@ -209,10 +235,10 @@ describe("createSpawnedPlayer のマップサイズ既定値", () => {
     expect([player.x, player.y]).toEqual([GRID_COLS - 2, GRID_ROWS - 2]);
   });
 
-  it("mapSize未指定かつ負のteamIdでは既定グリッドの中央になること", () => {
-    const player = createSpawnedPlayer("socket-1", "たろう", -1);
-
-    expect([player.x, player.y]).toEqual([GRID_COLS / 2, GRID_ROWS / 2]);
+  it("mapSize未指定でも未確定teamId（-1）では例外を投げること", () => {
+    expect(() => createSpawnedPlayer("socket-1", "たろう", -1)).toThrow(
+      "Invalid teamId: -1",
+    );
   });
 });
 

@@ -1,13 +1,14 @@
 /**
  * HurricaneHitService
  * ハリケーン被弾判定を担当する
+ * ハリケーンは中立ハザードのためチーム比較を行わず円の重なりのみで判定する
  */
 import { config } from "@server/config";
 import { domain } from "@repo/shared";
 import { Player } from "../../entities/player/Player.js";
 import type { HurricaneState } from "./hurricaneTypes.js";
 
-const { checkBombHit } = domain.game.bombHit;
+const { checkCircleOverlap } = domain.game.collision;
 
 /** ハリケーン被弾判定を実行する */
 export class HurricaneHitService {
@@ -32,26 +33,7 @@ export class HurricaneHitService {
         return;
       }
 
-      const isHit = hurricanes.some((hurricane) => {
-        const result = checkBombHit({
-          bomb: {
-            x: hurricane.x,
-            y: hurricane.y,
-            radius: hurricane.radius,
-            teamId: -1,
-          },
-          player: {
-            x: player.x,
-            y: player.y,
-            radius: config.GAME_CONFIG.PLAYER_RADIUS,
-            teamId: player.teamId,
-          },
-        });
-
-        return result.isHit;
-      });
-
-      if (!isHit) {
+      if (!this.isOverlappingAnyHurricane(hurricanes, player)) {
         return;
       }
 
@@ -65,5 +47,30 @@ export class HurricaneHitService {
   /** 被弾判定状態を初期化する */
   public clear(): void {
     this.lastHitAtMsByPlayerId.clear();
+  }
+
+  /** いずれかのハリケーンとプレイヤーの円が重なっているかを返す */
+  private isOverlappingAnyHurricane(
+    hurricanes: HurricaneState[],
+    player: Player,
+  ): boolean {
+    // 中立ハザードのためチーム比較を行わず円の重なりのみで判定する
+    const playerCircle = {
+      x: player.x,
+      y: player.y,
+      radius: config.GAME_CONFIG.PLAYER_RADIUS,
+    };
+
+    return hurricanes.some(
+      (hurricane) =>
+        checkCircleOverlap({
+          circleA: {
+            x: hurricane.x,
+            y: hurricane.y,
+            radius: hurricane.radius,
+          },
+          circleB: playerCircle,
+        }).isOverlapping,
+    );
   }
 }

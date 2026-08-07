@@ -1,7 +1,7 @@
 /**
  * HurricaneHitService.test
- * ハリケーン被弾判定の現行挙動を固定する characterization test
- * 判定半径の境界値・クールダウン境界・チームID扱い・初期化を検証する
+ * ハリケーン被弾判定を検証する
+ * 判定半径の境界値・クールダウン境界・中立ハザードとしてのチーム非依存性・初期化を検証する
  */
 import { describe, expect, it } from "vitest";
 
@@ -97,12 +97,26 @@ describe("HurricaneHitService.collectHitPlayerIds", () => {
     ).toEqual(["player-1"]);
   });
 
-  it("teamIdが-1のプレイヤーは同チーム扱いとなり被弾しないこと", () => {
+  it("teamIdが未確定（-1）のプレイヤーも中立ハザードとして被弾すること", () => {
     const service = new HurricaneHitService();
     const players = toPlayerMap([createPlayer("player-1", 0, 0, -1)]);
 
+    expect(
+      service.collectHitPlayerIds([createHurricane()], players, 0),
+    ).toEqual(["player-1"]);
+  });
+
+  it("すべてのチームのプレイヤーが等しく被弾すること", () => {
+    const service = new HurricaneHitService();
+    const players = toPlayerMap([
+      createPlayer("player-0", 0, 0, 0),
+      createPlayer("player-1", 0, 0, 1),
+      createPlayer("player-2", 0, 0, 2),
+      createPlayer("player-3", 0, 0, 3),
+    ]);
+
     expect(service.collectHitPlayerIds([createHurricane()], players, 0)).toEqual(
-      [],
+      ["player-0", "player-1", "player-2", "player-3"],
     );
   });
 
