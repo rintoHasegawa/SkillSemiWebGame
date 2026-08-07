@@ -8,6 +8,10 @@
 export { GAME_CONFIG } from "./gameConfig";
 /** フィールドサイズ種別から実グリッドサイズを解決する関数を再公開する */
 export { resolveFieldGridSize } from "./gameConfig";
+/** フィールドサイズ種別の判定関数を再公開する */
+export { isFieldSizePreset } from "./gameConfig";
+/** 全フィールドサイズ種別中で最大のグリッドサイズを再公開する */
+export { MAX_FIELD_GRID_SIZE } from "./gameConfig";
 /** フィールドサイズ種別のキー型を再公開する */
 export type { FieldSizePreset } from "./gameConfig";
 /** チーム名配列を再公開する */

@@ -274,6 +274,34 @@ describe("handleSelectTeamEvent", () => {
     expect(deps.output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
     expect(deps.output.publishSelectTeamRejectedToSocket).not.toHaveBeenCalled();
   });
+
+  it("チームIDが範囲外の場合はルーム更新を配信しないこと", () => {
+    const deps = createSelectTeamDeps({ status: "invalid_team" });
+
+    handleSelectTeamEvent(deps, { preferredTeamId: 99 });
+
+    expect(deps.output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
+  });
+
+  it("チームIDが範囲外の場合は拒否通知を送らないこと", () => {
+    const deps = createSelectTeamDeps({ status: "invalid_team" });
+
+    handleSelectTeamEvent(deps, { preferredTeamId: 99 });
+
+    expect(deps.output.publishSelectTeamRejectedToSocket).not.toHaveBeenCalled();
+  });
+
+  it("チームIDが範囲外の場合はignored_invalid_payloadを記録すること", () => {
+    const deps = createSelectTeamDeps({ status: "invalid_team" });
+
+    handleSelectTeamEvent(deps, { preferredTeamId: 99 });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: roomUseCaseLogEvents.SELECT_TEAM,
+      result: logResults.IGNORED_INVALID_PAYLOAD,
+      socketId: "socket-1",
+    });
+  });
 });
 
 type JoinDepsParams = {

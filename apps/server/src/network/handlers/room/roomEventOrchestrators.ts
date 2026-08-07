@@ -85,13 +85,29 @@ export const handleSelectTeamEvent = (
     payload.preferredTeamId,
   );
 
-  if (result.status === "team_full") {
-    deps.output.publishSelectTeamRejectedToSocket(result.teamId);
-    return;
-  }
+  switch (result.status) {
+    case "team_full":
+      deps.output.publishSelectTeamRejectedToSocket(result.teamId);
+      return;
 
-  if (result.status === "ok") {
-    deps.output.publishRoomUpdateToRoom(result.room.roomId, result.room);
+    case "invalid_team":
+      // 有効範囲外のチームIDはクライアントへ通知せずサーバログのみ残す
+      logEvent(logScopes.NETWORK, {
+        event: roomUseCaseLogEvents.SELECT_TEAM,
+        result: logResults.IGNORED_INVALID_PAYLOAD,
+        socketId: deps.socketId,
+      });
+      return;
+
+    case "ok":
+      deps.output.publishRoomUpdateToRoom(result.room.roomId, result.room);
+      return;
+
+    case "not_found":
+      return;
+
+    default:
+      return;
   }
 };
 

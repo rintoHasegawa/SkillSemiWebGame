@@ -47,17 +47,43 @@ const FIELD_PRESETS = {
 /** フィールドサイズ種別のキー型 */
 export type FieldSizePreset = keyof typeof FIELD_PRESETS;
 
-/** フィールドサイズ種別から実グリッドサイズを解決する */
-export const resolveFieldGridSize = (preset: FieldSizePreset) => {
-  const selectedPreset = FIELD_PRESETS[preset];
+/** 既定で利用するフィールドサイズ種別 */
+const DEFAULT_FIELD_PRESET = "MEDIUM" as const;
+
+// プリセット定義からグリッドサイズ（マス数）へ変換する
+const toFieldGridSize = (preset: (typeof FIELD_PRESETS)[FieldSizePreset]) => {
   return {
-    cols: selectedPreset.aoiCols * AOI_CELL_SIZE,
-    rows: selectedPreset.aoiRows * AOI_CELL_SIZE,
+    cols: preset.aoiCols * AOI_CELL_SIZE,
+    rows: preset.aoiRows * AOI_CELL_SIZE,
   };
 };
 
-/** 既定で利用するフィールドサイズ種別 */
-const DEFAULT_FIELD_PRESET = "MEDIUM" as const;
+/** 値が定義済みのフィールドサイズ種別か判定する */
+export const isFieldSizePreset = (value: unknown): value is FieldSizePreset => {
+  return (
+    typeof value === "string"
+    && Object.prototype.hasOwnProperty.call(FIELD_PRESETS, value)
+  );
+};
+
+/**
+ * フィールドサイズ種別から実グリッドサイズを解決する
+ * 未定義の種別を受け取った場合は既定プリセットへフォールバックする
+ */
+export const resolveFieldGridSize = (preset: FieldSizePreset) => {
+  const resolvedPreset = isFieldSizePreset(preset)
+    ? preset
+    : DEFAULT_FIELD_PRESET;
+  return toFieldGridSize(FIELD_PRESETS[resolvedPreset]);
+};
+
+const fieldGridSizes = Object.values(FIELD_PRESETS).map(toFieldGridSize);
+
+/** 全フィールドサイズ種別中で最大となるグリッドサイズ（境界検証の上限に利用する） */
+export const MAX_FIELD_GRID_SIZE = {
+  cols: Math.max(...fieldGridSizes.map((size) => size.cols)),
+  rows: Math.max(...fieldGridSizes.map((size) => size.rows)),
+} as const;
 
 const defaultGridSize = resolveFieldGridSize(DEFAULT_FIELD_PRESET);
 

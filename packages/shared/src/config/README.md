@@ -27,6 +27,9 @@
 - `GAME_CONFIG.BOMB_COOLDOWN_MS`: 次の爆弾を置けるまでの待機時間（ms）
 - `GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS`: サーバー側の爆弾重複排除で保持時間に加算する猶予（ms）
 - `GAME_CONFIG.TEAM_COUNT`: チーム総数
+- `MAX_FIELD_GRID_SIZE`: 全フィールドサイズ種別中で最大のグリッドサイズ（受信座標の範囲検証に利用）
+- `isFieldSizePreset`: 値が定義済みのフィールドサイズ種別かを判定する関数
+- `resolveFieldGridSize`: フィールドサイズ種別から実グリッドサイズを解決する関数（未定義の種別は既定プリセットへフォールバック）
 - `TEAM_NAMES`: `teamId` 順の表示名配列
 - `validateTeamConfig`: チーム関連設定（件数整合性）を検証する関数
 - `assertValidTeamId`: `teamId` が有効範囲内かを検証する関数

@@ -18,6 +18,7 @@ export const roomUseCaseLogEvents = {
   JOIN_ROOM: protocol.SocketEvents.JOIN_ROOM,
   DISCONNECT: protocol.SocketEvents.DISCONNECT,
   ROOM_UPDATE: protocol.SocketEvents.ROOM_UPDATE,
+  SELECT_TEAM: protocol.SocketEvents.SELECT_TEAM,
 } as const;
 
 /** Gameドメインサービスとループログで利用するイベント名定数 */
@@ -37,4 +38,5 @@ export const roomDomainLogEvents = {
   PLAYER_LEAVE: "PLAYER_LEAVE",
   ROOM_DELETE: "ROOM_DELETE",
   OWNER_TRANSFER: "OWNER_TRANSFER",
+  LOBBY_SETTINGS_UPDATE: protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
 } as const;

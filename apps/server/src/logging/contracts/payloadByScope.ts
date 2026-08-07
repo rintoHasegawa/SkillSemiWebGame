@@ -302,6 +302,15 @@ type RoomExitServiceOwnerTransferLogPayload = {
   socketId: string;
 };
 
+/** RoomSettingsServiceのLOBBY_SETTINGS_UPDATEログ契約 */
+type RoomSettingsServiceLobbySettingsUpdateLogPayload = {
+  event: typeof roomDomainLogEvents.LOBBY_SETTINGS_UPDATE;
+  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  roomId: string;
+  /** 拒否した要求値（検証失敗の原因特定用） */
+  targetPlayerCount: number;
+};
+
 /** RoomExitServiceスコープのログ契約ユニオン */
 type RoomExitServiceLogPayload =
   | RoomExitServicePlayerLeaveLogPayload
@@ -319,4 +328,5 @@ export type LogPayloadByScope = {
   [logScopes.GAME_SESSION_LIFECYCLE_SERVICE]: GameSessionLifecycleServiceLogPayload;
   [logScopes.ROOM_JOIN_SERVICE]: RoomJoinServiceLogPayload;
   [logScopes.ROOM_EXIT_SERVICE]: RoomExitServiceLogPayload;
+  [logScopes.ROOM_SETTINGS_SERVICE]: RoomSettingsServiceLobbySettingsUpdateLogPayload;
 };
