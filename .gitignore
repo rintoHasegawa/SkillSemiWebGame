@@ -29,6 +29,9 @@ Thumbs.db
 # Testing
 coverage/
 
+# Devcontainer: 退避した認証情報 (絶対にコミットしない)
+.devcontainer/.auth-seed/
+
 # Unignore packages (Fix for parent gitignore)
 !packages/
 # Claude Code 個人設定 (GUIDE_03)

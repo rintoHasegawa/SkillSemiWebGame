@@ -15,6 +15,12 @@ services:
       # コンテナ内の node_modules をホスト側と切り離して高速化・安定化させる設定
       - node_modules:/workspace/node_modules
 
+      # 認証情報の永続化 (Rebuild しても再ログイン不要にする)
+      # Claude Code の認証・設定・メモリ (~/.claude)
+      - claude-config:/home/node/.claude
+      # GitHub CLI の認証 (~/.config/gh)
+      - gh-config:/home/node/.config/gh
+
     # コマンドの上書き (コンテナを常時起動させる)
     command: sleep infinity
 
@@ -28,9 +34,13 @@ services:
     environment:
       - NODE_ENV=development
       # pnpmのストアをローカルと分離して高速化したい場合は設定推奨（今回はシンプルにします）
+      # Claude Code の設定ファイル (~/.claude.json 相当) も永続化ボリューム内に置く
+      - CLAUDE_CONFIG_DIR=/home/node/.claude
 
     # ユーザー権限 (Nodeイメージ推奨のユーザー)
     user: node
 
 volumes:
   node_modules:
+  claude-config:
+  gh-config:
