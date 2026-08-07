@@ -7,6 +7,7 @@ import { contracts as protocol, domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
+  RoomOutputPort,
   RoomPhaseTransitionResult,
   RoomScopedGamePort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
@@ -130,6 +131,15 @@ const createOutputStub = () => {
   } satisfies GameOutputAdapter;
 };
 
+/** ルーム状態配信を記録する出力スタブを生成する */
+const createRoomOutputStub = () => {
+  return {
+    publishRoomUpdateToRoom: vi.fn<
+      RoomOutputPort["publishRoomUpdateToRoom"]
+    >(),
+  };
+};
+
 type DepsParams = {
   room?: domain.room.Room;
   gameManager?: RoomScopedGamePort;
@@ -141,6 +151,7 @@ const createDeps = ({
   gameManager,
 }: DepsParams): GameEventOrchestratorDeps & {
   output: ReturnType<typeof createOutputStub>;
+  roomOutput: ReturnType<typeof createRoomOutputStub>;
 } => {
   const transition: RoomPhaseTransitionResult = room
     ? { status: "updated", room }
@@ -161,6 +172,19 @@ const createDeps = ({
       markRoomWaiting: vi.fn<(roomId: string) => RoomPhaseTransitionResult>(
         () => transition,
       ),
+      applyFieldSizePreset: vi.fn<
+        (
+          roomId: string,
+          fieldSizePreset: domain.room.Room["fieldSizePreset"],
+        ) => domain.room.Room | undefined
+      >((_roomId, fieldSizePreset) => {
+        if (!room) {
+          return undefined;
+        }
+
+        room.fieldSizePreset = fieldSizePreset;
+        return room;
+      }),
       deleteRoom: vi.fn<(roomId: string) => boolean>(() => true),
     },
     runtimeRegistry: {
@@ -173,6 +197,7 @@ const createDeps = ({
       cleanupGameManagerForRoom: vi.fn<(roomId: string) => void>(),
     },
     output: createOutputStub(),
+    roomOutput: createRoomOutputStub(),
   };
 };
 
@@ -241,6 +266,26 @@ describe("handleStartGameEvent", () => {
     handleStartGameEvent(deps, {});
 
     expect(gameManager.startRoomSession).not.toHaveBeenCalled();
+  });
+
+  it("ランタイム未解決時はルームをwaitingへ戻すこと", () => {
+    const deps = createDeps({ room: createRoom(), gameManager: undefined });
+
+    handleStartGameEvent(deps, {});
+
+    expect(deps.roomManager.markRoomWaiting).toHaveBeenCalledWith("room-1");
+  });
+
+  it("ランタイム未解決時はwaitingへ戻したルームをROOM_UPDATEで配信すること", () => {
+    const room = createRoom();
+    const deps = createDeps({ room, gameManager: undefined });
+
+    handleStartGameEvent(deps, {});
+
+    expect(deps.roomOutput.publishRoomUpdateToRoom).toHaveBeenCalledWith(
+      "room-1",
+      room,
+    );
   });
 });
 

@@ -57,12 +57,13 @@ export const registerConnectionHandlers = ({
         deps.runtimeRegistry,
         socketOutputAdapters.room,
       );
-      registerGameHandlers(
-        deps.socket,
-        deps.roomManager,
-        deps.runtimeRegistry,
-        socketOutputAdapters.game,
-      );
+      registerGameHandlers({
+        socket: deps.socket,
+        roomManager: deps.roomManager,
+        runtimeRegistry: deps.runtimeRegistry,
+        gameOutputAdapter: socketOutputAdapters.game,
+        roomOutputAdapter: socketOutputAdapters.room,
+      });
 
       // ソケット単位イベントを宣言的に登録する
       const perSocketEventDefinition: UnguardedEventDefinition<

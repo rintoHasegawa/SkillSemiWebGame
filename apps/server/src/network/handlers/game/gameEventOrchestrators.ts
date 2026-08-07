@@ -12,6 +12,7 @@ import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCa
 import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { reportBombHitUseCase } from "@server/domains/game/application/useCases/reportBombHitUseCase";
 import { runWithRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
+import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { logIgnoredMissingRoom } from "../orchestratorEventLogger";
 import type { GameOutputAdapter } from "./createGameOutputAdapter";
 import type {
@@ -40,6 +41,8 @@ export type GameEventOrchestratorDeps = {
   roomManager: GameEventRoomUseCasePort;
   runtimeRegistry: GameEventRuntimeUseCasePort;
   output: GameOutputAdapter;
+  /** ルーム状態の変化をROOM_UPDATEで配信するための出力 */
+  roomOutput: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
 };
 
 /** PINGイベントを調停してPONG返却ユースケースを実行する */
@@ -65,6 +68,7 @@ export const handleStartGameEvent = (
     roomManager: deps.roomManager,
     runtimeRegistry: deps.runtimeRegistry,
     output: deps.output,
+    roomOutput: deps.roomOutput,
   });
 };
 

@@ -267,3 +267,67 @@ describe("RoomSettingsService", () => {
     expect(logSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("RoomSettingsService.applyFieldSizePreset", () => {
+  it("存在しないルームではundefinedを返すこと", () => {
+    const service = new RoomSettingsService(new Map());
+
+    expect(service.applyFieldSizePreset("room-x", "LARGE")).toBeUndefined();
+  });
+
+  it("待機中ルームのフィールドサイズを更新すること", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING);
+
+    service.applyFieldSizePreset("room-1", "LARGE");
+
+    expect(room.fieldSizePreset).toBe("LARGE");
+  });
+
+  it("プレイ中ルームでもフィールドサイズを更新すること", () => {
+    const { room, service } = createService(domain.room.RoomPhase.PLAYING);
+
+    service.applyFieldSizePreset("room-1", "XLARGE");
+
+    expect(room.fieldSizePreset).toBe("XLARGE");
+  });
+
+  it("更新後のルームを返すこと", () => {
+    const { room, service } = createService(domain.room.RoomPhase.PLAYING);
+
+    expect(service.applyFieldSizePreset("room-1", "SMALL")).toBe(room);
+  });
+
+  it("参加人数は変更しないこと", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING);
+    service.updateLobbySettings("room-1", 8, "MEDIUM", "player_select");
+
+    service.applyFieldSizePreset("room-1", "SMALL");
+
+    expect(room.targetPlayerCount).toBe(8);
+  });
+
+  it("チーム割り当て方式は変更しないこと", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING);
+    service.updateLobbySettings("room-1", 8, "MEDIUM", "player_select");
+
+    service.applyFieldSizePreset("room-1", "SMALL");
+
+    expect(room.teamAssignmentMode).toBe("player_select");
+  });
+
+  it("同じプリセットを指定した場合も値を保つこと", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING);
+
+    service.applyFieldSizePreset("room-1", "MEDIUM");
+
+    expect(room.fieldSizePreset).toBe("MEDIUM");
+  });
+
+  it("ログを記録しないこと", () => {
+    const { service } = createService(domain.room.RoomPhase.WAITING);
+
+    service.applyFieldSizePreset("room-1", "LARGE");
+
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+});
