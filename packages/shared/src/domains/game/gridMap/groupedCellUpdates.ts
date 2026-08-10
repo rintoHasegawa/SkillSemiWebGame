@@ -25,14 +25,34 @@ export const groupCellUpdates = (
   return grouped;
 };
 
-/** GroupedCellUpdates を CellUpdate 配列へ展開する（受信時） */
+// teamId キーとして受理する整数文字列（負値も許容する）
+const TEAM_ID_KEY_PATTERN = /^-?\d+$/;
+
+// teamId キーを整数へ変換し，整数化できないキーは null を返す
+const parseTeamIdKey = (teamIdStr: string): number | null => {
+  if (!TEAM_ID_KEY_PATTERN.test(teamIdStr)) {
+    return null;
+  }
+
+  // 桁数超過で Infinity へ丸められるキーもここで除外する
+  const teamId = Number(teamIdStr);
+  return Number.isInteger(teamId) ? teamId : null;
+};
+
+/**
+ * GroupedCellUpdates を CellUpdate 配列へ展開する（受信時）
+ * 整数として解釈できないキーのエントリは不正値になるため読み飛ばす
+ */
 export const ungroupCellUpdates = (
   grouped: GroupedCellUpdates,
 ): CellUpdate[] => {
   const updates: CellUpdate[] = [];
 
   for (const [teamIdStr, indices] of Object.entries(grouped)) {
-    const teamId = Number(teamIdStr);
+    const teamId = parseTeamIdKey(teamIdStr);
+    if (teamId === null) {
+      continue;
+    }
 
     for (const index of indices) {
       updates.push({ index, teamId });

@@ -111,18 +111,17 @@ export class PlayerModel {
     }
   }
 
-  /** マップ境界内へ座標をクランプする */
+  /** マップ境界内へ座標をクランプする（sharedの境界式を共用する） */
   private clampToBounds(): void {
-    const { GRID_COLS, GRID_ROWS, PLAYER_RADIUS } = config.GAME_CONFIG;
+    const { GRID_COLS, GRID_ROWS } = config.GAME_CONFIG;
 
-    this.gridX = Math.max(
-      PLAYER_RADIUS,
-      Math.min(GRID_COLS - PLAYER_RADIUS, this.gridX),
+    const clamped = domain.game.player.clampPositionToMapBounds(
+      { x: this.gridX, y: this.gridY },
+      { gridCols: GRID_COLS, gridRows: GRID_ROWS },
     );
-    this.gridY = Math.max(
-      PLAYER_RADIUS,
-      Math.min(GRID_ROWS - PLAYER_RADIUS, this.gridY),
-    );
+
+    this.gridX = clamped.x;
+    this.gridY = clamped.y;
   }
 
   /** 有限数かどうかを判定する */

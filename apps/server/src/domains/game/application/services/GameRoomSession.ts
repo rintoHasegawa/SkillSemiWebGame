@@ -53,13 +53,10 @@ export class GameRoomSession {
     fieldConfig: GameFieldConfig,
     teamPreferences?: Record<string, number | null>,
   ) {
-    this.players = new Map();
-    this.mapStore = new MapStore({
-      gridCols: fieldConfig.gridCols,
-      gridRows: fieldConfig.gridRows,
-    });
-    this.bombStateStore = new BombStateStore();
     this.fieldConfig = fieldConfig;
+    this.players = new Map();
+    this.mapStore = new MapStore(this.getMapSize());
+    this.bombStateStore = new BombStateStore();
 
     playerIds.forEach((playerId) => {
       // player_selectモードの希望チームIDがあればそれを使い，なければバランス割り当てする
@@ -74,14 +71,19 @@ export class GameRoomSession {
         playerId,
         playerName,
         assignedTeamId,
-        {
-          gridCols: fieldConfig.gridCols,
-          gridRows: fieldConfig.gridRows,
-        },
+        this.getMapSize(),
       );
 
       this.players.set(playerId, player);
     });
+  }
+
+  /** ルーム設定からマップサイズ（グリッド数）を取り出す */
+  private getMapSize(): domain.game.player.MapBoundsSize {
+    return {
+      gridCols: this.fieldConfig.gridCols,
+      gridRows: this.fieldConfig.gridRows,
+    };
   }
 
   public start(tickRate: number, callbacks: GameSessionCallbacks): void {
@@ -169,7 +171,7 @@ export class GameRoomSession {
       return;
     }
 
-    setPlayerPosition(player, x, y);
+    setPlayerPosition({ player, x, y, mapSize: this.getMapSize() });
   }
 
   public removePlayer(id: string): boolean {

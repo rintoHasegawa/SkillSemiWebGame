@@ -25,8 +25,9 @@ export class MapStore {
   }
 
   /**
-    * マスを塗り，色が変化した場合のみ差分キューに追加する
-    * @returns 色が実際に変わった場合 true
+   * マスを塗り，色が変化した場合のみ差分キューに追加する
+   * グリッド範囲外・非整数のindexは塗らずに false を返す
+   * @returns 色が実際に変わった場合 true
    */
   public paintCell(index: number, teamId: number): boolean {
     return paintCellIfChanged({
@@ -38,8 +39,8 @@ export class MapStore {
   }
 
   /**
-    * 溜まっている差分を取得し，キューをクリアする（ループ送信時に使用）
-    * 参照をそのまま返却し新しい空配列で差し替えることでコピーを回避する
+   * 溜まっている差分を取得し，キューをクリアする（ループ送信時に使用）
+   * 参照をそのまま返却し新しい空配列で差し替えることでコピーを回避する
    */
   public getAndClearUpdates(): domain.game.gridMap.CellUpdate[] {
     const updates = this.pendingUpdates;

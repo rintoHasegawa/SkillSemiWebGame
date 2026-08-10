@@ -319,7 +319,12 @@ export class GameLoop {
           nowMs,
           elapsedMs,
         );
-        setPlayerPosition(player, decision.nextX, decision.nextY);
+        setPlayerPosition({
+          player,
+          x: decision.nextX,
+          y: decision.nextY,
+          mapSize: this.mapSize,
+        });
 
         if (decision.placeBombPayload && this.callbacks.onBotPlaceBomb) {
           this.callbacks.onBotPlaceBomb(player.id, decision.placeBombPayload);
