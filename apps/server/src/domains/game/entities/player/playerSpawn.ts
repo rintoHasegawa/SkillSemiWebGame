@@ -2,6 +2,7 @@
  * playerSpawn
  * プレイヤー初期生成時のスポーン座標設定を提供する
  */
+import { domain } from "@repo/shared";
 import { config } from "@server/config";
 import { Player } from "./Player.js";
 
@@ -61,8 +62,14 @@ export const createSpawnedPlayer = (
   const scatterX = (Math.random() - 0.5) * 2;
   const scatterY = (Math.random() - 0.5) * 2;
 
-  player.x = Math.max(1, Math.min(gridCols - 1, baseX + scatterX));
-  player.y = Math.max(1, Math.min(gridRows - 1, baseY + scatterY));
+  // 小さいマップでも範囲外にならないよう移動時と同じ境界式でクランプする
+  const spawnPosition = domain.game.player.clampPositionToMapBounds(
+    { x: baseX + scatterX, y: baseY + scatterY },
+    { gridCols, gridRows },
+  );
+
+  player.x = spawnPosition.x;
+  player.y = spawnPosition.y;
 
   // リスポーン時に戻る座標として初期位置を保持する
   player.initialX = player.x;

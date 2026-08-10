@@ -1,7 +1,7 @@
 /**
  * mapPainting.test
- * マップセル塗り更新の現行挙動を固定する characterization test
- * 差分追加の有無と範囲外インデックス時の振る舞いを検証する
+ * マップセル塗り更新の仕様を検証するユニットテスト
+ * 差分追加の有無と範囲外・非整数インデックスを拒否する防御を検証する
  */
 import { describe, expect, it } from "vitest";
 
@@ -176,22 +176,31 @@ describe("paintCellIfChanged", () => {
     expect(gridColors[2]).toBe(1);
   });
 
-  it("配列長以上のindexでもtrueを返して配列を伸長すること", () => {
+  it("配列長ちょうどのindexではfalseを返すこと", () => {
+    const changed = paintCellIfChanged({
+      gridColors: [-1, -1, -1],
+      pendingUpdates: [],
+      index: 3,
+      teamId: 1,
+    });
+
+    expect(changed).toBe(false);
+  });
+
+  it("配列長以上のindexではgridColorsを変更しないこと", () => {
     const gridColors = [-1, -1, -1];
 
-    const changed = paintCellIfChanged({
+    paintCellIfChanged({
       gridColors,
       pendingUpdates: [],
       index: 5,
       teamId: 1,
     });
 
-    expect(changed).toBe(true);
-    expect(gridColors).toHaveLength(6);
-    expect(gridColors[5]).toBe(1);
+    expect(gridColors).toEqual([-1, -1, -1]);
   });
 
-  it("配列長以上のindexでも差分を追加すること", () => {
+  it("配列長以上のindexでは差分を追加しないこと", () => {
     const pendingUpdates: domain.game.gridMap.CellUpdate[] = [];
 
     paintCellIfChanged({
@@ -201,10 +210,10 @@ describe("paintCellIfChanged", () => {
       teamId: 1,
     });
 
-    expect(pendingUpdates).toEqual([{ index: 5, teamId: 1 }]);
+    expect(pendingUpdates).toEqual([]);
   });
 
-  it("空配列のgridColorsでもindex0で伸長すること", () => {
+  it("空配列のgridColorsではindex0でもfalseを返すこと", () => {
     const gridColors: number[] = [];
 
     const changed = paintCellIfChanged({
@@ -214,11 +223,11 @@ describe("paintCellIfChanged", () => {
       teamId: 1,
     });
 
-    expect(changed).toBe(true);
-    expect(gridColors).toEqual([1]);
+    expect(changed).toBe(false);
+    expect(gridColors).toEqual([]);
   });
 
-  it("負のindexでは配列長を変えずにtrueを返すこと", () => {
+  it("負のindexではfalseを返すこと", () => {
     const gridColors = [-1, -1];
 
     const changed = paintCellIfChanged({
@@ -228,11 +237,11 @@ describe("paintCellIfChanged", () => {
       teamId: 1,
     });
 
-    expect(changed).toBe(true);
-    expect(gridColors).toHaveLength(2);
+    expect(changed).toBe(false);
+    expect(gridColors).toEqual([-1, -1]);
   });
 
-  it("負のindexでも差分を追加すること", () => {
+  it("負のindexでは差分を追加しないこと", () => {
     const pendingUpdates: domain.game.gridMap.CellUpdate[] = [];
 
     paintCellIfChanged({
@@ -242,10 +251,10 @@ describe("paintCellIfChanged", () => {
       teamId: 1,
     });
 
-    expect(pendingUpdates).toEqual([{ index: -1, teamId: 1 }]);
+    expect(pendingUpdates).toEqual([]);
   });
 
-  it("NaNのindexでは配列長を変えずにtrueを返すこと", () => {
+  it("NaNのindexではfalseを返しgridColorsを変更しないこと", () => {
     const gridColors = [-1, -1];
 
     const changed = paintCellIfChanged({
@@ -255,11 +264,11 @@ describe("paintCellIfChanged", () => {
       teamId: 1,
     });
 
-    expect(changed).toBe(true);
-    expect(gridColors).toHaveLength(2);
+    expect(changed).toBe(false);
+    expect(gridColors).toEqual([-1, -1]);
   });
 
-  it("NaNのindexでも差分を追加すること", () => {
+  it("NaNのindexでは差分を追加しないこと", () => {
     const pendingUpdates: domain.game.gridMap.CellUpdate[] = [];
 
     paintCellIfChanged({
@@ -269,25 +278,35 @@ describe("paintCellIfChanged", () => {
       teamId: 1,
     });
 
-    expect(pendingUpdates).toHaveLength(1);
-    expect(pendingUpdates[0].index).toBeNaN();
+    expect(pendingUpdates).toEqual([]);
   });
 
-  it("小数のindexでは配列長を変えずにtrueを返すこと", () => {
+  it("Infinityのindexではfalseを返しgridColorsを変更しないこと", () => {
     const gridColors = [-1, -1];
 
     const changed = paintCellIfChanged({
       gridColors,
       pendingUpdates: [],
+      index: Number.POSITIVE_INFINITY,
+      teamId: 1,
+    });
+
+    expect(changed).toBe(false);
+    expect(gridColors).toEqual([-1, -1]);
+  });
+
+  it("小数のindexではfalseを返すこと", () => {
+    const changed = paintCellIfChanged({
+      gridColors: [-1, -1],
+      pendingUpdates: [],
       index: 0.5,
       teamId: 1,
     });
 
-    expect(changed).toBe(true);
-    expect(gridColors).toHaveLength(2);
+    expect(changed).toBe(false);
   });
 
-  it("小数のindexでは要素ではなく小数キーのプロパティが設定されること", () => {
+  it("小数のindexでは小数キーのプロパティを追加しないこと", () => {
     const gridColors = [-1, -1];
 
     paintCellIfChanged({
@@ -297,7 +316,33 @@ describe("paintCellIfChanged", () => {
       teamId: 1,
     });
 
-    expect(gridColors[0]).toBe(-1);
-    expect(Object.getOwnPropertyDescriptor(gridColors, "0.5")?.value).toBe(1);
+    expect(Object.getOwnPropertyDescriptor(gridColors, "0.5")).toBeUndefined();
+  });
+
+  it("小数のindexでは差分を追加しないこと", () => {
+    const pendingUpdates: domain.game.gridMap.CellUpdate[] = [];
+
+    paintCellIfChanged({
+      gridColors: [-1, -1],
+      pendingUpdates,
+      index: 0.5,
+      teamId: 1,
+    });
+
+    expect(pendingUpdates).toEqual([]);
+  });
+
+  it("-0のindexは先頭セルとして塗れること", () => {
+    const gridColors = [-1, -1];
+
+    const changed = paintCellIfChanged({
+      gridColors,
+      pendingUpdates: [],
+      index: -0,
+      teamId: 1,
+    });
+
+    expect(changed).toBe(true);
+    expect(gridColors[0]).toBe(1);
   });
 });

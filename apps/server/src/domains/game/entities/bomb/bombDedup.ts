@@ -1,16 +1,10 @@
 /**
  * bombDedup
- * 爆弾設置要求の重複排除テーブル操作を提供する
+ * 爆弾設置・被弾報告イベントの重複排除テーブル操作を提供する
  */
 import { config } from "@repo/shared";
 
-type ShouldBroadcastBombPlacedParams = {
-  dedupTable: Map<string, number>;
-  dedupeKey: string;
-  nowMs: number;
-};
-
-type ShouldBroadcastBombHitReportParams = {
+type BombDedupParams = {
   dedupTable: Map<string, number>;
   dedupeKey: string;
   nowMs: number;
@@ -22,42 +16,53 @@ const cleanupExpiredBombDedup = (
   nowMs: number
 ): void => {
   dedupTable.forEach((expiresAtMs, key) => {
-    if (expiresAtMs <= nowMs) {
+    // 非有限の期限は比較が常に false となり永久に残留するため除去する
+    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= nowMs) {
       dedupTable.delete(key);
     }
   });
 };
 
-/** 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する */
-export const shouldBroadcastBombPlaced = ({
+// 期限切れを掃除したうえで未登録キーのみ期限付きで登録し，可否を返す
+const markDedupeKeyIfAbsent = ({
   dedupTable,
   dedupeKey,
   nowMs,
-}: ShouldBroadcastBombPlacedParams): boolean => {
+}: BombDedupParams): boolean => {
+  // 現在時刻が非有限の場合は期限を決められないため配信不可として扱う
+  if (!Number.isFinite(nowMs)) {
+    return false;
+  }
+
   cleanupExpiredBombDedup(dedupTable, nowMs);
 
   if (dedupTable.has(dedupeKey)) {
     return false;
   }
 
-  const ttlMs = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+  const ttlMs =
+    config.GAME_CONFIG.BOMB_FUSE_MS +
+    config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
   dedupTable.set(dedupeKey, nowMs + ttlMs);
   return true;
 };
 
-/** 被弾報告イベントを配信すべきか判定し，配信時は重複排除状態を更新する */
-export const shouldBroadcastBombHitReport = ({
-  dedupTable,
-  dedupeKey,
-  nowMs,
-}: ShouldBroadcastBombHitReportParams): boolean => {
-  cleanupExpiredBombDedup(dedupTable, nowMs);
+/**
+ * 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する
+ * 現在時刻が非有限の場合は期限を決められないため配信不可として扱う
+ */
+export const shouldBroadcastBombPlaced = (
+  params: BombDedupParams,
+): boolean => {
+  return markDedupeKeyIfAbsent(params);
+};
 
-  if (dedupTable.has(dedupeKey)) {
-    return false;
-  }
-
-  const ttlMs = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
-  dedupTable.set(dedupeKey, nowMs + ttlMs);
-  return true;
+/**
+ * 被弾報告イベントを配信すべきか判定し，配信時は重複排除状態を更新する
+ * 現在時刻が非有限の場合は期限を決められないため配信不可として扱う
+ */
+export const shouldBroadcastBombHitReport = (
+  params: BombDedupParams,
+): boolean => {
+  return markDedupeKeyIfAbsent(params);
 };

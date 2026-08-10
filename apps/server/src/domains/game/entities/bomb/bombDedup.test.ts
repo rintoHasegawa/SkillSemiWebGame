@@ -1,7 +1,7 @@
 /**
  * bombDedup.test
- * 爆弾関連イベントの重複排除判定の現行挙動を固定する characterization test
- * TTL計算・期限切れ削除の境界条件とテーブル更新内容を検証する
+ * 爆弾関連イベントの重複排除判定の仕様を検証するユニットテスト
+ * TTL計算・期限切れ削除の境界条件と非有限時刻・非有限期限の防御を検証する
  */
 import { config } from "@repo/shared";
 import { describe, expect, it } from "vitest";
@@ -127,7 +127,7 @@ describe("shouldBroadcastBombPlaced", () => {
     ).toBe(true);
   });
 
-  it("現在時刻がNaNの場合は期限切れ削除が起きずfalseを返すこと", () => {
+  it("現在時刻がNaNの場合は配信不可としてfalseを返すこと", () => {
     const dedupTable = new Map<string, number>([["key-1", 1]]);
 
     expect(
@@ -139,7 +139,7 @@ describe("shouldBroadcastBombPlaced", () => {
     ).toBe(false);
   });
 
-  it("現在時刻がNaNの新規キーはNaNの期限で登録されること", () => {
+  it("現在時刻がNaNの場合は新規キーを登録しないこと", () => {
     const dedupTable = new Map<string, number>();
 
     shouldBroadcastBombPlaced({
@@ -148,7 +148,57 @@ describe("shouldBroadcastBombPlaced", () => {
       nowMs: Number.NaN,
     });
 
-    expect(dedupTable.get("key-1")).toBeNaN();
+    expect(dedupTable.has("key-1")).toBe(false);
+  });
+
+  it("現在時刻がInfinityの場合は配信不可としてfalseを返すこと", () => {
+    const dedupTable = new Map<string, number>();
+
+    expect(
+      shouldBroadcastBombPlaced({
+        dedupTable,
+        dedupeKey: "key-1",
+        nowMs: Number.POSITIVE_INFINITY,
+      }),
+    ).toBe(false);
+  });
+
+  it("現在時刻が非有限の場合は既存エントリを削除しないこと", () => {
+    const dedupTable = new Map<string, number>([["expired", 1]]);
+
+    shouldBroadcastBombPlaced({
+      dedupTable,
+      dedupeKey: "key-1",
+      nowMs: Number.NaN,
+    });
+
+    expect(dedupTable.has("expired")).toBe(true);
+  });
+
+  it("期限が非有限のエントリを期限切れとして削除すること", () => {
+    const dedupTable = new Map<string, number>([["broken", Number.NaN]]);
+
+    shouldBroadcastBombPlaced({ dedupTable, dedupeKey: "key-1", nowMs: 1000 });
+
+    expect(dedupTable.has("broken")).toBe(false);
+  });
+
+  it("期限がInfinityのエントリを期限切れとして削除すること", () => {
+    const dedupTable = new Map<string, number>([
+      ["broken", Number.POSITIVE_INFINITY],
+    ]);
+
+    shouldBroadcastBombPlaced({ dedupTable, dedupeKey: "key-1", nowMs: 1000 });
+
+    expect(dedupTable.has("broken")).toBe(false);
+  });
+
+  it("期限が非有限だったキーは再度配信可と判定されること", () => {
+    const dedupTable = new Map<string, number>([["key-1", Number.NaN]]);
+
+    expect(
+      shouldBroadcastBombPlaced({ dedupTable, dedupeKey: "key-1", nowMs: 1000 }),
+    ).toBe(true);
   });
 });
 
@@ -258,6 +308,42 @@ describe("shouldBroadcastBombHitReport", () => {
         nowMs: ttlMs,
       }),
     ).toBe(true);
+  });
+
+  it("現在時刻がNaNの場合は配信不可としてfalseを返すこと", () => {
+    const dedupTable = new Map<string, number>();
+
+    expect(
+      shouldBroadcastBombHitReport({
+        dedupTable,
+        dedupeKey: "key-1",
+        nowMs: Number.NaN,
+      }),
+    ).toBe(false);
+  });
+
+  it("現在時刻がNaNの場合は新規キーを登録しないこと", () => {
+    const dedupTable = new Map<string, number>();
+
+    shouldBroadcastBombHitReport({
+      dedupTable,
+      dedupeKey: "key-1",
+      nowMs: Number.NaN,
+    });
+
+    expect(dedupTable.has("key-1")).toBe(false);
+  });
+
+  it("期限が非有限のエントリを期限切れとして削除すること", () => {
+    const dedupTable = new Map<string, number>([["broken", Number.NaN]]);
+
+    shouldBroadcastBombHitReport({
+      dedupTable,
+      dedupeKey: "key-1",
+      nowMs: 1000,
+    });
+
+    expect(dedupTable.has("broken")).toBe(false);
   });
 
   it("設置用と同一のTTLを使用すること", () => {

@@ -1,7 +1,6 @@
 /**
  * playerPosition.test
- * プレイヤー座標からグリッドインデックスを解決する現行挙動を固定する
- * characterization test
+ * プレイヤー座標からグリッドインデックスを解決する仕様を検証するユニットテスト
  * サイズ指定の有無と，範囲外・非有限座標の境界条件を検証する
  */
 import { describe, expect, it } from "vitest";
@@ -74,16 +73,12 @@ describe("getPlayerGridIndex（サイズ指定あり）", () => {
     expect(getPlayerGridIndex(player, size)).toBeNull();
   });
 
-  it("x座標がNaNの場合はnullではなくNaNを返すこと", () => {
-    const result = getPlayerGridIndex(createPlayerAt(Number.NaN, 0), size);
-
-    expect(Number.isNaN(result)).toBe(true);
+  it("x座標がNaNの場合はnullを返すこと", () => {
+    expect(getPlayerGridIndex(createPlayerAt(Number.NaN, 0), size)).toBeNull();
   });
 
-  it("y座標がNaNの場合はnullではなくNaNを返すこと", () => {
-    const result = getPlayerGridIndex(createPlayerAt(0, Number.NaN), size);
-
-    expect(Number.isNaN(result)).toBe(true);
+  it("y座標がNaNの場合はnullを返すこと", () => {
+    expect(getPlayerGridIndex(createPlayerAt(0, Number.NaN), size)).toBeNull();
   });
 
   it("列数0のサイズではすべての座標でnullを返すこと", () => {
@@ -143,5 +138,11 @@ describe("getPlayerGridIndex（サイズ指定なし）", () => {
 
   it("既定グリッドでも負の座標ではnullを返すこと", () => {
     expect(getPlayerGridIndex(createPlayerAt(-1, -1))).toBeNull();
+  });
+
+  it("既定グリッドでもNaN座標ではnullを返すこと", () => {
+    expect(
+      getPlayerGridIndex(createPlayerAt(Number.NaN, Number.NaN)),
+    ).toBeNull();
   });
 });

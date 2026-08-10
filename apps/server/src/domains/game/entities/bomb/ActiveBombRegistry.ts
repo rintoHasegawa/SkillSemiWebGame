@@ -14,12 +14,28 @@ export type ActiveBomb = {
   ownerTeamId: number;
 };
 
+// 登録を受け付けられる数値を持つ爆弾かを判定する
+const isRegistrableBomb = (bomb: ActiveBomb): boolean => {
+  return (
+    Number.isFinite(bomb.x) &&
+    Number.isFinite(bomb.y) &&
+    Number.isFinite(bomb.explodeAtElapsedMs)
+  );
+};
+
 /** 設置済み爆弾を保持し爆発済みのものを回収するレジストリ */
 export class ActiveBombRegistry {
   private bombs = new Map<string, ActiveBomb>();
 
-  /** 新規爆弾を登録する */
+  /**
+   * 新規爆弾を登録する
+   * 座標・爆発時刻が非有限の爆弾は回収条件を満たせず残留するため登録しない
+   */
   public registerBomb(bomb: ActiveBomb): void {
+    if (!isRegistrableBomb(bomb)) {
+      return;
+    }
+
     this.bombs.set(bomb.bombId, bomb);
   }
 

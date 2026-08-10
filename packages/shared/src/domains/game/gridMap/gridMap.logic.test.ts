@@ -1,7 +1,7 @@
 /**
  * gridMap.logic.test
- * グリッド座標変換ロジックの現行挙動を固定する characterization test
- * 範囲判定の境界・小数座標の切り捨て・非有限座標の扱いを検証する
+ * グリッド座標変換ロジックの仕様を検証するユニットテスト
+ * 範囲判定の境界・小数座標の切り捨て・非有限座標を範囲外として扱う防御を検証する
  */
 import { describe, expect, it } from "vitest";
 
@@ -72,8 +72,18 @@ describe("getGridIndexFromPositionWithSize", () => {
     ).toBeNull();
   });
 
-  it("NaN 座標では null ではなく NaN を返すこと", () => {
-    expect(getGridIndexFromPositionWithSize(Number.NaN, 0, 4, 3)).toBeNaN();
+  it("x座標が NaN の場合は null を返すこと", () => {
+    expect(getGridIndexFromPositionWithSize(Number.NaN, 0, 4, 3)).toBeNull();
+  });
+
+  it("y座標が NaN の場合は null を返すこと", () => {
+    expect(getGridIndexFromPositionWithSize(0, Number.NaN, 4, 3)).toBeNull();
+  });
+
+  it("y座標が正の無限大の場合は null を返すこと", () => {
+    expect(
+      getGridIndexFromPositionWithSize(0, Number.POSITIVE_INFINITY, 4, 3),
+    ).toBeNull();
   });
 
   it("1列グリッドでは行番号がそのままインデックスになること", () => {
@@ -111,5 +121,19 @@ describe("getGridIndexFromPosition", () => {
 
   it("負の座標では null を返すこと", () => {
     expect(getGridIndexFromPosition(-0.5, 0)).toBeNull();
+  });
+
+  it("x座標が NaN の場合は null を返すこと", () => {
+    expect(getGridIndexFromPosition(Number.NaN, 0)).toBeNull();
+  });
+
+  it("y座標が NaN の場合は null を返すこと", () => {
+    expect(getGridIndexFromPosition(0, Number.NaN)).toBeNull();
+  });
+
+  it("無限大の座標では null を返すこと", () => {
+    expect(
+      getGridIndexFromPosition(Number.POSITIVE_INFINITY, 0),
+    ).toBeNull();
   });
 });

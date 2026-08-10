@@ -1,3 +1,8 @@
+/**
+ * gridMap.logic
+ * グリッド座標と1次元配列インデックスの相互変換ロジックを提供する
+ * 範囲外・非有限の座標は null を返してクライアントとサーバーで同じ判定にする
+ */
 import { GAME_CONFIG } from "../../../config/gameConfig";
 
 const toGridIndexWithSize = (
@@ -6,6 +11,11 @@ const toGridIndexWithSize = (
   gridCols: number,
   gridRows: number,
 ): number | null => {
+  // 非有限座標は範囲比較が成立せずNaNインデックスを生むため範囲外として扱う
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+
   const col = Math.floor(x);
   const row = Math.floor(y);
 

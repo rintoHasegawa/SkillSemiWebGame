@@ -1,7 +1,7 @@
 /**
  * MapStore.test
- * マップ塗り状態ストアの現行挙動を固定する characterization test
- * 初期化サイズ・差分キューの取り出しとクリア・スナップショット参照を検証する
+ * マップ塗り状態ストアの仕様を検証するユニットテスト
+ * 初期化サイズ・差分キューの取り出しとクリア・範囲外indexの拒否を検証する
  */
 import { describe, expect, it } from "vitest";
 
@@ -122,26 +122,46 @@ describe("MapStore.paintCell", () => {
     expect(store.paintCell(3, 1)).toBe(true);
   });
 
-  it("グリッド範囲外のindexでもtrueを返しグリッドを伸長すること", () => {
+  it("グリッド範囲外のindexではfalseを返しグリッドを伸長しないこと", () => {
     const store = createSmallStore();
 
-    expect(store.paintCell(10, 1)).toBe(true);
-    expect(store.getGridColorsSnapshot()).toHaveLength(11);
+    expect(store.paintCell(10, 1)).toBe(false);
+    expect(store.getGridColorsSnapshot()).toEqual([-1, -1, -1, -1]);
   });
 
-  it("グリッド範囲外のindexでも差分を積むこと", () => {
+  it("グリッド範囲外のindexでは差分を積まないこと", () => {
     const store = createSmallStore();
 
     store.paintCell(10, 1);
 
-    expect(store.getAndClearUpdates()).toEqual([{ index: 10, teamId: 1 }]);
+    expect(store.getAndClearUpdates()).toEqual([]);
   });
 
-  it("負のindexでも差分を積むこと", () => {
+  it("負のindexではfalseを返し差分を積まないこと", () => {
     const store = createSmallStore();
 
-    expect(store.paintCell(-1, 1)).toBe(true);
-    expect(store.getAndClearUpdates()).toEqual([{ index: -1, teamId: 1 }]);
+    expect(store.paintCell(-1, 1)).toBe(false);
+    expect(store.getAndClearUpdates()).toEqual([]);
+  });
+
+  it("NaNのindexではfalseを返し差分を積まないこと", () => {
+    const store = createSmallStore();
+
+    expect(store.paintCell(Number.NaN, 1)).toBe(false);
+    expect(store.getAndClearUpdates()).toEqual([]);
+  });
+
+  it("小数のindexではfalseを返し差分を積まないこと", () => {
+    const store = createSmallStore();
+
+    expect(store.paintCell(1.5, 1)).toBe(false);
+    expect(store.getAndClearUpdates()).toEqual([]);
+  });
+
+  it("セル数0のマップではindex0でもfalseを返すこと", () => {
+    const store = new MapStore({ gridCols: 0, gridRows: 4 });
+
+    expect(store.paintCell(0, 1)).toBe(false);
   });
 
   it("複数セルの塗りが塗った順に差分へ積まれること", () => {

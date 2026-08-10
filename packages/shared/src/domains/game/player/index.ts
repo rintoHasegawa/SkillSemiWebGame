@@ -12,3 +12,7 @@ export {
 	quantizeMovePayload,
 	isSameMovePayload,
 } from "./moveSync";
+/** プレイヤー座標のマップ範囲クランプを再公開する */
+export { clampPositionToMapBounds } from "./playerBounds";
+/** 座標クランプで利用するマップサイズ型を再公開する */
+export type { MapBoundsSize } from "./playerBounds";

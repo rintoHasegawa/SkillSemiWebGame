@@ -1,10 +1,11 @@
 /**
  * groupedCellUpdates.test
- * CellUpdate配列とGroupedCellUpdatesの相互変換の現行挙動を固定する characterization test
- * 空入力・重複・キー順序による並び替えを検証する
+ * CellUpdate配列とGroupedCellUpdatesの相互変換の仕様を検証するユニットテスト
+ * 空入力・重複・キー順序による並び替えと不正キーの読み飛ばしを検証する
  */
 import { describe, expect, it } from "vitest";
 
+import { UNKNOWN_TEAM_ID } from "../../../config/gameConfig";
 import type { CellUpdate } from "./gridMap.type";
 import { groupCellUpdates, ungroupCellUpdates } from "./groupedCellUpdates";
 
@@ -110,10 +111,28 @@ describe("ungroupCellUpdates", () => {
     ]);
   });
 
-  it("数値化できないキーでは teamId が NaN になること", () => {
-    const updates = ungroupCellUpdates({ invalid: [1] });
+  it("数値化できないキーのエントリを読み飛ばすこと", () => {
+    expect(ungroupCellUpdates({ invalid: [1] })).toEqual([]);
+  });
 
-    expect(updates[0]?.teamId).toBeNaN();
+  it("空文字キーのエントリを読み飛ばすこと", () => {
+    expect(ungroupCellUpdates({ "": [1] })).toEqual([]);
+  });
+
+  it("小数キーのエントリを読み飛ばすこと", () => {
+    expect(ungroupCellUpdates({ "1.5": [1] })).toEqual([]);
+  });
+
+  it("不正キーを読み飛ばしても正当なキーは展開すること", () => {
+    expect(ungroupCellUpdates({ invalid: [1], "2": [5] })).toEqual([
+      { index: 5, teamId: 2 },
+    ]);
+  });
+
+  it("未塗装を表す \"-1\" キーは正当な teamId として展開すること", () => {
+    expect(ungroupCellUpdates({ "-1": [4] })).toEqual([
+      { index: 4, teamId: UNKNOWN_TEAM_ID },
+    ]);
   });
 });
 

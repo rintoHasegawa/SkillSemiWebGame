@@ -1,7 +1,7 @@
 /**
  * ActiveBombRegistry.test
- * アクティブ爆弾レジストリの現行挙動を固定する characterization test
- * 登録・爆発回収の境界条件とスナップショット取得を検証する
+ * アクティブ爆弾レジストリの仕様を検証するユニットテスト
+ * 登録時の非有限値拒否・爆発回収の境界条件とスナップショット取得を検証する
  */
 import { describe, expect, it } from "vitest";
 
@@ -47,6 +47,68 @@ describe("ActiveBombRegistry.registerBomb", () => {
     registry.registerBomb(createBomb({ bombId: "bomb-2" }));
 
     expect(registry.getActiveBombSnapshots()).toHaveLength(2);
+  });
+
+  it("爆発時刻がNaNの爆弾は登録しないこと", () => {
+    const registry = new ActiveBombRegistry();
+
+    registry.registerBomb(createBomb({ explodeAtElapsedMs: Number.NaN }));
+
+    expect(registry.getActiveBombSnapshots()).toEqual([]);
+  });
+
+  it("爆発時刻がInfinityの爆弾は登録しないこと", () => {
+    const registry = new ActiveBombRegistry();
+
+    registry.registerBomb(
+      createBomb({ explodeAtElapsedMs: Number.POSITIVE_INFINITY }),
+    );
+
+    expect(registry.getActiveBombSnapshots()).toEqual([]);
+  });
+
+  it("x座標がNaNの爆弾は登録しないこと", () => {
+    const registry = new ActiveBombRegistry();
+
+    registry.registerBomb(createBomb({ x: Number.NaN }));
+
+    expect(registry.getActiveBombSnapshots()).toEqual([]);
+  });
+
+  it("y座標がNaNの爆弾は登録しないこと", () => {
+    const registry = new ActiveBombRegistry();
+
+    registry.registerBomb(createBomb({ y: Number.NaN }));
+
+    expect(registry.getActiveBombSnapshots()).toEqual([]);
+  });
+
+  it("y座標が-Infinityの爆弾は登録しないこと", () => {
+    const registry = new ActiveBombRegistry();
+
+    registry.registerBomb(createBomb({ y: Number.NEGATIVE_INFINITY }));
+
+    expect(registry.getActiveBombSnapshots()).toEqual([]);
+  });
+
+  it("非有限の爆弾を拒否しても既存の登録は保持すること", () => {
+    const registry = new ActiveBombRegistry();
+    const valid = createBomb({ bombId: "bomb-1" });
+    registry.registerBomb(valid);
+
+    registry.registerBomb(createBomb({ bombId: "bomb-2", x: Number.NaN }));
+
+    expect(registry.getActiveBombSnapshots()).toEqual([valid]);
+  });
+
+  it("同一bombIdの非有限な再登録では既存の内容を上書きしないこと", () => {
+    const registry = new ActiveBombRegistry();
+    const valid = createBomb({ x: 10 });
+    registry.registerBomb(valid);
+
+    registry.registerBomb(createBomb({ x: Number.NaN }));
+
+    expect(registry.getActiveBombSnapshots()).toEqual([valid]);
   });
 });
 
@@ -152,12 +214,12 @@ describe("ActiveBombRegistry.collectExplodedBombs", () => {
     expect(registry.collectExplodedBombs(Number.NaN)).toEqual([]);
   });
 
-  it("爆発時刻がNaNの爆弾は回収されず残り続けること", () => {
+  it("爆発時刻がNaNの爆弾は登録されないため残留しないこと", () => {
     const registry = new ActiveBombRegistry();
     registry.registerBomb(createBomb({ explodeAtElapsedMs: Number.NaN }));
 
     expect(registry.collectExplodedBombs(Number.MAX_SAFE_INTEGER)).toEqual([]);
-    expect(registry.getActiveBombSnapshots()).toHaveLength(1);
+    expect(registry.getActiveBombSnapshots()).toEqual([]);
   });
 
   it("経過時刻がInfinityの場合はすべて回収すること", () => {

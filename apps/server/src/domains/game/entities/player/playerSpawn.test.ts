@@ -10,7 +10,8 @@ import { config } from "@server/config";
 import { Player } from "./Player";
 import { createSpawnedPlayer } from "./playerSpawn";
 
-const { GRID_COLS, GRID_ROWS, TEAM_COUNT } = config.GAME_CONFIG;
+const { GRID_COLS, GRID_ROWS, TEAM_COUNT, PLAYER_RADIUS: RADIUS }
+  = config.GAME_CONFIG;
 
 const mapSize = { gridCols: 10, gridRows: 10 };
 
@@ -177,37 +178,37 @@ describe("createSpawnedPlayer のばらつき加算", () => {
 });
 
 describe("createSpawnedPlayer の座標クランプ", () => {
-  it("上限を超える座標はgridCols-1へクランプされること", () => {
+  it("上限を超える座標はgridCols-半径へクランプされること", () => {
     vi.spyOn(Math, "random").mockReturnValue(1);
     const player = createSpawnedPlayer("socket-1", "たろう", 0, {
       gridCols: 2,
       gridRows: 2,
     });
 
-    expect([player.x, player.y]).toEqual([1, 1]);
+    expect([player.x, player.y]).toEqual([2 - RADIUS, 2 - RADIUS]);
   });
 
-  it("下限を下回る座標は1へクランプされること", () => {
+  it("下限を下回る座標は半径へクランプされること", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const player = createSpawnedPlayer("socket-1", "たろう", 1, {
-      gridCols: 4,
-      gridRows: 4,
+      gridCols: 3,
+      gridRows: 3,
     });
 
-    expect([player.x, player.y]).toEqual([1, 1]);
+    expect([player.x, player.y]).toEqual([RADIUS, RADIUS]);
   });
 
-  it("gridCols-1が1未満のマップでは下限クランプが優先され1になること", () => {
+  it("プレイヤー直径を収められない1マス幅のマップでは中央になること", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const player = createSpawnedPlayer("socket-1", "たろう", 1, {
       gridCols: 1,
       gridRows: 1,
     });
 
-    expect([player.x, player.y]).toEqual([1, 1]);
+    expect([player.x, player.y]).toEqual([0.5, 0.5]);
   });
 
-  it("クランプ後もx座標が上限gridCols-1を超えないこと", () => {
+  it("十分な広さのマップではばらつき込みの座標がそのまま使われること", () => {
     vi.spyOn(Math, "random").mockReturnValue(1);
     const player = createSpawnedPlayer("socket-1", "たろう", 1, {
       gridCols: 6,
@@ -215,6 +216,20 @@ describe("createSpawnedPlayer の座標クランプ", () => {
     });
 
     expect(player.x).toBe(5);
+  });
+
+  it("極小マップでも全チームのスポーン座標がマップ範囲内に収まること", () => {
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    const smallMap = { gridCols: 3, gridRows: 3 };
+
+    Array.from({ length: TEAM_COUNT }, (_, i) => i).forEach((teamId) => {
+      const player = createSpawnedPlayer("socket-1", "たろう", teamId, smallMap);
+
+      expect(player.x).toBeGreaterThanOrEqual(RADIUS);
+      expect(player.x).toBeLessThanOrEqual(smallMap.gridCols - RADIUS);
+      expect(player.y).toBeGreaterThanOrEqual(RADIUS);
+      expect(player.y).toBeLessThanOrEqual(smallMap.gridRows - RADIUS);
+    });
   });
 });
 
@@ -264,6 +279,16 @@ describe("createSpawnedPlayer の初期位置保持", () => {
       gridRows: 2,
     });
 
-    expect(player.initialX).toBe(1);
+    expect(player.initialX).toBe(2 - RADIUS);
+  });
+
+  it("クランプされた場合もinitialYにクランプ後の値が入ること", () => {
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    const player = createSpawnedPlayer("socket-1", "たろう", 0, {
+      gridCols: 2,
+      gridRows: 2,
+    });
+
+    expect(player.initialY).toBe(2 - RADIUS);
   });
 });

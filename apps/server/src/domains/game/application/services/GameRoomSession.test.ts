@@ -5,6 +5,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { config } from "@server/config";
+
 import type { GameFieldConfig } from "../ports/gameUseCasePorts";
 import { GameRoomSession, type GameSessionCallbacks } from "./GameRoomSession";
 
@@ -13,6 +15,9 @@ const fieldConfig: GameFieldConfig = {
   gridCols: 6,
   gridRows: 6,
 };
+
+// 仕様（SPEC_03 プレイヤー半径 0.5 グリッド）に基づく境界値
+const { PLAYER_RADIUS } = config.GAME_CONFIG;
 
 /** テスト用のセッションを生成する */
 const createSession = (
@@ -144,6 +149,28 @@ describe("GameRoomSession", () => {
     session.movePlayer("socket-1", Number.NaN, 1);
 
     expect(session.getPlayers()[0]).toMatchObject({ x: 2.5, y: 3.5 });
+  });
+
+  it("フィールド範囲を超える移動はルームのグリッドサイズでクランプすること", () => {
+    const session = createSession();
+
+    session.movePlayer("socket-1", 9999, 9999);
+
+    expect(session.getPlayers()[0]).toMatchObject({
+      x: fieldConfig.gridCols - PLAYER_RADIUS,
+      y: fieldConfig.gridRows - PLAYER_RADIUS,
+    });
+  });
+
+  it("負の座標への移動はマップ下限へクランプすること", () => {
+    const session = createSession();
+
+    session.movePlayer("socket-1", -50, -50);
+
+    expect(session.getPlayers()[0]).toMatchObject({
+      x: PLAYER_RADIUS,
+      y: PLAYER_RADIUS,
+    });
   });
 
   it("開始待機中の移動は無視すること", () => {
