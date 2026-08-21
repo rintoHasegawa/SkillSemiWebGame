@@ -2,7 +2,7 @@
 
 チーム全員が Claude Code を用い，人間が直接コードを書くことはほぼない前提で，並行開発を破綻させずに進めるための協調ルールを定義する．
 
-> 本ガイドは**チーム開発モード**（`/setup` で team を選択したプロジェクト）でのみ有効．個人開発モード（solo）のプロジェクトには本ファイル・`task-*` コマンドは配置されない．
+> 本ガイドは**チーム開発モード**（`/setup` で team を選択したプロジェクト）でのみ有効．個人開発モード（solo）のプロジェクトには本ファイルは配置されない．なお `/task-create`・`/task-start`・`/task-handoff` は共通層の skill であり，solo でも Issue ベースのタスク管理に使用できる（その場合，本ガイドのチーム協調ルールは適用されない）．
 
 Git の規約は `.claude/rules/git-conventions.md`（push・PR・マージ手順は `.claude/skills/commit/reference.md`），1 タスクの実装パイプラインは [GUIDE_02](GUIDE_02_エージェント運用ルール.md) に従う．本ガイドはそれらの上に立つ「複数人が同時に動くときの調整」を扱う．
 
@@ -96,7 +96,7 @@ CI が未構築の間は「CI 緑」を以下で代替する．CI 構築後は�
 
 ## 共有設定の扱い (Shared Configuration)
 
-`CLAUDE.md` と `.claude/`（agents・skills・hooks・settings.json）は全員の Claude の挙動を決める共有インフラである．
+`CLAUDE.md` と `.claude/`（agents・skills・rules・hooks・settings.json・template-overrides.md）は全員の Claude の挙動を決める共有インフラである．
 
 - **git 追跡を継続する**．untrack や `.gitignore` 化はしない（履歴の保全と挙動の統一のため）．
 - **進捗は `CLAUDE.md` に書かない**．進捗は Issues と git 履歴で追う（「タスク管理」参照）．
