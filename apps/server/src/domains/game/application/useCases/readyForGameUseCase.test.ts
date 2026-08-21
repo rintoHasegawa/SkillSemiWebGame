@@ -133,7 +133,7 @@ describe("readyForGameUseCase", () => {
     expect(output.publishGameStartToSocket).not.toHaveBeenCalled();
   });
 
-  it("開始時刻が0の場合は未開始として開始通知を送らないこと", () => {
+  it("開始時刻が0の場合も開始済みとして開始通知を送ること", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
       roomPlayers: [createPlayer("socket-1", 1, 1)],
@@ -147,7 +147,9 @@ describe("readyForGameUseCase", () => {
       output,
     });
 
-    expect(output.publishGameStartToSocket).not.toHaveBeenCalled();
+    expect(output.publishGameStartToSocket).toHaveBeenCalledWith(
+      expect.objectContaining({ startTime: 0 }),
+    );
   });
 
   it("開始済みの場合はセッションのフィールド設定で開始通知を送ること", () => {

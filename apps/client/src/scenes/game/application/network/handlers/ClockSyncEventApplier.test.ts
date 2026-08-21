@@ -3,7 +3,7 @@
  * 時刻同期イベント反映の現行挙動を固定する characterization test
  * 開始時刻欠落時の分岐とコールバック呼び出し順を検証する
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { GameStartPayload } from "@repo/shared";
 
@@ -55,6 +55,10 @@ const createGameStartPayload = (
   };
 };
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("ClockSyncEventApplier", () => {
   it("GAME_START受信でサーバー時刻ヒントを通知すること", () => {
     const { applier, serverNows } = createApplier();
@@ -88,24 +92,75 @@ describe("ClockSyncEventApplier", () => {
     expect(startTimes).toEqual([0]);
   });
 
-  it("開始時刻がnullの場合は開始通知を行わないこと", () => {
+  it("開始時刻がnullの場合はコールバックを一切呼ばないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const { applier, calls } = createApplier();
 
     applier.applyGameStart(
       createGameStartPayload({ startTime: null as unknown as number }),
     );
 
-    expect(calls).toEqual(["onGameStartClockHint"]);
+    expect(calls).toEqual([]);
   });
 
-  it("開始時刻がnullの場合でもサーバー時刻ヒントは通知すること", () => {
+  it("開始時刻が欠落している場合はサーバー時刻ヒントも通知しないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const { applier, serverNows } = createApplier();
 
     applier.applyGameStart(
       createGameStartPayload({ startTime: undefined as unknown as number }),
     );
 
-    expect(serverNows).toEqual([4000]);
+    expect(serverNows).toEqual([]);
+  });
+
+  it("開始時刻が欠落している場合はエラーログを出力すること", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { applier } = createApplier();
+
+    applier.applyGameStart(
+      createGameStartPayload({ startTime: undefined as unknown as number }),
+    );
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("サーバー時刻が非有限の場合は時計補正を行わないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { applier, serverNows } = createApplier();
+
+    applier.applyGameStart(createGameStartPayload({ serverNow: Number.NaN }));
+
+    expect(serverNows).toEqual([]);
+  });
+
+  it("サーバー時刻が非有限でも開始時刻が正しければ開始通知は行うこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { applier, startTimes } = createApplier();
+
+    applier.applyGameStart(createGameStartPayload({ serverNow: Number.NaN }));
+
+    expect(startTimes).toEqual([5000]);
+  });
+
+  it("サーバー時刻が欠落している場合は時計補正を行わないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { applier, serverNows } = createApplier();
+
+    applier.applyGameStart(
+      createGameStartPayload({ serverNow: undefined as unknown as number }),
+    );
+
+    expect(serverNows).toEqual([]);
+  });
+
+  it("サーバー時刻が非有限の場合はエラーログを出力すること", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { applier } = createApplier();
+
+    applier.applyGameStart(createGameStartPayload({ serverNow: Number.NaN }));
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 
   it("デバッグログ指定時は開始時刻を含むメッセージを出力すること", () => {
@@ -119,6 +174,7 @@ describe("ClockSyncEventApplier", () => {
   });
 
   it("開始時刻がnullの場合はデバッグログを出力しないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const { applier, debugMessages } = createApplier({ withDebugLog: true });
 
     applier.applyGameStart(

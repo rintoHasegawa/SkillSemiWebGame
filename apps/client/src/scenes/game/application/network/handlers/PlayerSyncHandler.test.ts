@@ -4,8 +4,9 @@
  * 生成種別の分岐・自分自身の除外・再生成と削除の副作用を検証する
  */
 import { Container } from "pixi.js";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { config as sharedConfig } from "@repo/shared";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import {
   LocalPlayerController,
@@ -48,6 +49,11 @@ const createHandler = (myId = "me") => {
 
   return { handler, playerRepository, addedChildren, removedChildren };
 };
+
+// 遅延生成時の開発用デバッグログでテスト出力が汚れるのを防ぐ
+beforeEach(() => {
+  vi.spyOn(console, "log").mockImplementation(() => {});
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -203,6 +209,116 @@ describe("PlayerSyncHandler", () => {
     expect(() =>
       handler.handlePlayerUpdates([{ id: "unknown", x: 1, y: 2 }]),
     ).not.toThrow();
+  });
+
+  it("差分更新で未登録IDを受けた場合はリモートプレイヤーを遅延生成すること", () => {
+    const { handler, playerRepository } = createHandler("me");
+
+    handler.handlePlayerUpdates([{ id: "p1", x: 30, y: 40 }]);
+
+    expect(playerRepository.getById("p1")).toBeInstanceOf(
+      RemotePlayerController,
+    );
+  });
+
+  it("遅延生成したプレイヤーへ受信座標を反映すること", () => {
+    const { handler, playerRepository } = createHandler("me");
+
+    handler.handlePlayerUpdates([{ id: "p1", x: 30, y: 40 }]);
+
+    expect(playerRepository.getById("p1")?.getPosition()).toEqual({
+      x: 30,
+      y: 40,
+    });
+  });
+
+  it("遅延生成した描画オブジェクトをワールドへ追加すること", () => {
+    const { handler, playerRepository, addedChildren } = createHandler("me");
+
+    handler.handlePlayerUpdates([{ id: "p1", x: 30, y: 40 }]);
+
+    expect(addedChildren).toEqual([
+      playerRepository.getById("p1")?.getDisplayObject(),
+    ]);
+  });
+
+  it("座標なしで受信した初期一覧のメタ情報を遅延生成へ復元すること", () => {
+    const { handler, playerRepository } = createHandler("me");
+    handler.handleCurrentPlayers([{ id: "p1", name: "たろう", teamId: 2 }]);
+
+    handler.handlePlayerUpdates([{ id: "p1", x: 30, y: 40 }]);
+
+    expect(playerRepository.getById("p1")?.getSnapshot()).toEqual({
+      id: "p1",
+      name: "たろう",
+      teamId: 2,
+      x: 30,
+      y: 40,
+    });
+  });
+
+  it("メタ情報が未知のIDは未確定チームとして遅延生成すること", () => {
+    const { handler, playerRepository } = createHandler("me");
+
+    handler.handlePlayerUpdates([{ id: "p1", x: 30, y: 40 }]);
+
+    expect(playerRepository.getById("p1")?.getSnapshot()).toEqual({
+      id: "p1",
+      name: "",
+      teamId: sharedConfig.UNKNOWN_TEAM_ID,
+      x: 30,
+      y: 40,
+    });
+  });
+
+  it("退出済みプレイヤーの再入場でもメタ情報を復元すること", () => {
+    const { handler, playerRepository } = createHandler("me");
+    handler.handleNewPlayer({ id: "p1", name: "はなこ", teamId: 3, x: 1, y: 2 });
+    handler.handleRemovePlayer("p1");
+
+    handler.handlePlayerUpdates([{ id: "p1", x: 5, y: 6 }]);
+
+    expect(playerRepository.getById("p1")?.getSnapshot()).toEqual({
+      id: "p1",
+      name: "はなこ",
+      teamId: 3,
+      x: 5,
+      y: 6,
+    });
+  });
+
+  it("遅延生成後にnew-playerを受けたら正しいメタ情報へ差し替えること", () => {
+    const { handler, playerRepository } = createHandler("me");
+    handler.handlePlayerUpdates([{ id: "p1", x: 30, y: 40 }]);
+
+    handler.handleNewPlayer({ id: "p1", name: "たろう", teamId: 1, x: 7, y: 8 });
+
+    expect(playerRepository.getById("p1")?.getSnapshot()).toEqual({
+      id: "p1",
+      name: "たろう",
+      teamId: 1,
+      x: 7,
+      y: 8,
+    });
+  });
+
+  it("遅延生成したプレイヤーへ後続の差分更新を適用すること", () => {
+    const { handler, playerRepository } = createHandler("me");
+    handler.handlePlayerUpdates([{ id: "p1", x: 30, y: 40 }]);
+    const target = playerRepository.getById("p1") as RemotePlayerController;
+    const applySpy = vi.spyOn(target, "applyRemoteUpdate");
+
+    handler.handlePlayerUpdates([{ id: "p1", x: 31, y: 41 }]);
+
+    expect(applySpy).toHaveBeenCalledWith({ x: 31, y: 41 });
+  });
+
+  it("未登録の自分自身IDでは遅延生成しないこと", () => {
+    const { handler, playerRepository } = createHandler("me");
+
+    handler.handlePlayerUpdates([{ id: "me", x: 30, y: 40 }]);
+
+    expect(playerRepository.getById("me")).toBeUndefined();
   });
 
   it("差分更新は複数要素をすべて適用すること", () => {

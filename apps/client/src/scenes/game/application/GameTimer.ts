@@ -18,7 +18,7 @@ export class GameTimer {
     this.nowMsProvider = nowMsProvider;
   }
 
-  public setGameStart(startTime: number) {
+  public setGameStart(startTime: number): void {
     this.gameStartTime = startTime;
   }
 
@@ -27,7 +27,8 @@ export class GameTimer {
   }
 
   public isStarted(): boolean {
-    if (!this.gameStartTime) {
+    // 0 も有効なエポック時刻のため未設定判定は null のみで行う
+    if (this.gameStartTime === null) {
       return false;
     }
 
@@ -35,7 +36,7 @@ export class GameTimer {
   }
 
   public getPreStartRemainingSec(): number {
-    if (!this.gameStartTime) {
+    if (this.gameStartTime === null) {
       return 0;
     }
 
@@ -48,7 +49,9 @@ export class GameTimer {
   }
 
   public getRemainingTime(): number {
-    if (!this.gameStartTime) return config.GAME_CONFIG.GAME_DURATION_SEC;
+    if (this.gameStartTime === null) {
+      return config.GAME_CONFIG.GAME_DURATION_SEC;
+    }
 
     const nowMs = this.nowMsProvider();
     if (nowMs < this.gameStartTime) {
@@ -63,7 +66,10 @@ export class GameTimer {
   }
 
   public getElapsedMs(): number {
-    if (!this.gameStartTime) return 0;
+    if (this.gameStartTime === null) {
+      return 0;
+    }
+
     return Math.max(0, this.nowMsProvider() - this.gameStartTime);
   }
 }

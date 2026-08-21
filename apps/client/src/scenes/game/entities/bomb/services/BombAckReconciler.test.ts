@@ -3,7 +3,7 @@
  * 爆弾設置ACK反映の現行挙動を固定する characterization test
  * 仮IDから正式IDへの置換と各種スキップ分岐を検証する
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BombIdRegistry } from "@client/scenes/game/entities/bomb/BombIdRegistry";
 import type {
@@ -44,6 +44,10 @@ const createBombRepositoryStub = (
   return { bombRepository, removedBombIds, upsertedBombs };
 };
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("BombAckReconciler", () => {
   it("未登録のrequestIdでは爆弾を差し替えないこと", () => {
     const { bombRepository, removedBombIds, upsertedBombs } =
@@ -61,22 +65,44 @@ describe("BombAckReconciler", () => {
     });
   });
 
-  it("仮IDの描画情報が無い場合は差し替えないこと", () => {
+  it("仮IDの描画情報が無い場合でも仮IDの実体を破棄すること", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const bombIdRegistry = new BombIdRegistry();
-    const { requestId } = bombIdRegistry.issuePendingOwnBombId();
-    const { bombRepository, removedBombIds, upsertedBombs } =
-      createBombRepositoryStub();
+    const { requestId, tempBombId } = bombIdRegistry.issuePendingOwnBombId();
+    const { bombRepository, removedBombIds } = createBombRepositoryStub();
     const reconciler = new BombAckReconciler({ bombIdRegistry, bombRepository });
 
     reconciler.applyPlacedBombAck({ bombId: "server-1", requestId });
 
-    expect({ removedBombIds, upsertedBombs }).toEqual({
-      removedBombIds: [],
-      upsertedBombs: [],
-    });
+    expect(removedBombIds).toEqual([tempBombId]);
+  });
+
+  it("仮IDの描画情報が無い場合は正式IDで再登録しないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const bombIdRegistry = new BombIdRegistry();
+    const { requestId } = bombIdRegistry.issuePendingOwnBombId();
+    const { bombRepository, upsertedBombs } = createBombRepositoryStub();
+    const reconciler = new BombAckReconciler({ bombIdRegistry, bombRepository });
+
+    reconciler.applyPlacedBombAck({ bombId: "server-1", requestId });
+
+    expect(upsertedBombs).toEqual([]);
+  });
+
+  it("仮IDの描画情報が無い場合はエラーログを出力すること", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const bombIdRegistry = new BombIdRegistry();
+    const { requestId } = bombIdRegistry.issuePendingOwnBombId();
+    const { bombRepository } = createBombRepositoryStub();
+    const reconciler = new BombAckReconciler({ bombIdRegistry, bombRepository });
+
+    reconciler.applyPlacedBombAck({ bombId: "server-1", requestId });
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 
   it("仮IDの描画情報が無い場合でもpending対応は解除すること", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const bombIdRegistry = new BombIdRegistry();
     const { requestId } = bombIdRegistry.issuePendingOwnBombId();
     const { bombRepository } = createBombRepositoryStub();

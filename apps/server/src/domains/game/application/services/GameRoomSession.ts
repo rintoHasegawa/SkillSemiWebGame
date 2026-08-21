@@ -140,7 +140,8 @@ export class GameRoomSession {
   }
 
   public movePlayer(id: string, x: number, y: number): void {
-    if (this.startTime && Date.now() < this.startTime) {
+    // 0 も有効なエポック時刻のため未設定判定は undefined のみで行う
+    if (this.startTime !== undefined && Date.now() < this.startTime) {
       logEvent(logScopes.GAME_ROOM_SESSION, {
         event: gameDomainLogEvents.MOVE,
         result: logResults.IGNORED_INVALID_PAYLOAD,

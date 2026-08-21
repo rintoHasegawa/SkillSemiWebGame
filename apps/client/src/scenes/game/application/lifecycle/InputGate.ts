@@ -21,6 +21,8 @@ export class InputGate {
   private readonly isStartedProvider: () => boolean;
   private readonly isPlayableTimeProvider: () => boolean;
   private inputLockCount = 0;
+  /** reset のたびに更新し，旧世代の解放関数を無効化するための世代番号 */
+  private lockGeneration = 0;
 
   constructor({ isStartedProvider, isPlayableTimeProvider }: InputGateOptions) {
     this.isStartedProvider = isStartedProvider;
@@ -40,9 +42,11 @@ export class InputGate {
   public lockInput(): () => void {
     this.inputLockCount += 1;
 
+    const issuedGeneration = this.lockGeneration;
     let released = false;
     return () => {
-      if (released) {
+      // reset 後に発行された新しいロックを旧解放関数が解除しないようにする
+      if (released || issuedGeneration !== this.lockGeneration) {
         return;
       }
 
@@ -60,8 +64,9 @@ export class InputGate {
     return input;
   }
 
-  /** 管理状態を初期化する */
+  /** 管理状態を初期化し，発行済みの解放関数を無効化する */
   public reset(): void {
     this.inputLockCount = 0;
+    this.lockGeneration += 1;
   }
 }

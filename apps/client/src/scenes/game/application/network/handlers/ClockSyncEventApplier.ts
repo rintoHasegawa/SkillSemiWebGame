@@ -35,11 +35,22 @@ export class ClockSyncEventApplier {
 
   /** GAME_STARTイベントを反映する */
   public applyGameStart(payload: GameStartPayload): void {
-    this.onGameStartClockHint(payload.serverNow);
-
+    // 壊れたペイロードで時計補正だけ適用されないよう，検証を先に行う
     const startTime = toGameStartedAt(payload);
     if (startTime === null) {
+      console.error(
+        "[ClockSyncEventApplier] GAME_STARTの開始時刻が不正なため無視する",
+      );
       return;
+    }
+
+    // serverNow が数値でない場合は時計補正を汚さないよう補正のみ見送る
+    if (Number.isFinite(payload.serverNow)) {
+      this.onGameStartClockHint(payload.serverNow);
+    } else {
+      console.error(
+        "[ClockSyncEventApplier] GAME_STARTのサーバー時刻が不正なため時計補正を適用しない",
+      );
     }
 
     this.onGameStarted(startTime);

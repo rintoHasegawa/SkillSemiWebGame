@@ -53,11 +53,39 @@ describe("GameTimer", () => {
     expect(timer.isStarted()).toBe(true);
   });
 
-  it("開始時刻に0を設定した場合は未開始と判定すること", () => {
+  it("開始時刻に0を設定した場合は有効な開始時刻として扱うこと", () => {
     const { timer } = createTimer(1000);
     timer.setGameStart(0);
 
+    expect(timer.isStarted()).toBe(true);
+  });
+
+  it("開始時刻0でも現在時刻が手前なら未開始と判定すること", () => {
+    const { timer } = createTimer(-1);
+    timer.setGameStart(0);
+
     expect(timer.isStarted()).toBe(false);
+  });
+
+  it("開始時刻0でも経過ミリ秒を現在時刻から算出すること", () => {
+    const { timer } = createTimer(1500);
+    timer.setGameStart(0);
+
+    expect(timer.getElapsedMs()).toBe(1500);
+  });
+
+  it("開始時刻0でも残り時間を経過分だけ減らすこと", () => {
+    const { timer } = createTimer(2000);
+    timer.setGameStart(0);
+
+    expect(timer.getRemainingTime()).toBe(GAME_DURATION_SEC - 2);
+  });
+
+  it("開始時刻0で現在時刻が手前なら開始前残り秒を返すこと", () => {
+    const { timer } = createTimer(-1500);
+    timer.setGameStart(0);
+
+    expect(timer.getPreStartRemainingSec()).toBe(2);
   });
 
   it("開始時刻未設定では開始前残り秒を0とすること", () => {

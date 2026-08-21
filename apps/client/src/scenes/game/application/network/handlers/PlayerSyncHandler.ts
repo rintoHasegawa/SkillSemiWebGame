@@ -12,12 +12,15 @@ import type {
   RemovePlayerPayload,
   UpdatePlayersPayload,
 } from "@repo/shared";
+import { config as sharedConfig } from "@repo/shared";
 import {
   RemotePlayerController,
 } from "@client/scenes/game/entities/player/PlayerController";
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import { PlayerControllerFactory } from "./PlayerControllerFactory";
+
+const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 
 /** PlayerSyncHandler の初期化入力 */
 export type PlayerSyncHandlerOptions = {
@@ -33,6 +36,8 @@ export class PlayerSyncHandler {
   private readonly playerRepository: PlayerRepository;
   private readonly myId: string;
   private readonly playerControllerFactory: PlayerControllerFactory;
+  /** 座標なしで受信したプレイヤーも含むメタ情報の保持先 */
+  private readonly playerMetaById = new Map<string, CurrentPlayerMetaPayload>();
 
   constructor({ worldContainer, playerRepository, myId, appearanceResolver }: PlayerSyncHandlerOptions) {
     this.worldContainer = worldContainer;
@@ -44,7 +49,10 @@ export class PlayerSyncHandler {
     });
   }
 
-  /** 初期プレイヤー一覧を受信し，座標付き要素のみ実体生成する */
+  /**
+   * 初期プレイヤー一覧を受信し，座標付き要素のみ実体生成する
+   * 座標なし要素はメタ情報のみ保持し，差分更新受信時の遅延生成に使う
+   */
   public handleCurrentPlayers = (serverPlayers: CurrentPlayersPayload): void => {
     serverPlayers.forEach((player) => {
       this.upsertFromCurrentPlayerBootstrapPayload(player);
@@ -64,7 +72,13 @@ export class PlayerSyncHandler {
       }
 
       const target = this.playerRepository.getById(playerData.id);
-      if (target && target instanceof RemotePlayerController) {
+      if (!target) {
+        // new-player 取りこぼし時でも描画を回復させるため遅延生成する
+        this.createLazyRemotePlayer(playerData.id, playerData.x, playerData.y);
+        return;
+      }
+
+      if (target instanceof RemotePlayerController) {
         target.applyRemoteUpdate({ x: playerData.x, y: playerData.y });
       }
     });
@@ -94,10 +108,43 @@ export class PlayerSyncHandler {
     this.playerRepository.upsert(playerId, playerController);
   }
 
+  /**
+   * update-players のみ届いたプレイヤーを既知メタ情報から遅延生成する
+   * メタ情報が無い場合は未確定チームとして生成し，new-player 受信時に差し替える
+   */
+  private createLazyRemotePlayer(playerId: string, x: number, y: number): void {
+    if (ENABLE_DEBUG_LOG) {
+      console.log(
+        `[PlayerSyncHandler] 未登録IDの差分更新を受信したため遅延生成: ${playerId}`,
+      );
+    }
+
+    const meta = this.playerMetaById.get(playerId);
+    this.upsertFromNewPlayerPayload({
+      id: playerId,
+      name: meta?.name ?? "",
+      teamId: meta?.teamId ?? sharedConfig.UNKNOWN_TEAM_ID,
+      x,
+      y,
+    });
+  }
+
+  /** 生成有無に関わらずプレイヤーのメタ情報を記録する */
+  private rememberPlayerMeta(payload: CurrentPlayerMetaPayload): void {
+    this.playerMetaById.set(payload.id, {
+      id: payload.id,
+      name: payload.name,
+      teamId: payload.teamId,
+    });
+  }
+
   /** current-players要素から初期表示用の実体生成を行う */
   private upsertFromCurrentPlayerBootstrapPayload(
     payload: CurrentPlayerBootstrapPayload,
   ): void {
+    // 座標なし要素はAOI外のため生成しないが，メタ情報だけは保持する
+    this.rememberPlayerMeta(payload);
+
     if (!this.hasBootstrapPosition(payload)) {
       return;
     }
@@ -120,6 +167,7 @@ export class PlayerSyncHandler {
 
   /** new-player情報から実体生成を行う */
   private upsertFromNewPlayerPayload(payload: NewPlayerPayload): void {
+    this.rememberPlayerMeta(payload);
     this.replacePlayerController(payload.id, payload);
   }
 }
