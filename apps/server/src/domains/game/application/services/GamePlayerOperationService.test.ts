@@ -161,10 +161,32 @@ describe("GamePlayerOperationService", () => {
     expect(activeIds.size).toBe(0);
   });
 
-  it("セッション側で削除されなかった場合は空室でも破棄しないこと", () => {
+  it("セッション側で削除されなくても残存0人なら破棄すること", () => {
     const { session, service } = createContext({
       removed: false,
       remainingPlayers: [],
+    });
+
+    service.removePlayer("socket-1");
+
+    expect(session.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("セッション側で削除されなくても残存0人ならセッション参照をnullにすること", () => {
+    const { sessionRef, service } = createContext({
+      removed: false,
+      remainingPlayers: [],
+    });
+
+    service.removePlayer("socket-1");
+
+    expect(sessionRef.current).toBeNull();
+  });
+
+  it("セッション側で削除されなくても残存者がいれば破棄しないこと", () => {
+    const { session, service } = createContext({
+      removed: false,
+      remainingPlayers: [{ id: "socket-2" } as Player],
     });
 
     service.removePlayer("socket-1");

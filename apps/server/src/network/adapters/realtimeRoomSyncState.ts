@@ -51,6 +51,8 @@ export type RealtimeRoomSyncStateStore = {
     socketId: SocketId,
     nextIds: Iterable<string>,
   ) => void;
+  /** 切断ソケットのキャッシュを全ルームから解放する */
+  releaseSocket: (socketId: SocketId) => void;
   resetRoom: (roomId: RoomId) => void;
 };
 
@@ -84,6 +86,57 @@ export const createRealtimeRoomSyncStateStore = (): RealtimeRoomSyncStateStore =
     return created;
   };
 
+  // 可視IDキャッシュ1種分の参照・更新操作をまとめて生成する
+  const createVisibleIdsAccessors = (
+    roomCache: Map<RoomId, RoomVisibleIdsCache>,
+  ) => {
+    const getOrCreate = (roomId: RoomId, socketId: SocketId): Set<string> => {
+      return getOrCreateSocketScopedCache(
+        roomCache,
+        roomId,
+        socketId,
+        () => new Set<string>(),
+      );
+    };
+
+    return {
+      getSnapshot: (roomId: RoomId, socketId: SocketId): Set<string> => {
+        return new Set(getOrCreate(roomId, socketId));
+      },
+      replace: (
+        roomId: RoomId,
+        socketId: SocketId,
+        nextIds: Iterable<string>,
+      ): void => {
+        const cache = getOrCreate(roomId, socketId);
+        cache.clear();
+        for (const nextId of nextIds) {
+          cache.add(nextId);
+        }
+      },
+    };
+  };
+
+  const visiblePlayerIds = createVisibleIdsAccessors(visiblePlayerIdsByRoomId);
+  const visibleBombIds = createVisibleIdsAccessors(visibleBombIdsByRoomId);
+  const visibleHurricaneIds = createVisibleIdsAccessors(
+    visibleHurricaneIdsByRoomId,
+  );
+
+  // 指定ソケットのキャッシュを全ルームから削除し，空になったルームも畳む
+  const releaseSocketScopedCache = <T>(
+    roomCache: Map<RoomId, Map<SocketId, T>>,
+    socketId: SocketId,
+  ): void => {
+    roomCache.forEach((bySocketId, roomId) => {
+      bySocketId.delete(socketId);
+
+      if (bySocketId.size === 0) {
+        roomCache.delete(roomId);
+      }
+    });
+  };
+
   return {
     getPlayerPositionCache: (roomId, socketId) => {
       return getOrCreateSocketScopedCache(
@@ -101,68 +154,18 @@ export const createRealtimeRoomSyncStateStore = (): RealtimeRoomSyncStateStore =
       aoiCellCache.set(socketId, cell);
       aoiCellCacheByRoomId.set(roomId, aoiCellCache);
     },
-    getVisiblePlayerIdsSnapshot: (roomId, socketId) => {
-      const cache = getOrCreateSocketScopedCache(
-        visiblePlayerIdsByRoomId,
-        roomId,
-        socketId,
-        () => new Set<string>(),
-      );
-      return new Set(cache);
-    },
-    getVisibleBombIdsSnapshot: (roomId, socketId) => {
-      const cache = getOrCreateSocketScopedCache(
-        visibleBombIdsByRoomId,
-        roomId,
-        socketId,
-        () => new Set<string>(),
-      );
-      return new Set(cache);
-    },
-    getVisibleHurricaneIdsSnapshot: (roomId, socketId) => {
-      const cache = getOrCreateSocketScopedCache(
-        visibleHurricaneIdsByRoomId,
-        roomId,
-        socketId,
-        () => new Set<string>(),
-      );
-      return new Set(cache);
-    },
-    replaceVisiblePlayerIds: (roomId, socketId, nextIds) => {
-      const cache = getOrCreateSocketScopedCache(
-        visiblePlayerIdsByRoomId,
-        roomId,
-        socketId,
-        () => new Set<string>(),
-      );
-      cache.clear();
-      for (const nextId of nextIds) {
-        cache.add(nextId);
-      }
-    },
-    replaceVisibleBombIds: (roomId, socketId, nextIds) => {
-      const cache = getOrCreateSocketScopedCache(
-        visibleBombIdsByRoomId,
-        roomId,
-        socketId,
-        () => new Set<string>(),
-      );
-      cache.clear();
-      for (const nextId of nextIds) {
-        cache.add(nextId);
-      }
-    },
-    replaceVisibleHurricaneIds: (roomId, socketId, nextIds) => {
-      const cache = getOrCreateSocketScopedCache(
-        visibleHurricaneIdsByRoomId,
-        roomId,
-        socketId,
-        () => new Set<string>(),
-      );
-      cache.clear();
-      for (const nextId of nextIds) {
-        cache.add(nextId);
-      }
+    getVisiblePlayerIdsSnapshot: visiblePlayerIds.getSnapshot,
+    getVisibleBombIdsSnapshot: visibleBombIds.getSnapshot,
+    getVisibleHurricaneIdsSnapshot: visibleHurricaneIds.getSnapshot,
+    replaceVisiblePlayerIds: visiblePlayerIds.replace,
+    replaceVisibleBombIds: visibleBombIds.replace,
+    replaceVisibleHurricaneIds: visibleHurricaneIds.replace,
+    releaseSocket: (socketId) => {
+      releaseSocketScopedCache(playerPositionCacheByRoomId, socketId);
+      releaseSocketScopedCache(aoiCellCacheByRoomId, socketId);
+      releaseSocketScopedCache(visiblePlayerIdsByRoomId, socketId);
+      releaseSocketScopedCache(visibleBombIdsByRoomId, socketId);
+      releaseSocketScopedCache(visibleHurricaneIdsByRoomId, socketId);
     },
     resetRoom: (roomId) => {
       playerPositionCacheByRoomId.delete(roomId);

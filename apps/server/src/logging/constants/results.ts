@@ -22,6 +22,7 @@ export const logResults = {
   IGNORED_PLAYER_NOT_IN_SESSION: "ignored_player_not_in_session",
   IGNORED_ROOM_FULL: "ignored_room_full",
   IGNORED_ROOM_NOT_FOUND: "ignored_room_not_found",
+  IGNORED_SESSION_NOT_STARTED: "ignored_session_not_started",
   JOINED: "joined",
   PLAYER_REMOVED: "player_removed",
   PROCESSED: "processed",

@@ -2,14 +2,11 @@
  * disconnectCoordinator
  * DISCONNECTイベントの調停を行い，ゲーム離脱処理とルーム離脱処理を順序実行する
  */
-import {
-  type GameOutputPort,
-} from "@server/domains/game/application/ports/gameUseCasePorts";
+import type { GameOutputPort } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import type { DisconnectCoordinatorDeps } from "./coordinatorDeps";
 import { disconnectUseCase } from "@server/domains/game/application/useCases/disconnectUseCase";
 import { roomDisconnectUseCase } from "@server/domains/room/application/useCases/roomDisconnectUseCase";
-import { resolveCoordinatorRuntime } from "./runtimeCoordinatorSupport";
 
 /** 切断調停で利用する入力ポートと出力ポートの契約 */
 type DisconnectCoordinatorParams = {
@@ -27,18 +24,15 @@ export const disconnectCoordinator = ({
   gameOutput,
   roomOutput,
 }: DisconnectCoordinatorParams) => {
-  const runtime = resolveCoordinatorRuntime(
-    {
-      roomManager,
-      runtimeRegistry,
-    },
-    socketId,
-  );
+  // ゲームランタイムとルームIDを個別に解決し，ルーム解決の失敗で
+  // ゲーム側の離脱処理ごと落とさない（他クライアントのゴースト残留を防ぐ）
+  const gameManager = runtimeRegistry.getGameManagerByPlayerId(socketId);
+  const roomId = roomManager.getRoomByPlayerId(socketId)?.roomId;
 
-  if (runtime) {
+  if (gameManager) {
     disconnectUseCase({
-      gameManager: runtime.gameManager,
-      roomId: runtime.roomId,
+      gameManager,
+      roomId,
       playerId: socketId,
       output: gameOutput,
     });

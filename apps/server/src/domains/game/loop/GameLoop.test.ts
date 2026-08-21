@@ -604,11 +604,25 @@ describe("GameLoop.detectBotBombHits", () => {
     expect(harness.activeBombRegistry.getActiveBombSnapshots()).toHaveLength(1);
   });
 
-  it("被弾コールバック未指定の場合は爆発済み爆弾を回収しないこと", () => {
+  it("被弾コールバック未指定でも爆発済み爆弾を回収すること", () => {
     const harness = createHarness([createPlayer(BOT_PLAYER_ID, 0.5, 0.5, 0)], {
       omitBotBombHit: true,
     });
     harness.activeBombRegistry.registerBomb(createBomb());
+    harness.loop.start();
+
+    runNextTickCycle(TICK_RATE_MS);
+
+    expect(harness.activeBombRegistry.getActiveBombSnapshots()).toEqual([]);
+  });
+
+  it("被弾コールバック未指定でも爆発時刻未到達の爆弾は残すこと", () => {
+    const harness = createHarness([createPlayer(BOT_PLAYER_ID, 0.5, 0.5, 0)], {
+      omitBotBombHit: true,
+    });
+    harness.activeBombRegistry.registerBomb(
+      createBomb({ explodeAtElapsedMs: 10_000 }),
+    );
     harness.loop.start();
 
     runNextTickCycle(TICK_RATE_MS);

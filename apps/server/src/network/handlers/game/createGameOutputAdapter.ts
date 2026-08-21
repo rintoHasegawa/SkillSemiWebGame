@@ -21,7 +21,7 @@ import type {
   PlayerHitOutputPort,
   GameOutputPort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
-import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
+import type { RealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
 import type { CommonHandlerContext } from "../CommonHandler";
 import { resolveViewerAoiCell } from "./aoi/aoiVisibility";
@@ -57,13 +57,16 @@ export type GameDisconnectOutputAdapter = Pick<
   "publishPlayerRemovedToRoom"
 >;
 
-/** 共通送信コンテキストからゲーム出力アダプターを生成する */
+/**
+ * 共通送信コンテキストからゲーム出力アダプターを生成する
+ * 同期状態ストアは接続間で共有するため生成せず受け取る
+ */
 export const createGameOutputAdapter = (
   common: CommonHandlerContext,
   deps: RuntimeResolverDeps,
+  realtimeRoomSyncState: RealtimeRoomSyncStateStore,
 ): GameOutputAdapter => {
   const { reliable } = common;
-  const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
 
   const updateViewerAoiCellCache = (
     roomId: RoomId,

@@ -144,7 +144,8 @@ export type StartGameOutputPort = Pick<
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {
   shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
-  issueServerBombId(): string;
+  /** サーバー採番の爆弾IDを返す，セッション未開始時は undefined を返す */
+  issueServerBombId(): string | undefined;
   registerActiveBomb(registration: ActiveBombRegistration): void;
   getPlayerTeamId(playerId: string): number;
 }

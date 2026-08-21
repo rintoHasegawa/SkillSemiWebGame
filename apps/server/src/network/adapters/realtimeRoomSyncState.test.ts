@@ -419,6 +419,145 @@ describe("createRealtimeRoomSyncStateStore.resetRoom", () => {
   });
 });
 
+describe("createRealtimeRoomSyncStateStore.releaseSocket", () => {
+  /** 5種のキャッシュへ値を入れたストアを生成する */
+  const createStoreWithCaches = () => {
+    const store = createRealtimeRoomSyncStateStore();
+    store.getPlayerPositionCache("room-1", "socket-1").set("p1", { x: 1, y: 2 });
+    store.setLastAoiCell("room-1", "socket-1", { col: 2, row: 3 });
+    store.replaceVisiblePlayerIds("room-1", "socket-1", ["p1"]);
+    store.replaceVisibleBombIds("room-1", "socket-1", ["bomb-1"]);
+    store.replaceVisibleHurricaneIds("room-1", "socket-1", ["h1"]);
+
+    return store;
+  };
+
+  it("対象ソケットの座標キャッシュを解放すること", () => {
+    const store = createStoreWithCaches();
+
+    store.releaseSocket("socket-1");
+
+    expect(store.getPlayerPositionCache("room-1", "socket-1").size).toBe(0);
+  });
+
+  it("対象ソケットのAOI中心セルを解放すること", () => {
+    const store = createStoreWithCaches();
+
+    store.releaseSocket("socket-1");
+
+    expect(store.getLastAoiCell("room-1", "socket-1")).toBeUndefined();
+  });
+
+  it("対象ソケットの可視プレイヤーIDを解放すること", () => {
+    const store = createStoreWithCaches();
+
+    store.releaseSocket("socket-1");
+
+    expect(store.getVisiblePlayerIdsSnapshot("room-1", "socket-1").size).toBe(
+      0,
+    );
+  });
+
+  it("対象ソケットの可視爆弾IDを解放すること", () => {
+    const store = createStoreWithCaches();
+
+    store.releaseSocket("socket-1");
+
+    expect(store.getVisibleBombIdsSnapshot("room-1", "socket-1").size).toBe(0);
+  });
+
+  it("対象ソケットの可視ハリケーンIDを解放すること", () => {
+    const store = createStoreWithCaches();
+
+    store.releaseSocket("socket-1");
+
+    expect(
+      store.getVisibleHurricaneIdsSnapshot("room-1", "socket-1").size,
+    ).toBe(0);
+  });
+
+  it("解放後は新しいMapインスタンスを返すこと", () => {
+    const store = createStoreWithCaches();
+    const before = store.getPlayerPositionCache("room-1", "socket-1");
+
+    store.releaseSocket("socket-1");
+
+    expect(store.getPlayerPositionCache("room-1", "socket-1")).not.toBe(before);
+  });
+
+  it("対象ソケットのキャッシュを全ルームから解放すること", () => {
+    const store = createStoreWithCaches();
+    store.replaceVisiblePlayerIds("room-2", "socket-1", ["p2"]);
+
+    store.releaseSocket("socket-1");
+
+    expect(store.getVisiblePlayerIdsSnapshot("room-2", "socket-1").size).toBe(
+      0,
+    );
+  });
+
+  it("同一ルームの他ソケットのキャッシュは残すこと", () => {
+    const store = createStoreWithCaches();
+    store.replaceVisiblePlayerIds("room-1", "socket-2", ["p2"]);
+
+    store.releaseSocket("socket-1");
+
+    expect([
+      ...store.getVisiblePlayerIdsSnapshot("room-1", "socket-2"),
+    ]).toEqual(["p2"]);
+  });
+
+  it("他ルームの他ソケットのキャッシュは残すこと", () => {
+    const store = createStoreWithCaches();
+    store.setLastAoiCell("room-2", "socket-2", { col: 5, row: 6 });
+
+    store.releaseSocket("socket-1");
+
+    expect(store.getLastAoiCell("room-2", "socket-2")).toEqual({
+      col: 5,
+      row: 6,
+    });
+  });
+
+  it("他ソケットの座標キャッシュのインスタンスを保持すること", () => {
+    const store = createStoreWithCaches();
+    const other = store.getPlayerPositionCache("room-1", "socket-2");
+
+    store.releaseSocket("socket-1");
+
+    expect(store.getPlayerPositionCache("room-1", "socket-2")).toBe(other);
+  });
+
+  it("未登録ソケットを指定しても例外を投げないこと", () => {
+    const store = createStoreWithCaches();
+
+    expect(() => store.releaseSocket("socket-unknown")).not.toThrow();
+  });
+
+  it("未登録ソケットの解放では既存キャッシュを壊さないこと", () => {
+    const store = createStoreWithCaches();
+
+    store.releaseSocket("socket-unknown");
+
+    expect([
+      ...store.getVisiblePlayerIdsSnapshot("room-1", "socket-1"),
+    ]).toEqual(["p1"]);
+  });
+
+  it("同一ソケットを二度解放しても例外を投げないこと", () => {
+    const store = createStoreWithCaches();
+    store.releaseSocket("socket-1");
+
+    expect(() => store.releaseSocket("socket-1")).not.toThrow();
+  });
+
+  it("空のストアに対しても例外を投げないこと", () => {
+    const store = createRealtimeRoomSyncStateStore();
+
+    expect(() => store.releaseSocket("socket-1")).not.toThrow();
+  });
+});
+
 describe("createRealtimeRoomSyncStateStore", () => {
   it("生成ごとに独立した状態を持つこと", () => {
     const first = createRealtimeRoomSyncStateStore();

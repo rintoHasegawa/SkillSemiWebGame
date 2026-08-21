@@ -3,6 +3,7 @@
  * 接続イベント登録で利用する依存束と送信アダプタを生成する
  */
 import type { Server, Socket } from "socket.io";
+import type { RealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import type { RegisterConnectionHandlersParams } from "../../types/connectionPorts";
 import {
   createSocketOutputAdapters,
@@ -21,10 +22,14 @@ type ConnectionRegistrationContext = {
   socketOutputAdapters: SocketOutputAdapters;
 };
 
-/** 接続イベント登録で利用する共通コンテキストを生成する */
+/**
+ * 接続イベント登録で利用する共通コンテキストを生成する
+ * 同期状態ストアはサーバー単位で共有するインスタンスを受け取る
+ */
 export const createConnectionRegistrationContext = (
   params: RegisterConnectionHandlersParams,
   socket: Socket,
+  realtimeRoomSyncState: RealtimeRoomSyncStateStore,
 ): ConnectionRegistrationContext => {
   const deps: ConnectionHandlerDeps = {
     io: params.io,
@@ -35,9 +40,14 @@ export const createConnectionRegistrationContext = (
 
   return {
     deps,
-    socketOutputAdapters: createSocketOutputAdapters(deps.io, deps.socket, {
-      roomManager: deps.roomManager,
-      runtimeRegistry: deps.runtimeRegistry,
+    socketOutputAdapters: createSocketOutputAdapters({
+      io: deps.io,
+      socket: deps.socket,
+      deps: {
+        roomManager: deps.roomManager,
+        runtimeRegistry: deps.runtimeRegistry,
+      },
+      realtimeRoomSyncState,
     }),
   };
 };

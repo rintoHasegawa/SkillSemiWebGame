@@ -41,19 +41,23 @@ export class GamePlayerOperationService {
       return;
     }
 
-    const removed = session.removePlayer(id);
+    session.removePlayer(id);
     this.activePlayerIds.delete(id);
 
-    if (removed && session.getPlayers().length === 0) {
-      session.dispose();
-      this.sessionRef.current = null;
-      this.activePlayerIds.clear();
-      logEvent(logScopes.GAME_PLAYER_OPERATION_SERVICE, {
-        event: gameDomainLogEvents.PLAYER_REMOVE,
-        result: logResults.SESSION_DISPOSED_EMPTY_ROOM,
-        socketId: id,
-      });
+    // セッション側の削除可否ではなく残存プレイヤー数で生存を判断する
+    // （既に不在で削除がfalseでも，0人ならループを止めて破棄する）
+    if (session.getPlayers().length > 0) {
+      return;
     }
+
+    session.dispose();
+    this.sessionRef.current = null;
+    this.activePlayerIds.clear();
+    logEvent(logScopes.GAME_PLAYER_OPERATION_SERVICE, {
+      event: gameDomainLogEvents.PLAYER_REMOVE,
+      result: logResults.SESSION_DISPOSED_EMPTY_ROOM,
+      socketId: id,
+    });
   }
 
   public replaceDisconnectedPlayerWithBot(id: string): boolean {

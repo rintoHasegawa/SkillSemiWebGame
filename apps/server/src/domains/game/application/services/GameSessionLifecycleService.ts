@@ -56,13 +56,9 @@ export class GameSessionLifecycleService {
     );
   }
 
-  public issueServerBombId(): string {
-    const session = this.sessionRef.current;
-    if (!session) {
-      throw new Error("Game session not found");
-    }
-
-    return session.issueServerBombId();
+  /** サーバー採番の爆弾IDを返す，セッション未開始時は undefined を返す */
+  public issueServerBombId(): string | undefined {
+    return this.sessionRef.current?.issueServerBombId();
   }
 
   /** 指定プレイヤーのチームIDを返す，未参加時は UNKNOWN_TEAM_ID を返す */

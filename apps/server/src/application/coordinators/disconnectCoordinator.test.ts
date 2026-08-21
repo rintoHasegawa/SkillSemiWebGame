@@ -10,6 +10,11 @@ import type {
   RoomDisconnectResult,
   RoomScopedGamePort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
+import {
+  gameUseCaseLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 import { disconnectCoordinator } from "./disconnectCoordinator";
 
 /** テスト用のルーム状態を生成する */
@@ -108,9 +113,11 @@ const createOutputStubs = () => {
   };
 };
 
+let logSpy: ReturnType<typeof vi.spyOn>;
+
 describe("disconnectCoordinator", () => {
   beforeEach(() => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -195,7 +202,7 @@ describe("disconnectCoordinator", () => {
     expect(gameOutput.publishPlayerRemovedToRoom).not.toHaveBeenCalled();
   });
 
-  it("ルームが解決できない場合もゲーム側の切断処理を行わないこと", () => {
+  it("ルームが解決できない場合もBot引き継ぎ判定を実行すること", () => {
     const gameManager = createGameManagerStub(false);
     const { gameOutput, roomOutput } = createOutputStubs();
 
@@ -206,7 +213,90 @@ describe("disconnectCoordinator", () => {
       roomOutput,
     });
 
-    expect(gameManager.replaceDisconnectedPlayerWithBot).not.toHaveBeenCalled();
+    expect(gameManager.replaceDisconnectedPlayerWithBot).toHaveBeenCalledWith(
+      "socket-1",
+    );
+  });
+
+  it("ルームが解決できない場合もゲーム管理からプレイヤーを削除すること", () => {
+    const gameManager = createGameManagerStub(false);
+    const { gameOutput, roomOutput } = createOutputStubs();
+
+    disconnectCoordinator({
+      socketId: "socket-1",
+      ...createDeps({ room: undefined, gameManager }),
+      gameOutput,
+      roomOutput,
+    });
+
+    expect(gameManager.removePlayer).toHaveBeenCalledWith("socket-1");
+  });
+
+  it("ルームが解決できない場合はプレイヤー削除を配信しないこと", () => {
+    const gameManager = createGameManagerStub(false);
+    const { gameOutput, roomOutput } = createOutputStubs();
+
+    disconnectCoordinator({
+      socketId: "socket-1",
+      ...createDeps({ room: undefined, gameManager }),
+      gameOutput,
+      roomOutput,
+    });
+
+    expect(gameOutput.publishPlayerRemovedToRoom).not.toHaveBeenCalled();
+  });
+
+  it("ルームが解決できない場合は配信先不明としてログを記録すること", () => {
+    const { gameOutput, roomOutput } = createOutputStubs();
+
+    disconnectCoordinator({
+      socketId: "socket-1",
+      ...createDeps({
+        room: undefined,
+        gameManager: createGameManagerStub(false),
+      }),
+      gameOutput,
+      roomOutput,
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.DISCONNECT,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "socket-1",
+    });
+  });
+
+  it("ルームが解決できた場合は配信先不明ログを記録しないこと", () => {
+    const { gameOutput, roomOutput } = createOutputStubs();
+
+    disconnectCoordinator({
+      socketId: "socket-1",
+      ...createDeps({
+        room: createRoom("room-1"),
+        gameManager: createGameManagerStub(false),
+      }),
+      gameOutput,
+      roomOutput,
+    });
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      `[${logScopes.GAME_USE_CASE}]`,
+      expect.objectContaining({ result: logResults.IGNORED_MISSING_ROOM }),
+    );
+  });
+
+  it("ルームが解決できずBot引き継ぎに成功した場合はプレイヤーを削除しないこと", () => {
+    const gameManager = createGameManagerStub(true);
+    const { gameOutput, roomOutput } = createOutputStubs();
+
+    disconnectCoordinator({
+      socketId: "socket-1",
+      ...createDeps({ room: undefined, gameManager }),
+      gameOutput,
+      roomOutput,
+    });
+
+    expect(gameManager.removePlayer).not.toHaveBeenCalled();
   });
 
   it("ランタイムが解決できない場合でもルーム退出処理を実行すること", () => {
