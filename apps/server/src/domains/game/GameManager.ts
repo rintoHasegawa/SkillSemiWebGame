@@ -98,8 +98,8 @@ export class GameManager {
     return this.lifecycleService.shouldBroadcastBombHitReport(dedupeKey, nowMs);
   }
 
-  // サーバー採番の爆弾IDを生成する
-  issueServerBombId(): string {
+  // サーバー採番の爆弾IDを生成する（セッション未開始時は undefined）
+  issueServerBombId(): string | undefined {
     return this.lifecycleService.issueServerBombId();
   }
 

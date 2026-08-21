@@ -25,8 +25,15 @@ export const disconnectUseCase = ({
   if (!replacedWithBot) {
     gameManager.removePlayer(playerId);
 
+    // roomIdが解決できない場合は配信先を特定できないため，ログのみ残して継続する
     if (roomId) {
       output.publishPlayerRemovedToRoom(roomId, playerId);
+    } else {
+      logEvent(logScopes.GAME_USE_CASE, {
+        event: gameUseCaseLogEvents.DISCONNECT,
+        result: logResults.IGNORED_MISSING_ROOM,
+        socketId: playerId,
+      });
     }
   }
 

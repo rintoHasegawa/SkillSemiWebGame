@@ -3,7 +3,7 @@
  * アクティブ爆弾レジストリの仕様を検証するユニットテスト
  * 登録時の非有限値拒否・爆発回収の境界条件とスナップショット取得を検証する
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ActiveBombRegistry, type ActiveBomb } from "./ActiveBombRegistry";
 
@@ -236,6 +236,102 @@ describe("ActiveBombRegistry.collectExplodedBombs", () => {
     registry.registerBomb(bomb);
 
     expect(registry.collectExplodedBombs(0)[0]).toBe(bomb);
+  });
+});
+
+describe("ActiveBombRegistry.onBombsCollected", () => {
+  /** 回収通知を記録するコールバック付きレジストリを生成する */
+  const createRegistryWithListener = () => {
+    const onBombsCollected =
+      vi.fn<(explodedBombs: ActiveBomb[], elapsedMs: number) => void>();
+
+    return {
+      onBombsCollected,
+      registry: new ActiveBombRegistry({ onBombsCollected }),
+    };
+  };
+
+  it("回収した爆弾を通知すること", () => {
+    const { onBombsCollected, registry } = createRegistryWithListener();
+    const bomb = createBomb({ explodeAtElapsedMs: 1000 });
+    registry.registerBomb(bomb);
+
+    registry.collectExplodedBombs(1000);
+
+    expect(onBombsCollected).toHaveBeenCalledWith([bomb], 1000);
+  });
+
+  it("回収0件でも通知すること", () => {
+    const { onBombsCollected, registry } = createRegistryWithListener();
+    registry.registerBomb(createBomb({ explodeAtElapsedMs: 1000 }));
+
+    registry.collectExplodedBombs(999);
+
+    expect(onBombsCollected).toHaveBeenCalledWith([], 999);
+  });
+
+  it("空のレジストリでも通知すること", () => {
+    const { onBombsCollected, registry } = createRegistryWithListener();
+
+    registry.collectExplodedBombs(1000);
+
+    expect(onBombsCollected).toHaveBeenCalledTimes(1);
+  });
+
+  it("回収呼び出しごとに1回だけ通知すること", () => {
+    const { onBombsCollected, registry } = createRegistryWithListener();
+
+    registry.collectExplodedBombs(1000);
+    registry.collectExplodedBombs(2000);
+
+    expect(onBombsCollected).toHaveBeenCalledTimes(2);
+  });
+
+  it("経過時刻が非有限でも通知すること", () => {
+    const { onBombsCollected, registry } = createRegistryWithListener();
+
+    registry.collectExplodedBombs(Number.NaN);
+
+    expect(onBombsCollected).toHaveBeenCalledWith([], Number.NaN);
+  });
+
+  it("登録時には通知しないこと", () => {
+    const { onBombsCollected, registry } = createRegistryWithListener();
+
+    registry.registerBomb(createBomb());
+
+    expect(onBombsCollected).not.toHaveBeenCalled();
+  });
+
+  it("clearでは通知しないこと", () => {
+    const { onBombsCollected, registry } = createRegistryWithListener();
+    registry.registerBomb(createBomb());
+
+    registry.clear();
+
+    expect(onBombsCollected).not.toHaveBeenCalled();
+  });
+
+  it("通知時点で回収済み爆弾がレジストリから除去されていること", () => {
+    const onBombsCollected = vi.fn<() => void>();
+    const registry: ActiveBombRegistry = new ActiveBombRegistry({
+      onBombsCollected: () => {
+        onBombsCollected();
+        expect(registry.getActiveBombSnapshots()).toEqual([]);
+      },
+    });
+    registry.registerBomb(createBomb({ explodeAtElapsedMs: 0 }));
+
+    registry.collectExplodedBombs(0);
+
+    expect(onBombsCollected).toHaveBeenCalledTimes(1);
+  });
+
+  it("コールバック未指定でも回収時に例外を投げないこと", () => {
+    const registry = new ActiveBombRegistry();
+    registry.registerBomb(createBomb({ explodeAtElapsedMs: 0 }));
+
+    expect(() => registry.collectExplodedBombs(0)).not.toThrow();
   });
 });
 

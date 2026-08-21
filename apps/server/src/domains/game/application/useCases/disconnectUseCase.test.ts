@@ -5,6 +5,11 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  gameUseCaseLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 import { disconnectUseCase } from "./disconnectUseCase";
 
 /** Bot引き継ぎ結果を固定した DisconnectPlayerPort スタブを生成する */
@@ -26,9 +31,11 @@ const createOutputStub = () => {
   };
 };
 
+let logSpy: ReturnType<typeof vi.spyOn>;
+
 describe("disconnectUseCase", () => {
   beforeEach(() => {
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -133,5 +140,82 @@ describe("disconnectUseCase", () => {
     });
 
     expect(gameManager.removePlayer).toHaveBeenCalledWith("socket-1");
+  });
+
+  it("roomIdが未指定でもプレイヤー削除は実行すること", () => {
+    const gameManager = createGameManagerStub(false);
+    const output = createOutputStub();
+
+    disconnectUseCase({
+      gameManager,
+      playerId: "socket-1",
+      output,
+    });
+
+    expect(gameManager.removePlayer).toHaveBeenCalledWith("socket-1");
+  });
+
+  it("roomIdが未指定の場合は配信先不明として記録すること", () => {
+    const output = createOutputStub();
+
+    disconnectUseCase({
+      gameManager: createGameManagerStub(false),
+      playerId: "socket-1",
+      output,
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.DISCONNECT,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "socket-1",
+    });
+  });
+
+  it("roomIdが未指定でも削除完了のログは記録すること", () => {
+    const output = createOutputStub();
+
+    disconnectUseCase({
+      gameManager: createGameManagerStub(false),
+      playerId: "socket-1",
+      output,
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.DISCONNECT,
+      result: logResults.PLAYER_REMOVED,
+      socketId: "socket-1",
+      replacedWithBot: false,
+    });
+  });
+
+  it("roomIdがある場合は配信先不明のログを記録しないこと", () => {
+    const output = createOutputStub();
+
+    disconnectUseCase({
+      gameManager: createGameManagerStub(false),
+      roomId: "room-1",
+      playerId: "socket-1",
+      output,
+    });
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      `[${logScopes.GAME_USE_CASE}]`,
+      expect.objectContaining({ result: logResults.IGNORED_MISSING_ROOM }),
+    );
+  });
+
+  it("Bot引き継ぎに成功した場合はroomId未指定でも配信先不明のログを記録しないこと", () => {
+    const output = createOutputStub();
+
+    disconnectUseCase({
+      gameManager: createGameManagerStub(true),
+      playerId: "socket-1",
+      output,
+    });
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      `[${logScopes.GAME_USE_CASE}]`,
+      expect.objectContaining({ result: logResults.IGNORED_MISSING_ROOM }),
+    );
   });
 });

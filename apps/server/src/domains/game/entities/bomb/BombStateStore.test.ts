@@ -12,6 +12,25 @@ import { BombStateStore } from "./BombStateStore";
 const ttlMs
   = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
 
+/** 爆発後に設置者参照を保持する猶予時間（ms） */
+const ownerRetentionMs = config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+
+/** 設置者登録済みのアクティブ爆弾を持つストアを生成する */
+const createStoreWithActiveBomb = (explodeAtElapsedMs = 0) => {
+  const store = new BombStateStore();
+  store.registerBombOwner("bomb-1", "player-1");
+  store.activeBombRegistry.registerBomb({
+    bombId: "bomb-1",
+    ownerPlayerId: "player-1",
+    x: 0,
+    y: 0,
+    explodeAtElapsedMs,
+    ownerTeamId: 1,
+  });
+
+  return store;
+};
+
 describe("BombStateStore.shouldBroadcastBombPlaced", () => {
   it("初回のキーはtrueを返すこと", () => {
     const store = new BombStateStore();
@@ -168,6 +187,89 @@ describe("BombStateStore.registerBombOwner", () => {
     store.activeBombRegistry.clear();
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
+  });
+});
+
+describe("BombStateStore.getBombOwnerPlayerId（回収後の猶予解放）", () => {
+  it("回収直後は設置者を保持すること", () => {
+    const store = createStoreWithActiveBomb();
+
+    store.activeBombRegistry.collectExplodedBombs(0);
+
+    expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
+  });
+
+  it("猶予経過直前の回収呼び出しでは設置者を保持すること", () => {
+    const store = createStoreWithActiveBomb();
+    store.activeBombRegistry.collectExplodedBombs(0);
+
+    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs - 1);
+
+    expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
+  });
+
+  it("猶予到達時の回収呼び出しで設置者を解放すること", () => {
+    const store = createStoreWithActiveBomb();
+    store.activeBombRegistry.collectExplodedBombs(0);
+
+    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs);
+
+    expect(store.getBombOwnerPlayerId("bomb-1")).toBeUndefined();
+  });
+
+  it("猶予超過時の回収呼び出しで設置者を解放すること", () => {
+    const store = createStoreWithActiveBomb();
+    store.activeBombRegistry.collectExplodedBombs(0);
+
+    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs + 1);
+
+    expect(store.getBombOwnerPlayerId("bomb-1")).toBeUndefined();
+  });
+
+  it("回収の起点となる爆発時刻から猶予を数えること", () => {
+    const store = createStoreWithActiveBomb(5_000);
+    store.activeBombRegistry.collectExplodedBombs(5_000);
+
+    store.activeBombRegistry.collectExplodedBombs(5_000 + ownerRetentionMs - 1);
+
+    expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
+  });
+
+  it("回収されていない爆弾の設置者は猶予経過後も保持すること", () => {
+    const store = createStoreWithActiveBomb();
+    store.registerBombOwner("bomb-2", "player-2");
+
+    store.activeBombRegistry.collectExplodedBombs(0);
+    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs);
+
+    expect(store.getBombOwnerPlayerId("bomb-2")).toBe("player-2");
+  });
+
+  it("経過時刻が非有限の回収では設置者を解放しないこと", () => {
+    const store = createStoreWithActiveBomb();
+
+    store.activeBombRegistry.collectExplodedBombs(Number.POSITIVE_INFINITY);
+    store.activeBombRegistry.collectExplodedBombs(Number.MAX_SAFE_INTEGER);
+
+    expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
+  });
+
+  it("回収が発生しない呼び出しだけでは設置者を解放しないこと", () => {
+    const store = createStoreWithActiveBomb(10_000);
+
+    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs + 1);
+
+    expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
+  });
+
+  it("解放後に同じ爆弾IDを再登録すれば再び取得できること", () => {
+    const store = createStoreWithActiveBomb();
+    store.activeBombRegistry.collectExplodedBombs(0);
+    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs);
+
+    store.registerBombOwner("bomb-1", "player-9");
+
+    expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-9");
   });
 });
 

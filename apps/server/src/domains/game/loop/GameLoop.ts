@@ -335,12 +335,12 @@ export class GameLoop {
 
   /** 爆発済み爆弾とBotプレイヤーの当たり判定を実行する */
   private detectBotBombHits(elapsedMs: number, nowMs: number): void {
-    const onBotBombHit = this.callbacks.onBotBombHit;
-    if (!onBotBombHit) return;
-
+    // 被弾コールバックの有無に関わらず回収し，爆発済み爆弾の残留を防ぐ
     const explodedBombs =
       this.activeBombRegistry.collectExplodedBombs(elapsedMs);
-    if (explodedBombs.length === 0) return;
+
+    const onBotBombHit = this.callbacks.onBotBombHit;
+    if (!onBotBombHit || explodedBombs.length === 0) return;
 
     this.players.forEach((player) => {
       const isBotControlled =

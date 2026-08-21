@@ -5,6 +5,7 @@
 import { Socket } from "socket.io";
 import { contracts as protocol } from "@repo/shared";
 import { disconnectCoordinator } from "@server/application/coordinators/disconnectCoordinator";
+import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import { registerGameHandlers } from "./game/registerGameHandlers";
 import { registerRoomHandlers } from "./room/registerRoomHandlers";
 import {
@@ -31,6 +32,8 @@ export const registerConnectionHandlers = ({
   runtimeRegistry,
 }: RegisterConnectionHandlersParams) => {
   const disconnectOutputAdapters = createDisconnectOutputAdapters(io);
+  // 高頻度同期のソケット別キャッシュは接続間で共有し，切断時に個別解放する
+  const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
 
   // CONNECTイベントを宣言的に登録する
   const onConnectEventDefinition: EventDefinition<
@@ -46,6 +49,7 @@ export const registerConnectionHandlers = ({
           runtimeRegistry,
         },
         socket,
+        realtimeRoomSyncState,
       );
 
       // 接続ログを記録してドメイン別ハンドラを登録する
@@ -81,6 +85,9 @@ export const registerConnectionHandlers = ({
             gameOutput: disconnectOutputAdapters.game,
             roomOutput: disconnectOutputAdapters.room,
           });
+
+          // 離脱通知の配信後に，このソケット向けの同期キャッシュを解放する
+          realtimeRoomSyncState.releaseSocket(deps.socket.id);
         },
       };
 

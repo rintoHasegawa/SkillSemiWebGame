@@ -173,6 +173,30 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
     );
   });
 
+  it("releaseSocket後の同期では可視プレイヤーへNEW_PLAYERを再送すること", () => {
+    const { service, calls, realtimeRoomSyncState } = setupService();
+    service.publishUpdatePlayersToRoom("room-1", []);
+
+    realtimeRoomSyncState.releaseSocket("socket-1");
+    service.publishUpdatePlayersToRoom("room-1", []);
+
+    expect(filterEvent(calls, protocol.SocketEvents.NEW_PLAYER)).toHaveLength(
+      2,
+    );
+  });
+
+  it("releaseSocket後の同期では退出したプレイヤーへREMOVE_PLAYERを送信しないこと", () => {
+    const { service, calls, realtimeRoomSyncState } = setupService();
+    realtimeRoomSyncState.replaceVisiblePlayerIds("room-1", "socket-1", [
+      "socket-9",
+    ]);
+
+    realtimeRoomSyncState.releaseSocket("socket-1");
+    service.publishUpdatePlayersToRoom("room-1", []);
+
+    expect(filterEvent(calls, protocol.SocketEvents.REMOVE_PLAYER)).toEqual([]);
+  });
+
   it("可視プレイヤーIDを状態ストアへ記録すること", () => {
     const { service, realtimeRoomSyncState } = setupService({
       players: [createPlayer("socket-1"), createPlayer("socket-2")],

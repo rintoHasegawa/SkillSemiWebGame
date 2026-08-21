@@ -122,12 +122,16 @@ describe("GameSessionLifecycleService", () => {
     expect(service.shouldBroadcastBombHitReport("key", 0)).toBe(false);
   });
 
-  it("セッション未開始の爆弾ID採番は例外を投げること", () => {
+  it("セッション未開始の爆弾ID採番はundefinedを返すこと", () => {
     const { service } = createContext(false);
 
-    expect(() => service.issueServerBombId()).toThrowError(
-      "Game session not found",
-    );
+    expect(service.issueServerBombId()).toBeUndefined();
+  });
+
+  it("セッション未開始の爆弾ID採番は例外を投げないこと", () => {
+    const { service } = createContext(false);
+
+    expect(() => service.issueServerBombId()).not.toThrow();
   });
 
   it("セッション開始済みの爆弾ID採番はセッション値を返すこと", () => {

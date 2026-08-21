@@ -12,6 +12,12 @@ import {
   createBombDedupeKey,
   createBombPlacedPayload,
 } from "@server/domains/game/entities/bomb/bombPlacement";
+import { logEvent } from "@server/logging/logger";
+import {
+  gameUseCaseLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 
 type PlaceBombUseCaseParams = {
   roomId: string;
@@ -32,7 +38,18 @@ export const placeBombUseCase = ({
     return;
   }
 
+  // ゲーム終了直後に届いた設置要求は採番できないため，記録して無視する
   const bombId = bombStore.issueServerBombId();
+  if (!bombId) {
+    logEvent(logScopes.GAME_USE_CASE, {
+      event: gameUseCaseLogEvents.PLACE_BOMB,
+      result: logResults.IGNORED_SESSION_NOT_STARTED,
+      socketId: input.socketId,
+      roomId,
+    });
+    return;
+  }
+
   const ownerTeamId = bombStore.getPlayerTeamId(input.socketId);
 
   bombStore.registerActiveBomb({

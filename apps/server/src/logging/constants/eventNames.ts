@@ -10,6 +10,7 @@ export const gameUseCaseLogEvents = {
   READY_FOR_GAME: protocol.SocketEvents.READY_FOR_GAME,
   GAME_START: protocol.SocketEvents.GAME_START,
   GAME_END: protocol.SocketEvents.GAME_END,
+  PLACE_BOMB: protocol.SocketEvents.PLACE_BOMB,
   DISCONNECT: protocol.SocketEvents.DISCONNECT,
 } as const;
 

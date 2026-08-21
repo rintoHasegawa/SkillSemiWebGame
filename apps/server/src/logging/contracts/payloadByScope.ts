@@ -141,11 +141,23 @@ type GameUseCaseGameEndLogPayload = {
   roomId: string;
 };
 
+/** GameUseCaseのPLACE_BOMBログ契約 */
+type GameUseCasePlaceBombLogPayload = {
+  event: typeof gameUseCaseLogEvents.PLACE_BOMB;
+  result: typeof logResults.IGNORED_SESSION_NOT_STARTED;
+  socketId: string;
+  roomId: string;
+};
+
 /** GameUseCaseのDISCONNECTログ契約 */
 type GameUseCaseDisconnectLogPayload = {
   event: typeof gameUseCaseLogEvents.DISCONNECT;
-  result: typeof logResults.PLAYER_REMOVED;
+  result:
+    | typeof logResults.PLAYER_REMOVED
+    | typeof logResults.IGNORED_MISSING_ROOM;
   socketId: string;
+  /** Bot引き継ぎで在席を維持したか（player_removed時のみ） */
+  replacedWithBot?: boolean;
 };
 
 /** GameUseCaseスコープのログ契約ユニオン */
@@ -154,6 +166,7 @@ type GameUseCaseLogPayload =
   | GameUseCaseReadyForGameLogPayload
   | GameUseCaseGameStartLogPayload
   | GameUseCaseGameEndLogPayload
+  | GameUseCasePlaceBombLogPayload
   | GameUseCaseDisconnectLogPayload;
 
 /** RoomUseCaseのJOIN_ROOMログ契約 */
