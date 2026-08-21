@@ -109,33 +109,25 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     return <div style={{ color: "white", padding: 40 }}>読み込み中...</div>;
 
   const isMeOwner = room.ownerId === myId;
-  const teamUnit = 4;
+
+  // 目標人数の下限・上限・選択肢はsharedの共有ロジックで算出する（サーバ検証と式を揃える）
   const minimumStartPlayerCount = useMemo(() => {
-    return Math.max(
-      teamUnit,
-      Math.ceil(room.players.length / teamUnit) * teamUnit,
-    );
+    return domain.room.resolveMinTargetPlayerCount(room.players.length);
   }, [room.players.length]);
 
   const maxStartPlayerCount = useMemo(() => {
-    return Math.max(
-      minimumStartPlayerCount,
-      Math.floor(room.maxPlayers / teamUnit) * teamUnit,
+    return domain.room.resolveMaxTargetPlayerCount(
+      room.players.length,
+      room.maxPlayers,
     );
-  }, [minimumStartPlayerCount, room.maxPlayers]);
+  }, [room.players.length, room.maxPlayers]);
 
   const startPlayerCountOptions = useMemo(() => {
-    const options: number[] = [];
-    for (
-      let count = minimumStartPlayerCount;
-      count <= maxStartPlayerCount;
-      count += teamUnit
-    ) {
-      options.push(count);
-    }
-
-    return options;
-  }, [minimumStartPlayerCount, maxStartPlayerCount]);
+    return domain.room.createTargetPlayerCountOptions(
+      room.players.length,
+      room.maxPlayers,
+    );
+  }, [room.players.length, room.maxPlayers]);
 
   const [gameSettings, setGameSettings] = useState<LobbyGameSettings>({
     targetPlayerCount: minimumStartPlayerCount,
@@ -173,10 +165,15 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     return sorted;
   }, [room.players, playerSortKey]);
 
+  // 参加人数やルーム上限の変化で選択肢から外れた目標人数は下限へ戻す
   useEffect(() => {
     setGameSettings((prev) => {
       const count = prev.targetPlayerCount;
-      if (count < minimumStartPlayerCount || count > maxStartPlayerCount || count % teamUnit !== 0) {
+      if (
+        count < minimumStartPlayerCount
+        || count > maxStartPlayerCount
+        || !domain.room.isTargetPlayerCountUnit(count)
+      ) {
         return { ...prev, targetPlayerCount: minimumStartPlayerCount };
       }
       return prev;

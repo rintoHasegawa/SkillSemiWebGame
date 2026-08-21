@@ -2,7 +2,8 @@
  * RoomSettingsService.test
  * ロビー設定更新サービスの仕様適合を検証するテスト
  * 更新不可条件（未存在・非待機）と，ゲーム人数の妥当性検証・境界値を検証する
- * 目標人数の範囲は SPEC_02（4人刻み・最大100人）と TEAM_COUNT(4) を基準とする
+ * 目標人数は SPEC_02（4人刻み・下限4・最大100人）に従い，
+ * 「4 ≤ 人数 ≤ ルーム最大人数 かつ 4の倍数」以外は設定全体を破棄することを検証する
  */
 import { domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -205,6 +206,86 @@ describe("RoomSettingsService", () => {
         "random",
       ),
     ).toBeUndefined();
+  });
+
+  it("参加人数が4の倍数でない6の場合はundefinedを返すこと", () => {
+    const { service } = createService(domain.room.RoomPhase.WAITING);
+
+    expect(
+      service.updateLobbySettings("room-1", 6, "SMALL", "random"),
+    ).toBeUndefined();
+  });
+
+  it("参加人数が4の倍数でない6の場合は参加人数を反映しないこと", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING);
+
+    service.updateLobbySettings("room-1", 6, "SMALL", "random");
+
+    expect(room.targetPlayerCount).toBeUndefined();
+  });
+
+  it("参加人数が4の倍数でない10の場合はundefinedを返すこと", () => {
+    const { service } = createService(domain.room.RoomPhase.WAITING);
+
+    expect(
+      service.updateLobbySettings("room-1", 10, "LARGE", "player_select"),
+    ).toBeUndefined();
+  });
+
+  it("参加人数が4の倍数でない場合はフィールドサイズも反映しないこと", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING);
+
+    service.updateLobbySettings("room-1", 10, "LARGE", "player_select");
+
+    expect(room.fieldSizePreset).toBe("MEDIUM");
+  });
+
+  it("参加人数が4の倍数でない場合はチーム割り当て方式も反映しないこと", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING);
+
+    service.updateLobbySettings("room-1", 10, "LARGE", "player_select");
+
+    expect(room.teamAssignmentMode).toBe("random");
+  });
+
+  it("参加人数が4の倍数でない場合はignored_invalid_payloadを記録すること", () => {
+    const { service } = createService(domain.room.RoomPhase.WAITING);
+
+    service.updateLobbySettings("room-1", 6, "LARGE", "player_select");
+
+    expect(logSpy).toHaveBeenCalledWith(
+      `[${logScopes.ROOM_SETTINGS_SERVICE}]`,
+      {
+        event: roomDomainLogEvents.LOBBY_SETTINGS_UPDATE,
+        result: logResults.IGNORED_INVALID_PAYLOAD,
+        roomId: "room-1",
+        targetPlayerCount: 6,
+      },
+    );
+  });
+
+  it("参加人数が上限100の場合もログを記録しないこと", () => {
+    const { service } = createService(domain.room.RoomPhase.WAITING);
+
+    service.updateLobbySettings("room-1", MAX_PLAYERS, "XLARGE", "random");
+
+    expect(logSpy).not.toHaveBeenCalled();
+  });
+
+  it("ルーム最大人数が8のルームでは8を更新すること", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING, 8);
+
+    service.updateLobbySettings("room-1", 8, "SMALL", "random");
+
+    expect(room.targetPlayerCount).toBe(8);
+  });
+
+  it("ルーム最大人数が8のルームでは12を反映しないこと", () => {
+    const { room, service } = createService(domain.room.RoomPhase.WAITING, 8);
+
+    service.updateLobbySettings("room-1", 12, "SMALL", "random");
+
+    expect(room.targetPlayerCount).toBeUndefined();
   });
 
   it("参加人数が不正な場合はフィールドサイズも反映しないこと", () => {
