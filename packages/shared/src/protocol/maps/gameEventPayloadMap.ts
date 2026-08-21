@@ -38,13 +38,13 @@ export type GameClientToServerEventPayloadMap = {
 /** ゲーム関連のサーバー送信イベントペイロード対応表 */
 export type GameServerToClientEventPayloadMap = {
   [SocketEvents.GAME_START]: GameStartPayload;
-  [SocketEvents.CURRENT_PLAYERS_SYNC]: CurrentPlayersPayload;
-  [SocketEvents.NEW_PLAYER_SYNC]: NewPlayerPayload;
-  [SocketEvents.UPDATE_PLAYERS_SYNC]: UpdatePlayersPayload;
-  [SocketEvents.REMOVE_PLAYER_SYNC]: RemovePlayerPayload;
-  [SocketEvents.UPDATE_MAP_CELLS_SYNC]: UpdateMapCellsPayload;
-  [SocketEvents.CURRENT_HURRICANES_SYNC]: CurrentHurricanesPayload;
-  [SocketEvents.UPDATE_HURRICANES_SYNC]: UpdateHurricanesPayload;
+  [SocketEvents.CURRENT_PLAYERS]: CurrentPlayersPayload;
+  [SocketEvents.NEW_PLAYER]: NewPlayerPayload;
+  [SocketEvents.UPDATE_PLAYERS]: UpdatePlayersPayload;
+  [SocketEvents.REMOVE_PLAYER]: RemovePlayerPayload;
+  [SocketEvents.UPDATE_MAP_CELLS]: UpdateMapCellsPayload;
+  [SocketEvents.CURRENT_HURRICANES]: CurrentHurricanesPayload;
+  [SocketEvents.UPDATE_HURRICANES]: UpdateHurricanesPayload;
   [SocketEvents.BOMB_PLACED]: BombPlacedPayload;
   [SocketEvents.BOMB_PLACED_ACK]: BombPlacedAckPayload;
   [SocketEvents.PLAYER_HIT]: PlayerHitPayload;

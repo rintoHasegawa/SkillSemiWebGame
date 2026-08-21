@@ -12,6 +12,7 @@ import {
   logScopes,
   roomDomainLogEvents,
 } from "@server/logging/index";
+import { createRoom } from "@server/testing/roomFixtures";
 import { RoomSettingsService } from "./RoomSettingsService";
 
 // 仕様上のルーム最大人数（SPEC_02: 目標人数の最大は100人）
@@ -19,27 +20,6 @@ const MAX_PLAYERS = 100;
 
 // 仕様上の目標人数の最小値（チーム数4で分割できる最小人数）
 const MIN_TARGET_PLAYER_COUNT = 4;
-
-type RoomSeed = {
-  status: domain.room.Room["status"];
-  maxPlayers?: number;
-};
-
-/** 指定フェーズのテスト用ルームを生成する */
-const createRoom = ({
-  status,
-  maxPlayers = MAX_PLAYERS,
-}: RoomSeed): domain.room.Room => {
-  return {
-    roomId: "room-1",
-    ownerId: "socket-1",
-    players: [],
-    status,
-    maxPlayers,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
 
 /** 指定フェーズのルーム1件を持つサービスを生成する */
 const createService = (

@@ -68,17 +68,25 @@ type NetworkBombHitReportLogPayload = {
   socketId: string;
 };
 
-/** NetworkのLOBBY_SETTINGS_UPDATE不正ペイロードログ契約 */
+/** NetworkのLOBBY_SETTINGS_UPDATE非適用ログ契約 */
 type NetworkLobbySettingsUpdateLogPayload = {
   event: typeof protocol.SocketEvents.LOBBY_SETTINGS_UPDATE;
-  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  result:
+    | typeof logResults.IGNORED_INVALID_PAYLOAD
+    | typeof logResults.IGNORED_MISSING_ROOM
+    | typeof logResults.IGNORED_NO_CHANGE
+    | typeof logResults.IGNORED_UPDATE_FAILED;
   socketId: string;
+  /** 更新対象ルーム（ルーム解決後の分岐のみ） */
+  roomId?: string;
 };
 
-/** NetworkのSELECT_TEAM不正ペイロードログ契約 */
+/** NetworkのSELECT_TEAM非適用ログ契約 */
 type NetworkSelectTeamLogPayload = {
   event: typeof protocol.SocketEvents.SELECT_TEAM;
-  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  result:
+    | typeof logResults.IGNORED_INVALID_PAYLOAD
+    | typeof logResults.IGNORED_MISSING_ROOM;
   socketId: string;
 };
 
@@ -248,7 +256,7 @@ type GameLoopPerfStatsLogPayload = {
   cpuUsagePct: number;
   /** 1tickあたりの平均ペイロードサイズ（bytes，JSON推定値） */
   avgPayloadBytesPerTick: number;
-  /** 1秒間の送信バイト数推定（avgPayloadBytesPerTick × playerCount × tickCount） */
+  /** 毎秒の送信バイト数推定（窓内の総ペイロード × playerCount ÷ 窓経過秒） */
   outboundBytesPerSec: number;
 };
 

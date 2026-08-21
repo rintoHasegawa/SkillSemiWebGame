@@ -11,11 +11,16 @@ import type {
   PlayerHitPayload,
 } from "@repo/shared";
 
-/** ゲーム開始受信ペイロードから開始時刻を抽出する
- * サーバー時刻基準の開始時刻を返す
+/**
+ * ゲーム開始受信ペイロードから開始時刻を抽出する
+ * サーバー時刻基準の開始時刻を返し，NaN・Infinity 等の不正値は null を返す
  */
 export const toGameStartedAt = (payload: GameStartPayload): number | null => {
-  if (!payload || payload.startTime == null) {
+  if (!payload || !Number.isFinite(payload.startTime)) {
+    console.error(
+      "[GameNetworkEventAdapter] GAME_STARTの開始時刻が有限数でないため破棄する",
+      payload?.startTime,
+    );
     return null;
   }
 

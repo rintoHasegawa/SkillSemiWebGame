@@ -1,27 +1,30 @@
 /**
  * moveSync.test
- * MOVE ペイロード正規化ロジックの現行挙動を固定する characterization test
- * 量子化の丸め・非有限値・不正スケール時のフォールバックを検証する
+ * MOVE ペイロード正規化ロジックの仕様を検証するテスト
+ * 量子化の丸め・非有限座標の 0 置換・不正スケールの既定値フォールバック・
+ * 負のゼロ正規化を検証する
  */
 import { describe, expect, it } from "vitest";
 
-import type { MovePayload } from "./player.type";
 import {
   DEFAULT_MOVE_QUANTIZE_SCALE,
   isSameMovePayload,
   quantizeMovePayload,
 } from "./moveSync";
 
-// scale 既定値がリテラル型 100 として推論されるため，
-// 100 以外のスケールを渡す現行挙動の検証には広い型の別名を用いる
-const quantizeWithScale = quantizeMovePayload as (
-  move: Readonly<MovePayload>,
-  scale: number,
-) => MovePayload;
-
 describe("DEFAULT_MOVE_QUANTIZE_SCALE", () => {
   it("既定の量子化スケールが 100 であること", () => {
     expect(DEFAULT_MOVE_QUANTIZE_SCALE).toBe(100);
+  });
+
+  it("任意スケールを渡せるよう number 型で公開されていること", () => {
+    // リテラル型 100 に固定されていると代入時に型エラーとなる
+    const scale: number = DEFAULT_MOVE_QUANTIZE_SCALE;
+
+    expect(quantizeMovePayload({ x: 1.234, y: 5.678 }, scale)).toEqual({
+      x: 1.23,
+      y: 5.68,
+    });
   });
 });
 
@@ -86,48 +89,69 @@ describe("quantizeMovePayload", () => {
   });
 
   it("スケールを指定した場合はその粒度で丸めること", () => {
-    expect(quantizeWithScale({ x: 1.234, y: 5.678 }, 10)).toEqual({
+    expect(quantizeMovePayload({ x: 1.234, y: 5.678 }, 10)).toEqual({
       x: 1.2,
       y: 5.7,
     });
   });
 
   it("スケール 1 では整数に丸めること", () => {
-    expect(quantizeWithScale({ x: 1.6, y: -1.6 }, 1)).toEqual({
+    expect(quantizeMovePayload({ x: 1.6, y: -1.6 }, 1)).toEqual({
       x: 2,
       y: -2,
     });
   });
 
-  it("スケール 0 では量子化せず元の値を返すこと", () => {
-    expect(quantizeWithScale({ x: 1.23456, y: -9.87654 }, 0)).toEqual({
-      x: 1.23456,
-      y: -9.87654,
+  it("1 未満の小数スケールでも指定粒度で丸めること", () => {
+    expect(quantizeMovePayload({ x: 3.2, y: -3.2 }, 0.5)).toEqual({
+      x: 4,
+      y: -4,
     });
   });
 
-  it("負のスケールでは量子化せず元の値を返すこと", () => {
-    expect(quantizeWithScale({ x: 1.23456, y: -9.87654 }, -100)).toEqual({
-      x: 1.23456,
-      y: -9.87654,
+  it("スケール 0 では既定スケールへフォールバックして量子化すること", () => {
+    expect(quantizeMovePayload({ x: 1.23456, y: -9.87654 }, 0)).toEqual({
+      x: 1.23,
+      y: -9.88,
     });
   });
 
-  it("NaN スケールでは量子化せず元の値を返すこと", () => {
-    expect(quantizeWithScale({ x: 1.23456, y: 0 }, Number.NaN)).toEqual({
-      x: 1.23456,
+  it("負のスケールでは既定スケールへフォールバックして量子化すること", () => {
+    expect(quantizeMovePayload({ x: 1.23456, y: -9.87654 }, -100)).toEqual({
+      x: 1.23,
+      y: -9.88,
+    });
+  });
+
+  it("NaN スケールでは既定スケールへフォールバックして量子化すること", () => {
+    expect(quantizeMovePayload({ x: 1.23456, y: 0 }, Number.NaN)).toEqual({
+      x: 1.23,
       y: 0,
     });
   });
 
-  it("Infinity スケールでは量子化せず元の値を返すこと", () => {
+  it("Infinity スケールでは既定スケールへフォールバックして量子化すること", () => {
     expect(
-      quantizeWithScale({ x: 1.23456, y: 0 }, Number.POSITIVE_INFINITY),
-    ).toEqual({ x: 1.23456, y: 0 });
+      quantizeMovePayload({ x: 1.23456, y: 0 }, Number.POSITIVE_INFINITY),
+    ).toEqual({ x: 1.23, y: 0 });
+  });
+
+  it("-Infinity スケールでは既定スケールへフォールバックして量子化すること", () => {
+    expect(
+      quantizeMovePayload({ x: 1.23456, y: 0 }, Number.NEGATIVE_INFINITY),
+    ).toEqual({ x: 1.23, y: 0 });
+  });
+
+  it("不正スケールのフォールバック結果が既定スケール指定と一致すること", () => {
+    const move = { x: 1.23456, y: -9.87654 };
+
+    expect(quantizeMovePayload(move, 0)).toEqual(
+      quantizeMovePayload(move, DEFAULT_MOVE_QUANTIZE_SCALE),
+    );
   });
 
   it("不正スケールでも非有限座標は 0 に置き換えること", () => {
-    expect(quantizeWithScale({ x: Number.NaN, y: 1.5 }, 0)).toEqual({
+    expect(quantizeMovePayload({ x: Number.NaN, y: 1.5 }, 0)).toEqual({
       x: 0,
       y: 1.5,
     });
@@ -141,11 +165,25 @@ describe("quantizeMovePayload", () => {
     expect(quantized).not.toBe(move);
   });
 
-  it("ごく小さな負の座標が負のゼロになること", () => {
+  it("ごく小さな負の座標を負のゼロではなく 0 に正規化すること", () => {
     const quantized = quantizeMovePayload({ x: -0.001, y: -0.001 });
 
-    expect(Object.is(quantized.x, -0)).toBe(true);
-    expect(Object.is(quantized.y, -0)).toBe(true);
+    expect(Object.is(quantized.x, 0)).toBe(true);
+    expect(Object.is(quantized.y, 0)).toBe(true);
+  });
+
+  it("負のゼロ入力を 0 に正規化すること", () => {
+    const quantized = quantizeMovePayload({ x: -0, y: -0 });
+
+    expect(Object.is(quantized.x, 0)).toBe(true);
+    expect(Object.is(quantized.y, 0)).toBe(true);
+  });
+
+  it("不正スケールのフォールバック時も負のゼロを 0 に正規化すること", () => {
+    const quantized = quantizeMovePayload({ x: -0.001, y: -0.001 }, 0);
+
+    expect(Object.is(quantized.x, 0)).toBe(true);
+    expect(Object.is(quantized.y, 0)).toBe(true);
   });
 });
 

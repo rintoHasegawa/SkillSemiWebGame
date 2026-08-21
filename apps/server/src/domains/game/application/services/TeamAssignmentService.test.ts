@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { createPlayerEntity } from "@server/testing/playerFixtures";
 import { Player } from "../../entities/player/Player";
 import { TeamAssignmentService } from "./TeamAssignmentService";
 
@@ -14,7 +15,7 @@ const createPlayers = (teamIds: number[]): Map<string, Player> => {
 
   teamIds.forEach((teamId, index) => {
     const id = `socket-${index}`;
-    players.set(id, new Player(id, `name-${index}`, teamId));
+    players.set(id, createPlayerEntity({ id, name: `name-${index}`, teamId }));
   });
 
   return players;

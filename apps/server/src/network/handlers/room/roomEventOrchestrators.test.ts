@@ -1,7 +1,8 @@
 /**
  * roomEventOrchestrators.test
- * ルーム受信イベント調停の現行挙動を固定する characterization test
- * ロビー設定更新の差分スキップ・チーム選択の全status分岐・参加結果ごとのログを検証する
+ * ルーム受信イベント調停の仕様を検証するテスト
+ * ロビー設定更新の差分スキップと非適用ログ・チーム選択の全status分岐・
+ * 参加結果ごとのログを検証する
  */
 import { domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -19,6 +20,10 @@ import type {
   LobbySettingsUpdateEventRoomUseCasePort,
   SelectTeamEventRoomUseCasePort,
 } from "@server/network/types/connectionPorts";
+import {
+  createRoom as createRoomFixture,
+  createRoomMember,
+} from "@server/testing/roomFixtures";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 import {
   handleJoinRoomEvent,
@@ -32,30 +37,19 @@ type RoomParams = {
   teamAssignmentMode?: domain.room.TeamAssignmentMode;
 };
 
-/** テスト用のルーム状態を生成する */
+/** ロビー設定値を指定してテスト用のルーム状態を生成する */
 const createRoom = ({
   targetPlayerCount = 4,
   fieldSizePreset = "MEDIUM",
   teamAssignmentMode = "random",
 }: RoomParams = {}): domain.room.Room => {
-  return {
-    roomId: "room-1",
-    ownerId: "socket-1",
-    players: [
-      {
-        id: "socket-1",
-        name: "name-1",
-        isOwner: true,
-        isReady: false,
-        preferredTeamId: null,
-      },
-    ],
-    status: domain.room.RoomPhase.WAITING,
+  return createRoomFixture({
+    players: [createRoomMember({ name: "name-1", isOwner: true })],
     maxPlayers: 100,
     fieldSizePreset,
     targetPlayerCount,
     teamAssignmentMode,
-  };
+  });
 };
 
 /** 送信内容を記録するルーム出力アダプタースタブを生成する */
@@ -208,6 +202,85 @@ describe("handleLobbySettingsUpdateEvent", () => {
 
     expect(deps.output.publishRoomUpdateToRoom).not.toHaveBeenCalled();
   });
+
+  it("オーナーのルームが無い場合はignored_missing_roomを記録すること", () => {
+    const deps = createLobbySettingsDeps({
+      currentRoom: undefined,
+      updatedRoom: createRoom(),
+    });
+
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 8,
+      fieldSizePreset: "LARGE",
+      teamAssignmentMode: "random",
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: roomUseCaseLogEvents.LOBBY_SETTINGS_UPDATE,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "socket-1",
+    });
+  });
+
+  it("全設定値が現在値と同じ場合はignored_no_changeを記録すること", () => {
+    const deps = createLobbySettingsDeps({
+      currentRoom: createRoom(),
+      updatedRoom: createRoom(),
+    });
+
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 4,
+      fieldSizePreset: "MEDIUM",
+      teamAssignmentMode: "random",
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: roomUseCaseLogEvents.LOBBY_SETTINGS_UPDATE,
+      result: logResults.IGNORED_NO_CHANGE,
+      socketId: "socket-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("更新結果が取得できない場合はignored_update_failedを記録すること", () => {
+    const deps = createLobbySettingsDeps({
+      currentRoom: createRoom(),
+      updatedRoom: undefined,
+    });
+
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 8,
+      fieldSizePreset: "MEDIUM",
+      teamAssignmentMode: "random",
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: roomUseCaseLogEvents.LOBBY_SETTINGS_UPDATE,
+      result: logResults.IGNORED_UPDATE_FAILED,
+      socketId: "socket-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("設定が変化して更新できた場合は非適用ログを記録しないこと", () => {
+    const deps = createLobbySettingsDeps({
+      currentRoom: createRoom(),
+      updatedRoom: createRoom({ targetPlayerCount: 8 }),
+    });
+
+    handleLobbySettingsUpdateEvent(deps, {
+      targetPlayerCount: 8,
+      fieldSizePreset: "MEDIUM",
+      teamAssignmentMode: "random",
+    });
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      `[${logScopes.NETWORK}]`,
+      expect.objectContaining({
+        event: roomUseCaseLogEvents.LOBBY_SETTINGS_UPDATE,
+      }),
+    );
+  });
 });
 
 /** チーム選択結果を固定した依存集合スタブを生成する */
@@ -215,10 +288,6 @@ const createSelectTeamDeps = (result: SelectTeamResult) => {
   return {
     socketId: "socket-1",
     roomManager: {
-      // 本調停は getRoomByPlayerId を呼ばないためポート充足用の固定値とする
-      getRoomByPlayerId: vi.fn<
-        SelectTeamEventRoomUseCasePort["getRoomByPlayerId"]
-      >(() => createRoom()),
       selectTeam: vi.fn<SelectTeamEventRoomUseCasePort["selectTeam"]>(
         () => result,
       ),
@@ -289,6 +358,18 @@ describe("handleSelectTeamEvent", () => {
     handleSelectTeamEvent(deps, { preferredTeamId: 99 });
 
     expect(deps.output.publishSelectTeamRejectedToSocket).not.toHaveBeenCalled();
+  });
+
+  it("対象が見つからない場合はignored_missing_roomを記録すること", () => {
+    const deps = createSelectTeamDeps({ status: "not_found" });
+
+    handleSelectTeamEvent(deps, { preferredTeamId: null });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: roomUseCaseLogEvents.SELECT_TEAM,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "socket-1",
+    });
   });
 
   it("チームIDが範囲外の場合はignored_invalid_payloadを記録すること", () => {

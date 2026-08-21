@@ -7,11 +7,12 @@ import { describe, expect, it } from "vitest";
 
 import { config } from "@server/config";
 
+import { createPlayerEntity } from "@server/testing/playerFixtures";
 import { Player } from "./Player";
 import { isValidPosition, setPlayerPosition } from "./playerMovement";
 
 /** テスト用のプレイヤーを生成する */
-const createPlayer = (): Player => new Player("socket-1", "たろう", 0);
+const createPlayer = (): Player => createPlayerEntity({ name: "たろう" });
 
 // 仕様（SPEC_03 プレイヤー半径 0.5 グリッド）に基づく境界値
 const RADIUS = config.GAME_CONFIG.PLAYER_RADIUS;

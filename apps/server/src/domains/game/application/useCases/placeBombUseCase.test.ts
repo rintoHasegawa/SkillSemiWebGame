@@ -122,7 +122,7 @@ describe("placeBombUseCase", () => {
     placeBombUseCase({ roomId: "room-1", bombStore, input, output });
 
     expect(bombStore.shouldBroadcastBombPlaced).toHaveBeenCalledWith(
-      "socket-1:req-1",
+      "8:socket-1|5:req-1",
       1_000,
     );
   });

@@ -45,16 +45,18 @@ export const createSocketEventBridge = <
     socket.off<TInboundMap[TEvent]>(event, callback);
   };
 
-  function emitEvent<TEvent extends EventNameOf<TOutboundMap>>(event: TEvent): void;
-  function emitEvent<TEvent extends EventNameOf<TOutboundMap>>(event: TEvent, payload: TOutboundMap[TEvent]): void;
-  function emitEvent<TEvent extends EventNameOf<TOutboundMap>>(event: TEvent, payload?: TOutboundMap[TEvent]): void {
-    if (payload === undefined) {
+  // ペイロード省略と明示的な undefined を区別するため可変長引数で受ける
+  const emitEvent = <TEvent extends EventNameOf<TOutboundMap>>(
+    event: TEvent,
+    ...payloadArgs: [] | [payload: TOutboundMap[TEvent]]
+  ): void => {
+    if (payloadArgs.length === 0) {
       socket.emit(event);
       return;
     }
 
-    socket.emit<TOutboundMap[TEvent]>(event, payload);
-  }
+    socket.emit<TOutboundMap[TEvent]>(event, payloadArgs[0]);
+  };
 
   return {
     onEvent,

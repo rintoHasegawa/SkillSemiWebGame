@@ -1,14 +1,17 @@
 /**
  * GameLoop.test
- * ルーム定周期ループの現行挙動を固定する characterization test
- * tickスケジューリング・塗り判定・Bot更新・被弾検知の決定的な範囲を検証する
+ * ルーム定周期ループの仕様を検証するテスト
+ * tickスケジューリング・塗り判定・Bot更新・被弾検知（経過時間基準のクールダウン）と
+ * パフォーマンス統計の毎秒換算を検証する
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { domain } from "@repo/shared";
+import { gameDomainLogEvents } from "@server/logging/index";
 import { ActiveBombRegistry, type ActiveBomb } from "../entities/bomb/ActiveBombRegistry";
 import { MapStore } from "../entities/map/MapStore";
 import { Player } from "../entities/player/Player";
+import { createPlayerEntity } from "@server/testing/playerFixtures";
 import { GameLoop, type GameLoopCallbacks } from "./GameLoop";
 
 const TICK_RATE_MS = 50;
@@ -20,19 +23,14 @@ const FIXED_WALL_CLOCK_MS = 1_700_000_000_000;
 /** performance.now が返す現在時刻（ms） */
 let currentPerfMs = 0;
 
-/** テスト用のプレイヤーを生成する */
+/** 座標を位置引数で指定してテスト用のプレイヤーを生成する */
 const createPlayer = (
   id: string,
   x: number,
   y: number,
   teamId = 0,
 ): Player => {
-  const player = new Player(id, id, teamId);
-  player.x = x;
-  player.y = y;
-  player.initialX = x;
-  player.initialY = y;
-  return player;
+  return createPlayerEntity({ id, x, y, teamId });
 };
 
 /** テスト用の爆弾を生成する */
@@ -127,13 +125,35 @@ const getTickData = (
   return onTick.mock.calls[callIndex]?.[0] as domain.game.tick.TickData;
 };
 
+/** パフォーマンス統計ログのペイロードを取り出す */
+const findPerfStatsPayload = (): PerfStatsLogPayload | undefined => {
+  const calls = logSpy.mock.calls as unknown[][];
+  const call = calls.find(
+    (args: unknown[]) =>
+      (args[1] as { event?: string } | undefined)?.event ===
+      gameDomainLogEvents.PERF_STATS,
+  );
+
+  return call?.[1] as PerfStatsLogPayload | undefined;
+};
+
+/** 検証で参照するパフォーマンス統計ログの形 */
+type PerfStatsLogPayload = {
+  playerCount: number;
+  tickCount: number;
+  avgPayloadBytesPerTick: number;
+  outboundBytesPerSec: number;
+};
+
+let logSpy: ReturnType<typeof vi.spyOn>;
+
 beforeEach(() => {
   vi.useFakeTimers();
   currentPerfMs = 0;
   vi.spyOn(performance, "now").mockImplementation(() => currentPerfMs);
   vi.spyOn(Date, "now").mockReturnValue(FIXED_WALL_CLOCK_MS);
   vi.spyOn(Math, "random").mockReturnValue(0.5);
-  vi.spyOn(console, "log").mockImplementation(() => undefined);
+  logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 });
 
 afterEach(() => {
@@ -675,6 +695,97 @@ describe("GameLoop.detectHurricaneHits", () => {
     runNextTickCycle(59_999);
 
     expect(getTickData(harness.onTick).hurricaneSync.currentUpdates).toEqual([]);
+  });
+
+  it("同一プレイヤーへの被弾通知を1tickにつき1回までとすること", () => {
+    const harness = createHarness([createPlayer("human-1", 5, 5, 0)]);
+    harness.loop.start();
+
+    runNextTickCycle(60_000);
+
+    expect(harness.onHurricanePlayerHit).toHaveBeenCalledTimes(1);
+  });
+
+  it("被弾からクールダウン未満の経過では再び被弾通知をしないこと", () => {
+    const harness = createHarness([createPlayer("human-1", 5, 5, 0)]);
+    harness.loop.start();
+    runNextTickCycle(60_000);
+
+    runNextTickCycle(60_000 + 2_999);
+
+    expect(harness.onHurricanePlayerHit).toHaveBeenCalledTimes(1);
+  });
+
+  it("被弾からクールダウン経過後のtickでは再び被弾通知をすること", () => {
+    const harness = createHarness([createPlayer("human-1", 5, 5, 0)]);
+    harness.loop.start();
+    runNextTickCycle(60_000);
+    runNextTickCycle(60_000 + 2_999);
+
+    // キャッチアップ上限で次tick時刻が繰り下がるため十分に進めた時刻で検証する
+    runNextTickCycle(60_000 + 4_000);
+
+    expect(harness.onHurricanePlayerHit).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("GameLoop のパフォーマンス統計", () => {
+  it("集計窓が1秒に満たない間は統計を出力しないこと", () => {
+    const harness = createHarness();
+    harness.loop.start();
+
+    runNextTickCycle(999);
+
+    expect(findPerfStatsPayload()).toBeUndefined();
+  });
+
+  it("集計窓が1秒に達した場合は統計を出力すること", () => {
+    const harness = createHarness();
+    harness.loop.start();
+
+    runNextTickCycle(1_000);
+
+    expect(findPerfStatsPayload()?.tickCount).toBe(1);
+  });
+
+  it("窓1秒では窓内の総ペイロード×プレイヤー数を毎秒バイト数とすること", () => {
+    const harness = createHarness([
+      createPlayer("human-1", 2.5, 3.5, 1),
+      createPlayer("human-2", 6.5, 7.5, 2),
+    ]);
+    harness.loop.start();
+
+    runNextTickCycle(1_000);
+
+    const stats = findPerfStatsPayload();
+    const tickBytes = JSON.stringify(getTickData(harness.onTick)).length;
+    expect(stats?.outboundBytesPerSec).toBe(tickBytes * 2);
+  });
+
+  it("窓2秒では毎秒バイト数が窓1秒の場合の半分になること", () => {
+    const harness = createHarness([
+      createPlayer("human-1", 2.5, 3.5, 1),
+      createPlayer("human-2", 6.5, 7.5, 2),
+    ]);
+    harness.loop.start();
+
+    runNextTickCycle(2_000);
+
+    const stats = findPerfStatsPayload();
+    const tickBytes = JSON.stringify(getTickData(harness.onTick)).length;
+    expect(stats?.outboundBytesPerSec).toBe(Math.round((tickBytes * 2) / 2));
+  });
+
+  it("プレイヤー数に比例して毎秒バイト数を見積もること", () => {
+    const singleHarness = createHarness([createPlayer("human-1", 2.5, 3.5, 1)]);
+    singleHarness.loop.start();
+    runNextTickCycle(1_000);
+    const singleStats = findPerfStatsPayload();
+    const singleTickBytes = JSON.stringify(
+      getTickData(singleHarness.onTick),
+    ).length;
+
+    expect(singleStats?.outboundBytesPerSec).toBe(singleTickBytes);
   });
 });
 

@@ -6,37 +6,27 @@
 import { domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  createRoom as createRoomFixture,
+  createRoomMember,
+} from "@server/testing/roomFixtures";
 import { RoomExitService } from "./RoomExitService";
 
-/** テスト用のルームメンバーを生成する */
+/** オーナー指定を短く書くためのメンバー生成ヘルパー */
 const createMember = (
   id: string,
   isOwner = false,
 ): domain.room.RoomMember => {
-  return {
-    id,
-    name: `name-${id}`,
-    isOwner,
-    isReady: false,
-    preferredTeamId: null,
-  };
+  return createRoomMember({ id, isOwner });
 };
 
-/** テスト用のルーム状態を生成する */
+/** 退出検証で多用する「メンバーとオーナーを指定したルーム」を生成する */
 const createRoom = (
   roomId: string,
   players: domain.room.RoomMember[],
   ownerId: string,
 ): domain.room.Room => {
-  return {
-    roomId,
-    ownerId,
-    players,
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
+  return createRoomFixture({ roomId, players, ownerId });
 };
 
 describe("RoomExitService", () => {

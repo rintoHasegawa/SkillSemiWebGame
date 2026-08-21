@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { config } from "@server/config";
 import { Player } from "../entities/player/Player";
+import { createPlayerEntity } from "@server/testing/playerFixtures";
 import { HurricaneSystem } from "./HurricaneSystem";
 
 const MAP_SIZE = { gridCols: 20, gridRows: 20 };
@@ -28,10 +29,7 @@ const createPlayerMap = (
   y: number,
   teamId = 0,
 ): Map<string, Player> => {
-  const player = new Player(id, id, teamId);
-  player.x = x;
-  player.y = y;
-  return new Map([[id, player]]);
+  return new Map([[id, createPlayerEntity({ id, x, y, teamId })]]);
 };
 
 afterEach(() => {

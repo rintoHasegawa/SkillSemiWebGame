@@ -23,13 +23,13 @@ const input = {
 };
 
 describe("shouldPublishPlayerHitFromBombHit", () => {
-  it("重複排除キーをコロン連結で生成すること", () => {
+  it("重複排除キーを長さプレフィックス方式で生成すること", () => {
     const validation = createValidationStub(true);
 
     shouldPublishPlayerHitFromBombHit(validation, input);
 
     expect(validation.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
-      "socket-1:bomb-9",
+      "8:socket-1|6:bomb-9",
       500,
     );
   });
@@ -55,7 +55,7 @@ describe("shouldPublishPlayerHitFromBombHit", () => {
     });
 
     expect(validation.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
-      "socket-1:bomb-9",
+      "8:socket-1|6:bomb-9",
       0,
     );
   });

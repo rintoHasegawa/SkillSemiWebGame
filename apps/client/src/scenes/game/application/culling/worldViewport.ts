@@ -54,8 +54,11 @@ export const isPointInViewport = (
     && y <= viewport.bottom;
 };
 
-/** 円が可視矩形と交差するか判定する */
-export const isCircleIntersectingViewport = (
+/**
+ * 円の外接矩形（AABB）が可視矩形と交差するか判定する
+ * 角の内外を厳密に判定しないためカリング用途では安全側（過剰に可視と判定）
+ */
+export const isCircleBoundsIntersectingViewport = (
   x: number,
   y: number,
   radiusPx: number,

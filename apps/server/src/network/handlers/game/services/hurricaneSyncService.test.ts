@@ -12,6 +12,7 @@ import type { RoomScopedGamePort } from "@server/domains/room/application/ports/
 import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import type { ReliableEmitters } from "../../CommonHandler";
 import type { RuntimeResolverDeps } from "../runtime/gameRuntimeResolvers";
+import { createPlayerData } from "@server/testing/playerFixtures";
 import { createHurricaneSyncService } from "./hurricaneSyncService";
 
 type EmitCall = {
@@ -35,14 +36,6 @@ const createReliableStub = () => {
   } as unknown as ReliableEmitters;
 
   return { reliable, calls };
-};
-
-/** テスト用のプレイヤーデータを生成する */
-const createPlayer = (
-  id: string,
-  overrides: Partial<domain.game.player.PlayerData> = {},
-): domain.game.player.PlayerData => {
-  return { id, name: `name-${id}`, x: 0, y: 0, teamId: 0, ...overrides };
 };
 
 /** テスト用のハリケーン状態を生成する */
@@ -105,7 +98,7 @@ const setupService = (params: {
     reliable,
     runtimeDeps: createRuntimeDeps(
       params.memberIds ?? ["socket-1"],
-      params.players ?? [createPlayer("socket-1")],
+      params.players ?? [createPlayerData("socket-1")],
     ),
     realtimeRoomSyncState,
     updateViewerAoiCellCache,
@@ -174,8 +167,8 @@ describe("createHurricaneSyncService.publishCurrentHurricanesToRoom", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1", "socket-2"],
       players: [
-        createPlayer("socket-1"),
-        createPlayer("socket-2", { x: 100, y: 100 }),
+        createPlayerData("socket-1"),
+        createPlayerData("socket-2", { x: 100, y: 100 }),
       ],
     });
 
@@ -187,7 +180,7 @@ describe("createHurricaneSyncService.publishCurrentHurricanesToRoom", () => {
   it("受信者ごとにAOIセルキャッシュを更新すること", () => {
     const { service, updateViewerAoiCellCache } = setupService({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishCurrentHurricanesToRoom("room-1", []);
@@ -448,8 +441,8 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1", "socket-2"],
       players: [
-        createPlayer("socket-1"),
-        createPlayer("socket-2", { x: 100, y: 100 }),
+        createPlayerData("socket-1"),
+        createPlayerData("socket-2", { x: 100, y: 100 }),
       ],
     });
 
@@ -461,7 +454,7 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("受信者ごとにAOIセルキャッシュを更新すること", () => {
     const { service, updateViewerAoiCellCache } = setupService({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);

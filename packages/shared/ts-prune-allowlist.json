@@ -1,7 +1,24 @@
 {
+  "_comment": [
+    "barrel index（各ディレクトリの index.ts）の再公開は client/server へ公開するAPI台帳として意図的に維持している",
+    "ts-prune は再公開シンボルを未使用として検出するため barrel index を一括除外し，実装ファイル側の本当に未使用なエクスポートのみを検出対象にする",
+    "ignoreFiles には barrel index のみを列挙し，実装ファイル個別の除外は ignoreExports で理由付きに行う"
+  ],
   "ignoreFiles": [
     "packages/shared/src/index.ts",
-    "packages/shared/src/config/index.ts"
+    "packages/shared/src/config/index.ts",
+    "packages/shared/src/protocol/index.ts",
+    "packages/shared/src/domains/index.ts",
+    "packages/shared/src/domains/app/index.ts",
+    "packages/shared/src/domains/room/index.ts",
+    "packages/shared/src/domains/game/index.ts",
+    "packages/shared/src/domains/game/aoi/index.ts",
+    "packages/shared/src/domains/game/bomb/index.ts",
+    "packages/shared/src/domains/game/bombHit/index.ts",
+    "packages/shared/src/domains/game/collision/index.ts",
+    "packages/shared/src/domains/game/gridMap/index.ts",
+    "packages/shared/src/domains/game/player/index.ts",
+    "packages/shared/src/domains/game/tick/index.ts"
   ],
   "ignoreExports": []
 }

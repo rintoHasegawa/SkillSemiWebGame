@@ -55,8 +55,6 @@ export type GameLoopCallbacks = {
 /** プレイヤーのグリッド位置キャッシュを含むエントリ */
 type PlayerGridCacheEntry = PlayerGridEntry & { player: Player };
 
-type DamageSource = "bomb" | "hurricane";
-
 /** 1秒間のパフォーマンス統計蓄積バッファ */
 type PerfAccumulator = {
   windowStartMs: number;
@@ -117,7 +115,7 @@ export class GameLoop {
    */
   public warmUp(): void {
     const nowMs = Date.now();
-    const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
+    const gridColorsView = this.mapStore.getGridColorsView();
     const maxChain = 4;
     let botIndex = 0;
 
@@ -133,7 +131,7 @@ export class GameLoop {
       this.botTurnOrchestrator.decide(
         player.id as BotPlayerId,
         player,
-        gridColorsSnapshot,
+        gridColorsView,
         nowMs,
         0,
       );
@@ -145,7 +143,12 @@ export class GameLoop {
       let targetCol = currentCol;
       let targetRow = currentRow;
       for (let i = 0; i < chainCount; i++) {
-        const next = chooseNextTarget(targetCol, targetRow, gridColorsSnapshot, this.mapSize);
+        const next = chooseNextTarget(
+          targetCol,
+          targetRow,
+          gridColorsView,
+          this.mapSize,
+        );
         targetCol = next.col;
         targetRow = next.row;
       }
@@ -243,9 +246,9 @@ export class GameLoop {
     );
     this.hurricaneSystem.ensureSpawned(elapsedMs);
     this.hurricaneSystem.update(this.tickRate / 1000);
-    this.detectHurricaneHits(wallClockNowMs);
-    const gridColorsSnapshot = this.mapStore.getGridColorsSnapshot();
-    this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsSnapshot);
+    this.detectHurricaneHits(elapsedMs, wallClockNowMs);
+    const gridColorsView = this.mapStore.getGridColorsView();
+    this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsView);
     this.detectBotBombHits(elapsedMs, wallClockNowMs);
     const tickData = this.buildTickData(elapsedMs);
     this.callbacks.onTick(tickData);
@@ -277,7 +280,12 @@ export class GameLoop {
       Math.round((acc.totalTickMs / windowMs) * 1000) / 10;
     const avgPayloadBytesPerTick =
       acc.tickCount > 0 ? Math.round(acc.totalPayloadBytes / acc.tickCount) : 0;
-    const outboundBytesPerSec = avgPayloadBytesPerTick * playerCount * acc.tickCount;
+
+    // 集計窓は負荷時に1秒を超えるため，実際の窓経過秒で割って毎秒換算する
+    const windowSec = windowMs / 1000;
+    const outboundBytesPerSec = Math.round(
+      (acc.totalPayloadBytes * playerCount) / windowSec,
+    );
 
     logEvent(logScopes.GAME_LOOP, {
       event: gameDomainLogEvents.PERF_STATS,
@@ -305,7 +313,7 @@ export class GameLoop {
   private updateBotPlayers(
     nowMs: number,
     elapsedMs: number,
-    gridColorsSnapshot: readonly number[],
+    gridColorsView: readonly number[],
   ): void {
     this.players.forEach((player) => {
       if (
@@ -315,7 +323,7 @@ export class GameLoop {
         const decision = this.botTurnOrchestrator.decide(
           player.id as BotPlayerId,
           player,
-          gridColorsSnapshot,
+          gridColorsView,
           nowMs,
           elapsedMs,
         );
@@ -365,7 +373,7 @@ export class GameLoop {
         });
 
         if (result.isHit) {
-          this.applyBotDamage(player.id, nowMs, "bomb");
+          this.applyBotDamage(player.id, nowMs);
 
           // 爆弾所有者の bombHitCount を加算する
           const owner = this.players.get(bomb.ownerPlayerId);
@@ -406,11 +414,14 @@ export class GameLoop {
     };
   }
 
-  /** ハリケーン接触を検知し，被弾通知を配信する */
-  private detectHurricaneHits(nowMs: number): void {
+  /**
+   * ハリケーン接触を検知し，被弾通知を配信する
+   * 被弾クールダウンは単調増加の elapsedMs で判定し，Bot硬直のみ壁時計を使う
+   */
+  private detectHurricaneHits(elapsedMs: number, wallClockNowMs: number): void {
     const hitPlayerIds = this.hurricaneSystem.collectHitPlayerIds(
       this.players,
-      nowMs,
+      elapsedMs,
     );
 
     hitPlayerIds.forEach((playerId) => {
@@ -418,19 +429,18 @@ export class GameLoop {
         isBotPlayerId(playerId) ||
         this.disconnectedBotControlledPlayerIds.has(playerId)
       ) {
-        this.applyBotDamage(playerId, nowMs, "hurricane");
+        this.applyBotDamage(playerId, wallClockNowMs);
       }
 
       this.callbacks.onHurricanePlayerHit?.(playerId);
     });
   }
 
-  /** Bot被弾時のスタン適用とカウント更新を行う */
-  private applyBotDamage(
-    playerId: string,
-    nowMs: number,
-    _source: DamageSource,
-  ): void {
+  /**
+   * Bot被弾時のスタン適用とカウント更新を行う
+   * 爆弾・ハリケーンで処理内容が同一のため被弾元は受け取らない
+   */
+  private applyBotDamage(playerId: string, nowMs: number): void {
     const botPlayerId = playerId as BotPlayerId;
     const prevCount = this.botReceivedHitCountById.get(playerId) ?? 0;
     const nextCount = prevCount + 1;

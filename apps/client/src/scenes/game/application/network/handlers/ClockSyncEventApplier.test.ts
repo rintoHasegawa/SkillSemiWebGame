@@ -122,7 +122,29 @@ describe("ClockSyncEventApplier", () => {
       createGameStartPayload({ startTime: undefined as unknown as number }),
     );
 
-    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[ClockSyncEventApplier]"),
+    );
+  });
+
+  it("開始時刻がNaNの場合はコールバックを一切呼ばないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { applier, calls } = createApplier();
+
+    applier.applyGameStart(createGameStartPayload({ startTime: Number.NaN }));
+
+    expect(calls).toEqual([]);
+  });
+
+  it("開始時刻がInfinityの場合はコールバックを一切呼ばないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { applier, calls } = createApplier();
+
+    applier.applyGameStart(
+      createGameStartPayload({ startTime: Number.POSITIVE_INFINITY }),
+    );
+
+    expect(calls).toEqual([]);
   });
 
   it("サーバー時刻が非有限の場合は時計補正を行わないこと", () => {

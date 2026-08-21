@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { RoomScopedGamePort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import type { RuntimeResolverDeps } from "../runtime/gameRuntimeResolvers";
+import { createPlayerData } from "@server/testing/playerFixtures";
 import { forEachRoomViewer } from "./roomViewerSyncContext";
 
 /** テスト用のルームメンバーを生成する */
@@ -19,14 +20,6 @@ const createMember = (id: string): domain.room.RoomMember => {
     isReady: false,
     preferredTeamId: null,
   };
-};
-
-/** テスト用のプレイヤーデータを生成する */
-const createPlayer = (
-  id: string,
-  overrides: Partial<domain.game.player.PlayerData> = {},
-): domain.game.player.PlayerData => {
-  return { id, name: `name-${id}`, x: 0, y: 0, teamId: 0, ...overrides };
 };
 
 /** ルーム参加者とランタイムプレイヤーを固定した依存スタブを生成する */
@@ -74,7 +67,7 @@ describe("forEachRoomViewer", () => {
     const run = vi.fn();
     const runtimeDeps = createDeps({
       memberIds: ["socket-1"],
-      players: [createPlayer("socket-1")],
+      players: [createPlayerData("socket-1")],
       hasGameManager: false,
     });
 
@@ -95,7 +88,7 @@ describe("forEachRoomViewer", () => {
     const run = vi.fn();
     const runtimeDeps = createDeps({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     forEachRoomViewer({ runtimeDeps, roomId: "room-1", run });
@@ -105,10 +98,10 @@ describe("forEachRoomViewer", () => {
 
   it("受信者本人のプレイヤーデータを渡すこと", () => {
     const run = vi.fn();
-    const viewer = createPlayer("socket-1", { x: 5, y: 6 });
+    const viewer = createPlayerData("socket-1", { x: 5, y: 6 });
     const runtimeDeps = createDeps({
       memberIds: ["socket-1"],
-      players: [viewer, createPlayer("socket-2")],
+      players: [viewer, createPlayerData("socket-2")],
     });
 
     forEachRoomViewer({ runtimeDeps, roomId: "room-1", run });
@@ -116,12 +109,12 @@ describe("forEachRoomViewer", () => {
     expect(run).toHaveBeenCalledWith({
       viewerId: "socket-1",
       viewer,
-      roomPlayers: [viewer, createPlayer("socket-2")],
+      roomPlayers: [viewer, createPlayerData("socket-2")],
     });
   });
 
   it("ルーム全プレイヤー一覧を各受信者へ渡すこと", () => {
-    const players = [createPlayer("socket-1"), createPlayer("bot:room-1:1")];
+    const players = [createPlayerData("socket-1"), createPlayerData("bot:room-1:1")];
     const run = vi.fn();
     const runtimeDeps = createDeps({ memberIds: ["socket-1"], players });
 
@@ -134,7 +127,7 @@ describe("forEachRoomViewer", () => {
     const viewerIds: string[] = [];
     const runtimeDeps = createDeps({
       memberIds: ["socket-2", "socket-1"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     forEachRoomViewer({
@@ -152,7 +145,7 @@ describe("forEachRoomViewer", () => {
     const viewerIds: string[] = [];
     const runtimeDeps = createDeps({
       memberIds: ["socket-1", "bot:room-1:1"],
-      players: [createPlayer("socket-1"), createPlayer("bot:room-1:1")],
+      players: [createPlayerData("socket-1"), createPlayerData("bot:room-1:1")],
     });
 
     forEachRoomViewer({
@@ -170,7 +163,7 @@ describe("forEachRoomViewer", () => {
     const viewerIds: string[] = [];
     const runtimeDeps = createDeps({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1")],
+      players: [createPlayerData("socket-1")],
     });
 
     forEachRoomViewer({
@@ -192,7 +185,7 @@ describe("forEachRoomViewer", () => {
         getGameManagerByRoomId: vi.fn(
           () =>
             ({
-              getRoomPlayers: () => [createPlayer("socket-1")],
+              getRoomPlayers: () => [createPlayerData("socket-1")],
               getActiveBombSnapshots: () => [],
             }) as unknown as RoomScopedGamePort,
         ),
@@ -205,11 +198,11 @@ describe("forEachRoomViewer", () => {
   });
 
   it("同一IDのプレイヤーが重複する場合は後勝ちで解決すること", () => {
-    const duplicated = createPlayer("socket-1", { x: 9, y: 9 });
+    const duplicated = createPlayerData("socket-1", { x: 9, y: 9 });
     const run = vi.fn();
     const runtimeDeps = createDeps({
       memberIds: ["socket-1"],
-      players: [createPlayer("socket-1", { x: 1, y: 1 }), duplicated],
+      players: [createPlayerData("socket-1", { x: 1, y: 1 }), duplicated],
     });
 
     forEachRoomViewer({ runtimeDeps, roomId: "room-1", run });
@@ -220,7 +213,7 @@ describe("forEachRoomViewer", () => {
   it("指定したルームIDでプレイヤーと受信者を解決すること", () => {
     const runtimeDeps = createDeps({
       memberIds: ["socket-1"],
-      players: [createPlayer("socket-1")],
+      players: [createPlayerData("socket-1")],
     });
 
     forEachRoomViewer({ runtimeDeps, roomId: "room-9", run: vi.fn() });

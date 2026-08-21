@@ -12,6 +12,10 @@ import type {
   RoomScopedGamePort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { logResults, logScopes } from "@server/logging/index";
+import {
+  createRoom as createRoomFixture,
+  createRoomMember,
+} from "@server/testing/roomFixtures";
 import type { GameOutputAdapter } from "./createGameOutputAdapter";
 import {
   handleBombHitReportEvent,
@@ -25,25 +29,12 @@ import {
 
 const FIXED_NOW_MS = 1_700_000_000_000;
 
-/** テスト用のルーム状態を生成する */
+/** オーナー1名が在室するテスト用のルーム状態を生成する */
 const createRoom = (): domain.room.Room => {
-  return {
-    roomId: "room-1",
-    ownerId: "socket-1",
-    players: [
-      {
-        id: "socket-1",
-        name: "name-1",
-        isOwner: true,
-        isReady: false,
-        preferredTeamId: null,
-      },
-    ],
-    status: domain.room.RoomPhase.WAITING,
+  return createRoomFixture({
+    players: [createRoomMember({ name: "name-1", isOwner: true })],
     maxPlayers: 100,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
+  });
 };
 
 type GameManagerStubParams = {
@@ -406,7 +397,7 @@ describe("handlePlaceBombEvent", () => {
     });
 
     expect(gameManager.shouldBroadcastBombPlaced).toHaveBeenCalledWith(
-      "socket-1:req-1",
+      "8:socket-1|5:req-1",
       FIXED_NOW_MS,
     );
   });
@@ -477,7 +468,7 @@ describe("handleBombHitReportEvent", () => {
     handleBombHitReportEvent(deps, { bombId: "bomb-1" });
 
     expect(gameManager.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
-      "socket-1:bomb-1",
+      "8:socket-1|6:bomb-1",
       FIXED_NOW_MS,
     );
   });

@@ -32,8 +32,9 @@ PixiJSの描画パイプラインから除外する．
 
 ### 判定方法 (Detection Method)
 
-- 円-矩形交差判定（`isCircleIntersectingViewport`）を使用する
-- エンティティの半径円とビューポート矩形の交差を判定する
+- 円の外接矩形-矩形交差判定（`isCircleBoundsIntersectingViewport`）を使用する
+- エンティティの半径円の外接矩形（AABB）とビューポート矩形の交差を判定する
+- ※ 角の内外は厳密に判定しないため，カリングとしては安全側（過剰に可視と判定）に働く
 
 ### カリングマージン (Culling Margin)
 

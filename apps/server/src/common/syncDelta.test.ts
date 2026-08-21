@@ -1,7 +1,7 @@
 /**
  * syncDelta.test
- * ID単位の差分抽出の現行挙動を固定する characterization test
- * 初回抽出・同値スキップ・キャッシュ更新副作用の境界挙動を検証する
+ * ID単位の差分抽出の仕様を検証するテスト
+ * 初回抽出・同値スキップ（偽値スナップショット含む）・キャッシュ更新副作用を検証する
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -250,7 +250,7 @@ describe("collectSyncDeltaEntries", () => {
     expect(entries).toHaveLength(1);
   });
 
-  it("スナップショットが0などの偽値の場合は同値でも差分として返すこと", () => {
+  it("直前スナップショットが0でも同値なら差分として返さないこと", () => {
     const lastSnapshotById = new Map<string, number>([["p1", 0]]);
 
     const entries = collectSyncDeltaEntries(
@@ -263,10 +263,26 @@ describe("collectSyncDeltaEntries", () => {
       },
     );
 
-    expect(entries).toEqual([{ item: { id: "p1", value: 0 }, snapshot: 0 }]);
+    expect(entries).toEqual([]);
   });
 
-  it("スナップショットが空文字の場合は同値でも差分として返すこと", () => {
+  it("直前スナップショットが0でも値が変われば差分として返すこと", () => {
+    const lastSnapshotById = new Map<string, number>([["p1", 0]]);
+
+    const entries = collectSyncDeltaEntries(
+      [{ id: "p1", value: 1 }],
+      lastSnapshotById,
+      {
+        selectId: (item: { id: string; value: number }) => item.id,
+        toSnapshot: (item) => item.value,
+        isSameSnapshot: (left, right) => left === right,
+      },
+    );
+
+    expect(entries).toEqual([{ item: { id: "p1", value: 1 }, snapshot: 1 }]);
+  });
+
+  it("直前スナップショットが空文字でも同値なら差分として返さないこと", () => {
     const lastSnapshotById = new Map<string, string>([["p1", ""]]);
 
     const entries = collectSyncDeltaEntries(
@@ -279,6 +295,36 @@ describe("collectSyncDeltaEntries", () => {
       },
     );
 
-    expect(entries).toHaveLength(1);
+    expect(entries).toEqual([]);
+  });
+
+  it("直前スナップショットがfalseでも同値なら差分として返さないこと", () => {
+    const lastSnapshotById = new Map<string, boolean>([["p1", false]]);
+
+    const entries = collectSyncDeltaEntries(
+      [{ id: "p1", value: false }],
+      lastSnapshotById,
+      {
+        selectId: (item: { id: string; value: boolean }) => item.id,
+        toSnapshot: (item) => item.value,
+        isSameSnapshot: (left, right) => left === right,
+      },
+    );
+
+    expect(entries).toEqual([]);
+  });
+
+  it("未登録IDの場合は偽値スナップショットでも差分として返すこと", () => {
+    const entries = collectSyncDeltaEntries(
+      [{ id: "p1", value: 0 }],
+      new Map<string, number>(),
+      {
+        selectId: (item: { id: string; value: number }) => item.id,
+        toSnapshot: (item) => item.value,
+        isSameSnapshot: (left, right) => left === right,
+      },
+    );
+
+    expect(entries).toEqual([{ item: { id: "p1", value: 0 }, snapshot: 0 }]);
   });
 });

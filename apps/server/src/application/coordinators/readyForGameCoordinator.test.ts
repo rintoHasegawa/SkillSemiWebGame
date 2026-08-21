@@ -9,22 +9,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { GameFieldConfig } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { RoomScopedGamePort } from "@server/domains/room/application/ports/roomUseCasePorts";
+import { createRoom } from "@server/testing/roomFixtures";
+import { createPlayerData } from "@server/testing/playerFixtures";
 import { readyForGameCoordinator } from "./readyForGameCoordinator";
 
 const FIXED_NOW_MS = 1_700_000_000_000;
-
-/** テスト用のルーム状態を生成する */
-const createRoom = (roomId: string): domain.room.Room => {
-  return {
-    roomId,
-    ownerId: "socket-1",
-    players: [],
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
 
 type GameManagerStubParams = {
   roomPlayers?: domain.game.player.PlayerData[];
@@ -103,15 +92,6 @@ const createDeps = (
   };
 };
 
-/** テスト用のプレイヤーデータを生成する */
-const createPlayer = (
-  id: string,
-  x: number,
-  y: number,
-): domain.game.player.PlayerData => {
-  return { id, name: `name-${id}`, x, y, teamId: 0 };
-};
-
 describe("readyForGameCoordinator", () => {
   beforeEach(() => {
     vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -125,12 +105,12 @@ describe("readyForGameCoordinator", () => {
   it("ランタイム解決成功時はゲーム管理のプレイヤー一覧を通知すること", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1.234_5, 2.345_6)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1.234_5, y: 2.345_6 })],
     });
 
     readyForGameCoordinator({
       socketId: "socket-1",
-      ...createDeps(createRoom("room-1"), gameManager),
+      ...createDeps(createRoom({ roomId: "room-1" }), gameManager),
       output,
     });
 
@@ -142,14 +122,14 @@ describe("readyForGameCoordinator", () => {
   it("開始済みの場合はセッションのフィールド設定で開始通知を送ること", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1, 1)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
       startTime: 1_234,
       fieldConfig: { fieldSizePreset: "SMALL", gridCols: 24, gridRows: 24 },
     });
 
     readyForGameCoordinator({
       socketId: "socket-1",
-      ...createDeps(createRoom("room-1"), gameManager),
+      ...createDeps(createRoom({ roomId: "room-1" }), gameManager),
       output,
     });
 
@@ -165,7 +145,7 @@ describe("readyForGameCoordinator", () => {
   it("ルームが解決できない場合は空のプレイヤー一覧を通知すること", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1, 1)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
     });
 
     readyForGameCoordinator({
@@ -179,7 +159,7 @@ describe("readyForGameCoordinator", () => {
 
   it("ルームが解決できない場合はゲーム管理を参照しないこと", () => {
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1, 1)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
     });
 
     readyForGameCoordinator({
@@ -196,7 +176,7 @@ describe("readyForGameCoordinator", () => {
 
     readyForGameCoordinator({
       socketId: "socket-1",
-      ...createDeps(createRoom("room-1"), undefined),
+      ...createDeps(createRoom({ roomId: "room-1" }), undefined),
       output,
     });
 
@@ -208,7 +188,7 @@ describe("readyForGameCoordinator", () => {
 
     readyForGameCoordinator({
       socketId: "socket-1",
-      ...createDeps(createRoom("room-1"), undefined),
+      ...createDeps(createRoom({ roomId: "room-1" }), undefined),
       output,
     });
 
@@ -217,7 +197,7 @@ describe("readyForGameCoordinator", () => {
 
   it("ランタイム解決に受け取ったsocketIdを使用すること", () => {
     const deps = createDeps(
-      createRoom("room-1"),
+      createRoom({ roomId: "room-1" }),
       createGameManagerStub({ roomPlayers: [] }),
     );
 

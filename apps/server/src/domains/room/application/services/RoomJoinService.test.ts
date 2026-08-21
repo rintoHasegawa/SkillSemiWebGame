@@ -6,33 +6,17 @@
 import { domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  createRoom as createRoomFixture,
+  createRoomMember,
+} from "@server/testing/roomFixtures";
 import { RoomJoinService } from "./RoomJoinService";
 
-/** テスト用のルーム状態を生成する */
+/** 満員条件を最小人数で検証するため定員2を既定としたルームを生成する */
 const createRoom = (
   overrides: Partial<domain.room.Room> = {},
 ): domain.room.Room => {
-  return {
-    roomId: "room-1",
-    ownerId: "socket-1",
-    players: [],
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 2,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-    ...overrides,
-  };
-};
-
-/** テスト用のルームメンバーを生成する */
-const createMember = (id: string): domain.room.RoomMember => {
-  return {
-    id,
-    name: `name-${id}`,
-    isOwner: false,
-    isReady: false,
-    preferredTeamId: null,
-  };
+  return createRoomFixture({ maxPlayers: 2, ...overrides });
 };
 
 describe("RoomJoinService", () => {
@@ -89,7 +73,7 @@ describe("RoomJoinService", () => {
   });
 
   it("オーナー以外の参加者はisOwnerをfalseにすること", () => {
-    const room = createRoom({ players: [createMember("socket-1")] });
+    const room = createRoom({ players: [createRoomMember({ id: "socket-1" })] });
     const service = new RoomJoinService(new Map([["room-1", room]]));
 
     const result = service.addPlayerToRoom("room-1", "socket-2", "次郎");
@@ -125,7 +109,7 @@ describe("RoomJoinService", () => {
   });
 
   it("同一ソケットの再参加はduplicateで拒否すること", () => {
-    const room = createRoom({ players: [createMember("socket-1")] });
+    const room = createRoom({ players: [createRoomMember({ id: "socket-1" })] });
     const service = new RoomJoinService(new Map([["room-1", room]]));
 
     const result = service.addPlayerToRoom("room-1", "socket-1", "太郎");
@@ -134,7 +118,7 @@ describe("RoomJoinService", () => {
   });
 
   it("重複参加で拒否した場合はプレイヤーを増やさないこと", () => {
-    const room = createRoom({ players: [createMember("socket-1")] });
+    const room = createRoom({ players: [createRoomMember({ id: "socket-1" })] });
     const service = new RoomJoinService(new Map([["room-1", room]]));
 
     service.addPlayerToRoom("room-1", "socket-1", "太郎");
@@ -145,7 +129,7 @@ describe("RoomJoinService", () => {
   it("定員に達したルームへの参加はfullで拒否すること", () => {
     const room = createRoom({
       maxPlayers: 2,
-      players: [createMember("socket-1"), createMember("socket-2")],
+      players: [createRoomMember({ id: "socket-1" }), createRoomMember({ id: "socket-2" })],
     });
     const service = new RoomJoinService(new Map([["room-1", room]]));
 
@@ -157,7 +141,7 @@ describe("RoomJoinService", () => {
   it("定員直前の参加は許可すること", () => {
     const room = createRoom({
       maxPlayers: 2,
-      players: [createMember("socket-1")],
+      players: [createRoomMember({ id: "socket-1" })],
     });
     const service = new RoomJoinService(new Map([["room-1", room]]));
 

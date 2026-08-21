@@ -15,20 +15,8 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
+import { createRoom } from "@server/testing/roomFixtures";
 import { disconnectCoordinator } from "./disconnectCoordinator";
-
-/** テスト用のルーム状態を生成する */
-const createRoom = (roomId: string): domain.room.Room => {
-  return {
-    roomId,
-    ownerId: "socket-1",
-    players: [],
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
 
 /** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
 const createGameManagerStub = (replacedWithBot: boolean) => {
@@ -130,7 +118,7 @@ describe("disconnectCoordinator", () => {
 
     disconnectCoordinator({
       socketId: "socket-1",
-      ...createDeps({ room: createRoom("room-1"), gameManager }),
+      ...createDeps({ room: createRoom({ roomId: "room-1" }), gameManager }),
       gameOutput,
       roomOutput,
     });
@@ -144,7 +132,7 @@ describe("disconnectCoordinator", () => {
     disconnectCoordinator({
       socketId: "socket-1",
       ...createDeps({
-        room: createRoom("room-1"),
+        room: createRoom({ roomId: "room-1" }),
         gameManager: createGameManagerStub(false),
       }),
       gameOutput,
@@ -163,7 +151,7 @@ describe("disconnectCoordinator", () => {
 
     disconnectCoordinator({
       socketId: "socket-1",
-      ...createDeps({ room: createRoom("room-1"), gameManager }),
+      ...createDeps({ room: createRoom({ roomId: "room-1" }), gameManager }),
       gameOutput,
       roomOutput,
     });
@@ -177,7 +165,7 @@ describe("disconnectCoordinator", () => {
     disconnectCoordinator({
       socketId: "socket-1",
       ...createDeps({
-        room: createRoom("room-1"),
+        room: createRoom({ roomId: "room-1" }),
         gameManager: createGameManagerStub(true),
       }),
       gameOutput,
@@ -193,7 +181,7 @@ describe("disconnectCoordinator", () => {
 
     disconnectCoordinator({
       socketId: "socket-1",
-      ...createDeps({ room: createRoom("room-1"), gameManager: undefined }),
+      ...createDeps({ room: createRoom({ roomId: "room-1" }), gameManager: undefined }),
       gameOutput,
       roomOutput,
     });
@@ -272,7 +260,7 @@ describe("disconnectCoordinator", () => {
     disconnectCoordinator({
       socketId: "socket-1",
       ...createDeps({
-        room: createRoom("room-1"),
+        room: createRoom({ roomId: "room-1" }),
         gameManager: createGameManagerStub(false),
       }),
       gameOutput,
@@ -314,7 +302,7 @@ describe("disconnectCoordinator", () => {
   });
 
   it("退出により更新されたルームごとにルーム更新を配信すること", () => {
-    const updatedRoom = createRoom("room-1");
+    const updatedRoom = createRoom({ roomId: "room-1" });
     const { gameOutput, roomOutput } = createOutputStubs();
 
     disconnectCoordinator({
@@ -380,7 +368,7 @@ describe("disconnectCoordinator", () => {
 
   it("ゲーム離脱処理をルーム退出処理より先に実行すること", () => {
     const gameManager = createGameManagerStub(false);
-    const deps = createDeps({ room: createRoom("room-1"), gameManager });
+    const deps = createDeps({ room: createRoom({ roomId: "room-1" }), gameManager });
     const { gameOutput, roomOutput } = createOutputStubs();
 
     disconnectCoordinator({

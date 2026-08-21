@@ -185,12 +185,21 @@ describe("emitEvent", () => {
     expect(calls[0].args[1]).toBe(payload);
   });
 
-  it("undefined を明示指定した場合はペイロードなしとして emit すること", () => {
+  it("undefined を明示指定した場合はペイロードとして undefined を渡すこと", () => {
     const { bridge, calls } = createTestBridge();
 
     bridge.emitEvent("ping", undefined);
 
-    expect(calls).toEqual([{ method: "emit", args: ["ping"] }]);
+    expect(calls).toEqual([{ method: "emit", args: ["ping", undefined] }]);
+  });
+
+  it("undefined を明示指定した場合と省略した場合で引数の個数が異なること", () => {
+    const { bridge, calls } = createTestBridge();
+
+    bridge.emitEvent("ping");
+    bridge.emitEvent("ping", undefined);
+
+    expect(calls.map((call) => call.args.length)).toEqual([1, 2]);
   });
 
   it("null を指定した場合はペイロードとして emit すること", () => {

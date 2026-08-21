@@ -10,7 +10,9 @@ import { logResults, logScopes } from "@server/logging/index";
 type MissingRoomNetworkEvent =
   | typeof protocol.SocketEvents.MOVE
   | typeof protocol.SocketEvents.PLACE_BOMB
-  | typeof protocol.SocketEvents.BOMB_HIT_REPORT;
+  | typeof protocol.SocketEvents.BOMB_HIT_REPORT
+  | typeof protocol.SocketEvents.LOBBY_SETTINGS_UPDATE
+  | typeof protocol.SocketEvents.SELECT_TEAM;
 
 /** 未解決のルーム関連イベントをNetworkスコープで記録する */
 export const logIgnoredMissingRoom = (

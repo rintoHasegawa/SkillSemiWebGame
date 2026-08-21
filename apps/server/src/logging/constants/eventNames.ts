@@ -20,6 +20,7 @@ export const roomUseCaseLogEvents = {
   DISCONNECT: protocol.SocketEvents.DISCONNECT,
   ROOM_UPDATE: protocol.SocketEvents.ROOM_UPDATE,
   SELECT_TEAM: protocol.SocketEvents.SELECT_TEAM,
+  LOBBY_SETTINGS_UPDATE: protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
 } as const;
 
 /** Gameドメインサービスとループログで利用するイベント名定数 */

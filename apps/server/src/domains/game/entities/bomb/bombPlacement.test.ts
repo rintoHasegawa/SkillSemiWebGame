@@ -26,8 +26,10 @@ const createPlaceBombPayload = (
 };
 
 describe("createBombDedupeKey", () => {
-  it("設置者IDと要求IDをコロンで連結すること", () => {
-    expect(createBombDedupeKey("player-1", "req-1")).toBe("player-1:req-1");
+  it("設置者IDと要求IDを長さプレフィックス付きで連結すること", () => {
+    expect(createBombDedupeKey("player-1", "req-1")).toBe(
+      "8:player-1|5:req-1",
+    );
   });
 
   it("設置者が異なれば別のキーになること", () => {
@@ -42,16 +44,18 @@ describe("createBombDedupeKey", () => {
     );
   });
 
-  it("設置者IDが空文字でも連結すること", () => {
-    expect(createBombDedupeKey("", "req-1")).toBe(":req-1");
+  it("設置者IDが空文字でも長さ0として連結すること", () => {
+    expect(createBombDedupeKey("", "req-1")).toBe("0:|5:req-1");
   });
 
-  it("要求IDが空文字でも連結すること", () => {
-    expect(createBombDedupeKey("player-1", "")).toBe("player-1:");
+  it("要求IDが空文字でも長さ0として連結すること", () => {
+    expect(createBombDedupeKey("player-1", "")).toBe("8:player-1|0:");
   });
 
-  it("引数にコロンが含まれてもエスケープせず単純連結すること", () => {
-    expect(createBombDedupeKey("a:b", "c")).toBe("a:b:c");
+  it("BotのようにコロンつきIDでも境界の異なる組み合わせと衝突しないこと", () => {
+    expect(createBombDedupeKey("bot:room-1:1", "req-1")).not.toBe(
+      createBombDedupeKey("bot:room-1", "1:req-1"),
+    );
   });
 });
 

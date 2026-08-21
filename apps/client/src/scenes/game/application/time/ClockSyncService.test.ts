@@ -1,26 +1,19 @@
 /**
  * ClockSyncService.test
- * 時刻同期サービスの現行挙動を固定する characterization test
- * seed・PONG取り込み・同期時刻算出・間隔推奨の連携を検証する
+ * 時刻同期サービスの挙動を検証するテスト
+ * seed・PONG取り込み・同期時刻算出・間隔推奨と部分設定の合成を検証する
  */
 import { describe, expect, it, vi } from "vitest";
 
 import {
   ClockSyncService,
   DEFAULT_CLOCK_SYNC_CONFIG,
-  type ClockSyncConfig,
+  type PartialClockSyncConfig,
 } from "./ClockSyncService";
 
 /** 固定時刻を返す時刻取得スタブを生成する */
 const createFixedNowProvider = (nowMs: number) => {
   return () => nowMs;
-};
-
-// 型定義は各サブ設定の完全形を要求するが，実装は部分指定でも既定値と合成する
-const createIntervalPolicyOverride = (
-  override: Partial<ClockSyncConfig["intervalPolicy"]>,
-): ClockSyncConfig["intervalPolicy"] => {
-  return override as ClockSyncConfig["intervalPolicy"];
 };
 
 describe("DEFAULT_CLOCK_SYNC_CONFIG", () => {
@@ -169,7 +162,7 @@ describe("ClockSyncService", () => {
 
   it("intervalPolicy設定を上書きした場合は上書き後の間隔を返すこと", () => {
     const service = new ClockSyncService(
-      { intervalPolicy: createIntervalPolicyOverride({ defaultIntervalMs: 111 }) },
+      { intervalPolicy: { defaultIntervalMs: 111 } },
       createFixedNowProvider(1000),
     );
 
@@ -178,13 +171,45 @@ describe("ClockSyncService", () => {
 
   it("intervalPolicy設定の未指定項目には既定値を使うこと", () => {
     const service = new ClockSyncService(
-      { intervalPolicy: createIntervalPolicyOverride({ defaultIntervalMs: 111 }) },
+      { intervalPolicy: { defaultIntervalMs: 111 } },
       createFixedNowProvider(1000),
     );
 
     service.updateFromPong({ clientTime: 950, serverTime: 5000 });
 
     expect(service.getRecommendedSyncIntervalMs()).toBe(5000);
+  });
+
+  it("smoother設定をネスト単位で部分指定できること", () => {
+    // ネスト単位で省略できる PartialClockSyncConfig を型注釈で明示する
+    const config: PartialClockSyncConfig = {
+      smoother: { offsetAlpha: 1 },
+    };
+    const service = new ClockSyncService(config, createFixedNowProvider(1000));
+
+    service.seedFromServerNow(5000);
+    service.updateFromPong({ clientTime: 900, serverTime: 5100 });
+
+    expect(service.getClockOffsetMs()).toBe(4150);
+  });
+
+  it("smoother設定の未指定項目には既定値を使うこと", () => {
+    const service = new ClockSyncService(
+      { smoother: { offsetAlpha: 1 } },
+      createFixedNowProvider(1000),
+    );
+
+    service.seedFromServerNow(5000);
+    // 既定の maxAcceptedOffsetJumpMs（250ms）を超える跳躍は棄却される
+    service.updateFromPong({ clientTime: 900, serverTime: 5500 });
+
+    expect(service.getClockOffsetMs()).toBe(4000);
+  });
+
+  it("設定を省略した場合は既定の推奨間隔を返すこと", () => {
+    const service = new ClockSyncService(undefined, createFixedNowProvider(1000));
+
+    expect(service.getRecommendedSyncIntervalMs()).toBe(3000);
   });
 
   it("時刻取得関数を省略した場合はDate.nowを使うこと", () => {
