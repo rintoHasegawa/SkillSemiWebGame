@@ -13,12 +13,17 @@
 ### Git 運用
 
 - ブランチ名・コミットメッセージの書式は `.claude/rules/git-conventions.md` に従う（常時ロードされる）
-- コミットは `/commit` を使用する（push・PR 作成は `/commit push`）
+- コミットは `/commit` を使用する（push・PR 作成は `/commit push`，マージ・プルまで行う場合は `/commit merge`）
 - セッション開始時に `[sync-check]` の警告が表示された場合は必ず内容を認識し，古い `main` から作業を始めない
 - **`/commit` はユーザーが明示的に指示した時のみ実行する．Claude が自発的に `/commit` や `git commit` を呼んではならない**（`/implement` 完了後も，案内するだけで自分ではコミットしない．`/commit` skill は `disable-model-invocation` によりユーザー起動限定として強制されている）
   - **例外**: 以下の無人運転ループはユーザー承認済みの例外として専用ブランチに自律コミットする．いずれも push・PR・マージ・`main` への操作はしない（取り込みは人間が `/commit push` 等で行う）
     - `/auto-refactor`（リファクタ／ドキュメント整理ループ）→ `refactor/` 専用ブランチ
     - `/auto-audit`（バグ／脆弱性の巡回監査ループ）→ `fix/` 専用ブランチ
+
+### テンプレート同期
+
+- テンプレートの更新は `/sync-template` で取り込む
+- テンプレート由来のファイル（`.claude/agents/`・`skills/`・`rules/`・`hooks/`，`docs/01_GUIDE/`）を**このプロジェクトの都合で意図的に変更した**ときは，`.claude/template-overrides.md`（テンプレート改変台帳）に理由付きで記録する（`.claude/rules/template-customization.md`．該当ファイル編集時に自動ロードされる）．記録が無いと次回同期で改変が消えうる
 
 ### チーム開発（GUIDE_03 準拠）
 
@@ -57,7 +62,7 @@
 - プロジェクト立ち上げフロー: docs/01_GUIDE/GUIDE_01_プロジェクト立ち上げフロー.md
 - エージェント運用ルール: docs/01_GUIDE/GUIDE_02_エージェント運用ルール.md
 - チーム開発ルール: docs/01_GUIDE/GUIDE_03_チーム開発ルール.md
-- ※ Git 規約・ドキュメント書式・命名規則・進捗記録は `.claude/rules/`（git-conventions / markdown-style / docs-naming / progress-log）に定義されている（git-conventions は常時，他は該当ファイル編集時に自動ロード）
+- ※ Git 規約・ドキュメント書式・命名規則・進捗記録・テンプレート改変記録は `.claude/rules/`（git-conventions / markdown-style / docs-naming / progress-log / template-customization）に定義されている（git-conventions は常時，他は該当ファイル編集時に自動ロード）
 - ※ プロジェクト固有規約も `.claude/rules/`（coding-style / project-structure / testing / error-handling / protocol-changes / game-config-spec）にある
 
 ### 02_ENV（環境）

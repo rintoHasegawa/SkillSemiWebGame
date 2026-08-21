@@ -20,12 +20,10 @@ argument-hint: "<solo | team>"
 
 ```
 docs/01_GUIDE/GUIDE_03_チーム開発ルール.md
-.claude/skills/task-create/SKILL.md
-.claude/skills/task-start/SKILL.md
-.claude/skills/task-start/reference.md
-.claude/skills/task-handoff/SKILL.md
 .claude/hooks/check_sync.sh
 ```
+
+※ `task-create`・`task-start`（+ `reference.md`）・`task-handoff` の各 skill は**共通層**（solo でも Issue ベースのタスク管理に使う）であり，モード切替の対象外．
 
 ## ステップ 1: 事前確認 (Pre-check)
 
@@ -62,10 +60,6 @@ git clone --depth 1 "$TEMPLATE_URL" "$TEMP_DIR"
 # team 層ファイルをコピー（既存があっても最新版で上書き）
 for f in \
   "docs/01_GUIDE/GUIDE_03_チーム開発ルール.md" \
-  ".claude/skills/task-create/SKILL.md" \
-  ".claude/skills/task-start/SKILL.md" \
-  ".claude/skills/task-start/reference.md" \
-  ".claude/skills/task-handoff/SKILL.md" \
   ".claude/hooks/check_sync.sh" ; do
   mkdir -p "$(dirname "$f")"
   cp "$TEMP_DIR/$f" "$f"
@@ -114,15 +108,10 @@ clone は不要（ローカルの削除・書き換えのみ）．**破壊的操
 ```bash
 rm -f \
   "docs/01_GUIDE/GUIDE_03_チーム開発ルール.md" \
-  ".claude/skills/task-create/SKILL.md" \
-  ".claude/skills/task-start/SKILL.md" \
-  ".claude/skills/task-start/reference.md" \
-  ".claude/skills/task-handoff/SKILL.md" \
   ".claude/hooks/check_sync.sh"
-
-# 中身が無くなったスキルディレクトリを取り除く
-rmdir ".claude/skills/task-create" ".claude/skills/task-start" ".claude/skills/task-handoff" 2>/dev/null || true
 ```
+
+※ `task-*` skill は共通層のため削除しない（solo でも Issue ベースのタスク管理に使用する）．共通層化以前に solo 化して `task-*` が消えているプロジェクトには，`/sync-template` の同期で再配置される．
 
 ### 3-B.2 settings.json から SessionStart(check_sync) を除去
 
@@ -172,3 +161,4 @@ Edit 後に `git diff CLAUDE.md` で確認する．
 - team ↔ solo の切替は共有設定の変更にあたる（GUIDE_03「共有設定の扱い」）．team プロジェクトでは専用 PR＋他メンバー 1 名 Approve を経てマージする．
 - team 層ファイルのリストは `/sync-template` の「モード依存ファイル」と一致させること．どちらかを増減したら両方を更新する．
 - solo→team で取得する team 層ファイルはテンプレート HEAD 版．版の細かな追従は以後の `/sync-template` に任せる（`template-sync-sha` は本コマンドでは変更しない）．
+- team 層ファイルが `.claude/template-overrides.md`（テンプレート改変台帳）に登録されている場合，3-A.1 の上書きや 3-B.1 の削除でプロジェクトの改変が失われる．実行前に台帳を確認し，該当があればユーザーに提示して同意を得てから行う．
