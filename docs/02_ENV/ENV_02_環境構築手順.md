@@ -131,6 +131,8 @@ Monorepo構成とDocker(Dev Containers)を使用し，迅速に開発を開始�
 
    ※ エラー時の対応: 「sh: vite: not found」等のエラーが出る場合は，自動インストールが完了していない可能性があります．ターミナルで `pnpm install` を手動実行するか，上記「コンテナでの再起動 (Reopen in Container)」の「Rebuild Container」を試してください．
 
+   ※ pnpm 自体が起動しない場合（`ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite` 等）: Node 20 に対応しない新しい pnpm がグローバルに入っている．pnpm の版は `package.json` の `packageManager`（`pnpm@10.28.2`）に固定しており，`.devcontainer/devcontainer.json` の node feature の `pnpm` も同じ版を指定している．`postcreate.sh` が起動時に版を揃えるが，手動で直す場合は `npm i -g pnpm@10.28.2` を実行する（応急処置は `corepack pnpm <コマンド>`）．`packageManager` の版を上げるときは `devcontainer.json` の `pnpm` も必ず同じ版に更新すること．
+
    - ブラウザでの確認: ターミナルに「➜  Local:   http://localhost:5173/」と表示されたら，Google Chrome等のブラウザを開き，アドレスバーに上記URLを貼り付けて実行する．
    - 正常動作の判断基準: ゲームのタイトル画面が表示されれば，フロントエンドの環境構築は成功である．
 
