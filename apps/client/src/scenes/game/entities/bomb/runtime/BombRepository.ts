@@ -8,7 +8,7 @@ import { config } from "@client/config";
 import { BombController } from "@client/scenes/game/entities/bomb/BombController";
 import { BombIdRegistry } from "@client/scenes/game/entities/bomb/BombIdRegistry";
 import {
-  isCircleIntersectingViewport,
+  isCircleBoundsIntersectingViewport,
   type WorldViewport,
 } from "@client/scenes/game/application/culling/worldViewport";
 
@@ -95,7 +95,7 @@ export class BombRepository {
 
       const display = bomb.getDisplayObject();
       const radiusPx = payload.radiusGrid * config.GAME_CONFIG.GRID_CELL_SIZE + marginPx;
-      const isVisible = isCircleIntersectingViewport(
+      const isVisible = isCircleBoundsIntersectingViewport(
         display.x,
         display.y,
         radiusPx,

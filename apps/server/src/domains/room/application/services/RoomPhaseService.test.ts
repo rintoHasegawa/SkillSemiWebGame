@@ -6,24 +6,12 @@
 import { domain } from "@repo/shared";
 import { describe, expect, it } from "vitest";
 
+import { createRoom } from "@server/testing/roomFixtures";
 import { RoomPhaseService } from "./RoomPhaseService";
-
-/** 指定フェーズのテスト用ルームを生成する */
-const createRoom = (status: domain.room.Room["status"]): domain.room.Room => {
-  return {
-    roomId: "room-1",
-    ownerId: "socket-1",
-    players: [],
-    status,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
 
 /** 指定フェーズのルーム1件を持つサービスを生成する */
 const createService = (status: domain.room.Room["status"]) => {
-  const room = createRoom(status);
+  const room = createRoom({ status });
   return {
     room,
     service: new RoomPhaseService(new Map([["room-1", room]])),

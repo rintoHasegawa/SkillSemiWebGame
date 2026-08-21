@@ -70,12 +70,16 @@ export class HurricaneSystem {
     this.motionService.update(this.hurricanes, deltaSec);
   }
 
-  /** クールダウン付きで被弾プレイヤーID配列を返す */
+  /** クールダウン付きで被弾プレイヤーID配列を返す（時刻はセッション経過ms） */
   public collectHitPlayerIds(
     players: Map<string, Player>,
-    nowMs: number,
+    elapsedMs: number,
   ): string[] {
-    return this.hitService.collectHitPlayerIds(this.hurricanes, players, nowMs);
+    return this.hitService.collectHitPlayerIds(
+      this.hurricanes,
+      players,
+      elapsedMs,
+    );
   }
 
   /** 状態を初期化する */

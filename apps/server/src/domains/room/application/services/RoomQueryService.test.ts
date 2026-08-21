@@ -6,40 +6,29 @@
 import { domain } from "@repo/shared";
 import { describe, expect, it } from "vitest";
 
+import { createRoom, createRoomMember } from "@server/testing/roomFixtures";
 import { RoomQueryService } from "./RoomQueryService";
 
-/** テスト用のルームメンバーを生成する */
-const createMember = (id: string): domain.room.RoomMember => {
-  return {
-    id,
-    name: `name-${id}`,
-    isOwner: false,
-    isReady: false,
-    preferredTeamId: null,
-  };
-};
-
-/** テスト用のルーム状態を生成する */
-const createRoom = (
+/** プレイヤーID配列からテスト用のルーム状態を生成する */
+const createRoomWithPlayers = (
   roomId: string,
   ownerId: string,
   playerIds: string[],
 ): domain.room.Room => {
-  return {
+  return createRoom({
     roomId,
     ownerId,
-    players: playerIds.map((id) => createMember(id)),
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
+    players: playerIds.map((id) => createRoomMember({ id })),
+  });
 };
 
 /** 2ルームを保持する参照サービスを生成する */
 const createService = () => {
-  const roomA = createRoom("room-a", "socket-1", ["socket-1", "socket-2"]);
-  const roomB = createRoom("room-b", "socket-3", ["socket-3"]);
+  const roomA = createRoomWithPlayers("room-a", "socket-1", [
+    "socket-1",
+    "socket-2",
+  ]);
+  const roomB = createRoomWithPlayers("room-b", "socket-3", ["socket-3"]);
 
   return {
     roomA,

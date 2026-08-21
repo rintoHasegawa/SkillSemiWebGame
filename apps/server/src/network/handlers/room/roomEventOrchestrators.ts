@@ -15,6 +15,7 @@ import type {
   LobbySettingsUpdateEventRoomUseCasePort,
   SelectTeamEventRoomUseCasePort,
 } from "@server/network/types/connectionPorts";
+import { logIgnoredMissingRoom } from "../orchestratorEventLogger";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 
 /** JOIN_ROOMイベント調停で利用する依存集合 */
@@ -50,6 +51,11 @@ export const handleLobbySettingsUpdateEvent = (
 ): void => {
   const room = deps.roomManager.getRoomByOwnerId(deps.socketId);
   if (!room) {
+    // オーナーとして紐づくルームが無い要求はクライアントへ通知せずログのみ残す
+    logIgnoredMissingRoom(
+      roomUseCaseLogEvents.LOBBY_SETTINGS_UPDATE,
+      deps.socketId,
+    );
     return;
   }
 
@@ -59,6 +65,12 @@ export const handleLobbySettingsUpdateEvent = (
     room.fieldSizePreset === payload.fieldSizePreset &&
     room.teamAssignmentMode === payload.teamAssignmentMode
   ) {
+    logEvent(logScopes.NETWORK, {
+      event: roomUseCaseLogEvents.LOBBY_SETTINGS_UPDATE,
+      result: logResults.IGNORED_NO_CHANGE,
+      socketId: deps.socketId,
+      roomId: room.roomId,
+    });
     return;
   }
 
@@ -69,6 +81,13 @@ export const handleLobbySettingsUpdateEvent = (
     payload.teamAssignmentMode,
   );
   if (!updatedRoom) {
+    // 検証失敗・ルーム消滅などで更新が適用されなかった場合を記録する
+    logEvent(logScopes.NETWORK, {
+      event: roomUseCaseLogEvents.LOBBY_SETTINGS_UPDATE,
+      result: logResults.IGNORED_UPDATE_FAILED,
+      socketId: deps.socketId,
+      roomId: room.roomId,
+    });
     return;
   }
 
@@ -104,6 +123,8 @@ export const handleSelectTeamEvent = (
       return;
 
     case "not_found":
+      // 所属ルームを引けない要求はクライアントへ通知せずサーバログのみ残す
+      logIgnoredMissingRoom(roomUseCaseLogEvents.SELECT_TEAM, deps.socketId);
       return;
 
     default:

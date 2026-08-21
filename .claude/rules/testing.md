@@ -27,6 +27,7 @@ paths: ["**/*.test.*", "test/**"]
 ## 配置規則 (File Placement)
 
 - テストファイルは対象ファイルと同じディレクトリに `<対象ファイル名>.test.ts` として同居させる（例: `gridMap.ts` → `gridMap.test.ts`）．
+- 複数のテストで共有するフィクスチャ（`createRoom`・`createPlayerData` 等）は，各パッケージの `src/testing/` に集約する（例: `apps/server/src/testing/`）．テスト専用であり，本番コードからの import は禁止する（ビルド対象からも除外する）．
 - 負荷テスト関連は従来どおり `/test` 配下に置く．
 
 ## 粒度・書き方 (Granularity & Style)

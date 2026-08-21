@@ -7,6 +7,7 @@ import type { CurrentPlayersPayload, GameStartPayload, domain } from "@repo/shar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { GameFieldConfig } from "../ports/gameUseCasePorts";
+import { createPlayerData } from "@server/testing/playerFixtures";
 import { readyForGameUseCase } from "./readyForGameUseCase";
 
 const FIXED_NOW_MS = 1_700_000_000_000;
@@ -42,15 +43,6 @@ const createOutputStub = () => {
     >(),
     publishGameStartToSocket: vi.fn<(payload: GameStartPayload) => void>(),
   };
-};
-
-/** テスト用のプレイヤーデータを生成する */
-const createPlayer = (
-  id: string,
-  x: number,
-  y: number,
-): domain.game.player.PlayerData => {
-  return { id, name: `name-${id}`, x, y, teamId: 0 };
 };
 
 describe("readyForGameUseCase", () => {
@@ -102,7 +94,7 @@ describe("readyForGameUseCase", () => {
   it("ルーム解決済みの場合はブートストラップ済みプレイヤー一覧を返すこと", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1.234_5, 2.345_6)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1.234_5, y: 2.345_6 })],
     });
 
     readyForGameUseCase({
@@ -120,7 +112,7 @@ describe("readyForGameUseCase", () => {
   it("開始時刻が未設定の場合はゲーム開始通知を送らないこと", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1, 1)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
     });
 
     readyForGameUseCase({
@@ -136,7 +128,7 @@ describe("readyForGameUseCase", () => {
   it("開始時刻が0の場合も開始済みとして開始通知を送ること", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1, 1)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
       startTime: 0,
     });
 
@@ -155,7 +147,7 @@ describe("readyForGameUseCase", () => {
   it("開始済みの場合はセッションのフィールド設定で開始通知を送ること", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1, 1)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
       startTime: 1_234,
       fieldConfig: {
         fieldSizePreset: "SMALL",
@@ -183,7 +175,7 @@ describe("readyForGameUseCase", () => {
   it("フィールド設定が未確定の場合は既定プリセットで開始通知を送ること", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
-      roomPlayers: [createPlayer("socket-1", 1, 1)],
+      roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
       startTime: 1_234,
     });
 

@@ -5,28 +5,30 @@
  */
 import type { PongPayload } from "@repo/shared";
 import { config } from "@client/config";
-import {
-  SYSTEM_TIME_PROVIDER,
-  type TimeProvider,
-} from "@client/scenes/game/application/time/TimeProvider";
+import { SYSTEM_TIME_PROVIDER, type TimeProvider } from "./TimeProvider";
 import {
   PongSampleEstimator,
   type PongSampleEstimatorConfig,
-} from "@client/scenes/game/application/time/PongSampleEstimator";
-import {
-  OffsetSmoother,
-  type OffsetSmootherConfig,
-} from "@client/scenes/game/application/time/OffsetSmoother";
+} from "./PongSampleEstimator";
+import { OffsetSmoother, type OffsetSmootherConfig } from "./OffsetSmoother";
 import {
   SyncIntervalPolicy,
   type SyncIntervalPolicyConfig,
-} from "@client/scenes/game/application/time/SyncIntervalPolicy";
+} from "./SyncIntervalPolicy";
 
 /** 時刻同期に利用する更新パラメータ */
 export type ClockSyncConfig = {
   estimator: PongSampleEstimatorConfig;
   smoother: OffsetSmootherConfig;
   intervalPolicy: SyncIntervalPolicyConfig;
+};
+
+/**
+ * 時刻同期パラメータの部分指定形
+ * 実装が各セクションを既定値と浅くマージするため，ネスト単位で省略できる
+ */
+export type PartialClockSyncConfig = {
+  [K in keyof ClockSyncConfig]?: Partial<ClockSyncConfig[K]>;
 };
 
 /** 時刻同期の既定パラメータ */
@@ -67,10 +69,10 @@ export class ClockSyncService {
   private readonly intervalPolicy: SyncIntervalPolicy;
 
   constructor(
-    config: Partial<ClockSyncConfig> = {},
+    config: PartialClockSyncConfig = {},
     nowProvider: TimeProvider["now"] = SYSTEM_TIME_PROVIDER.now,
   ) {
-    const mergedConfig = {
+    const mergedConfig: ClockSyncConfig = {
       estimator: {
         ...DEFAULT_CLOCK_SYNC_CONFIG.estimator,
         ...config.estimator,

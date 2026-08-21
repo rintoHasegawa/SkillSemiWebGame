@@ -15,10 +15,13 @@ type PlayerStatsSource = {
   bombHitCount: number;
 };
 
-/** グリッド色配列とプレイヤー情報からゲーム結果ペイロードを生成する */
+/**
+ * グリッド色配列とプレイヤー情報からゲーム結果ペイロードを生成する
+ * players 未指定と空配列は同一に扱い，playerStats は常に配列で返す
+ */
 export const buildGameResultPayload = (
   gridColors: readonly number[],
-  players?: PlayerStatsSource[],
+  players: readonly PlayerStatsSource[] = [],
 ): GameResultPayload => {
   const { TEAM_COUNT } = config.GAME_CONFIG;
   const totalCells = gridColors.length;
@@ -63,7 +66,7 @@ export const buildGameResultPayload = (
     item.rank = currentRank;
   });
 
-  const playerStats: PlayerGameStats[] | undefined = players?.map((p) => ({
+  const playerStats: PlayerGameStats[] = players.map((p) => ({
     playerId: p.id,
     playerName: p.name,
     teamId: p.teamId,
@@ -74,6 +77,6 @@ export const buildGameResultPayload = (
   return {
     rankings,
     finalGridColors: [...gridColors],
-    ...(playerStats ? { playerStats } : {}),
+    playerStats,
   };
 };

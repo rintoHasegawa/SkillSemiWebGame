@@ -1,9 +1,13 @@
 /**
  * GameSessionLifecycleService.test
- * セッションライフサイクル管理の現行挙動を固定する characterization test
- * セッション未開始時のフォールバック値と多重開始の抑止を検証する
+ * セッションライフサイクル管理の仕様を検証するテスト
+ * セッション未開始時のフォールバック値・多重開始の抑止・
+ * セッション生成ファクトリの注入とonGameEndラッパーを検証する
  */
+import type { GameResultPayload } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { config } from "@server/config";
 
 import type { Player } from "../../entities/player/Player";
 import type {
@@ -12,7 +16,10 @@ import type {
   GameFieldConfig,
 } from "../ports/gameUseCasePorts";
 import type { GameRoomSession, GameSessionCallbacks } from "./GameRoomSession";
-import { GameSessionLifecycleService } from "./GameSessionLifecycleService";
+import {
+  GameSessionLifecycleService,
+  type GameRoomSessionFactory,
+} from "./GameSessionLifecycleService";
 
 const fieldConfig: GameFieldConfig = {
   fieldSizePreset: "SMALL",
@@ -264,5 +271,190 @@ describe("GameSessionLifecycleService", () => {
     const { service } = createContext(false);
 
     expect(() => service.dispose()).not.toThrow();
+  });
+});
+
+/** start と dispose を記録するセッションスタブを生成する */
+const createStartableSessionStub = () => {
+  return {
+    ...createSessionStub(),
+    start: vi.fn<(tickRate: number, callbacks: GameSessionCallbacks) => void>(),
+  };
+};
+
+/** ファクトリを注入したサービスと記録用スタブを生成する */
+const createFactoryContext = () => {
+  const session = createStartableSessionStub();
+  const createSession = vi.fn<GameRoomSessionFactory>(
+    () => session as unknown as GameRoomSession,
+  );
+  const sessionRef = { current: null as GameRoomSession | null };
+  const activePlayerIds = new Set<string>();
+  const callbacks = createCallbacksStub();
+
+  return {
+    session,
+    createSession,
+    sessionRef,
+    activePlayerIds,
+    callbacks,
+    service: new GameSessionLifecycleService(
+      sessionRef,
+      activePlayerIds,
+      "room-1",
+      createSession,
+    ),
+  };
+};
+
+/** セッションへ渡された onGameEnd ラッパーを取り出す */
+const getWrappedOnGameEnd = (
+  session: ReturnType<typeof createStartableSessionStub>,
+): ((payload: GameResultPayload) => void) => {
+  const wrapped = session.start.mock.calls[0]?.[1].onGameEnd;
+  if (!wrapped) {
+    throw new Error("onGameEnd が渡されていない");
+  }
+
+  return wrapped;
+};
+
+const gameResultPayload: GameResultPayload = {
+  rankings: [],
+  finalGridColors: [],
+  playerStats: [],
+};
+
+describe("GameSessionLifecycleService.startRoomSession のセッション生成", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("ファクトリへルームIDと参加者情報を渡すこと", () => {
+    const { createSession, service, callbacks } = createFactoryContext();
+
+    service.startRoomSession(
+      ["socket-1"],
+      { "socket-1": "太郎" },
+      fieldConfig,
+      callbacks,
+      { "socket-1": 2 },
+    );
+
+    expect(createSession).toHaveBeenCalledWith({
+      roomId: "room-1",
+      playerIds: ["socket-1"],
+      playerNamesById: { "socket-1": "太郎" },
+      fieldConfig,
+      teamPreferences: { "socket-1": 2 },
+    });
+  });
+
+  it("チーム希望を省略した場合はundefinedのまま渡すこと", () => {
+    const { createSession, service, callbacks } = createFactoryContext();
+
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    expect(createSession).toHaveBeenCalledWith({
+      roomId: "room-1",
+      playerIds: ["socket-1"],
+      playerNamesById: {},
+      fieldConfig,
+      teamPreferences: undefined,
+    });
+  });
+
+  it("ファクトリが生成したセッションを参照へ保持すること", () => {
+    const { session, sessionRef, service, callbacks } = createFactoryContext();
+
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    expect(sessionRef.current).toBe(session as unknown as GameRoomSession);
+  });
+
+  it("設定値のtick間隔でセッションを開始すること", () => {
+    const { session, service, callbacks } = createFactoryContext();
+
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    expect(session.start.mock.calls[0]?.[0]).toBe(
+      config.GAME_CONFIG.NETWORK_SYNC.PLAYER_POSITION_UPDATE_MS,
+    );
+  });
+
+  it("onTickコールバックはそのままセッションへ渡すこと", () => {
+    const { session, service, callbacks } = createFactoryContext();
+
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    expect(session.start.mock.calls[0]?.[1].onTick).toBe(callbacks.onTick);
+  });
+
+  it("多重開始の場合はファクトリを呼ばないこと", () => {
+    const { createSession, sessionRef, session, service, callbacks } =
+      createFactoryContext();
+    sessionRef.current = session as unknown as GameRoomSession;
+
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    expect(createSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("GameSessionLifecycleService のonGameEndラッパー", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("ゲーム終了時に参加者一覧を空にすること", () => {
+    const { session, activePlayerIds, service, callbacks } =
+      createFactoryContext();
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    getWrappedOnGameEnd(session)(gameResultPayload);
+
+    expect(activePlayerIds.size).toBe(0);
+  });
+
+  it("ゲーム終了時にセッション参照をnullにすること", () => {
+    const { session, sessionRef, service, callbacks } = createFactoryContext();
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    getWrappedOnGameEnd(session)(gameResultPayload);
+
+    expect(sessionRef.current).toBeNull();
+  });
+
+  it("ゲーム終了時に元のコールバックへ結果を渡すこと", () => {
+    const { session, service, callbacks } = createFactoryContext();
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    getWrappedOnGameEnd(session)(gameResultPayload);
+
+    expect(callbacks.onGameEnd).toHaveBeenCalledWith(gameResultPayload);
+  });
+
+  it("ゲーム終了通知の前に参加者一覧を空にすること", () => {
+    const { session, activePlayerIds, service } = createFactoryContext();
+    const observedSizes: number[] = [];
+    const callbacks: GameSessionCallbacks = {
+      onTick: vi.fn(),
+      onGameEnd: vi.fn(() => {
+        observedSizes.push(activePlayerIds.size);
+      }),
+    };
+    service.startRoomSession(["socket-1"], {}, fieldConfig, callbacks);
+
+    getWrappedOnGameEnd(session)(gameResultPayload);
+
+    expect(observedSizes).toEqual([0]);
   });
 });

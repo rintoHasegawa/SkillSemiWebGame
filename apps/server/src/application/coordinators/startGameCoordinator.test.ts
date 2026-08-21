@@ -20,6 +20,10 @@ import {
   logScopes,
 } from "@server/logging/index";
 import { RoomManager } from "@server/domains/room/RoomManager";
+import {
+  createRoom as createRoomFixture,
+  createRoomMember,
+} from "@server/testing/roomFixtures";
 import { startGameCoordinator } from "./startGameCoordinator";
 
 const FIXED_NOW_MS = 1_700_000_000_000;
@@ -32,7 +36,7 @@ type RoomParams = {
   preferredTeamIds?: (number | null)[];
 };
 
-/** テスト用のルーム状態を生成する */
+/** 参加人数とチーム希望を指定してテスト用のルーム状態を生成する */
 const createRoom = ({
   roomId = "room-1",
   playerCount = 1,
@@ -40,21 +44,20 @@ const createRoom = ({
   teamAssignmentMode = "random",
   preferredTeamIds = [],
 }: RoomParams = {}): domain.room.Room => {
-  return {
+  return createRoomFixture({
     roomId,
-    ownerId: "socket-1",
-    players: Array.from({ length: playerCount }, (_, index) => ({
-      id: `socket-${index + 1}`,
-      name: `name-${index + 1}`,
-      isOwner: index === 0,
-      isReady: false,
-      preferredTeamId: preferredTeamIds[index] ?? null,
-    })),
-    status: domain.room.RoomPhase.WAITING,
+    players: Array.from({ length: playerCount }, (_, index) =>
+      createRoomMember({
+        id: `socket-${index + 1}`,
+        name: `name-${index + 1}`,
+        isOwner: index === 0,
+        preferredTeamId: preferredTeamIds[index] ?? null,
+      }),
+    ),
     maxPlayers: 100,
     fieldSizePreset,
     teamAssignmentMode,
-  };
+  });
 };
 
 /** ルーム単位ゲーム管理ポートを満たすスタブを生成する */

@@ -102,7 +102,7 @@ describe("createBotBombActionHandler", () => {
     handler("bot:room-1:1", payload);
 
     expect(bombStore.shouldBroadcastBombPlaced).toHaveBeenCalledWith(
-      "bot:room-1:1:bot-req-1",
+      "12:bot:room-1:1|9:bot-req-1",
       FIXED_NOW_MS,
     );
   });

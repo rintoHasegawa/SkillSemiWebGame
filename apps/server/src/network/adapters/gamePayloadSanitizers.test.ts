@@ -46,8 +46,15 @@ describe("quantizeUpdatePlayersPayload", () => {
     const players: UpdatePlayersPayload = [{ id: "p1", x: -1.2345, y: -0.001 }];
 
     expect(quantizeUpdatePlayersPayload(players)).toEqual([
-      { id: "p1", x: -1.23, y: -0 },
+      { id: "p1", x: -1.23, y: 0 },
     ]);
+  });
+
+  it("量子化結果が負のゼロにならないこと", () => {
+    const players: UpdatePlayersPayload = [{ id: "p1", x: -0.001, y: -0 }];
+    const quantized = quantizeUpdatePlayersPayload(players);
+
+    expect(Object.is(quantized[0]?.x, 0)).toBe(true);
   });
 
   it("0の座標はそのまま0を返すこと", () => {

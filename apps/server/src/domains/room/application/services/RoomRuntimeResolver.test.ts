@@ -6,24 +6,12 @@
 import { domain } from "@repo/shared";
 import { describe, expect, it, vi } from "vitest";
 
+import { createRoom } from "@server/testing/roomFixtures";
 import type { RoomScopedGamePort } from "../ports/roomUseCasePorts";
 import {
   resolveRuntimeByPlayerId,
   runWithRuntimeByPlayerId,
 } from "./RoomRuntimeResolver";
-
-/** テスト用のルーム状態を生成する */
-const createRoom = (roomId: string): domain.room.Room => {
-  return {
-    roomId,
-    ownerId: "socket-1",
-    players: [],
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
 
 /** ルーム解決結果を固定した参照ポートスタブを生成する */
 const createRoomResolverStub = (room: domain.room.Room | undefined) => {
@@ -50,7 +38,7 @@ const gameManagerStub = {} as RoomScopedGamePort;
 describe("resolveRuntimeByPlayerId", () => {
   it("ルームとランタイムが揃う場合は解決結果を返すこと", () => {
     const result = resolveRuntimeByPlayerId(
-      createRoomResolverStub(createRoom("room-1")),
+      createRoomResolverStub(createRoom({ roomId: "room-1" })),
       createRuntimeResolverStub(gameManagerStub),
       "socket-1",
     );
@@ -70,7 +58,7 @@ describe("resolveRuntimeByPlayerId", () => {
 
   it("ランタイムが解決できない場合はundefinedを返すこと", () => {
     const result = resolveRuntimeByPlayerId(
-      createRoomResolverStub(createRoom("room-1")),
+      createRoomResolverStub(createRoom({ roomId: "room-1" })),
       createRuntimeResolverStub(undefined),
       "socket-1",
     );
@@ -80,7 +68,7 @@ describe("resolveRuntimeByPlayerId", () => {
 
   it("ルームIDが空文字の場合もundefinedを返すこと", () => {
     const result = resolveRuntimeByPlayerId(
-      createRoomResolverStub(createRoom("")),
+      createRoomResolverStub(createRoom({ roomId: "" })),
       createRuntimeResolverStub(gameManagerStub),
       "socket-1",
     );
@@ -94,7 +82,7 @@ describe("runWithRuntimeByPlayerId", () => {
     const onResolved = vi.fn();
 
     runWithRuntimeByPlayerId(
-      createRoomResolverStub(createRoom("room-1")),
+      createRoomResolverStub(createRoom({ roomId: "room-1" })),
       createRuntimeResolverStub(gameManagerStub),
       "socket-1",
       onResolved,
@@ -108,7 +96,7 @@ describe("runWithRuntimeByPlayerId", () => {
 
   it("解決に成功した場合はtrueを返すこと", () => {
     const result = runWithRuntimeByPlayerId(
-      createRoomResolverStub(createRoom("room-1")),
+      createRoomResolverStub(createRoom({ roomId: "room-1" })),
       createRuntimeResolverStub(gameManagerStub),
       "socket-1",
       vi.fn(),

@@ -1,11 +1,13 @@
 /**
  * HurricaneHitService.test
  * ハリケーン被弾判定を検証する
- * 判定半径の境界値・クールダウン境界・中立ハザードとしてのチーム非依存性・初期化を検証する
+ * 判定半径の境界値・セッション経過時間基準のクールダウン境界・
+ * 中立ハザードとしてのチーム非依存性・初期化を検証する
  */
 import { describe, expect, it } from "vitest";
 
 import { Player } from "../../entities/player/Player";
+import { createPlayerEntity } from "@server/testing/playerFixtures";
 import { HurricaneHitService } from "./HurricaneHitService";
 import type { HurricaneState } from "./hurricaneTypes";
 
@@ -27,17 +29,14 @@ const createHurricane = (
   };
 };
 
-/** テスト用のプレイヤーを生成する */
+/** 座標を位置引数で指定してテスト用のプレイヤーを生成する */
 const createPlayer = (
   id: string,
   x: number,
   y: number,
   teamId = 0,
 ): Player => {
-  const player = new Player(id, id, teamId);
-  player.x = x;
-  player.y = y;
-  return player;
+  return createPlayerEntity({ id, x, y, teamId });
 };
 
 /** プレイヤー配列をIDキーのMapへ変換する */
@@ -145,7 +144,7 @@ describe("HurricaneHitService.collectHitPlayerIds", () => {
     );
   });
 
-  it("クールダウン経過前は再び被弾としないこと", () => {
+  it("セッション経過時間でクールダウン未満なら再び被弾としないこと", () => {
     const service = new HurricaneHitService();
     const players = toPlayerMap([createPlayer("player-1", 0, 0)]);
     service.collectHitPlayerIds([createHurricane()], players, 1000);
@@ -159,7 +158,7 @@ describe("HurricaneHitService.collectHitPlayerIds", () => {
     ).toEqual([]);
   });
 
-  it("クールダウン経過とちょうど等しい時刻では再び被弾とすること", () => {
+  it("セッション経過時間の差がクールダウンと等しければ再び被弾とすること", () => {
     const service = new HurricaneHitService();
     const players = toPlayerMap([createPlayer("player-1", 0, 0)]);
     service.collectHitPlayerIds([createHurricane()], players, 1000);
@@ -173,7 +172,7 @@ describe("HurricaneHitService.collectHitPlayerIds", () => {
     ).toEqual(["player-1"]);
   });
 
-  it("現在時刻が巻き戻った場合はクールダウン中として被弾しないこと", () => {
+  it("経過時間が巻き戻った場合はクールダウン中として被弾しないこと", () => {
     const service = new HurricaneHitService();
     const players = toPlayerMap([createPlayer("player-1", 0, 0)]);
     service.collectHitPlayerIds([createHurricane()], players, 10000);
@@ -181,6 +180,29 @@ describe("HurricaneHitService.collectHitPlayerIds", () => {
     expect(
       service.collectHitPlayerIds([createHurricane()], players, 0),
     ).toEqual([]);
+  });
+
+  it("セッション開始直後の経過時間0でも被弾を判定すること", () => {
+    const service = new HurricaneHitService();
+    const players = toPlayerMap([createPlayer("player-1", 0, 0)]);
+
+    expect(
+      service.collectHitPlayerIds([createHurricane()], players, 0),
+    ).toEqual(["player-1"]);
+  });
+
+  it("長時間経過後でも経過時間の差だけでクールダウンを判定すること", () => {
+    const service = new HurricaneHitService();
+    const players = toPlayerMap([createPlayer("player-1", 0, 0)]);
+    service.collectHitPlayerIds([createHurricane()], players, 60_000);
+
+    expect(
+      service.collectHitPlayerIds(
+        [createHurricane()],
+        players,
+        60_000 + COOLDOWN_MS,
+      ),
+    ).toEqual(["player-1"]);
   });
 
   it("被弾しなかったプレイヤーにはクールダウンを記録しないこと", () => {

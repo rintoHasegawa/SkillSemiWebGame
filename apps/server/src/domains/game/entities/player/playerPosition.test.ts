@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import { config } from "@server/config";
 
+import { createPlayerEntity } from "@server/testing/playerFixtures";
 import { Player } from "./Player";
 import { getPlayerGridIndex } from "./playerPosition";
 
@@ -14,10 +15,7 @@ const { GRID_COLS, GRID_ROWS } = config.GAME_CONFIG;
 
 /** 指定座標のプレイヤーを生成する */
 const createPlayerAt = (x: number, y: number): Player => {
-  const player = new Player("socket-1", "たろう", 0);
-  player.x = x;
-  player.y = y;
-  return player;
+  return createPlayerEntity({ name: "たろう", x, y });
 };
 
 describe("getPlayerGridIndex（サイズ指定あり）", () => {

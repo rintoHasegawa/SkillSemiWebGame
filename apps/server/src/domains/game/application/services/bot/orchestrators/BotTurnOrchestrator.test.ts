@@ -5,6 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createPlayerEntity } from "@server/testing/playerFixtures";
 import { Player } from "../../../../entities/player/Player";
 import { isBotPlayerId, type BotPlayerId } from "../roster/BotRosterService.js";
 import { BotTurnOrchestrator } from "./BotTurnOrchestrator.js";
@@ -41,13 +42,14 @@ const createPlayer = ({
   initialX = x,
   initialY = y,
 }: PlayerParams): Player => {
-  const player = new Player(BOT_ID, "BOT", 0);
-  player.x = x;
-  player.y = y;
-  player.initialX = initialX;
-  player.initialY = initialY;
-
-  return player;
+  return createPlayerEntity({
+    id: BOT_ID,
+    name: "BOT",
+    x,
+    y,
+    initialX,
+    initialY,
+  });
 };
 
 /** 全セル未塗装のグリッド色配列を生成する */

@@ -11,6 +11,7 @@ import type { RoomScopedGamePort } from "@server/domains/room/application/ports/
 import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import type { ReliableEmitters } from "../../CommonHandler";
 import type { RuntimeResolverDeps } from "../runtime/gameRuntimeResolvers";
+import { createPlayerData } from "@server/testing/playerFixtures";
 import { createBombSyncService } from "./bombSyncService";
 
 type EmitCall = {
@@ -34,14 +35,6 @@ const createReliableStub = () => {
   } as unknown as ReliableEmitters;
 
   return { reliable, calls };
-};
-
-/** テスト用のプレイヤーデータを生成する */
-const createPlayer = (
-  id: string,
-  overrides: Partial<domain.game.player.PlayerData> = {},
-): domain.game.player.PlayerData => {
-  return { id, name: `name-${id}`, x: 0, y: 0, teamId: 0, ...overrides };
 };
 
 /** テスト用の爆弾スナップショットを生成する */
@@ -105,7 +98,7 @@ const setupService = (params: {
     reliable,
     runtimeDeps: createRuntimeDeps(
       params.memberIds ?? ["socket-1"],
-      params.players ?? [createPlayer("socket-1")],
+      params.players ?? [createPlayerData("socket-1")],
     ),
     realtimeRoomSyncState,
     updateViewerAoiCellCache,
@@ -121,7 +114,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb()],
     );
 
@@ -146,7 +139,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [],
     );
 
@@ -159,7 +152,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb({ x: 100, y: 100 })],
     );
 
@@ -172,7 +165,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb({ x: 100, y: 100 })],
     );
 
@@ -187,7 +180,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb()],
     );
 
@@ -198,7 +191,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
 
   it("同じ爆弾を2回同期しても送信は1回のみとすること", () => {
     const { service, calls } = setupService();
-    const viewer = createPlayer("socket-1");
+    const viewer = createPlayerData("socket-1");
 
     service.syncVisibleBombsByViewer("room-1", "socket-1", viewer, [
       createBomb(),
@@ -212,7 +205,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
 
   it("AOI外へ出た後に再度AOI内へ入った爆弾は再送信すること", () => {
     const { service, calls } = setupService();
-    const viewer = createPlayer("socket-1");
+    const viewer = createPlayerData("socket-1");
 
     service.syncVisibleBombsByViewer("room-1", "socket-1", viewer, [
       createBomb(),
@@ -233,7 +226,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb({ ownerPlayerId: "socket-1" })],
     );
 
@@ -246,7 +239,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb({ ownerPlayerId: "socket-1" })],
     );
 
@@ -261,7 +254,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "bot:room-1:1",
-      createPlayer("bot:room-1:1"),
+      createPlayerData("bot:room-1:1"),
       [createBomb({ ownerPlayerId: "bot:room-1:1" })],
     );
 
@@ -274,7 +267,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb({ bombId: "bomb-1" }), createBomb({ bombId: "bomb-2" })],
     );
 
@@ -290,7 +283,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb()],
     );
 
@@ -299,7 +292,7 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
 
   it("受信者のAOIセルキャッシュを更新すること", () => {
     const { service, updateViewerAoiCellCache } = setupService();
-    const viewer = createPlayer("socket-1");
+    const viewer = createPlayerData("socket-1");
 
     service.syncVisibleBombsByViewer("room-1", "socket-1", viewer, []);
 
@@ -316,13 +309,13 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb()],
     );
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1", { x: 100, y: 100 }),
+      createPlayerData("socket-1", { x: 100, y: 100 }),
       [createBomb()],
     );
 
@@ -337,13 +330,13 @@ describe("createBombSyncService.syncVisibleBombsByViewer", () => {
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       [createBomb({ ownerPlayerId: "socket-9" })],
     );
     service.syncVisibleBombsByViewer(
       "room-1",
       "socket-2",
-      createPlayer("socket-2"),
+      createPlayerData("socket-2"),
       [createBomb({ ownerPlayerId: "socket-9" })],
     );
 
@@ -370,7 +363,7 @@ describe("createBombSyncService.publishBombPlacedToOthersInRoom", () => {
   it("AOI内の他受信者へ設置通知を送信すること", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishBombPlacedToOthersInRoom(
@@ -391,7 +384,7 @@ describe("createBombSyncService.publishBombPlacedToOthersInRoom", () => {
   it("除外ソケットへは送信しないこと", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1"],
-      players: [createPlayer("socket-1")],
+      players: [createPlayerData("socket-1")],
     });
 
     service.publishBombPlacedToOthersInRoom(
@@ -406,7 +399,7 @@ describe("createBombSyncService.publishBombPlacedToOthersInRoom", () => {
   it("AOI外の受信者へは送信しないこと", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-2"],
-      players: [createPlayer("socket-2", { x: 100, y: 100 })],
+      players: [createPlayerData("socket-2", { x: 100, y: 100 })],
     });
 
     service.publishBombPlacedToOthersInRoom(
@@ -436,7 +429,7 @@ describe("createBombSyncService.publishBombPlacedToOthersInRoom", () => {
   it("Botのみのルームでは受信者が解決されず送信しないこと", () => {
     const { service, calls } = setupService({
       memberIds: ["bot:room-1:1"],
-      players: [createPlayer("bot:room-1:1")],
+      players: [createPlayerData("bot:room-1:1")],
     });
 
     service.publishBombPlacedToOthersInRoom(
@@ -451,7 +444,7 @@ describe("createBombSyncService.publishBombPlacedToOthersInRoom", () => {
   it("除外ソケットがBotの場合は人間の受信者へ送信すること", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1", "bot:room-1:1"],
-      players: [createPlayer("socket-1"), createPlayer("bot:room-1:1")],
+      players: [createPlayerData("socket-1"), createPlayerData("bot:room-1:1")],
     });
 
     service.publishBombPlacedToOthersInRoom(
@@ -466,7 +459,7 @@ describe("createBombSyncService.publishBombPlacedToOthersInRoom", () => {
   it("送信対象の受信者ごとにAOIセルキャッシュを更新すること", () => {
     const { service, updateViewerAoiCellCache } = setupService({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishBombPlacedToOthersInRoom(
@@ -482,9 +475,9 @@ describe("createBombSyncService.publishBombPlacedToOthersInRoom", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1", "socket-2", "socket-3"],
       players: [
-        createPlayer("socket-1"),
-        createPlayer("socket-2"),
-        createPlayer("socket-3"),
+        createPlayerData("socket-1"),
+        createPlayerData("socket-2"),
+        createPlayerData("socket-3"),
       ],
     });
 
@@ -503,7 +496,7 @@ describe("createBombSyncService.publishBombPlacedToOthersInRoom", () => {
   it("設置通知の送信では可視集合を更新しないこと", () => {
     const { service, realtimeRoomSyncState } = setupService({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishBombPlacedToOthersInRoom(

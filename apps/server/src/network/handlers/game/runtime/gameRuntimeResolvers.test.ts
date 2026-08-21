@@ -8,6 +8,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { ActiveBombSnapshot } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { RoomScopedGamePort } from "@server/domains/room/application/ports/roomUseCasePorts";
+import { createPlayerData } from "@server/testing/playerFixtures";
+import { createRoom, createRoomMember } from "@server/testing/roomFixtures";
 import {
   getActiveBombSnapshotsInRoom,
   getConnectedSocketIdsInRoom,
@@ -15,33 +17,14 @@ import {
   type RuntimeResolverDeps,
 } from "./gameRuntimeResolvers";
 
-/** テスト用のルームメンバーを生成する */
-const createMember = (id: string): domain.room.RoomMember => {
-  return {
-    id,
-    name: `name-${id}`,
-    isOwner: false,
-    isReady: false,
-    preferredTeamId: null,
-  };
-};
-
-/** テスト用のルームを生成する */
-const createRoom = (memberIds: string[]): domain.room.Room => {
-  return {
-    roomId: "room-1",
+/** 在室メンバーIDからプレイ中のルームを生成する */
+const createPlayingRoom = (memberIds: string[]): domain.room.Room => {
+  return createRoom({
     ownerId: memberIds[0] ?? "socket-1",
-    players: memberIds.map(createMember),
+    players: memberIds.map((id) => createRoomMember({ id })),
     status: "playing",
     maxPlayers: 8,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
-
-/** テスト用のプレイヤーデータを生成する */
-const createPlayer = (id: string): domain.game.player.PlayerData => {
-  return { id, name: `name-${id}`, x: 0, y: 0, teamId: 0 };
+  });
 };
 
 /** テスト用のアクティブ爆弾スナップショットを生成する */
@@ -88,13 +71,13 @@ describe("getConnectedSocketIdsInRoom", () => {
   });
 
   it("ルームに参加者がいない場合は空配列を返すこと", () => {
-    const deps = createDeps({ room: createRoom([]) });
+    const deps = createDeps({ room: createPlayingRoom([]) });
 
     expect(getConnectedSocketIdsInRoom(deps, "room-1")).toEqual([]);
   });
 
   it("参加者のソケットIDを返すこと", () => {
-    const deps = createDeps({ room: createRoom(["socket-1", "socket-2"]) });
+    const deps = createDeps({ room: createPlayingRoom(["socket-1", "socket-2"]) });
 
     expect(getConnectedSocketIdsInRoom(deps, "room-1")).toEqual([
       "socket-1",
@@ -104,7 +87,7 @@ describe("getConnectedSocketIdsInRoom", () => {
 
   it("BotプレイヤーIDを除外すること", () => {
     const deps = createDeps({
-      room: createRoom(["socket-1", "bot:room-1:1"]),
+      room: createPlayingRoom(["socket-1", "bot:room-1:1"]),
     });
 
     expect(getConnectedSocketIdsInRoom(deps, "room-1")).toEqual(["socket-1"]);
@@ -112,14 +95,14 @@ describe("getConnectedSocketIdsInRoom", () => {
 
   it("参加者が全員Botの場合は空配列を返すこと", () => {
     const deps = createDeps({
-      room: createRoom(["bot:room-1:1", "bot:room-1:2"]),
+      room: createPlayingRoom(["bot:room-1:1", "bot:room-1:2"]),
     });
 
     expect(getConnectedSocketIdsInRoom(deps, "room-1")).toEqual([]);
   });
 
   it("bot接頭辞を含むが先頭でないIDは除外しないこと", () => {
-    const deps = createDeps({ room: createRoom(["x-bot:room-1:1"]) });
+    const deps = createDeps({ room: createPlayingRoom(["x-bot:room-1:1"]) });
 
     expect(getConnectedSocketIdsInRoom(deps, "room-1")).toEqual([
       "x-bot:room-1:1",
@@ -127,7 +110,7 @@ describe("getConnectedSocketIdsInRoom", () => {
   });
 
   it("指定したルームIDで参照すること", () => {
-    const deps = createDeps({ room: createRoom(["socket-1"]) });
+    const deps = createDeps({ room: createPlayingRoom(["socket-1"]) });
 
     getConnectedSocketIdsInRoom(deps, "room-9");
 
@@ -143,7 +126,7 @@ describe("getRoomPlayers", () => {
   });
 
   it("ランタイムのプレイヤー一覧をそのまま返すこと", () => {
-    const players = [createPlayer("socket-1"), createPlayer("socket-2")];
+    const players = [createPlayerData("socket-1"), createPlayerData("socket-2")];
     const deps = createDeps({ players });
 
     expect(getRoomPlayers(deps, "room-1")).toEqual(players);

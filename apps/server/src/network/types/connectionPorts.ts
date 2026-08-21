@@ -63,9 +63,7 @@ export type JoinRoomEventRuntimeUseCasePort = Pick<
 >;
 
 /** チーム選択イベント調停で利用するルーム依存ポート */
-export type SelectTeamEventRoomUseCasePort =
-  & Pick<ConnectionRoomPort, "getRoomByPlayerId">
-  & SelectTeamPort;
+export type SelectTeamEventRoomUseCasePort = SelectTeamPort;
 
 /** ソケット接続全体で利用するルーム管理ポート集合 */
 export type SocketConnectionRoomPort =

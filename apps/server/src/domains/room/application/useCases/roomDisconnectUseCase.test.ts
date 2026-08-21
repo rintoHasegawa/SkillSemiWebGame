@@ -6,28 +6,18 @@
 import { domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createRoom, createRoomMember } from "@server/testing/roomFixtures";
 import type { RoomDisconnectResult } from "../ports/roomUseCasePorts";
 import { roomDisconnectUseCase } from "./roomDisconnectUseCase";
 
-/** テスト用のルーム状態を生成する */
-const createRoom = (roomId: string): domain.room.Room => {
-  return {
+/** オーナー1名が在室しているテスト用ルームを生成する */
+const createRoomWithOwner = (roomId: string): domain.room.Room => {
+  return createRoom({
     roomId,
-    ownerId: "socket-1",
     players: [
-      {
-        id: "socket-1",
-        name: "太郎",
-        isOwner: true,
-        isReady: false,
-        preferredTeamId: null,
-      },
+      createRoomMember({ id: "socket-1", name: "太郎", isOwner: true }),
     ],
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
+  });
 };
 
 /** 退出結果を固定した DisconnectRoomPort スタブを生成する */
@@ -98,8 +88,8 @@ describe("roomDisconnectUseCase", () => {
 
   it("更新ルームごとに最新状態を配信すること", () => {
     const output = createOutputStub();
-    const roomA = createRoom("room-a");
-    const roomB = createRoom("room-b");
+    const roomA = createRoomWithOwner("room-a");
+    const roomB = createRoomWithOwner("room-b");
 
     roomDisconnectUseCase({
       roomManager: createRoomManagerStub({
@@ -122,7 +112,7 @@ describe("roomDisconnectUseCase", () => {
 
     roomDisconnectUseCase({
       roomManager: createRoomManagerStub({
-        updatedRooms: [createRoom("room-a")],
+        updatedRooms: [createRoomWithOwner("room-a")],
         deletedRoomIds: [],
       }),
       runtimeRegistry,

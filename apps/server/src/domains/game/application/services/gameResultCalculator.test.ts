@@ -94,10 +94,22 @@ describe("buildGameResultPayload", () => {
     expect(result.finalGridColors).toEqual([0, 1, 2, 3]);
   });
 
-  it("プレイヤー情報を渡さない場合はplayerStatsを含めないこと", () => {
+  it("プレイヤー情報を渡さない場合はplayerStatsを空配列で返すこと", () => {
     const result = buildGameResultPayload([0]);
 
-    expect(result.playerStats).toBeUndefined();
+    expect(result.playerStats).toEqual([]);
+  });
+
+  it("プレイヤー情報に空配列を渡した場合も空配列を返すこと", () => {
+    const result = buildGameResultPayload([0], []);
+
+    expect(result.playerStats).toEqual([]);
+  });
+
+  it("プレイヤー情報を渡さない場合もplayerStatsキーを持つこと", () => {
+    const result = buildGameResultPayload([0]);
+
+    expect("playerStats" in result).toBe(true);
   });
 
   it("プレイヤー情報を渡した場合はスタッツへ変換すること", () => {

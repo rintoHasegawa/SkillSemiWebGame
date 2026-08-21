@@ -29,7 +29,13 @@ export const collectSyncDeltaEntries = <TItem, TSnapshot>(
     const nextSnapshot = options.toSnapshot(item);
     const lastSnapshot = lastSnapshotById.get(id);
 
-    if (lastSnapshot && options.isSameSnapshot(lastSnapshot, nextSnapshot)) {
+    // 偽値スナップショット（0・""・false）を未登録と誤判定しないよう，
+    // 真偽値ではなく「登録済みか（undefined でないか）」で判定する
+    const isUnchanged =
+      lastSnapshot !== undefined &&
+      options.isSameSnapshot(lastSnapshot, nextSnapshot);
+
+    if (isUnchanged) {
       return;
     }
 

@@ -100,8 +100,8 @@
 
 ### 異常値ガード (Invalid Value Guard)
 
-- NaN/Infinityの場合は0を返す
-- 量子化スケールが無効（0以下）の場合は元の値をそのまま返す
+- NaN/Infinityの場合は0を返す（`-0`は`0`に正規化する）
+- 量子化スケールが無効（0以下・非有限）の場合は既定スケール（100）で量子化する（生値を素通しせず通信契約のInteger化を維持する）
 
 ## 差分同期 (Delta Synchronization)
 
@@ -187,7 +187,8 @@
 - `maxTickMs`: ピーク処理時間
 - `cpuUsagePct`: ゲームロジックのCPU使用率（= `totalTickMs / windowMs × 100`）
 - `avgPayloadBytesPerTick`: ティックあたりの平均ペイロードサイズ
-- `outboundBytesPerSec`: 推定送信帯域（= `avgPayload × playerCount × tickCount`）
+- `outboundBytesPerSec`: 推定送信帯域（= `totalPayloadBytes × playerCount ÷ (windowMs / 1000)`）
+  - ※ 負荷時はウィンドウが 1 秒を超えるため，実際の窓経過時間で割って毎秒換算する
 
 ### 活用 (Usage)
 

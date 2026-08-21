@@ -6,20 +6,8 @@
 import { domain } from "@repo/shared";
 import { describe, expect, it, vi } from "vitest";
 
+import { createRoom } from "@server/testing/roomFixtures";
 import { RoomGameRuntimeRegistry } from "./RoomGameRuntimeRegistry";
-
-/** テスト用のルーム状態を生成する */
-const createRoom = (roomId: string): domain.room.Room => {
-  return {
-    roomId,
-    ownerId: "socket-1",
-    players: [],
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
 
 /** ルーム参照結果を固定したリゾルバスタブを生成する */
 const createRoomResolverStub = (rooms: Map<string, domain.room.Room>) => {
@@ -73,7 +61,7 @@ describe("RoomGameRuntimeRegistry", () => {
   });
 
   it("プレイヤーIDから所属ルームのゲーム管理を返すこと", () => {
-    const room = createRoom("room-1");
+    const room = createRoom({ roomId: "room-1" });
     room.players.push({
       id: "socket-1",
       name: "太郎",
@@ -101,7 +89,7 @@ describe("RoomGameRuntimeRegistry", () => {
   });
 
   it("ルームが残っている場合はゲーム管理を破棄しないこと", () => {
-    const rooms = new Map([["room-1", createRoom("room-1")]]);
+    const rooms = new Map([["room-1", createRoom({ roomId: "room-1" })]]);
     const registry = new RoomGameRuntimeRegistry(createRoomResolverStub(rooms));
     registry.ensureGameManagerForRoom("room-1");
 

@@ -19,12 +19,38 @@ import { GameRoomSession, type GameSessionCallbacks } from "./GameRoomSession";
 type GameSessionRef = { current: GameRoomSession | null };
 type ActivePlayerIndex = Set<string>;
 
+/** GameRoomSession 生成に必要な入力 */
+export type GameRoomSessionFactoryParams = {
+  roomId: string;
+  playerIds: string[];
+  playerNamesById: Record<string, string>;
+  fieldConfig: GameFieldConfig;
+  teamPreferences?: Record<string, number | null>;
+};
+
+/** GameRoomSession 生成を差し替えるためのファクトリ契約 */
+export type GameRoomSessionFactory = (
+  params: GameRoomSessionFactoryParams,
+) => GameRoomSession;
+
+/** 既定の GameRoomSession 生成処理 */
+export const createGameRoomSession: GameRoomSessionFactory = (params) =>
+  new GameRoomSession(
+    params.roomId,
+    params.playerIds,
+    params.playerNamesById,
+    params.fieldConfig,
+    params.teamPreferences,
+  );
+
 /** ゲームセッションのライフサイクル操作を提供するサービス */
 export class GameSessionLifecycleService {
   constructor(
     private sessionRef: GameSessionRef,
     private activePlayerIds: ActivePlayerIndex,
     private roomId: string,
+    // セッション生成を差し替え可能にし，onGameEndラッパーを単体で検証できるようにする
+    private createSession: GameRoomSessionFactory = createGameRoomSession,
   ) {}
 
   public getRoomStartTime(): number | undefined {
@@ -98,13 +124,13 @@ export class GameSessionLifecycleService {
     }
 
     const tickRate = config.GAME_CONFIG.NETWORK_SYNC.PLAYER_POSITION_UPDATE_MS;
-    const session = new GameRoomSession(
-      this.roomId,
+    const session = this.createSession({
+      roomId: this.roomId,
       playerIds,
       playerNamesById,
       fieldConfig,
       teamPreferences,
-    );
+    });
 
     this.activePlayerIds.clear();
     playerIds.forEach((playerId) => {

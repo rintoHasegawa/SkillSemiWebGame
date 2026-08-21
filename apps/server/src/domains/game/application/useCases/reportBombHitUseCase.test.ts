@@ -92,7 +92,7 @@ describe("reportBombHitUseCase", () => {
     });
 
     expect(validation.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
-      "socket-1:bomb-9",
+      "8:socket-1|6:bomb-9",
       2_000,
     );
   });

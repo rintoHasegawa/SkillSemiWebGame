@@ -7,20 +7,8 @@ import { domain } from "@repo/shared";
 import { describe, expect, it, vi } from "vitest";
 
 import type { RoomScopedGamePort } from "@server/domains/room/application/ports/roomUseCasePorts";
+import { createRoom } from "@server/testing/roomFixtures";
 import { resolveCoordinatorRuntime } from "./runtimeCoordinatorSupport";
-
-/** テスト用のルーム状態を生成する */
-const createRoom = (roomId: string): domain.room.Room => {
-  return {
-    roomId,
-    ownerId: "socket-1",
-    players: [],
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
 
 const gameManagerStub = {} as RoomScopedGamePort;
 
@@ -45,7 +33,7 @@ const createDeps = (
 
 describe("resolveCoordinatorRuntime", () => {
   it("ルームとランタイムが揃う場合は解決結果を返すこと", () => {
-    const deps = createDeps(createRoom("room-1"), gameManagerStub);
+    const deps = createDeps(createRoom({ roomId: "room-1" }), gameManagerStub);
 
     const result = resolveCoordinatorRuntime(deps, "socket-1");
 
@@ -53,7 +41,7 @@ describe("resolveCoordinatorRuntime", () => {
   });
 
   it("解決時に受け取ったsocketIdを両ポートへ渡すこと", () => {
-    const deps = createDeps(createRoom("room-1"), gameManagerStub);
+    const deps = createDeps(createRoom({ roomId: "room-1" }), gameManagerStub);
 
     resolveCoordinatorRuntime(deps, "socket-99");
 
@@ -70,13 +58,13 @@ describe("resolveCoordinatorRuntime", () => {
   });
 
   it("ランタイムが解決できない場合はundefinedを返すこと", () => {
-    const deps = createDeps(createRoom("room-1"), undefined);
+    const deps = createDeps(createRoom({ roomId: "room-1" }), undefined);
 
     expect(resolveCoordinatorRuntime(deps, "socket-1")).toBeUndefined();
   });
 
   it("ルームIDが空文字の場合はundefinedを返すこと", () => {
-    const deps = createDeps(createRoom(""), gameManagerStub);
+    const deps = createDeps(createRoom({ roomId: "" }), gameManagerStub);
 
     expect(resolveCoordinatorRuntime(deps, "socket-1")).toBeUndefined();
   });

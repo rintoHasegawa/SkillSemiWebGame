@@ -48,8 +48,13 @@ export class MapStore {
     return updates;
   }
 
-  /** 現在のマップ塗り状態を読み取り専用参照として返す（コピーなし） */
-  public getGridColorsSnapshot(): readonly number[] {
+  /**
+   * 現在のマップ塗り状態を読み取り専用のライブビューとして返す
+   * コピーを避けるため内部配列の同一参照を返しており，以降の paintCell で
+   * 中身が書き換わる（スナップショットではない）
+   * 呼び出し側は書き換え禁止で，値を保持したい場合は自前でコピーする
+   */
+  public getGridColorsView(): readonly number[] {
     return this.gridColors;
   }
 }

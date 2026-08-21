@@ -1,13 +1,13 @@
 /**
  * worldViewport.test
- * 可視矩形の解決と包含判定の現行挙動を固定する characterization test
- * 矩形拡張・点包含・円交差の境界値を検証する
+ * 可視矩形の解決と包含判定の挙動を固定するテスト
+ * 矩形拡張・点包含・円の外接矩形交差の境界値を検証する
  */
 import { describe, expect, it } from "vitest";
 
 import {
   expandWorldViewport,
-  isCircleIntersectingViewport,
+  isCircleBoundsIntersectingViewport,
   isPointInViewport,
   resolveWorldViewport,
   type WorldViewport,
@@ -118,58 +118,49 @@ describe("isPointInViewport", () => {
   });
 });
 
-describe("isCircleIntersectingViewport", () => {
+describe("isCircleBoundsIntersectingViewport", () => {
+  // 引数の並びを固定し，行長を抑えるための呼び出しヘルパー
+  const isIntersecting = (x: number, y: number, radiusPx: number): boolean => {
+    return isCircleBoundsIntersectingViewport(x, y, radiusPx, createViewport());
+  };
+
   it("矩形内部の円をtrueと判定すること", () => {
-    expect(isCircleIntersectingViewport(50, 100, 10, createViewport())).toBe(
-      true,
-    );
+    expect(isIntersecting(50, 100, 10)).toBe(true);
   });
 
   it("半径0で矩形内部の点をtrueと判定すること", () => {
-    expect(isCircleIntersectingViewport(50, 100, 0, createViewport())).toBe(
-      true,
-    );
+    expect(isIntersecting(50, 100, 0)).toBe(true);
   });
 
   it("左境界に接する円をtrueと判定すること", () => {
-    expect(isCircleIntersectingViewport(-10, 100, 10, createViewport())).toBe(
-      true,
-    );
+    expect(isIntersecting(-10, 100, 10)).toBe(true);
   });
 
   it("左境界に届かない円をfalseと判定すること", () => {
-    expect(isCircleIntersectingViewport(-10.1, 100, 10, createViewport())).toBe(
-      false,
-    );
+    expect(isIntersecting(-10.1, 100, 10)).toBe(false);
   });
 
   it("右境界に接する円をtrueと判定すること", () => {
-    expect(isCircleIntersectingViewport(110, 100, 10, createViewport())).toBe(
-      true,
-    );
+    expect(isIntersecting(110, 100, 10)).toBe(true);
   });
 
   it("右境界を越えた円をfalseと判定すること", () => {
-    expect(isCircleIntersectingViewport(110.1, 100, 10, createViewport())).toBe(
-      false,
-    );
+    expect(isIntersecting(110.1, 100, 10)).toBe(false);
   });
 
   it("上境界に接する円をtrueと判定すること", () => {
-    expect(isCircleIntersectingViewport(50, -10, 10, createViewport())).toBe(
-      true,
-    );
+    expect(isIntersecting(50, -10, 10)).toBe(true);
   });
 
   it("下境界を越えた円をfalseと判定すること", () => {
-    expect(isCircleIntersectingViewport(50, 210.1, 10, createViewport())).toBe(
-      false,
-    );
+    expect(isIntersecting(50, 210.1, 10)).toBe(false);
   });
 
   it("矩形の角の外側でも外接矩形が重なる場合はtrueと判定すること", () => {
-    expect(isCircleIntersectingViewport(-10, -10, 10, createViewport())).toBe(
-      true,
-    );
+    expect(isIntersecting(-10, -10, 10)).toBe(true);
+  });
+
+  it("外接矩形が重ならない角の外側はfalseと判定すること", () => {
+    expect(isIntersecting(-10.1, -10.1, 10)).toBe(false);
   });
 });

@@ -12,6 +12,7 @@ import type { RoomScopedGamePort } from "@server/domains/room/application/ports/
 import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import type { ReliableEmitters } from "../../CommonHandler";
 import type { RuntimeResolverDeps } from "../runtime/gameRuntimeResolvers";
+import { createPlayerData } from "@server/testing/playerFixtures";
 import { createPlayerSyncService } from "./playerSyncService";
 
 type EmitCall = {
@@ -35,14 +36,6 @@ const createReliableStub = () => {
   } as unknown as ReliableEmitters;
 
   return { reliable, calls };
-};
-
-/** テスト用のプレイヤーデータを生成する */
-const createPlayer = (
-  id: string,
-  overrides: Partial<domain.game.player.PlayerData> = {},
-): domain.game.player.PlayerData => {
-  return { id, name: `name-${id}`, x: 0, y: 0, teamId: 0, ...overrides };
 };
 
 /** ルーム参加者とランタイムプレイヤーを固定した依存スタブを生成する */
@@ -94,7 +87,7 @@ const setupService = (params: {
     reliable,
     runtimeDeps: createRuntimeDeps(
       params.memberIds ?? ["socket-1"],
-      params.players ?? [createPlayer("socket-1")],
+      params.players ?? [createPlayerData("socket-1")],
       params.bombs ?? [],
     ),
     realtimeRoomSyncState,
@@ -126,14 +119,14 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
       {
         socketId: "socket-1",
         event: protocol.SocketEvents.NEW_PLAYER,
-        payload: createPlayer("socket-1"),
+        payload: createPlayerData("socket-1"),
       },
     ]);
   });
 
   it("AOI内の他プレイヤーへNEW_PLAYERを送信すること", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", []);
@@ -148,8 +141,8 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
   it("AOI外の他プレイヤーはNEW_PLAYERの対象外とすること", () => {
     const { service, calls } = setupService({
       players: [
-        createPlayer("socket-1"),
-        createPlayer("socket-2", { x: 100, y: 100 }),
+        createPlayerData("socket-1"),
+        createPlayerData("socket-2", { x: 100, y: 100 }),
       ],
     });
 
@@ -199,7 +192,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("可視プレイヤーIDを状態ストアへ記録すること", () => {
     const { service, realtimeRoomSyncState } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", []);
@@ -246,7 +239,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("可視のままのプレイヤーへはREMOVE_PLAYERを送信しないこと", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", []);
@@ -259,7 +252,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("AOI内の他プレイヤーの座標差分をUPDATE_PLAYERSで送信すること", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
     const players: UpdatePlayersPayload = [{ id: "socket-2", x: 1, y: 2 }];
 
@@ -276,7 +269,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("UPDATE_PLAYERSの座標を量子化して送信すること", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -302,7 +295,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("AOI外のプレイヤーの座標はUPDATE_PLAYERSへ含めないこと", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -316,7 +309,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("前回と同一座標の場合はUPDATE_PLAYERSを送信しないこと", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -333,7 +326,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("量子化後に同値となる微小移動はUPDATE_PLAYERSを送信しないこと", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -350,7 +343,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("座標が変化した場合はUPDATE_PLAYERSを再送信すること", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -403,7 +396,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
     expect(syncVisibleBombsByViewer).toHaveBeenCalledWith(
       "room-1",
       "socket-1",
-      createPlayer("socket-1"),
+      createPlayerData("socket-1"),
       bombs,
     );
   });
@@ -411,7 +404,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
   it("受信者ごとにAOIセルキャッシュを更新すること", () => {
     const { service, updateViewerAoiCellCache } = setupService({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", []);
@@ -422,7 +415,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
   it("複数の受信者それぞれへ送信すること", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1", "socket-2"],
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -440,7 +433,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
   it("Botの受信者へは送信しないこと", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1", "bot:room-1:1"],
-      players: [createPlayer("socket-1"), createPlayer("bot:room-1:1")],
+      players: [createPlayerData("socket-1"), createPlayerData("bot:room-1:1")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", []);
@@ -451,7 +444,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
   it("Botプレイヤーも可視プレイヤーとして受信者へ通知すること", () => {
     const { service, calls } = setupService({
       memberIds: ["socket-1", "bot:room-1:1"],
-      players: [createPlayer("socket-1"), createPlayer("bot:room-1:1")],
+      players: [createPlayerData("socket-1"), createPlayerData("bot:room-1:1")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", []);
@@ -464,9 +457,9 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
   });
 
   it("スナップショットから外れて戻ったプレイヤーの座標は再送信すること", () => {
-    const other = createPlayer("socket-2");
+    const other = createPlayerData("socket-2");
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), other],
+      players: [createPlayerData("socket-1"), other],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -490,7 +483,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("スナップショットが可視のまま差分座標だけAOI外へ出て戻った場合も再送信すること", () => {
     const { service, calls } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -510,7 +503,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("差分座標がAOI外で送信対象外になったプレイヤーの座標キャッシュを削除すること", () => {
     const { service, realtimeRoomSyncState } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -529,7 +522,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("送信対象であり続けるプレイヤーの座標キャッシュは直近の送信値を保持すること", () => {
     const { service, realtimeRoomSyncState } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -547,9 +540,9 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
   });
 
   it("可視集合から外れたプレイヤーの座標キャッシュを毎ティック削除すること", () => {
-    const other = createPlayer("socket-2");
+    const other = createPlayerData("socket-2");
     const { service, realtimeRoomSyncState } = setupService({
-      players: [createPlayer("socket-1"), other],
+      players: [createPlayerData("socket-1"), other],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [
@@ -568,7 +561,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
 
   it("座標キャッシュへ送信していないプレイヤーのエントリを残さないこと", () => {
     const { service, realtimeRoomSyncState } = setupService({
-      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+      players: [createPlayerData("socket-1"), createPlayerData("socket-2")],
     });
 
     service.publishUpdatePlayersToRoom("room-1", [

@@ -9,7 +9,7 @@ import type { PlayerRepository } from "@client/scenes/game/entities/player/Playe
 import type { MoveSender } from "@client/scenes/game/application/network/PlayerMoveSender";
 import {
   expandWorldViewport,
-  isCircleIntersectingViewport,
+  isCircleBoundsIntersectingViewport,
   resolveWorldViewport,
 } from "@client/scenes/game/application/culling/worldViewport";
 import type {
@@ -119,7 +119,7 @@ export class SimulationStep implements LoopStep {
     Object.values(playerRepository.toRecord()).forEach((player) => {
       if (player instanceof RemotePlayerController) {
         const display = player.getDisplayObject();
-        const isVisible = isCircleIntersectingViewport(
+        const isVisible = isCircleBoundsIntersectingViewport(
           display.x,
           display.y,
           SimulationStep.REMOTE_PLAYER_CULL_RADIUS_PX,

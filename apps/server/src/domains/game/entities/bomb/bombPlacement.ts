@@ -3,10 +3,14 @@
  * 爆弾設置時の識別キー生成と確定ペイロード組み立てを提供する
  */
 import type { BombPlacedAckPayload, BombPlacedPayload, PlaceBombPayload } from "@repo/shared";
+import { joinDedupeKeySegments } from "./dedupeKeyEncoding.js";
 
-/** 重複排除に利用する爆弾設置要求キーを生成する */
+/**
+ * 重複排除に利用する爆弾設置要求キーを生成する
+ * ownerId・requestId は任意文字列のため長さプレフィックス方式で連結する
+ */
 export const createBombDedupeKey = (ownerId: string, requestId: string): string => {
-  return `${ownerId}:${requestId}`;
+  return joinDedupeKeySegments(ownerId, requestId);
 };
 
 type CreateBombPlacedPayloadParams = {

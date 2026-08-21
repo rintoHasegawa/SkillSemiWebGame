@@ -1,30 +1,46 @@
 /**
  * socketEvents.test
- * ソケットイベント名定数の関係性を固定する characterization test
- * 旧キーと _SYNC エイリアスの一致・イベント名書式・意図しない重複の不在を検証する
+ * ソケットイベント名定数の契約を固定するテスト
+ * `*_SYNC` エイリアス廃止後もワイヤ上のイベント名が不変であることと，
+ * 定数キー・イベント名がともに一意であることを検証する
  */
 import { describe, expect, it } from "vitest";
 
 import { SocketEvents } from "./socketEvents";
 
-// 旧キーと _SYNC エイリアスの対応表
-const syncAliasPairs = [
-  ["CURRENT_PLAYERS_SYNC", "CURRENT_PLAYERS"],
-  ["NEW_PLAYER_SYNC", "NEW_PLAYER"],
-  ["UPDATE_PLAYERS_SYNC", "UPDATE_PLAYERS"],
-  ["REMOVE_PLAYER_SYNC", "REMOVE_PLAYER"],
-  ["UPDATE_MAP_CELLS_SYNC", "UPDATE_MAP_CELLS"],
-  ["CURRENT_HURRICANES_SYNC", "CURRENT_HURRICANES"],
-  ["UPDATE_HURRICANES_SYNC", "UPDATE_HURRICANES"],
+// 廃止した `*_SYNC` エイリアスのキー名
+const removedSyncAliasKeys = [
+  "CURRENT_PLAYERS_SYNC",
+  "NEW_PLAYER_SYNC",
+  "UPDATE_PLAYERS_SYNC",
+  "REMOVE_PLAYER_SYNC",
+  "UPDATE_MAP_CELLS_SYNC",
+  "CURRENT_HURRICANES_SYNC",
+  "UPDATE_HURRICANES_SYNC",
+] as const;
+
+// エイリアス廃止対象だったイベントの本キーとワイヤ上のイベント名
+const retainedEventNamePairs = [
+  ["CURRENT_PLAYERS", "current-players"],
+  ["NEW_PLAYER", "new-player"],
+  ["UPDATE_PLAYERS", "update-players"],
+  ["REMOVE_PLAYER", "remove-player"],
+  ["UPDATE_MAP_CELLS", "update-map-cells"],
+  ["CURRENT_HURRICANES", "current-hurricanes"],
+  ["UPDATE_HURRICANES", "update-hurricanes"],
 ] as const satisfies ReadonlyArray<
-  readonly [keyof typeof SocketEvents, keyof typeof SocketEvents]
+  readonly [keyof typeof SocketEvents, string]
 >;
 
 describe("SocketEvents", () => {
-  it.each(syncAliasPairs)(
-    "%s が %s と同じイベント名を指すこと",
-    (syncKey, legacyKey) => {
-      expect(SocketEvents[syncKey]).toBe(SocketEvents[legacyKey]);
+  it.each(removedSyncAliasKeys)("%s エイリアスを公開しないこと", (aliasKey) => {
+    expect(Object.keys(SocketEvents)).not.toContain(aliasKey);
+  });
+
+  it.each(retainedEventNamePairs)(
+    "%s のイベント名が %s のまま変わらないこと",
+    (eventKey, eventName) => {
+      expect(SocketEvents[eventKey]).toBe(eventName);
     },
   );
 
@@ -42,20 +58,8 @@ describe("SocketEvents", () => {
     );
   });
 
-  it("重複するイベント名が _SYNC エイリアス分のみであること", () => {
+  it("重複するイベント名が存在しないこと", () => {
     const values = Object.values(SocketEvents);
-    const uniqueValues = new Set(values);
-
-    expect(values.length - uniqueValues.size).toBe(syncAliasPairs.length);
-  });
-
-  it("エイリアスを除いたイベント名が一意であること", () => {
-    const aliasKeys = new Set<string>(
-      syncAliasPairs.map(([syncKey]) => syncKey),
-    );
-    const values = Object.entries(SocketEvents)
-      .filter(([key]) => !aliasKeys.has(key))
-      .map(([, value]) => value);
 
     expect(new Set(values).size).toBe(values.length);
   });

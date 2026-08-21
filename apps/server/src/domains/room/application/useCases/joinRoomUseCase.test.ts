@@ -6,21 +6,9 @@
 import { domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createRoom } from "@server/testing/roomFixtures";
 import type { JoinRoomResult } from "../ports/roomUseCasePorts";
 import { joinRoomUseCase } from "./joinRoomUseCase";
-
-/** テスト用のルーム状態を生成する */
-const createRoom = (): domain.room.Room => {
-  return {
-    roomId: "room-1",
-    ownerId: "socket-1",
-    players: [],
-    status: domain.room.RoomPhase.WAITING,
-    maxPlayers: 4,
-    fieldSizePreset: "MEDIUM",
-    teamAssignmentMode: "random",
-  };
-};
 
 /** 参加結果を固定した JoinRoomPort スタブを生成する */
 const createRoomManagerStub = (status: JoinRoomResult["status"]) => {

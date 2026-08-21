@@ -8,7 +8,7 @@ import { config } from "@client/config";
 import { Container, Sprite, Texture } from "pixi.js";
 import { loadHurricaneTexture } from "./HurricaneTextureCache";
 import {
-  isCircleIntersectingViewport,
+  isCircleBoundsIntersectingViewport,
   type WorldViewport,
 } from "@client/scenes/game/application/culling/worldViewport";
 
@@ -81,7 +81,7 @@ export class HurricaneOverlayController {
       const centerX = state.x * config.GAME_CONFIG.GRID_CELL_SIZE;
       const centerY = state.y * config.GAME_CONFIG.GRID_CELL_SIZE;
       const radiusPx = state.radius * config.GAME_CONFIG.GRID_CELL_SIZE + marginPx;
-      const isVisible = isCircleIntersectingViewport(
+      const isVisible = isCircleBoundsIntersectingViewport(
         centerX,
         centerY,
         radiusPx,
