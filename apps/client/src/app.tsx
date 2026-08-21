@@ -7,6 +7,7 @@ import { LobbyScene } from "./scenes/lobby/LobbyScene";
 import { GameScene } from "./scenes/game/GameScene";
 import { ResultScene } from "./scenes/result/ResultScene";
 import { LandscapeOnlyGate } from "./components/LandscapeOnlyGate";
+import { InstallRequiredGate } from "./components/InstallRequiredGate";
 
 import { domain } from "@repo/shared";
 
@@ -63,5 +64,10 @@ export default function App() {
     );
   }
 
-  return <LandscapeOnlyGate>{scene}</LandscapeOnlyGate>;
+  // スマホはインストール（PWA）必須のため，横画面ゲートより外側でインストールゲートを通す
+  return (
+    <InstallRequiredGate>
+      <LandscapeOnlyGate>{scene}</LandscapeOnlyGate>
+    </InstallRequiredGate>
+  );
 }

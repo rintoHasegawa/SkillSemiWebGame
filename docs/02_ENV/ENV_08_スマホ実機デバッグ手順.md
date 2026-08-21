@@ -121,6 +121,21 @@ pnpm --filter client dev
    スマホのブラウザ（Chrome，Safari等）で URL にアクセスする．
    タイトル画面が表示されれば接続成功である．
 
+### インストールゲートの解除 (Bypass the Install Gate)
+
+スマホでは，ホーム画面に追加した PWA から起動した場合のみプレイできる（インストールゲート．[SPEC_01_ゲーム概要_画面遷移](../04_SPEC/SPEC_01_ゲーム概要_画面遷移.md) を参照）．
+スマホのブラウザで URL を開くとホーム画面追加の手順のみが表示され，ゲーム画面は描画されない．
+
+デバッグ目的でブラウザのままゲーム画面を確認したい場合は，URL に `?allowBrowser=1` を付けてアクセスする．
+
+```text
+https://xxxx-xxxx.ngrok-free.app/?allowBrowser=1
+```
+
+- 既にクエリが付いている場合は `&allowBrowser=1` を追加する．
+- ゲートを解除した状態は URL 依存であるため，リンクを踏み直すと元に戻る．
+- PWA としての動作確認（フルスクリーン表示・アイコン起動）を行う場合はクエリを付けずにホーム画面へ追加する．
+
 ## 注意事項とトラブルシューティング (Notes & Troubleshooting)
 
 ### Freeプランの制限 (Free Plan Limitations)
