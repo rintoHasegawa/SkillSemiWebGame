@@ -135,15 +135,25 @@ describe("appFlowReducer", () => {
     expect(next.scenePhase).toBe(domain.app.ScenePhase.LOBBY);
   });
 
-  it("setRoomAndLobby は gameResult を保持したままにすること", () => {
-    const gameResult = createGameResult();
-
-    const next = appFlowReducer(createState({ gameResult }), {
+  it("setRoomAndLobby は前ゲームの gameResult を破棄すること", () => {
+    const next = appFlowReducer(createState({ gameResult: createGameResult() }), {
       type: "setRoomAndLobby",
       room: createRoom(),
     });
 
-    expect(next.gameResult).toBe(gameResult);
+    expect(next.gameResult).toBeNull();
+  });
+
+  it("setRoomAndLobby はリザルト表示からの復帰でも gameResult を破棄すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.RESULT,
+        gameResult: createGameResult(),
+      }),
+      { type: "setRoomAndLobby", room: createRoom() },
+    );
+
+    expect(next.gameResult).toBeNull();
   });
 
   it("updateRoom でルームのみを更新すること", () => {

@@ -38,6 +38,8 @@ export const appFlowReducer = (
     return {
       ...state,
       room: action.room,
+      // ロビーへ戻った時点で前ゲームの結果を破棄する
+      gameResult: null,
       scenePhase: domain.app.ScenePhase.LOBBY,
     };
   }

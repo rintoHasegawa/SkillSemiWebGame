@@ -136,4 +136,38 @@ describe("InputGate", () => {
 
     expect(gate.canAcceptInput()).toBe(false);
   });
+
+  it("リセット後に取得した新しいロックを古い解放関数で解除しないこと", () => {
+    const { gate } = createGate({ isStarted: true });
+    const staleRelease = gate.lockInput();
+    gate.reset();
+    gate.lockInput();
+
+    staleRelease();
+
+    expect(gate.canAcceptInput()).toBe(false);
+  });
+
+  it("リセット後に発行した解放関数はロックを解除できること", () => {
+    const { gate } = createGate({ isStarted: true });
+    gate.lockInput();
+    gate.reset();
+    const release = gate.lockInput();
+
+    release();
+
+    expect(gate.canAcceptInput()).toBe(true);
+  });
+
+  it("リセットを複数回行っても古い解放関数を無効のままにすること", () => {
+    const { gate } = createGate({ isStarted: true });
+    const staleRelease = gate.lockInput();
+    gate.reset();
+    gate.reset();
+    gate.lockInput();
+
+    staleRelease();
+
+    expect(gate.canAcceptInput()).toBe(false);
+  });
 });

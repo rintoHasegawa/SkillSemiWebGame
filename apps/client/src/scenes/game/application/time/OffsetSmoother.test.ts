@@ -102,13 +102,33 @@ describe("OffsetSmoother", () => {
     expect(smoother.getClockOffsetMs()).toBe(4000);
   });
 
-  it("offsetを棄却した場合でもRTTは更新すること", () => {
+  it("offsetを棄却した場合はRTTも更新しないこと", () => {
     const smoother = new OffsetSmoother();
 
     smoother.seed(5000, 1000);
     smoother.applySample({ rttMs: 42, offsetMs: 99999 });
 
-    expect(smoother.getSmoothedRttMs()).toBe(42);
+    expect(smoother.getSmoothedRttMs()).toBeNull();
+  });
+
+  it("棄却サンプルは計測済みRTTも書き換えないこと", () => {
+    const smoother = new OffsetSmoother();
+
+    smoother.seed(5000, 1000);
+    smoother.applySample({ rttMs: 100, offsetMs: 4000 });
+    smoother.applySample({ rttMs: 900, offsetMs: 99999 });
+
+    expect(smoother.getSmoothedRttMs()).toBe(100);
+  });
+
+  it("棄却サンプルの直後でも有効サンプルはRTTを更新すること", () => {
+    const smoother = new OffsetSmoother();
+
+    smoother.seed(5000, 1000);
+    smoother.applySample({ rttMs: 900, offsetMs: 99999 });
+    smoother.applySample({ rttMs: 100, offsetMs: 4000 });
+
+    expect(smoother.getSmoothedRttMs()).toBe(100);
   });
 
   it("負方向の跳躍も許容跳躍を超える場合は棄却すること", () => {

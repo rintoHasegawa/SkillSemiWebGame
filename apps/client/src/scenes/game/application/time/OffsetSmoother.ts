@@ -39,12 +39,7 @@ export class OffsetSmoother {
 
   /** 推定サンプルを取り込み平滑化状態を更新する */
   public applySample(sample: PongSample): void {
-    this.smoothedRttMs = this.smoothValue(
-      this.smoothedRttMs,
-      sample.rttMs,
-      this.config.rttAlpha,
-    );
-
+    // 外れ値サンプルはRTTにも反映しないよう，棄却判定を先に行う
     if (
       this.smoothedOffsetMs !== null &&
       Math.abs(sample.offsetMs - this.smoothedOffsetMs) >
@@ -52,6 +47,12 @@ export class OffsetSmoother {
     ) {
       return;
     }
+
+    this.smoothedRttMs = this.smoothValue(
+      this.smoothedRttMs,
+      sample.rttMs,
+      this.config.rttAlpha,
+    );
 
     this.smoothedOffsetMs = this.smoothValue(
       this.smoothedOffsetMs,

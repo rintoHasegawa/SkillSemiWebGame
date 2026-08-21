@@ -159,7 +159,8 @@ export const startGameUseCase = ({
     teamPreferences,
   );
 
-  const startTime = gameSession.getRoomStartTime() || Date.now();
+  // 0 も有効なエポック時刻のため，未確定時のみ現在時刻へフォールバックする
+  const startTime = gameSession.getRoomStartTime() ?? Date.now();
   const sessionFieldConfig = gameSession.getRoomFieldConfig() ?? fieldConfig;
   output.publishGameStartToRoom(roomId, {
     startTime,

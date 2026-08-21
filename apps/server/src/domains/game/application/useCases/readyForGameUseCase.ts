@@ -46,8 +46,9 @@ export const readyForGameUseCase = ({
     totalPlayers: roomPlayers.length,
   });
 
+  // 0 も有効なエポック時刻のため未開始判定は undefined のみで行う
   const startTime = gameManager.getRoomStartTime();
-  if (!startTime) {
+  if (startTime === undefined) {
     return;
   }
 

@@ -229,14 +229,14 @@ describe("startGameUseCase", () => {
     );
   });
 
-  it("開始時刻が0の場合も現在時刻へ読み替えること", () => {
+  it("開始時刻が0の場合はそのまま開始時刻として配信すること", () => {
     const { output } = runStartGameUseCase({
       gameSession: createGameSessionStub({ startTime: 0 }),
     });
 
     expect(output.publishGameStartToRoom).toHaveBeenCalledWith(
       "room-1",
-      expect.objectContaining({ startTime: FIXED_NOW_MS }),
+      expect.objectContaining({ startTime: 0 }),
     );
   });
 

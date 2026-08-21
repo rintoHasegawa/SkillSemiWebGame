@@ -183,6 +183,35 @@ describe("GameRoomSession", () => {
     session.dispose();
   });
 
+  it("開始時刻が0でも開始前の移動は無視すること", () => {
+    const session = createSession();
+    // 待機時間を差し引いて開始時刻がエポック0になるよう現在時刻を固定する
+    const nowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
+    session.start(50, createCallbacksStub());
+    nowSpy.mockReturnValue(-1);
+
+    session.movePlayer("socket-1", 2.5, 3.5);
+
+    expect(session.getPlayers()[0]).not.toMatchObject({ x: 2.5, y: 3.5 });
+    session.dispose();
+  });
+
+  it("開始時刻が0ちょうどに達した移動は座標へ反映すること", () => {
+    const session = createSession();
+    const nowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
+    session.start(50, createCallbacksStub());
+    nowSpy.mockReturnValue(0);
+
+    session.movePlayer("socket-1", 2.5, 3.5);
+
+    expect(session.getPlayers()[0]).toMatchObject({ x: 2.5, y: 3.5 });
+    session.dispose();
+  });
+
   it("開始時は待機時間を加えた開始時刻を設定すること", () => {
     const session = createSession();
     const beforeMs = Date.now();
