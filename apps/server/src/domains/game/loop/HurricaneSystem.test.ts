@@ -257,6 +257,48 @@ describe("HurricaneSystem.collectHitPlayerIds", () => {
   });
 });
 
+describe("HurricaneSystem.getActiveHurricaneIds", () => {
+  it("生成前は空配列を返すこと", () => {
+    const system = new HurricaneSystem(MAP_SIZE);
+
+    expect(system.getActiveHurricaneIds()).toEqual([]);
+  });
+
+  it("生成済みハリケーンのIDを全件返すこと", () => {
+    mockRandom(0);
+    const system = new HurricaneSystem(MAP_SIZE);
+
+    system.ensureSpawned(SPAWN_ELAPSED_MS);
+
+    expect(system.getActiveHurricaneIds()).toHaveLength(
+      config.GAME_CONFIG.HURRICANE_COUNT,
+    );
+  });
+
+  it("同期出力を消費した後も全量同期と同じIDを返すこと", () => {
+    mockRandom(0);
+    const system = new HurricaneSystem(MAP_SIZE);
+    system.ensureSpawned(SPAWN_ELAPSED_MS);
+    const currentIds = system
+      .consumeSyncOutputs(SPAWN_ELAPSED_MS)
+      .currentUpdates.map((entry) => entry.id);
+
+    system.consumeSyncOutputs(SPAWN_ELAPSED_MS);
+
+    expect(system.getActiveHurricaneIds()).toEqual(currentIds);
+  });
+
+  it("破棄後は空配列を返すこと", () => {
+    mockRandom(0);
+    const system = new HurricaneSystem(MAP_SIZE);
+    system.ensureSpawned(SPAWN_ELAPSED_MS);
+
+    system.clear();
+
+    expect(system.getActiveHurricaneIds()).toEqual([]);
+  });
+});
+
 describe("HurricaneSystem.clear", () => {
   it("生成済みハリケーンを破棄して同期出力を空にすること", () => {
     mockRandom(0);

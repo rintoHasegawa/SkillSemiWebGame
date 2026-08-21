@@ -100,6 +100,16 @@ export const createGameOutputAdapter = (
     updateViewerAoiCellCache,
   });
 
+  /**
+   * ルームの同期状態をゲーム境界で初期化する
+   * 可視集合とハリケーンスナップショットは片方だけ残ると前試合の状態を
+   * 引き継ぐため，resetRoom と clearRoomSnapshot は常に対で呼ぶ
+   */
+  const resetRoomSyncState = (roomId: RoomId): void => {
+    realtimeRoomSyncState.resetRoom(roomId);
+    hurricaneSyncService.clearRoomSnapshot(roomId);
+  };
+
   const emitReliableToRoom = (
     roomId: RoomId,
     event: ReliableRoomEvent,
@@ -131,20 +141,22 @@ export const createGameOutputAdapter = (
     publishCurrentHurricanesToRoom: (roomId, hurricanes) => {
       hurricaneSyncService.publishCurrentHurricanesToRoom(roomId, hurricanes);
     },
-    publishUpdateHurricanesToRoom: (roomId, hurricanes) => {
-      hurricaneSyncService.publishUpdateHurricanesToRoom(roomId, hurricanes);
+    publishUpdateHurricanesToRoom: (roomId, hurricanes, activeHurricaneIds) => {
+      hurricaneSyncService.publishUpdateHurricanesToRoom(
+        roomId,
+        hurricanes,
+        activeHurricaneIds,
+      );
     },
     publishGameEndToRoom: (roomId: RoomId) => {
-      realtimeRoomSyncState.resetRoom(roomId);
-      hurricaneSyncService.clearRoomSnapshot(roomId);
+      resetRoomSyncState(roomId);
       emitReliableToRoom(roomId, protocol.SocketEvents.GAME_END);
     },
     publishGameResultToRoom: (roomId: RoomId, payload: GameResultPayload) => {
       emitReliableToRoom(roomId, protocol.SocketEvents.GAME_RESULT, payload);
     },
     publishGameStartToRoom: (roomId: RoomId, payload: GameStartPayload) => {
-      realtimeRoomSyncState.resetRoom(roomId);
-      hurricaneSyncService.clearRoomSnapshot(roomId);
+      resetRoomSyncState(roomId);
       emitReliableToRoom(roomId, protocol.SocketEvents.GAME_START, payload);
     },
     publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => {

@@ -20,12 +20,20 @@ export const quantizeMovePayload = (
   };
 };
 
-/** MOVE ペイロードの値が一致するかを判定する */
+/**
+ * MOVE ペイロードの値が一致するかを判定する
+ * NaN 同士も同一とみなし，未量子化の非有限値でも重複送信を抑止する
+ */
 export const isSameMovePayload = (
   left: Readonly<MovePayload>,
   right: Readonly<MovePayload>,
 ): boolean => {
-  return left.x === right.x && left.y === right.y;
+  return isSameMoveAxis(left.x, right.x) && isSameMoveAxis(left.y, right.y);
+};
+
+// 0 と -0 は同一，NaN 同士も同一として軸の値を比較する
+const isSameMoveAxis = (left: number, right: number): boolean => {
+  return left === right || (Number.isNaN(left) && Number.isNaN(right));
 };
 
 const quantizeMoveAxis = (value: number, scale: number): number => {

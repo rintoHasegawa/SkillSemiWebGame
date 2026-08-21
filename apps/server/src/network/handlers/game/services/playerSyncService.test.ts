@@ -464,7 +464,7 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
     );
   });
 
-  it("スナップショットが可視のまま差分座標だけAOI外へ出て戻った場合は再送信しないこと", () => {
+  it("スナップショットが可視のまま差分座標だけAOI外へ出て戻った場合も再送信すること", () => {
     const { service, calls } = setupService({
       players: [createPlayer("socket-1"), createPlayer("socket-2")],
     });
@@ -480,8 +480,83 @@ describe("createPlayerSyncService.publishUpdatePlayersToRoom", () => {
     ]);
 
     expect(filterEvent(calls, protocol.SocketEvents.UPDATE_PLAYERS)).toHaveLength(
-      1,
+      2,
     );
+  });
+
+  it("差分座標がAOI外で送信対象外になったプレイヤーの座標キャッシュを削除すること", () => {
+    const { service, realtimeRoomSyncState } = setupService({
+      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+    });
+
+    service.publishUpdatePlayersToRoom("room-1", [
+      { id: "socket-2", x: 1, y: 2 },
+    ]);
+    service.publishUpdatePlayersToRoom("room-1", [
+      { id: "socket-2", x: 100, y: 100 },
+    ]);
+
+    expect(
+      realtimeRoomSyncState
+        .getPlayerPositionCache("room-1", "socket-1")
+        .has("socket-2"),
+    ).toBe(false);
+  });
+
+  it("送信対象であり続けるプレイヤーの座標キャッシュは直近の送信値を保持すること", () => {
+    const { service, realtimeRoomSyncState } = setupService({
+      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+    });
+
+    service.publishUpdatePlayersToRoom("room-1", [
+      { id: "socket-2", x: 1, y: 2 },
+    ]);
+    service.publishUpdatePlayersToRoom("room-1", [
+      { id: "socket-2", x: 1.5, y: 2 },
+    ]);
+
+    expect(
+      realtimeRoomSyncState
+        .getPlayerPositionCache("room-1", "socket-1")
+        .get("socket-2"),
+    ).toEqual({ x: 1.5, y: 2 });
+  });
+
+  it("可視集合から外れたプレイヤーの座標キャッシュを毎ティック削除すること", () => {
+    const other = createPlayer("socket-2");
+    const { service, realtimeRoomSyncState } = setupService({
+      players: [createPlayer("socket-1"), other],
+    });
+
+    service.publishUpdatePlayersToRoom("room-1", [
+      { id: "socket-2", x: 1, y: 2 },
+    ]);
+    other.x = 100;
+    other.y = 100;
+    service.publishUpdatePlayersToRoom("room-1", []);
+
+    expect(
+      realtimeRoomSyncState
+        .getPlayerPositionCache("room-1", "socket-1")
+        .has("socket-2"),
+    ).toBe(false);
+  });
+
+  it("座標キャッシュへ送信していないプレイヤーのエントリを残さないこと", () => {
+    const { service, realtimeRoomSyncState } = setupService({
+      players: [createPlayer("socket-1"), createPlayer("socket-2")],
+    });
+
+    service.publishUpdatePlayersToRoom("room-1", [
+      { id: "socket-1", x: 1, y: 1 },
+      { id: "socket-2", x: 2, y: 2 },
+    ]);
+
+    expect([
+      ...realtimeRoomSyncState
+        .getPlayerPositionCache("room-1", "socket-1")
+        .keys(),
+    ]).toEqual(["socket-2"]);
   });
 
   it("送信するプレイヤー配列に存在しないIDは無視すること", () => {

@@ -78,6 +78,7 @@ export interface GameOutputPort {
   publishUpdateHurricanesToRoom(
     roomId: domain.room.Room["roomId"],
     hurricanes: UpdateHurricanesPayload,
+    activeHurricaneIds: string[],
   ): void;
   publishGameEndToRoom(roomId: domain.room.Room["roomId"]): void;
   publishGameResultToRoom(

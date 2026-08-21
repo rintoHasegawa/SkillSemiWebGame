@@ -223,7 +223,7 @@ describe("collectChangedUpdatePlayersPayload", () => {
     ).toEqual([]);
   });
 
-  it("NaN座標は前回もNaNでも差分として返すこと", () => {
+  it("前回もNaNの座標は同一とみなして除外すること", () => {
     const cache: PositionCache = new Map([["p1", { x: Number.NaN, y: 0 }]]);
 
     expect(
@@ -231,6 +231,14 @@ describe("collectChangedUpdatePlayersPayload", () => {
         [{ id: "p1", x: Number.NaN, y: 0 }],
         cache,
       ),
+    ).toEqual([]);
+  });
+
+  it("前回NaNの座標が有限値へ変わった場合は差分として返すこと", () => {
+    const cache: PositionCache = new Map([["p1", { x: Number.NaN, y: 0 }]]);
+
+    expect(
+      collectChangedUpdatePlayersPayload([{ id: "p1", x: 1, y: 0 }], cache),
     ).toHaveLength(1);
   });
 

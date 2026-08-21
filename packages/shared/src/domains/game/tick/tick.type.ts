@@ -15,6 +15,8 @@ export type HurricaneSyncData = {
   currentUpdates: HurricaneStatePayload[];
   /** current 同期間で配信する差分更新 */
   updateUpdates: HurricaneStatePayload[];
+  /** 現在サーバーに存在するハリケーンID（消滅分の同期解除に使用する） */
+  activeHurricaneIds: string[];
 };
 
 /** 1ティック分のプレイヤー差分更新とマップ差分を表す共有データ */

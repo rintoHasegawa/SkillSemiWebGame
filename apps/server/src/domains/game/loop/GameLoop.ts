@@ -398,7 +398,11 @@ export class GameLoop {
     return {
       playerUpdates,
       cellUpdates: this.mapStore.getAndClearUpdates(),
-      hurricaneSync,
+      hurricaneSync: {
+        ...hurricaneSync,
+        // 消滅済みハリケーンを送信側スナップショットから落とすため生存IDを添える
+        activeHurricaneIds: this.hurricaneSystem.getActiveHurricaneIds(),
+      },
     };
   }
 
