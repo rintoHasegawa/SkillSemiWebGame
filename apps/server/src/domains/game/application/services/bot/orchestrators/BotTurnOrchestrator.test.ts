@@ -13,6 +13,9 @@ type MapSize = { gridCols: number; gridRows: number };
 
 const MAP_SIZE: MapSize = { gridCols: 10, gridRows: 10 };
 
+// SPEC_03「タイムライン」: 経過120秒（残り60秒）でフィーバー開始
+const FEVER_START_ELAPSED_MS = 120_000;
+
 /** テスト用のBotプレイヤーIDを生成する */
 const createBotPlayerId = (playerId: string): BotPlayerId => {
   if (!isBotPlayerId(playerId)) {
@@ -69,13 +72,13 @@ const createContext = (mapSize: MapSize = MAP_SIZE) => {
   const gridColors = createUnpaintedGrid(mapSize);
 
   // BOT_ID とグリッドはテスト間で変化しないため呼び出し側から隠す
-  const decide = (player: PlayerParams, elapsedMs: number, deltaMs: number) => {
+  const decide = (player: PlayerParams, nowMs: number, elapsedMs: number) => {
     return orchestrator.decide(
       BOT_ID,
       createPlayer(player),
       gridColors,
+      nowMs,
       elapsedMs,
-      deltaMs,
     );
   };
 
@@ -200,6 +203,48 @@ describe("BotTurnOrchestrator.decide", () => {
     const decision = decide({ x: 0.65, y: 0.5 }, 5_000, 4_000);
 
     expect(decision.placeBombPayload?.requestId).toBe(`bot-${BOT_ID}-2`);
+  });
+
+  it("フィーバー中は2000ms経過で爆弾を設置できること", () => {
+    mockRandomSequence([], 0.01);
+    const { decide } = createContext();
+    decide({ x: 0.5, y: 0.5 }, 1_000, FEVER_START_ELAPSED_MS);
+
+    const decision = decide(
+      { x: 0.65, y: 0.5 },
+      3_000,
+      FEVER_START_ELAPSED_MS + 2_000,
+    );
+
+    expect(decision.placeBombPayload?.requestId).toBe(`bot-${BOT_ID}-2`);
+  });
+
+  it("フィーバー中でも2000ms未満は爆弾を設置しないこと", () => {
+    mockRandomSequence([], 0.01);
+    const { decide } = createContext();
+    decide({ x: 0.5, y: 0.5 }, 1_000, FEVER_START_ELAPSED_MS);
+
+    const decision = decide(
+      { x: 0.65, y: 0.5 },
+      2_999,
+      FEVER_START_ELAPSED_MS + 1_999,
+    );
+
+    expect(decision.placeBombPayload).toBeNull();
+  });
+
+  it("フィーバー前は2000ms経過でも爆弾を設置しないこと", () => {
+    mockRandomSequence([], 0.01);
+    const { decide } = createContext();
+    decide({ x: 0.5, y: 0.5 }, 1_000, FEVER_START_ELAPSED_MS - 2_001);
+
+    const decision = decide(
+      { x: 0.65, y: 0.5 },
+      3_000,
+      FEVER_START_ELAPSED_MS - 1,
+    );
+
+    expect(decision.placeBombPayload).toBeNull();
   });
 
   it("硬直中は現在座標を維持すること", () => {
@@ -355,6 +400,88 @@ describe("BotTurnOrchestrator.applyRespawnStun", () => {
 
     expect(decision.nextX).toBe(5.5);
     expect(decision.nextY).toBe(5.5);
+  });
+
+  it("初期座標が負の場合はマップ下限へクランプして戻すこと", () => {
+    mockRandomSequence([], 0.9);
+    const { orchestrator, decide } = createContext();
+    decide({ x: 0.5, y: 0.5, initialX: -5, initialY: -5 }, 1_000, 0);
+    orchestrator.applyRespawnStun(BOT_ID, 1_000);
+
+    const decision = decide(
+      { x: 0.65, y: 0.5, initialX: -5, initialY: -5 },
+      3_000,
+      2_000,
+    );
+
+    expect(decision.nextX).toBe(0.5);
+    expect(decision.nextY).toBe(0.5);
+  });
+
+  it("初期座標がグリッドを超える場合はマップ上限へクランプして戻すこと", () => {
+    mockRandomSequence([], 0.9);
+    const { orchestrator, decide } = createContext();
+    decide({ x: 0.5, y: 0.5, initialX: 99, initialY: 99 }, 1_000, 0);
+    orchestrator.applyRespawnStun(BOT_ID, 1_000);
+
+    const decision = decide(
+      { x: 0.65, y: 0.5, initialX: 99, initialY: 99 },
+      3_000,
+      2_000,
+    );
+
+    expect(decision.nextX).toBe(9.5);
+    expect(decision.nextY).toBe(9.5);
+  });
+
+  it("初期座標がグリッド外でもクランプ後座標のセルを目標にすること", () => {
+    mockRandomSequence([], 0.9);
+    const { orchestrator, decide } = createContext();
+    decide({ x: 0.5, y: 0.5, initialX: 99, initialY: 99 }, 1_000, 0);
+    orchestrator.applyRespawnStun(BOT_ID, 1_000);
+    decide({ x: 0.65, y: 0.5, initialX: 99, initialY: 99 }, 3_000, 2_000);
+
+    const decision = decide(
+      { x: 5.5, y: 9.5, initialX: 99, initialY: 99 },
+      3_050,
+      2_050,
+    );
+
+    expect(decision.nextX).toBeCloseTo(5.65, 6);
+    expect(decision.nextY).toBeCloseTo(9.5, 6);
+  });
+
+  it("初期座標が負でもクランプ後座標のセルを目標にすること", () => {
+    mockRandomSequence([], 0.9);
+    const { orchestrator, decide } = createContext();
+    decide({ x: 0.5, y: 0.5, initialX: -5, initialY: -5 }, 1_000, 0);
+    orchestrator.applyRespawnStun(BOT_ID, 1_000);
+    decide({ x: 0.65, y: 0.5, initialX: -5, initialY: -5 }, 3_000, 2_000);
+
+    const decision = decide(
+      { x: 5.5, y: 0.5, initialX: -5, initialY: -5 },
+      3_050,
+      2_050,
+    );
+
+    expect(decision.nextX).toBeCloseTo(5.35, 6);
+    expect(decision.nextY).toBeCloseTo(0.5, 6);
+  });
+
+  it("初回decideがリスポーンtickと重なった場合も初期位置セルを目標にすること", () => {
+    mockRandomSequence([], 0.9);
+    const { orchestrator, decide } = createContext();
+    orchestrator.applyRespawnStun(BOT_ID, 1_000);
+    decide({ x: 0.5, y: 0.5, initialX: 5.5, initialY: 5.5 }, 3_000, 2_000);
+
+    const decision = decide(
+      { x: 0.5, y: 0.5, initialX: 5.5, initialY: 5.5 },
+      3_050,
+      2_050,
+    );
+
+    expect(decision.nextX).toBeCloseTo(0.606_066, 5);
+    expect(decision.nextY).toBeCloseTo(0.606_066, 5);
   });
 });
 

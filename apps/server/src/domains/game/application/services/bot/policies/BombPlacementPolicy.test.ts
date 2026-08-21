@@ -1,7 +1,7 @@
 /**
  * BombPlacementPolicy.test
- * Bot爆弾設置判定の現行挙動を固定する characterization test
- * クールダウン境界と確率判定の分岐を検証する
+ * Bot爆弾設置判定の挙動を検証するユニットテスト
+ * クールダウン境界（フィーバー短縮を含む）と確率判定の分岐を検証する
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -9,6 +9,9 @@ import type { BotPlayerId } from "../roster/BotRosterService";
 import { decideBombPlacement } from "./BombPlacementPolicy";
 
 const botPlayerId = "bot:room-1:1" as BotPlayerId;
+
+// SPEC_03「タイムライン」: 経過120秒（残り60秒）でフィーバー開始
+const FEVER_START_ELAPSED_MS = 120_000;
 
 /** Math.randomを固定値へ差し替える */
 const mockRandom = (value: number): void => {
@@ -93,5 +96,77 @@ describe("decideBombPlacement", () => {
     const result = decideBombPlacement(botPlayerId, 4_000, 0, 0, 0, 1, 2);
 
     expect(result.nextLastBombPlacedAtMs).toBe(4_000);
+  });
+
+  it("フィーバー開始前は2000ms経過でも設置しないこと", () => {
+    mockRandom(0);
+
+    const result = decideBombPlacement(
+      botPlayerId,
+      2_000,
+      FEVER_START_ELAPSED_MS - 1,
+      0,
+      0,
+      1,
+      2,
+    );
+
+    expect(result.placeBombPayload).toBeNull();
+  });
+
+  it("フィーバー中は2000msの1ms手前では設置しないこと", () => {
+    mockRandom(0);
+
+    const result = decideBombPlacement(
+      botPlayerId,
+      1_999,
+      FEVER_START_ELAPSED_MS,
+      0,
+      0,
+      1,
+      2,
+    );
+
+    expect(result.placeBombPayload).toBeNull();
+  });
+
+  it("フィーバー中は2000ms経過で設置できること", () => {
+    mockRandom(0);
+
+    const result = decideBombPlacement(
+      botPlayerId,
+      2_000,
+      FEVER_START_ELAPSED_MS,
+      0,
+      0,
+      1,
+      2,
+    );
+
+    expect(result.placeBombPayload).not.toBeNull();
+  });
+
+  it("フィーバー中も確率判定に外れた場合は設置しないこと", () => {
+    mockRandom(0.5);
+
+    const result = decideBombPlacement(
+      botPlayerId,
+      2_000,
+      FEVER_START_ELAPSED_MS,
+      0,
+      0,
+      1,
+      2,
+    );
+
+    expect(result.placeBombPayload).toBeNull();
+  });
+
+  it("制限時間経過後もフィーバーのクールダウンを適用すること", () => {
+    mockRandom(0);
+
+    const result = decideBombPlacement(botPlayerId, 2_000, 300_000, 0, 0, 1, 2);
+
+    expect(result.placeBombPayload).not.toBeNull();
   });
 });

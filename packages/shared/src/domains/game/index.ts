@@ -14,5 +14,7 @@ export * as gridMap from "./gridMap";
 export * as collision from "./collision";
 /** 爆弾当たり判定サブドメインを再公開する */
 export * as bombHit from "./bombHit";
+/** 爆弾設置ルールサブドメインを再公開する */
+export * as bomb from "./bomb";
 /** AOIサブドメインを再公開する */
 export * as aoi from "./aoi";

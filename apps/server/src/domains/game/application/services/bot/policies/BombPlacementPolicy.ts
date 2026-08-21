@@ -2,7 +2,7 @@
  * BombPlacementPolicy
  * 爆弾設置可否の判定とペイロード生成を提供する
  */
-import type { PlaceBombPayload } from "@repo/shared";
+import { domain, type PlaceBombPayload } from "@repo/shared";
 import { config } from "@server/config";
 import type { BotPlayerId } from "../roster/BotRosterService.js";
 
@@ -24,8 +24,11 @@ export const decideBombPlacement = (
   nextBombSeq: number;
   nextLastBombPlacedAtMs: number;
 } => {
-  const { BOMB_COOLDOWN_MS, BOMB_FUSE_MS } = config.GAME_CONFIG;
-  const canPlaceBomb = nowMs - lastBombPlacedAtMs >= BOMB_COOLDOWN_MS;
+  const { BOMB_FUSE_MS } = config.GAME_CONFIG;
+
+  // 人間プレイヤーと同じ共有ロジックでクールダウンを解決する
+  const cooldownMs = domain.game.bomb.resolveBombCooldownMs(elapsedMs);
+  const canPlaceBomb = nowMs - lastBombPlacedAtMs >= cooldownMs;
 
   if (
     !canPlaceBomb ||

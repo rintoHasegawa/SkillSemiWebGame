@@ -2,6 +2,7 @@
  * BotTurnOrchestrator
  * Botの移動目標選択，移動計算，爆弾設置判断を統合して実行する
  */
+import { domain } from "@repo/shared";
 import { config } from "@server/config";
 import type { Player } from "../../../../entities/player/Player";
 import type { BotPlayerId } from "../roster/BotRosterService.js";
@@ -41,12 +42,11 @@ export class BotTurnOrchestrator {
     nowMs: number,
     elapsedMs: number,
   ): BotDecision {
-    const currentCol = clamp(Math.floor(player.x), 0, this.mapSize.gridCols - 1);
-    const currentRow = clamp(Math.floor(player.y), 0, this.mapSize.gridRows - 1);
+    const currentCell = this.toMapCell(player.x, player.y);
 
     const currentState = this.stateStore.getOrCreate(botPlayerId, {
-      targetCol: currentCol,
-      targetRow: currentRow,
+      targetCol: currentCell.col,
+      targetRow: currentCell.row,
       lastBombPlacedAtMs: Number.NEGATIVE_INFINITY,
       bombSeq: 0,
       stunUntilMs: Number.NEGATIVE_INFINITY,
@@ -56,23 +56,27 @@ export class BotTurnOrchestrator {
     const respawnAtMs = this.respawnAtMsByBotId.get(botPlayerId);
     if (respawnAtMs !== undefined && nowMs >= respawnAtMs) {
       this.respawnAtMsByBotId.delete(botPlayerId);
+
+      // 初期位置も移動時と同じ境界式でマップ範囲内へ収める
+      const respawnPosition = domain.game.player.clampPositionToMapBounds(
+        { x: player.initialX, y: player.initialY },
+        this.mapSize,
+      );
+      const respawnCell = this.toMapCell(respawnPosition.x, respawnPosition.y);
       this.stateStore.update(botPlayerId, (state) => ({
         ...state,
-        targetCol: clamp(Math.floor(player.initialX), 0, this.mapSize.gridCols - 1),
-        targetRow: clamp(Math.floor(player.initialY), 0, this.mapSize.gridRows - 1),
+        targetCol: respawnCell.col,
+        targetRow: respawnCell.row,
       }));
       return {
-        nextX: player.initialX,
-        nextY: player.initialY,
+        nextX: respawnPosition.x,
+        nextY: respawnPosition.y,
         placeBombPayload: null,
       };
     }
 
+    // 硬直中は状態を更新せず現在座標を維持する
     if (this.hitStunPolicy.isStunned(nowMs, currentState.stunUntilMs)) {
-      this.stateStore.set(botPlayerId, {
-        ...currentState,
-      });
-
       return {
         nextX: player.x,
         nextY: player.y,
@@ -87,7 +91,12 @@ export class BotTurnOrchestrator {
       config.BOT_AI_CONFIG.TARGET_REACHED_EPSILON;
 
     const nextTarget = reachedTarget
-      ? chooseNextTarget(currentCol, currentRow, gridColors, this.mapSize)
+      ? chooseNextTarget(
+          currentCell.col,
+          currentCell.row,
+          gridColors,
+          this.mapSize,
+        )
       : { col: currentState.targetCol, row: currentState.targetRow };
 
     const moved = moveTowardsTarget(
@@ -159,5 +168,13 @@ export class BotTurnOrchestrator {
   public clear(): void {
     this.stateStore.clear();
     this.respawnAtMsByBotId.clear();
+  }
+
+  /** グリッド座標をマップ範囲内のセル添字へ変換する */
+  private toMapCell(x: number, y: number): { col: number; row: number } {
+    return {
+      col: clamp(Math.floor(x), 0, this.mapSize.gridCols - 1),
+      row: clamp(Math.floor(y), 0, this.mapSize.gridRows - 1),
+    };
   }
 }
