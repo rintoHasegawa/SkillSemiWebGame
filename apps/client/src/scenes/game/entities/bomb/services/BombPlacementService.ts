@@ -8,7 +8,7 @@ import { LocalPlayerController } from "@client/scenes/game/entities/player/Playe
 import { AppearanceResolver } from "@client/scenes/game/application/AppearanceResolver";
 import type { GamePlayers } from "@client/scenes/game/application/game.types";
 import type { PlaceBombPayload } from "@repo/shared";
-import { config as sharedConfig } from "@repo/shared";
+import { domain, config as sharedConfig } from "@repo/shared";
 import { BombIdRegistry } from "@client/scenes/game/entities/bomb/BombIdRegistry";
 import type { BombRenderPayload } from "@client/scenes/game/entities/bomb/runtime/BombRepository";
 
@@ -59,19 +59,10 @@ export class BombPlacementService {
     }
 
     const elapsedMs = this.getElapsedMs();
-    const {
-      BOMB_COOLDOWN_MS,
-      BOMB_NORMAL_COOLDOWN_MS,
-      BOMB_FEVER_COOLDOWN_MS,
-      BOMB_FEVER_START_REMAINING_SEC,
-      BOMB_FUSE_MS,
-      GAME_DURATION_SEC,
-    } = config.GAME_CONFIG;
-    const remainingSec = Math.max(0, GAME_DURATION_SEC - elapsedMs / 1000);
-    const isFeverTime = remainingSec <= BOMB_FEVER_START_REMAINING_SEC;
-    const cooldownMs = isFeverTime
-      ? BOMB_FEVER_COOLDOWN_MS
-      : (BOMB_NORMAL_COOLDOWN_MS ?? BOMB_COOLDOWN_MS);
+    const { BOMB_FUSE_MS } = config.GAME_CONFIG;
+
+    // Botと同じ共有ロジックでクールダウンを解決する
+    const cooldownMs = domain.game.bomb.resolveBombCooldownMs(elapsedMs);
 
     if (elapsedMs - this.lastBombPlacedElapsedMs < cooldownMs) {
       return null;

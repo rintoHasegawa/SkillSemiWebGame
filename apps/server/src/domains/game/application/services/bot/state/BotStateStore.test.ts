@@ -1,7 +1,7 @@
 /**
  * BotStateStore.test
- * Bot状態ストアの現行挙動を固定する characterization test
- * 未登録時の初期値返却と更新関数の適用条件を検証する
+ * Bot状態ストアの挙動を検証するユニットテスト
+ * 未登録時の初期状態保存と更新関数の適用条件を検証する
  */
 import { describe, expect, it } from "vitest";
 
@@ -31,11 +31,20 @@ describe("BotStateStore", () => {
     expect(store.getOrCreate(botPlayerId, initialState)).toBe(initialState);
   });
 
-  it("未登録の場合は初期状態を保存しないこと", () => {
+  it("未登録の場合は渡した初期状態を保存すること", () => {
     const store = new BotStateStore();
     store.getOrCreate(botPlayerId, createState({ targetCol: 3 }));
 
-    expect(store.getOrCreate(botPlayerId, createState()).targetCol).toBe(0);
+    expect(store.getOrCreate(botPlayerId, createState()).targetCol).toBe(3);
+  });
+
+  it("getOrCreateで生成した状態には更新関数を適用できること", () => {
+    const store = new BotStateStore();
+    store.getOrCreate(botPlayerId, createState());
+
+    store.update(botPlayerId, (state) => ({ ...state, targetCol: 9 }));
+
+    expect(store.getOrCreate(botPlayerId, createState()).targetCol).toBe(9);
   });
 
   it("登録済みの場合は保存済み状態を返すこと", () => {
