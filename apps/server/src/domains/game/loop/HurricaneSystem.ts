@@ -60,6 +60,11 @@ export class HurricaneSystem {
     return this.syncService.consumeSyncOutputs(elapsedMs, this.hurricanes);
   }
 
+  /** 現在存在するハリケーンのID一覧を返す */
+  public getActiveHurricaneIds(): string[] {
+    return this.hurricanes.map((hurricane) => hurricane.id);
+  }
+
   /** ハリケーンを直線移動させ，境界で反射させる */
   public update(deltaSec: number): void {
     this.motionService.update(this.hurricanes, deltaSec);

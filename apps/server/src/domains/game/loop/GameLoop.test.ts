@@ -359,7 +359,32 @@ describe("GameLoop.buildTickData", () => {
     expect(getTickData(harness.onTick).hurricaneSync).toEqual({
       currentUpdates: [],
       updateUpdates: [],
+      activeHurricaneIds: [],
     });
+  });
+
+  it("ハリケーン生成後のtickでは生存ハリケーンIDを添えること", () => {
+    const harness = createHarness([createPlayer("human-1", 5, 5, 0)]);
+    harness.loop.start();
+
+    runNextTickCycle(60_000);
+
+    const { hurricaneSync } = getTickData(harness.onTick);
+    expect(hurricaneSync.activeHurricaneIds).toEqual(
+      hurricaneSync.currentUpdates.map((hurricane) => hurricane.id),
+    );
+  });
+
+  it("全量同期を配信済みの後続tickでも生存ハリケーンIDを添え続けること", () => {
+    const harness = createHarness([createPlayer("human-1", 9.5, 9.5, 0)]);
+    harness.loop.start();
+    runNextTickCycle(60_000);
+
+    runNextTickCycle(60_000 + TICK_RATE_MS);
+
+    expect(
+      getTickData(harness.onTick, 3).hurricaneSync.activeHurricaneIds,
+    ).toHaveLength(5);
   });
 });
 

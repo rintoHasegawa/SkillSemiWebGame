@@ -82,7 +82,11 @@ const createOutputStub = () => {
       (roomId: string, hurricanes: unknown[]) => void
     >(),
     publishUpdateHurricanesToRoom: vi.fn<
-      (roomId: string, hurricanes: unknown[]) => void
+      (
+        roomId: string,
+        hurricanes: unknown[],
+        activeHurricaneIds: string[],
+      ) => void
     >(),
     publishGameEndToRoom: vi.fn<(roomId: string) => void>(),
     publishGameResultToRoom: vi.fn<
@@ -120,7 +124,11 @@ const createTickData = (
   return {
     playerUpdates: [],
     cellUpdates: [],
-    hurricaneSync: { currentUpdates: [], updateUpdates: [] },
+    hurricaneSync: {
+      currentUpdates: [],
+      updateUpdates: [],
+      activeHurricaneIds: [],
+    },
     ...overrides,
   };
 };
@@ -274,7 +282,11 @@ describe("startGameUseCase", () => {
 
     callbacks.onTick(
       createTickData({
-        hurricaneSync: { currentUpdates: [hurricane], updateUpdates: [] },
+        hurricaneSync: {
+          currentUpdates: [hurricane],
+          updateUpdates: [],
+          activeHurricaneIds: ["h1"],
+        },
       }),
     );
 
@@ -284,12 +296,36 @@ describe("startGameUseCase", () => {
     );
   });
 
-  it("tickでハリケーン差分更新が空の場合は配信しないこと", () => {
+  it("tickでハリケーン差分更新が空でも生存IDごと配信すること", () => {
     const { output, callbacks } = runStartGameUseCase();
 
     callbacks.onTick(createTickData());
 
-    expect(output.publishUpdateHurricanesToRoom).not.toHaveBeenCalled();
+    expect(output.publishUpdateHurricanesToRoom).toHaveBeenCalledWith(
+      "room-1",
+      [],
+      [],
+    );
+  });
+
+  it("tickで差分が空でも生存中のハリケーンIDを渡すこと", () => {
+    const { output, callbacks } = runStartGameUseCase();
+
+    callbacks.onTick(
+      createTickData({
+        hurricaneSync: {
+          currentUpdates: [],
+          updateUpdates: [],
+          activeHurricaneIds: ["h1", "h2"],
+        },
+      }),
+    );
+
+    expect(output.publishUpdateHurricanesToRoom).toHaveBeenCalledWith(
+      "room-1",
+      [],
+      ["h1", "h2"],
+    );
   });
 
   it("tickでハリケーン差分更新がある場合は配信すること", () => {
@@ -304,13 +340,18 @@ describe("startGameUseCase", () => {
 
     callbacks.onTick(
       createTickData({
-        hurricaneSync: { currentUpdates: [], updateUpdates: [hurricane] },
+        hurricaneSync: {
+          currentUpdates: [],
+          updateUpdates: [hurricane],
+          activeHurricaneIds: ["h1"],
+        },
       }),
     );
 
     expect(output.publishUpdateHurricanesToRoom).toHaveBeenCalledWith(
       "room-1",
       [hurricane],
+      ["h1"],
     );
   });
 

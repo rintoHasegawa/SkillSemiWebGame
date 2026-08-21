@@ -2,7 +2,9 @@
  * MapStore.test
  * マップ塗り状態ストアの仕様を検証するユニットテスト
  * 初期化サイズ・差分キューの取り出しとクリア・範囲外indexの拒否を検証する
+ * 送信差分をグループ形式で往復させた受信結果が塗り状態と一致することも検証する
  */
+import { domain } from "@repo/shared";
 import { describe, expect, it } from "vitest";
 
 import { config } from "@server/config";
@@ -15,6 +17,31 @@ const defaultTotalCells
 /** テスト用に2x2の小さなマップストアを生成する */
 const createSmallStore = (): MapStore => {
   return new MapStore({ gridCols: 2, gridRows: 2 });
+};
+
+/** クライアント受信側の複製グリッド（初期状態は未塗装）を生成する */
+const createReplicaGrid = (): number[] => {
+  return [...createSmallStore().getGridColorsSnapshot()];
+};
+
+/**
+ * 1ティック分の差分をグループ形式で往復させて複製グリッドへ適用する
+ * 受信側は index 上書きで適用するため，適用順の入れ替えも検証できる
+ */
+const applyTickToReplica = (
+  store: MapStore,
+  replica: number[],
+  options: { reverse?: boolean } = {},
+): void => {
+  const grouped = domain.game.gridMap.groupCellUpdates(
+    store.getAndClearUpdates(),
+  );
+  const received = domain.game.gridMap.ungroupCellUpdates(grouped);
+  const ordered = options.reverse ? [...received].reverse() : received;
+
+  ordered.forEach(({ index, teamId }) => {
+    replica[index] = teamId;
+  });
 };
 
 describe("MapStore.constructor", () => {
@@ -257,5 +284,58 @@ describe("MapStore.getGridColorsSnapshot", () => {
     store.paintCell(0, 1);
 
     expect(snapshot[0]).toBe(1);
+  });
+});
+
+describe("MapStore差分のグループ化往復", () => {
+  it("1ティック分の差分を往復適用した結果がサーバーの塗り状態と一致すること", () => {
+    const store = createSmallStore();
+    const replica = createReplicaGrid();
+    store.paintCell(0, 1);
+    store.paintCell(1, 2);
+    store.paintCell(3, 0);
+
+    applyTickToReplica(store, replica);
+
+    expect(replica).toEqual([...store.getGridColorsSnapshot()]);
+  });
+
+  it("同一セルを塗り直したティックでも往復後の状態が一致すること", () => {
+    const store = createSmallStore();
+    const replica = createReplicaGrid();
+    store.paintCell(0, 1);
+    store.paintCell(0, 2);
+    store.paintCell(0, 3);
+    store.paintCell(2, 1);
+
+    applyTickToReplica(store, replica);
+
+    expect(replica).toEqual([...store.getGridColorsSnapshot()]);
+  });
+
+  it("複数ティックにまたがる差分を順に適用しても状態が一致すること", () => {
+    const store = createSmallStore();
+    const replica = createReplicaGrid();
+
+    store.paintCell(0, 1);
+    store.paintCell(1, 2);
+    applyTickToReplica(store, replica);
+    store.paintCell(0, 3);
+    store.paintCell(0, 2);
+    applyTickToReplica(store, replica);
+
+    expect(replica).toEqual([...store.getGridColorsSnapshot()]);
+  });
+
+  it("往復後の差分を逆順に適用しても状態が一致すること", () => {
+    const store = createSmallStore();
+    const replica = createReplicaGrid();
+    store.paintCell(0, 1);
+    store.paintCell(0, 2);
+    store.paintCell(1, 3);
+
+    applyTickToReplica(store, replica, { reverse: true });
+
+    expect(replica).toEqual([...store.getGridColorsSnapshot()]);
   });
 });

@@ -60,13 +60,11 @@ const TICK_PUBLISH_STEPS: TickPublishStep[] = [
   {
     key: "updateHurricanes",
     run: ({ roomId, output, tickData }) => {
-      if (tickData.hurricaneSync.updateUpdates.length === 0) {
-        return;
-      }
-
+      // 消滅ハリケーンの同期解除も送信側で判断するため，差分が空でも生存IDごと委譲する
       output.publishUpdateHurricanesToRoom(
         roomId,
         tickData.hurricaneSync.updateUpdates,
+        tickData.hurricaneSync.activeHurricaneIds,
       );
     },
   },

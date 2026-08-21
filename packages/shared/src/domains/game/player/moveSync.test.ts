@@ -176,11 +176,44 @@ describe("isSameMovePayload", () => {
     expect(isSameMovePayload({ x: 0, y: 0 }, { x: -0, y: -0 })).toBe(true);
   });
 
-  it("NaN 同士を一致と判定しないこと", () => {
+  it("NaN 同士を一致と判定すること", () => {
     expect(
       isSameMovePayload(
         { x: Number.NaN, y: Number.NaN },
         { x: Number.NaN, y: Number.NaN },
+      ),
+    ).toBe(true);
+  });
+
+  it("片方の軸だけが NaN の場合は一致と判定しないこと", () => {
+    expect(
+      isSameMovePayload({ x: Number.NaN, y: 2.5 }, { x: 1.5, y: 2.5 }),
+    ).toBe(false);
+  });
+
+  it("x が NaN 同士でも y が異なれば一致と判定しないこと", () => {
+    expect(
+      isSameMovePayload(
+        { x: Number.NaN, y: 2.5 },
+        { x: Number.NaN, y: 2.6 },
+      ),
+    ).toBe(false);
+  });
+
+  it("Infinity 同士を一致と判定すること", () => {
+    expect(
+      isSameMovePayload(
+        { x: Number.POSITIVE_INFINITY, y: Number.NEGATIVE_INFINITY },
+        { x: Number.POSITIVE_INFINITY, y: Number.NEGATIVE_INFINITY },
+      ),
+    ).toBe(true);
+  });
+
+  it("符号の異なる Infinity を一致と判定しないこと", () => {
+    expect(
+      isSameMovePayload(
+        { x: Number.POSITIVE_INFINITY, y: 0 },
+        { x: Number.NEGATIVE_INFINITY, y: 0 },
       ),
     ).toBe(false);
   });

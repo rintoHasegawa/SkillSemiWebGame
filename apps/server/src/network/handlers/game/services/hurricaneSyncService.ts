@@ -20,6 +20,9 @@ import { forEachRoomViewer } from "./roomViewerSyncContext";
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
 
+// ルーム1件分のハリケーンスナップショット（ハリケーンID → 最新状態）
+type RoomHurricaneSnapshot = Map<string, HurricaneStatePayload>;
+
 /** ハリケーン同期サービスが提供する操作契約 */
 export type HurricaneSyncService = {
   publishCurrentHurricanesToRoom: (
@@ -29,7 +32,13 @@ export type HurricaneSyncService = {
   publishUpdateHurricanesToRoom: (
     roomId: RoomId,
     hurricanes: UpdateHurricanesPayload,
+    activeHurricaneIds: string[],
   ) => void;
+  /**
+   * ルームのハリケーンスナップショットを破棄する
+   * 受信者ごとの可視集合と対で初期化する必要があるため，
+   * 呼び出し側は realtimeRoomSyncState.resetRoom と必ず対で呼ぶ
+   */
   clearRoomSnapshot: (roomId: RoomId) => void;
 };
 
@@ -49,7 +58,7 @@ export type CreateHurricaneSyncServiceDeps = {
 export const createHurricaneSyncService = (
   deps: CreateHurricaneSyncServiceDeps,
 ): HurricaneSyncService => {
-  const hurricaneSnapshotByRoomId = new Map<RoomId, Map<string, HurricaneStatePayload>>();
+  const hurricaneSnapshotByRoomId = new Map<RoomId, RoomHurricaneSnapshot>();
 
   const isInViewerAoi = (
     target: { x: number; y: number },
@@ -62,22 +71,57 @@ export const createHurricaneSyncService = (
     roomId: RoomId,
     hurricanes: HurricaneStatePayload[],
   ): void => {
-    const snapshotMap = new Map<string, HurricaneStatePayload>();
+    const snapshotMap: RoomHurricaneSnapshot = new Map();
     hurricanes.forEach((hurricane) => {
       snapshotMap.set(hurricane.id, hurricane);
     });
     hurricaneSnapshotByRoomId.set(roomId, snapshotMap);
   };
 
-  const upsertRoomHurricaneSnapshot = (
+  /**
+   * 差分更新をスナップショットへ反映し，生存していないハリケーンを削除する
+   * スナップショットがサーバー上の現存ハリケーンのみを表す状態を保つ
+   */
+  const syncRoomHurricaneSnapshot = (
     roomId: RoomId,
     hurricanes: HurricaneStatePayload[],
+    activeHurricaneIds: string[],
   ): void => {
-    const snapshotMap = hurricaneSnapshotByRoomId.get(roomId) ?? new Map();
+    const snapshotMap: RoomHurricaneSnapshot =
+      hurricaneSnapshotByRoomId.get(roomId) ?? new Map();
+    const activeIds = new Set(activeHurricaneIds);
+
+    // 消滅したハリケーンを落としてから今回の差分を反映する
+    snapshotMap.forEach((_hurricane, hurricaneId) => {
+      if (activeIds.has(hurricaneId)) {
+        return;
+      }
+
+      snapshotMap.delete(hurricaneId);
+    });
+
     hurricanes.forEach((hurricane) => {
+      if (!activeIds.has(hurricane.id)) {
+        return;
+      }
+
       snapshotMap.set(hurricane.id, hurricane);
     });
     hurricaneSnapshotByRoomId.set(roomId, snapshotMap);
+  };
+
+  // 同期対象も保持中のスナップショットも無い場合は受信者走査ごと省略できる
+  const hasNothingToSync = (
+    roomId: RoomId,
+    hurricanes: HurricaneStatePayload[],
+    activeHurricaneIds: string[],
+  ): boolean => {
+    const snapshotSize = hurricaneSnapshotByRoomId.get(roomId)?.size ?? 0;
+    return (
+      hurricanes.length === 0 &&
+      activeHurricaneIds.length === 0 &&
+      snapshotSize === 0
+    );
   };
 
   const collectVisibleHurricanesByViewer = (
@@ -133,6 +177,7 @@ export const createHurricaneSyncService = (
     publishCurrentHurricanesToRoom: (roomId, hurricanes) => {
       replaceRoomHurricaneSnapshot(roomId, hurricanes);
 
+      // 全量同期は受信側の置換契機であり，可視0件でも空配列を送って状態を確定させる
       forEachRoomViewer({
         runtimeDeps: deps.runtimeDeps,
         roomId,
@@ -153,8 +198,12 @@ export const createHurricaneSyncService = (
         },
       });
     },
-    publishUpdateHurricanesToRoom: (roomId, hurricanes) => {
-      upsertRoomHurricaneSnapshot(roomId, hurricanes);
+    publishUpdateHurricanesToRoom: (roomId, hurricanes, activeHurricaneIds) => {
+      if (hasNothingToSync(roomId, hurricanes, activeHurricaneIds)) {
+        return;
+      }
+
+      syncRoomHurricaneSnapshot(roomId, hurricanes, activeHurricaneIds);
 
       const roomSnapshot = hurricaneSnapshotByRoomId.get(roomId);
 

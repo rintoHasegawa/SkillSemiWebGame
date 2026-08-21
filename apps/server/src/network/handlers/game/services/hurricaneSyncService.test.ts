@@ -1,7 +1,8 @@
 /**
  * hurricaneSyncService.test
- * ハリケーンのAOI同期送信の現行挙動を固定する characterization test
+ * ハリケーンのAOI同期送信の挙動を固定するユニットテスト
  * 可視集合の変化判定・全量／差分イベントの切り替え・スナップショット管理を検証する
+ * 生存集合から外れたハリケーンの同期解除と同期不要時のスキップも検証する
  */
 import { contracts as protocol, type domain } from "@repo/shared";
 import type { HurricaneStatePayload } from "@repo/shared";
@@ -204,7 +205,7 @@ describe("createHurricaneSyncService.publishCurrentHurricanesToRoom", () => {
     service.publishCurrentHurricanesToRoom("room-1", [
       createHurricane({ id: "h1" }),
     ]);
-    service.publishUpdateHurricanesToRoom("room-1", []);
+    service.publishUpdateHurricanesToRoom("room-1", [], ["h1"]);
 
     expect(calls).toHaveLength(2);
   });
@@ -214,7 +215,7 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("可視集合が変化した場合は全量イベントを送信すること", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
 
     expect(calls[0]).toEqual({
       socketId: "socket-1",
@@ -226,10 +227,12 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("可視集合が同一の場合は差分イベントを送信すること", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ x: 1, y: 1 }),
-    ]);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ x: 1, y: 1 })],
+      ["h1"],
+    );
 
     expect(calls[1]).toEqual({
       socketId: "socket-1",
@@ -241,8 +244,8 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("可視集合が同一で差分対象が無い場合は送信しないこと", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
-    service.publishUpdateHurricanesToRoom("room-1", []);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
+    service.publishUpdateHurricanesToRoom("room-1", [], ["h1"]);
 
     expect(calls).toHaveLength(1);
   });
@@ -250,18 +253,28 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("初回に空配列を渡した場合は送信しないこと", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", []);
+    service.publishUpdateHurricanesToRoom("room-1", [], []);
 
     expect(calls).toHaveLength(0);
+  });
+
+  it("同期対象もスナップショットも無い場合は受信者走査を行わないこと", () => {
+    const { service, updateViewerAoiCellCache } = setupService();
+
+    service.publishUpdateHurricanesToRoom("room-1", [], []);
+
+    expect(updateViewerAoiCellCache).not.toHaveBeenCalled();
   });
 
   it("AOI外へ移動したハリケーンは全量イベントで除外されること", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ x: 100, y: 100 }),
-    ]);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ x: 100, y: 100 })],
+      ["h1"],
+    );
 
     expect(calls[1]).toEqual({
       socketId: "socket-1",
@@ -273,9 +286,11 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("AOI外のハリケーンのみの更新は送信しないこと", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ x: 100, y: 100 }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ x: 100, y: 100 })],
+      ["h1"],
+    );
 
     expect(calls).toHaveLength(0);
   });
@@ -283,12 +298,16 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("ハリケーンが追加された場合は全量イベントを送信すること", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ id: "h1" }),
-    ]);
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ id: "h2" }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h2" })],
+      ["h1", "h2"],
+    );
 
     expect(calls[1]).toEqual({
       socketId: "socket-1",
@@ -300,12 +319,16 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("スナップショットへ蓄積したハリケーンは更新対象外でも可視集合へ残ること", () => {
     const { service, realtimeRoomSyncState } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ id: "h1" }),
-    ]);
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ id: "h2" }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h2" })],
+      ["h1", "h2"],
+    );
 
     expect([
       ...realtimeRoomSyncState.getVisibleHurricaneIdsSnapshot(
@@ -315,6 +338,88 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
     ]).toEqual(["h1", "h2"]);
   });
 
+  it("生存集合から外れたハリケーンを全量イベントで同期解除すること", () => {
+    const { service, calls } = setupService();
+
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
+    service.publishUpdateHurricanesToRoom("room-1", [], []);
+
+    expect(calls[1]).toEqual({
+      socketId: "socket-1",
+      event: protocol.SocketEvents.CURRENT_HURRICANES,
+      payload: [],
+    });
+  });
+
+  it("生存集合から外れたハリケーンを可視集合からも除くこと", () => {
+    const { service, realtimeRoomSyncState } = setupService();
+
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
+    service.publishUpdateHurricanesToRoom("room-1", [], []);
+
+    expect([
+      ...realtimeRoomSyncState.getVisibleHurricaneIdsSnapshot(
+        "room-1",
+        "socket-1",
+      ),
+    ]).toEqual([]);
+  });
+
+  it("生存しているハリケーンのみを残した全量イベントを送信すること", () => {
+    const { service, calls } = setupService();
+
+    service.publishCurrentHurricanesToRoom("room-1", [
+      createHurricane({ id: "h1" }),
+      createHurricane({ id: "h2" }),
+    ]);
+    service.publishUpdateHurricanesToRoom("room-1", [], ["h1"]);
+
+    expect(calls[1]).toEqual({
+      socketId: "socket-1",
+      event: protocol.SocketEvents.CURRENT_HURRICANES,
+      payload: [createHurricane({ id: "h1" })],
+    });
+  });
+
+  it("生存集合に無いハリケーンの差分はスナップショットへ取り込まないこと", () => {
+    const { service, calls } = setupService();
+
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1", x: 1 })],
+      [],
+    );
+
+    expect(calls[1]?.payload).toEqual([]);
+  });
+
+  it("生存集合が空になった後の空更新を繰り返し送信しないこと", () => {
+    const { service, calls } = setupService();
+
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
+    service.publishUpdateHurricanesToRoom("room-1", [], []);
+    service.publishUpdateHurricanesToRoom("room-1", [], []);
+
+    expect(calls).toHaveLength(2);
+  });
+
   it("差分イベントには更新対象のハリケーンのみ含めること", () => {
     const { service, calls } = setupService();
 
@@ -322,9 +427,11 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
       createHurricane({ id: "h1" }),
       createHurricane({ id: "h2" }),
     ]);
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ id: "h2", x: 1 }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h2", x: 1 })],
+      ["h1", "h2"],
+    );
 
     expect(calls[1]?.payload).toEqual([createHurricane({ id: "h2", x: 1 })]);
   });
@@ -332,7 +439,7 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("ルームにプレイヤーがいない場合は送信しないこと", () => {
     const { service, calls } = setupService({ players: [] });
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
 
     expect(calls).toHaveLength(0);
   });
@@ -346,7 +453,7 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
       ],
     });
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
 
     expect(calls.map((call) => call.socketId)).toEqual(["socket-1"]);
   });
@@ -357,7 +464,7 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
       players: [createPlayer("socket-1"), createPlayer("socket-2")],
     });
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
 
     expect(updateViewerAoiCellCache).toHaveBeenCalledTimes(2);
   });
@@ -365,14 +472,36 @@ describe("createHurricaneSyncService.publishUpdateHurricanesToRoom", () => {
   it("ルームごとにスナップショットを分離すること", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ id: "h1" }),
-    ]);
-    service.publishUpdateHurricanesToRoom("room-2", [
-      createHurricane({ id: "h2" }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
+    service.publishUpdateHurricanesToRoom(
+      "room-2",
+      [createHurricane({ id: "h2" })],
+      ["h2"],
+    );
 
     expect(calls[1]?.payload).toEqual([createHurricane({ id: "h2" })]);
+  });
+
+  it("ルームごとに生存集合を分離して適用すること", () => {
+    const { service, calls } = setupService();
+
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
+    service.publishUpdateHurricanesToRoom(
+      "room-2",
+      [createHurricane({ id: "h2" })],
+      ["h2"],
+    );
+    service.publishUpdateHurricanesToRoom("room-1", [], ["h1"]);
+
+    expect(calls).toHaveLength(2);
   });
 });
 
@@ -380,41 +509,45 @@ describe("createHurricaneSyncService.clearRoomSnapshot", () => {
   it("破棄後の更新では以前のハリケーンを含めないこと", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ id: "h1" }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
     service.clearRoomSnapshot("room-1");
-    service.publishUpdateHurricanesToRoom("room-1", [
-      createHurricane({ id: "h2" }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-1",
+      [createHurricane({ id: "h2" })],
+      ["h2"],
+    );
 
     expect(calls[1]?.payload).toEqual([createHurricane({ id: "h2" })]);
   });
 
-  it("破棄後に空更新を送ると可視集合が空になった全量イベントを送信すること", () => {
+  it("破棄後に生存0の空更新が来ても送信しないこと", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
     service.clearRoomSnapshot("room-1");
-    service.publishUpdateHurricanesToRoom("room-1", []);
+    service.publishUpdateHurricanesToRoom("room-1", [], []);
 
-    expect(calls[1]).toEqual({
-      socketId: "socket-1",
-      event: protocol.SocketEvents.CURRENT_HURRICANES,
-      payload: [],
-    });
+    expect(calls).toHaveLength(1);
   });
 
   it("他ルームのスナップショットへ影響しないこと", () => {
     const { service, calls } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-2", [
-      createHurricane({ id: "h1" }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-2",
+      [createHurricane({ id: "h1" })],
+      ["h1"],
+    );
     service.clearRoomSnapshot("room-1");
-    service.publishUpdateHurricanesToRoom("room-2", [
-      createHurricane({ id: "h1", x: 1 }),
-    ]);
+    service.publishUpdateHurricanesToRoom(
+      "room-2",
+      [createHurricane({ id: "h1", x: 1 })],
+      ["h1"],
+    );
 
     expect(calls[1]?.event).toBe(protocol.SocketEvents.UPDATE_HURRICANES);
   });
@@ -428,7 +561,7 @@ describe("createHurricaneSyncService.clearRoomSnapshot", () => {
   it("状態ストアの可視IDは破棄しないこと", () => {
     const { service, realtimeRoomSyncState } = setupService();
 
-    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()]);
+    service.publishUpdateHurricanesToRoom("room-1", [createHurricane()], ["h1"]);
     service.clearRoomSnapshot("room-1");
 
     expect([
