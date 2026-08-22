@@ -272,6 +272,24 @@ export class GameRoomSession {
     );
   }
 
+  /**
+   * 被弾報告が爆弾設置者と同チーム（設置者本人・味方）からのものか判定する
+   * 同チーム判定は shared の checkBombHit と同じ規則（未確定 teamId は同チーム扱いしない）
+   * 設置者が引けない爆弾は判定できないため同チーム扱いしない
+   */
+  public isSameTeamBombHitReport(
+    reporterPlayerId: string,
+    bombId: string,
+  ): boolean {
+    const ownerPlayerId = this.bombStateStore.getBombOwnerPlayerId(bombId);
+    if (!ownerPlayerId) return false;
+    const ownerTeamId = this.getPlayerTeamId(ownerPlayerId);
+    const reporterTeamId = this.getPlayerTeamId(reporterPlayerId);
+    return (
+      ownerTeamId === reporterTeamId && !config.isUnknownTeamId(ownerTeamId)
+    );
+  }
+
   /** 指定爆弾の所有者の bombHitCount を加算する */
   public recordBombHitForOwner(bombId: string): void {
     const ownerPlayerId = this.bombStateStore.getBombOwnerPlayerId(bombId);

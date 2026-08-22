@@ -82,6 +82,19 @@ export class GameSessionLifecycleService {
     );
   }
 
+  /** 被弾報告が爆弾設置者と同チームからのものか判定する，セッション未開始時は false を返す */
+  public isSameTeamBombHitReport(
+    reporterPlayerId: string,
+    bombId: string,
+  ): boolean {
+    return (
+      this.sessionRef.current?.isSameTeamBombHitReport(
+        reporterPlayerId,
+        bombId,
+      ) ?? false
+    );
+  }
+
   /** 爆弾設置要求がクールダウンを満たすか判定する，セッション未開始時は false を返す */
   public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
     return (

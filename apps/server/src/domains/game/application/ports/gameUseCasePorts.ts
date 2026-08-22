@@ -176,9 +176,10 @@ export interface ActiveBombQueryPort {
   getActiveBombSnapshots(): ActiveBombSnapshot[];
 }
 
-/** 被弾報告ユースケースが利用する重複排除入力ポート */
+/** 被弾報告ユースケースが利用する重複排除・同チーム判定入力ポート */
 export interface BombHitReportValidationPort {
   shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean;
+  isSameTeamBombHitReport(reporterPlayerId: string, bombId: string): boolean;
 }
 
 /** 被弾時に爆弾所有者のスタッツを更新するポート */
