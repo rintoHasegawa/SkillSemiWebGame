@@ -40,12 +40,14 @@ const createRoom = (): domain.room.Room => {
 type GameManagerStubParams = {
   shouldBroadcastBombPlaced?: boolean;
   shouldBroadcastBombHitReport?: boolean;
+  isSameTeamBombHitReport?: boolean;
 };
 
 /** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
 const createGameManagerStub = ({
   shouldBroadcastBombPlaced = true,
   shouldBroadcastBombHitReport = true,
+  isSameTeamBombHitReport = false,
 }: GameManagerStubParams = {}) => {
   return {
     startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
@@ -74,6 +76,9 @@ const createGameManagerStub = ({
     shouldBroadcastBombHitReport: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombHitReport"]
     >(() => shouldBroadcastBombHitReport),
+    isSameTeamBombHitReport: vi.fn<
+      RoomScopedGamePort["isSameTeamBombHitReport"]
+    >(() => isSameTeamBombHitReport),
     recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
     removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
     replaceDisconnectedPlayerWithBot: vi.fn<
@@ -474,6 +479,28 @@ describe("handleBombHitReportEvent", () => {
       "8:socket-1|6:bomb-1",
       FIXED_NOW_MS,
     );
+  });
+
+  it("同チームの爆弾への被弾報告はスタッツへ記録しないこと", () => {
+    const gameManager = createGameManagerStub({
+      isSameTeamBombHitReport: true,
+    });
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(gameManager.recordBombHitForOwner).not.toHaveBeenCalled();
+  });
+
+  it("同チームの爆弾への被弾報告は配信しないこと", () => {
+    const gameManager = createGameManagerStub({
+      isSameTeamBombHitReport: true,
+    });
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(deps.output.publishPlayerHitToOthersInRoom).not.toHaveBeenCalled();
   });
 
   it("重複報告の場合は配信しないこと", () => {

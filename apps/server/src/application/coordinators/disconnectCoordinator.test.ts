@@ -47,6 +47,9 @@ const createGameManagerStub = (replacedWithBot: boolean) => {
     shouldBroadcastBombHitReport: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombHitReport"]
     >(() => true),
+    isSameTeamBombHitReport: vi.fn<
+      RoomScopedGamePort["isSameTeamBombHitReport"]
+    >(() => false),
     recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
     removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
     replaceDisconnectedPlayerWithBot: vi.fn<

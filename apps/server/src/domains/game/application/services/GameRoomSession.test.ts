@@ -343,6 +343,61 @@ describe("GameRoomSession", () => {
     );
   });
 
+  it("自分が設置した爆弾への被弾報告を同チーム報告と判定すること", () => {
+    const session = createSession(["socket-1"], {}, { "socket-1": 0 });
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-1",
+      x: 1,
+      y: 1,
+      explodeAtElapsedMs: 500,
+    });
+
+    expect(session.isSameTeamBombHitReport("socket-1", "bomb-1")).toBe(true);
+  });
+
+  it("味方が設置した爆弾への被弾報告を同チーム報告と判定すること", () => {
+    const session = createSession(
+      ["socket-1", "socket-2"],
+      {},
+      { "socket-1": 0, "socket-2": 0 },
+    );
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-1",
+      x: 1,
+      y: 1,
+      explodeAtElapsedMs: 500,
+    });
+
+    expect(session.isSameTeamBombHitReport("socket-2", "bomb-1")).toBe(true);
+  });
+
+  it("敵が設置した爆弾への被弾報告は同チーム報告と判定しないこと", () => {
+    const session = createSession(
+      ["socket-1", "socket-2"],
+      {},
+      { "socket-1": 0, "socket-2": 1 },
+    );
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-1",
+      x: 1,
+      y: 1,
+      explodeAtElapsedMs: 500,
+    });
+
+    expect(session.isSameTeamBombHitReport("socket-2", "bomb-1")).toBe(false);
+  });
+
+  it("設置者不明の爆弾への被弾報告は同チーム報告と判定しないこと", () => {
+    const session = createSession(["socket-1"], {}, { "socket-1": 0 });
+
+    expect(session.isSameTeamBombHitReport("socket-1", "bomb-unknown")).toBe(
+      false,
+    );
+  });
+
   it("登録した爆弾をスナップショットで返すこと", () => {
     const session = createSession(["socket-1"], {}, { "socket-1": 2 });
 
