@@ -39,6 +39,9 @@ const createSessionStub = () => {
     shouldBroadcastBombHitReport: vi.fn<
       (dedupeKey: string, nowMs: number) => boolean
     >(() => true),
+    shouldAcceptBombPlacement: vi.fn<
+      (playerId: string, nowMs: number) => boolean
+    >(() => true),
     issueServerBombId: vi.fn<() => string>(() => "bomb-1"),
     getPlayerTeamId: vi.fn<(playerId: string) => number>(() => 3),
     registerActiveBomb: vi.fn<
@@ -121,6 +124,22 @@ describe("GameSessionLifecycleService", () => {
     const { service } = createContext(false);
 
     expect(service.shouldBroadcastBombPlaced("key", 0)).toBe(false);
+  });
+
+  it("セッション未開始の爆弾設置受理判定はfalseを返すこと", () => {
+    const { service } = createContext(false);
+
+    expect(service.shouldAcceptBombPlacement("socket-1", 0)).toBe(false);
+  });
+
+  it("セッション開始後の爆弾設置受理判定はセッションへ委譲すること", () => {
+    const { service, session } = createContext(true);
+
+    expect(service.shouldAcceptBombPlacement("socket-1", 1_000)).toBe(true);
+    expect(session.shouldAcceptBombPlacement).toHaveBeenCalledWith(
+      "socket-1",
+      1_000,
+    );
   });
 
   it("セッション未開始の被弾報告判定はfalseを返すこと", () => {

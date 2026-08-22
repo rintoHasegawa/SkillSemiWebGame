@@ -276,6 +276,64 @@ describe("GameRoomSession", () => {
     expect(session.shouldBroadcastBombPlaced("socket-1:req-1", 0)).toBe(true);
   });
 
+  it("通常クールダウン未経過の爆弾設置は受理しないこと", () => {
+    const session = createSession();
+    session.shouldAcceptBombPlacement("socket-1", 1_000);
+
+    expect(session.shouldAcceptBombPlacement("socket-1", 1_100)).toBe(false);
+  });
+
+  it("通常クールダウン経過後の爆弾設置は受理すること", () => {
+    const session = createSession();
+    session.shouldAcceptBombPlacement("socket-1", 1_000);
+
+    expect(
+      session.shouldAcceptBombPlacement(
+        "socket-1",
+        1_000 + config.GAME_CONFIG.BOMB_NORMAL_COOLDOWN_MS,
+      ),
+    ).toBe(true);
+  });
+
+  it("フィーバー時はフィーバークールダウン経過で爆弾設置を受理すること", () => {
+    const session = createSession();
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    session.start(50, createCallbacksStub());
+    const feverElapsedMs =
+      (config.GAME_CONFIG.GAME_DURATION_SEC
+        - config.GAME_CONFIG.BOMB_FEVER_START_REMAINING_SEC)
+        * 1_000
+      + 1_000;
+    session.shouldAcceptBombPlacement("socket-1", feverElapsedMs);
+
+    expect(
+      session.shouldAcceptBombPlacement(
+        "socket-1",
+        feverElapsedMs + config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS,
+      ),
+    ).toBe(true);
+    session.dispose();
+  });
+
+  it("通常時はフィーバークールダウン経過でも爆弾設置を受理しないこと", () => {
+    const session = createSession();
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    session.start(50, createCallbacksStub());
+    session.shouldAcceptBombPlacement("socket-1", 10_000);
+
+    expect(
+      session.shouldAcceptBombPlacement(
+        "socket-1",
+        10_000 + config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS,
+      ),
+    ).toBe(false);
+    session.dispose();
+  });
+
   it("同一キーの被弾報告は2回目を配信不可とすること", () => {
     const session = createSession();
     session.shouldBroadcastBombHitReport("socket-1:bomb-1", 0);
