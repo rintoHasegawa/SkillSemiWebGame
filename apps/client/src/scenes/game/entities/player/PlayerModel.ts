@@ -95,19 +95,22 @@ export class PlayerModel {
     const { PLAYER_LERP_SNAP_THRESHOLD, PLAYER_LERP_SMOOTHNESS } =
       config.GAME_CONFIG;
 
+    // 画面外間引き等で deltaTime が大きい場合に補間係数が 1 を超えて発散しないよう上限を設ける
+    const lerpFactor = Math.min(PLAYER_LERP_SMOOTHNESS * deltaTime, 1);
+
     const diffX = this.targetGridX - this.gridX;
     const diffY = this.targetGridY - this.gridY;
 
     if (Math.abs(diffX) < PLAYER_LERP_SNAP_THRESHOLD) {
       this.gridX = this.targetGridX;
     } else {
-      this.gridX += diffX * PLAYER_LERP_SMOOTHNESS * deltaTime;
+      this.gridX += diffX * lerpFactor;
     }
 
     if (Math.abs(diffY) < PLAYER_LERP_SNAP_THRESHOLD) {
       this.gridY = this.targetGridY;
     } else {
-      this.gridY += diffY * PLAYER_LERP_SMOOTHNESS * deltaTime;
+      this.gridY += diffY * lerpFactor;
     }
   }
 
