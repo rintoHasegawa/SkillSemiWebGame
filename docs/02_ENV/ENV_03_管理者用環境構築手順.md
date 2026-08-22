@@ -273,6 +273,34 @@ coverage/
    git commit -m "chore: Initialize project structure and dependencies"
    ```
 
+### GitHub リポジトリのセキュリティ設定 (GitHub Repository Security Settings)
+
+GitHub リポジトリを作成しリモートを設定した直後に，**Dependabot alerts**（既知脆弱性の検出．UI では "Vulnerabilities" と表示）と **Dependabot security updates**（脆弱性を直す PR の自動作成）を有効化する．どちらもリポジトリごとに既定で OFF のため，有効化しないと依存パッケージの脆弱性が通知されない．詳細・トラブル対応は `.claude/skills/setup/reference.md`「GitHub リポジトリのセキュリティ設定」を参照する．
+
+- 前提: `gh auth login` 済み，実行者がリポジトリの **admin 権限**を持つ，カレントディレクトリが当該リポジトリの clone である
+
+1. リモートの確認
+
+   ```bash
+   gh repo view --json nameWithOwner -q .nameWithOwner
+   ```
+
+2. 有効化（冪等．再実行してよい）
+
+   ```bash
+   gh api -X PUT repos/{owner}/{repo}/vulnerability-alerts        # Dependabot alerts（依存グラフも同時に有効化）
+   gh api -X PUT repos/{owner}/{repo}/automated-security-fixes    # Dependabot security updates
+   ```
+
+3. 検証
+
+   ```bash
+   gh api repos/{owner}/{repo}/vulnerability-alerts               # 成功（204）なら有効．404 なら無効
+   gh api repos/{owner}/{repo}/automated-security-fixes           # {"enabled":true,...} なら有効
+   ```
+
+※ `.github/dependabot.yml` は依存バージョンの定期更新 PR の設定であり，上記の脆弱性検出とは別物．
+
 ## Docker環境定義ファイルの作成 (Configuration)
 
 ### Dockerfile の作成 (Create Dockerfile)
