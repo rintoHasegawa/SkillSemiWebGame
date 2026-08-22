@@ -126,6 +126,43 @@ describe("RoomJoinService", () => {
     expect(room.players).toHaveLength(1);
   });
 
+  it("別ルームに参加中のソケットが別のルームIDで参加するとduplicateで拒否すること", () => {
+    const room = createRoom({ players: [createRoomMember({ id: "socket-1" })] });
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    const result = service.addPlayerToRoom("room-2", "socket-1", "太郎");
+
+    expect(result.status).toBe("duplicate");
+  });
+
+  it("別ルームに参加中のソケットの参加要求では新規ルームを作成しないこと", () => {
+    const room = createRoom({ players: [createRoomMember({ id: "socket-1" })] });
+    const rooms = new Map([["room-1", room]]);
+    const service = new RoomJoinService(rooms);
+
+    service.addPlayerToRoom("room-2", "socket-1", "太郎");
+
+    expect(rooms.has("room-2")).toBe(false);
+  });
+
+  it("別ルームに参加中のソケットは既存の別ルームにも追加しないこと", () => {
+    const room1 = createRoom({
+      roomId: "room-1",
+      players: [createRoomMember({ id: "socket-1" })],
+    });
+    const room2 = createRoom({ roomId: "room-2", ownerId: "socket-2" });
+    const service = new RoomJoinService(
+      new Map([
+        ["room-1", room1],
+        ["room-2", room2],
+      ]),
+    );
+
+    service.addPlayerToRoom("room-2", "socket-1", "太郎");
+
+    expect(room2.players).toHaveLength(0);
+  });
+
   it("定員に達したルームへの参加はfullで拒否すること", () => {
     const room = createRoom({
       maxPlayers: 2,
