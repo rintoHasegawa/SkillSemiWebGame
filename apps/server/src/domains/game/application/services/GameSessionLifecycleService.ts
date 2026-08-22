@@ -82,6 +82,14 @@ export class GameSessionLifecycleService {
     );
   }
 
+  /** 爆弾設置要求がクールダウンを満たすか判定する，セッション未開始時は false を返す */
+  public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+    return (
+      this.sessionRef.current?.shouldAcceptBombPlacement(playerId, nowMs) ??
+      false
+    );
+  }
+
   /** サーバー採番の爆弾IDを返す，セッション未開始時は undefined を返す */
   public issueServerBombId(): string | undefined {
     return this.sessionRef.current?.issueServerBombId();

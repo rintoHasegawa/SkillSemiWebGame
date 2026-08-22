@@ -8,7 +8,11 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import type { domain, GameResultPayload, PlaceBombPayload } from "@repo/shared";
+import {
+  domain,
+  type GameResultPayload,
+  type PlaceBombPayload,
+} from "@repo/shared";
 import type {
   ActiveBombRegistration,
   ActiveBombSnapshot,
@@ -18,6 +22,9 @@ import { GameLoop, type GameLoopCallbacks } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
 import { BombStateStore } from "../../entities/bomb/BombStateStore";
+import {
+  BOMB_COOLDOWN_TOLERANCE_MS,
+} from "../../entities/bomb/bombCooldownGuard";
 import { createSpawnedPlayer } from "../../entities/player/playerSpawn.js";
 import {
   isValidPosition,
@@ -216,6 +223,25 @@ export class GameRoomSession {
     nowMs: number,
   ): boolean {
     return this.bombStateStore.shouldBroadcastBombHitReport(dedupeKey, nowMs);
+  }
+
+  /**
+   * 爆弾設置要求がクールダウンを満たすか判定し，受理時は直近受理時刻を更新する
+   * クールダウンはクライアントと同じ共有ロジックでサーバー経過時間から解決する
+   */
+  public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+    // 開始時刻未設定時は経過 0 として通常クールダウンで判定する
+    const elapsedMs =
+      this.startTime === undefined ? 0 : nowMs - this.startTime;
+    // フィーバー境界付近でクライアントが先に短縮判定しても弾かないよう許容誤差ぶん先読みする
+    const cooldownMs = domain.game.bomb.resolveBombCooldownMs(
+      elapsedMs + BOMB_COOLDOWN_TOLERANCE_MS,
+    );
+    return this.bombStateStore.shouldAcceptBombPlacement(
+      playerId,
+      nowMs,
+      cooldownMs,
+    );
   }
 
   public issueServerBombId(): string {

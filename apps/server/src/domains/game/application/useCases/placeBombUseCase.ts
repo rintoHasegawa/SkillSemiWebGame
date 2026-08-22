@@ -38,6 +38,17 @@ export const placeBombUseCase = ({
     return;
   }
 
+  // クライアント側クールダウンをすり抜けた連投はサーバー側で拒否する（requestId 差し替え対策）
+  if (!bombStore.shouldAcceptBombPlacement(input.socketId, input.nowMs)) {
+    logEvent(logScopes.GAME_USE_CASE, {
+      event: gameUseCaseLogEvents.PLACE_BOMB,
+      result: logResults.REJECTED_COOLDOWN,
+      socketId: input.socketId,
+      roomId,
+    });
+    return;
+  }
+
   // ゲーム終了直後に届いた設置要求は採番できないため，記録して無視する
   const bombId = bombStore.issueServerBombId();
   if (!bombId) {

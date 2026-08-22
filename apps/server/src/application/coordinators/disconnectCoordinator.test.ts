@@ -33,6 +33,9 @@ const createGameManagerStub = (replacedWithBot: boolean) => {
     shouldBroadcastBombPlaced: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombPlaced"]
     >(() => true),
+    shouldAcceptBombPlacement: vi.fn<
+      RoomScopedGamePort["shouldAcceptBombPlacement"]
+    >(() => true),
     issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
       () => "bomb-1",
     ),

@@ -98,6 +98,11 @@ export class GameManager {
     return this.lifecycleService.shouldBroadcastBombHitReport(dedupeKey, nowMs);
   }
 
+  // 爆弾設置要求がクールダウンを満たすか判定し，受理時は直近受理時刻を更新する
+  shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+    return this.lifecycleService.shouldAcceptBombPlacement(playerId, nowMs);
+  }
+
   // サーバー採番の爆弾IDを生成する（セッション未開始時は undefined）
   issueServerBombId(): string | undefined {
     return this.lifecycleService.issueServerBombId();

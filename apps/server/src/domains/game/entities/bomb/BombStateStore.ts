@@ -4,6 +4,7 @@
  */
 import { config } from "@repo/shared";
 import { issueServerBombId } from "./bombIdentity.js";
+import { shouldAcceptBombPlacement } from "./bombCooldownGuard.js";
 import {
   shouldBroadcastBombHitReport,
   shouldBroadcastBombPlaced,
@@ -22,6 +23,9 @@ export class BombStateStore {
   private bombDedupTable = new Map<string, number>();
   private bombHitReportDedupTable = new Map<string, number>();
   private bombSerial = 0;
+
+  /** プレイヤーごとの直近の爆弾設置受理時刻（壁時計ms） */
+  private lastBombAcceptedAtMsByPlayerId = new Map<string, number>();
 
   /**
    * アクティブ爆弾のライフサイクルを追跡するレジストリ
@@ -45,6 +49,20 @@ export class BombStateStore {
       dedupTable: this.bombDedupTable,
       dedupeKey,
       nowMs,
+    });
+  }
+
+  /** 爆弾設置要求がクールダウンを満たすか判定し，受理時は直近受理時刻を更新する */
+  public shouldAcceptBombPlacement(
+    playerId: string,
+    nowMs: number,
+    cooldownMs: number,
+  ): boolean {
+    return shouldAcceptBombPlacement({
+      lastAcceptedAtMsByPlayerId: this.lastBombAcceptedAtMsByPlayerId,
+      playerId,
+      nowMs,
+      cooldownMs,
     });
   }
 

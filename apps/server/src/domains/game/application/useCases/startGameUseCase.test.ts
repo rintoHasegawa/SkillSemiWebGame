@@ -63,6 +63,9 @@ const createBombStoreStub = (shouldBroadcast = true) => {
     shouldBroadcastBombPlaced: vi.fn<
       (dedupeKey: string, nowMs: number) => boolean
     >(() => shouldBroadcast),
+    shouldAcceptBombPlacement: vi.fn<
+      (playerId: string, nowMs: number) => boolean
+    >(() => true),
     issueServerBombId: vi.fn<() => string>(() => "bomb-1"),
     registerActiveBomb: vi.fn<(registration: ActiveBombRegistration) => void>(),
     getPlayerTeamId: vi.fn<(playerId: string) => number>(() => 1),
