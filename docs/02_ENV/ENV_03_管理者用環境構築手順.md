@@ -6,36 +6,35 @@
 
 ※ 一般の開発メンバー（Git Cloneして参加する人）は本ドキュメントを実施不要である．
 
-※ **注意**: 本ドキュメントは立ち上げ時点の構築ログであり，その後の実装で構成が変わっている（例: server の通信ライブラリは ws → Socket.IO に変更済み，client は Preact テンプレートから React 18 + @pixi/react に移行済み）．手順をそのまま実行しても現在の構成は再現されない．現在の構成は [ENV_01_技術スタック.md](ENV_01_技術スタック.md) を参照すること．
+※ **注意**: 本ドキュメントは立ち上げ時点の構築ログであり，その後の実装で構成が変わっている（例: server の通信ライブラリは ws → Socket.IO に変更済み，client は Preact テンプレートから React に移行済み（現在は React 19，@pixi/react は不使用））．手順をそのまま実行しても現在の構成は再現されない．現在の構成は [ENV_01_技術スタック.md](ENV_01_技術スタック.md) を参照すること．
 
 ## 管理者用事前準備 (Prerequisites for Admin)
 
 ### プロジェクト作成用ツールのインストール (Install Project Tools)
 
-1. Node.js (v20.x LTS)
+1. Node.js (v26.x)
 
    - Nodesource リポジトリを使用してインストールする．
 
      ```bash
      # リポジトリのセットアップとインストール
-     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+     curl -fsSL https://deb.nodesource.com/setup_26.x | sudo -E bash -
      sudo apt-get install -y nodejs
      ```
 
    - 確認コマンド:
 
      ```bash
-     node -v  # v20.x.x と表示されること
+     node -v  # v26.x.x と表示されること
      ```
 
 2. pnpm (Package Manager)
 
    - Node.js 標準の npm ではなく pnpm を使用する．
-   - Corepack (Node.js同梱) を有効化してインストールする．
+   - Node 25 以降は Corepack が同梱されないため，npm でグローバルに導入する．
 
      ```bash
-     sudo corepack enable
-     corepack prepare pnpm@latest --activate
+     sudo npm i -g pnpm@10.28.2
      ```
 
    - 確認コマンド:
@@ -307,15 +306,13 @@ GitHub リポジトリを作成しリモートを設定した直後に，**Depen
 
 プロジェクトルートに `Dockerfile` を作成する．
 
-※ Node.js v20 をベースとし，pnpm を有効化した開発用イメージ定義．
+※ Node.js v26 をベースとし，pnpm を導入した開発用イメージ定義．
 
 ```dockerfile
-FROM node:20-slim
+FROM node:26-slim
 
-# pnpmの準備
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# pnpmの準備（Node 25 以降は Corepack 非同梱のため npm で導入する）
+RUN npm i -g pnpm@10.28.2
 
 # 作業ディレクトリ設定
 WORKDIR /workspace
@@ -343,7 +340,7 @@ version: "3.8"
 services:
   app:
     container_name: pixel-paint-war-dev
-    # 開発用イメージ: Node.js v20 (定義書準拠)
+    # ベースイメージ (Node の実体は devcontainer.json の node feature が入れる v26)
     image: mcr.microsoft.com/devcontainers/typescript-node:20
 
     # 永続化とボリュームマウント
@@ -393,9 +390,9 @@ volumes:
      "workspaceFolder": "/workspace",
 
      "features": {
-       "ghcr.io/devcontainers/features/node:1": {
-         "version": "20",
-         "pnpm": "latest"
+       "ghcr.io/devcontainers/features/node:2": {
+         "version": "26",
+         "pnpmVersion": "10.28.2"
        }
      },
 
@@ -453,10 +450,10 @@ services:
 ※ 必要に応じて `Dockerfile.prod` として作成する．
 
 ```dockerfile
-FROM node:20-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+FROM node:26-slim AS base
+RUN npm i -g pnpm@10.28.2
+# 下段の cache マウント先と揃えるためストア位置を固定する
+ENV PNPM_STORE_DIR="/pnpm/store"
 COPY . /app
 WORKDIR /app
 

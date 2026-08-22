@@ -51,7 +51,7 @@ GitHub CLI と Claude Code の認証情報・CLI 本体は Docker の名前付�
 ## 本番環境 (Production Environment)
 
 手動で Docker Compose コマンドを実行する．
-※ 必ず WSL (Windows) または ホストOSのターミナルで実行すること．
+※ WSL (Windows) または ホストOSのターミナルで実行する．Dev Container 内からも実行できる（`devcontainer.json` の `docker-outside-of-docker` feature と `docker-compose.yml` の `/var/run/docker.sock` → `/var/run/docker-host.sock` マウントにより，コンテナ内の `docker` CLI がホストの Docker Desktop を操作する．イメージ・コンテナはホスト側に作られ，ポートもホスト側で開く）．Claude Code に本番イメージのビルド検証を依頼する場合はこの経路で行う．
 
 ### 基本コマンド
 

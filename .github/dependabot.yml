@@ -16,7 +16,7 @@ updates:
         update-types:
           - "minor"
           - "patch"
-  # Dockerfile のベースイメージ（node:20-slim）
+  # Dockerfile のベースイメージ（node:26-slim）
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

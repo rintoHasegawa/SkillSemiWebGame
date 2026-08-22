@@ -1,8 +1,8 @@
 # --- ステージ1: ビルド ---
-FROM node:20-slim AS builder
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+FROM node:26-slim AS builder
+# Node 25 以降は Corepack が同梱されないため，pnpm は npm でグローバル導入する
+# （版は package.json の packageManager と揃える）
+RUN npm i -g pnpm@10.28.2
 
 # pnpmの確認をスキップさせるための設定
 ENV CI=true
@@ -23,7 +23,7 @@ RUN pnpm --filter server build
 RUN pnpm prune --prod
 
 # --- ステージ2: 本番実行 ---
-FROM node:20-slim AS runner
+FROM node:26-slim AS runner
 WORKDIR /app
 
 # 本番実行に必要なファイルだけを抽出

@@ -64,8 +64,8 @@ VITE_PROD_SERVER_URL にはデバイスからアクセスする URL を指定す
 #### ローカルネットワーク（HTTP）の場合 (For Local Network via HTTP)
 
 ```bash
-docker run --rm -v $(pwd):/app -w /app node:20-slim \
-    bash -c "corepack enable && pnpm install --frozen-lockfile \
+docker run --rm -v $(pwd):/app -w /app node:26-slim \
+    bash -c "npm i -g pnpm@10.28.2 && pnpm install --frozen-lockfile \
     && pnpm --filter @repo/shared build \
     && VITE_PROD_SERVER_URL=http://<サーバIP>:8803 pnpm --filter client build"
 ```
@@ -73,8 +73,8 @@ docker run --rm -v $(pwd):/app -w /app node:20-slim \
 #### ドメイン運用（HTTPS）の場合 (For Domain via HTTPS)
 
 ```bash
-docker run --rm -v $(pwd):/app -w /app node:20-slim \
-    bash -c "corepack enable && pnpm install --frozen-lockfile \
+docker run --rm -v $(pwd):/app -w /app node:26-slim \
+    bash -c "npm i -g pnpm@10.28.2 && pnpm install --frozen-lockfile \
     && pnpm --filter @repo/shared build \
     && VITE_PROD_SERVER_URL=https://yourdomain.example.com:8803 pnpm --filter client build"
 ```

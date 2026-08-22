@@ -37,7 +37,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 pnpm --filter @repo/shared build
 ```
 
-shared パッケージをビルドする（tsup，cjs/esm＋型定義を出力）．
+shared パッケージをビルドする（tsup で cjs/esm を出力し，続けて `tsc -p tsconfig.build.json` で型定義（`.d.ts`）を出力する．型定義を tsup の `--dts` で生成しないのは，tsup が `baseUrl` を自前で注入し TypeScript 6 で非推奨エラーになるため）．
 
 ```bash
 pnpm --filter server build

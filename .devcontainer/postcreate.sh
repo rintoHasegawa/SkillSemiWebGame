@@ -48,8 +48,9 @@ else
 fi
 
 echo "▶ 5/6: pnpm 版の整合確認 (package.json の packageManager に揃える)"
-# node feature が入れるグローバル pnpm が corepack の shim より PATH で優先されるため，
-# 版がズレると Node 20 非対応の pnpm が起動して落ちる．packageManager の版に強制的に揃える
+# node feature の pnpmVersion で版を固定しているが，feature 側の仕様変更や
+# 手動インストールで版がズレると想定外の pnpm が起動しうる．
+# 保険として packageManager の版に強制的に揃える（Node 25 以降は corepack 同梱なし）
 EXPECTED_PNPM="$(sed -n 's/.*"packageManager": *"pnpm@\([^"]*\)".*/\1/p' /workspace/package.json)"
 CURRENT_PNPM="$(pnpm -v 2>/dev/null || echo none)"
 if [ -n "$EXPECTED_PNPM" ] && [ "$CURRENT_PNPM" != "$EXPECTED_PNPM" ]; then

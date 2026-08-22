@@ -3,7 +3,7 @@ version: "3.8"
 services:
   app:
     container_name: pixel-paint-war-dev
-    # 開発用イメージ: Node.js v20 (定義書準拠)
+    # ベースイメージ (Node の実体は devcontainer.json の node feature が入れる v26)
     image: mcr.microsoft.com/devcontainers/typescript-node:20
 
     # 永続化とボリュームマウント
@@ -22,6 +22,12 @@ services:
       - gh-config:/home/node/.config/gh
       # Claude Code CLI 本体 (~/.local/bin のリンクと ~/.local/share/claude の実体)
       - claude-local:/home/node/.local
+
+      # ホストの Docker デーモンをコンテナ内から使う (devcontainer.json の docker-outside-of-docker feature と組)
+      # コンテナ内で docker compose -f docker-compose.prod.yml up --build 等の検証を行えるようにする
+      # マウント先は feature が期待する /var/run/docker-host.sock にする (feature の起動スクリプトが
+      # socat で /var/run/docker.sock へ転送し，node ユーザーからアクセス可能にする．docker.sock に直マウントすると壊れる)
+      - /var/run/docker.sock:/var/run/docker-host.sock
 
     # コマンドの上書き (コンテナを常時起動させる)
     command: sleep infinity

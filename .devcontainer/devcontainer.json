@@ -6,10 +6,15 @@
 
   "features": {
     "ghcr.io/devcontainers/features/node:2": {
-      "version": "20",
-      "pnpm": "10.28.2"
+      "version": "26",
+      "pnpmVersion": "10.28.2"
     },
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    // ホストの Docker を使う (docker CLI + compose plugin．ソケットは docker-compose.yml でマウント)
+    // moby: false … ベースイメージ (typescript-node:20) が Debian trixie になり moby-cli パッケージが無いため，Docker CE の CLI を入れる
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
   },
 
   "customizations": {
