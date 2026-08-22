@@ -13,6 +13,19 @@ export class RoomJoinService {
   constructor(private rooms: Map<string, domain.room.Room>) {}
 
   public addPlayerToRoom(roomId: string, socketId: string, playerName: string): JoinRoomResult {
+    // 同一ソケットの重複参加（同一ルーム・別ルームを問わず）をルーム生成より前に拒否する
+    const joinedRoom = this.findRoomByPlayerId(socketId);
+    if (joinedRoom) {
+      logEvent(logScopes.ROOM_JOIN_SERVICE, {
+        event: roomDomainLogEvents.PLAYER_JOIN,
+        result: logResults.IGNORED_DUPLICATE,
+        roomId,
+        socketId,
+        totalPlayers: joinedRoom.players.length,
+      });
+      return { room: joinedRoom, status: "duplicate" };
+    }
+
     let room = this.rooms.get(roomId);
     if (!room) {
       room = {
@@ -43,19 +56,6 @@ export class RoomJoinService {
         socketId,
       });
       return { room, status: "playing" };
-    }
-
-    // 同一ソケットの重複参加を防止する
-    const alreadyJoined = room.players.some((player) => player.id === socketId);
-    if (alreadyJoined) {
-      logEvent(logScopes.ROOM_JOIN_SERVICE, {
-        event: roomDomainLogEvents.PLAYER_JOIN,
-        result: logResults.IGNORED_DUPLICATE,
-        roomId,
-        socketId,
-        totalPlayers: room.players.length,
-      });
-      return { room, status: "duplicate" };
     }
 
     // ルーム満員時の参加を拒否する
@@ -90,5 +90,16 @@ export class RoomJoinService {
     });
 
     return { room, status: "joined" };
+  }
+
+  // ソケットが既に参加しているルームを全ルームから探す
+  private findRoomByPlayerId(socketId: string): domain.room.Room | undefined {
+    for (const room of this.rooms.values()) {
+      if (room.players.some((player) => player.id === socketId)) {
+        return room;
+      }
+    }
+
+    return undefined;
   }
 }
