@@ -26,7 +26,7 @@ type Props = {
   miniMapTeamIds: number[];
   localBombHitCount: number;
   localPlayerPosition: { x: number; y: number } | null;
-  pixiContainerRef: React.RefObject<HTMLDivElement>;
+  pixiContainerRef: React.RefObject<HTMLDivElement | null>;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
 };

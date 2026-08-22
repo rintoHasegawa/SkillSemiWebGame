@@ -73,18 +73,20 @@ root/
 
 ### 共通・基盤 (Common / Shared)
 
-- Runtime: Node.js (v20 LTS 以上)
+- Runtime: Node.js v26 (Dev Container・本番イメージとも v26 に統一．Node 25 以降は Corepack が同梱されないため，pnpm は `npm i -g pnpm@<版>` で導入する)
 - Package Manager: pnpm
-- Build Tool: tsup (高速で軽量なTypeScriptバンドラ)
+- Language: TypeScript 6 系（`baseUrl` 非依存の `paths` 指定．TypeScript 7 はツールチェーン対応後に追従）
+- Build Tool: tsup (高速で軽量なTypeScriptバンドラ．JS バンドルを担当) ＋ tsc（型定義 `.d.ts` の出力を担当．`packages/shared/tsconfig.build.json`）
 
 ### フロントエンド (Client)
 
-- Build Tool: Vite
+- Build Tool: Vite (v8，rolldown ベース) + @vitejs/plugin-react (v6，Oxc による React Fast Refresh)
 - Language: TypeScript
 - Rendering Engine: Pixi.js (v8)
   - 採用理由: 50人同時対戦時の大量のスプライト描画と60fps維持のため．
-- UI Library: React 18 + @pixi/react
-  - 採用理由: 充実したエコシステムとPixi.jsとのReact統合による効率的なUI構築のため．
+- UI Library: React 19
+  - 採用理由: 充実したエコシステムによる効率的なUI構築のため．
+  - Pixi.js との統合はラッパーライブラリ（@pixi/react）を使わず，React が管理する DOM 要素（ref）へ Pixi の canvas をマウントする方式とする．
 - Network: socket.io-client
 - PWA: vite-plugin-pwa
   - 表示モード: fullscreen（横向き固定）

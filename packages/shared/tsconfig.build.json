@@ -1,0 +1,12 @@
+{
+  // 型定義（.d.ts）の生成専用設定
+  // tsup の --dts は baseUrl を自前で注入し TypeScript 6 では警告になるため，
+  // JS は tsup・型定義は tsc と役割を分けている
+  // files は tsup のエントリと揃え，公開しないモジュール（テスト等）の型は出力しない
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "emitDeclarationOnly": true
+  },
+  "files": ["src/index.ts", "src/config/gameConfig.ts"],
+  "include": []
+}

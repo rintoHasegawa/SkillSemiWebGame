@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => {
     ],
     resolve: {
       alias: {
-        '@client': path.resolve(__dirname, 'src'),
+        '@client': path.resolve(import.meta.dirname, 'src'),
       },
     },
     server: isProd
