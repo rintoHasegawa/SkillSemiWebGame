@@ -35,6 +35,16 @@ type EmitToAll = {
   <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
+/**
+ * アプリのルームIDを Socket.IO のルーム名へ変換する
+ * Socket.IO は各ソケットを自身のソケットIDと同名の個別ルームへ自動参加させるため，
+ * クライアント指定の roomId をそのまま使うと他ソケットの個別ルームへ同席できてしまう
+ * プレフィックスを付けてソケットID（英数字と _ - のみ）と衝突しない名前空間に分離する
+ */
+export const toSocketRoomName = (roomId: string): string => {
+  return `room:${roomId}`;
+};
+
 /** ペイロード有無に応じて emit 呼び出しシグネチャを切り替える共通関数 */
 const emitWithOptionalPayload = (
   emit: (event: SocketEventName, payload?: unknown) => void,
@@ -52,7 +62,11 @@ const emitWithOptionalPayload = (
 /** ルーム単位の送信関数を生成する */
 export const createEmitToRoom = (io: Server): EmitToRoom => {
   return (roomId: string, event: SocketEventName, payload?: unknown) => {
-    emitWithOptionalPayload((eventName, body) => io.to(roomId).emit(eventName, body), event, payload);
+    emitWithOptionalPayload(
+      (eventName, body) => io.to(toSocketRoomName(roomId)).emit(eventName, body),
+      event,
+      payload
+    );
   };
 };
 
@@ -60,7 +74,8 @@ export const createEmitToRoom = (io: Server): EmitToRoom => {
 export const createEmitToRoomExceptSocket = (io: Server): EmitToRoomExceptSocket => {
   return (roomId: string, excludedSocketId: string, event: SocketEventName, payload?: unknown) => {
     emitWithOptionalPayload(
-      (eventName, body) => io.to(roomId).except(excludedSocketId).emit(eventName, body),
+      (eventName, body) =>
+        io.to(toSocketRoomName(roomId)).except(excludedSocketId).emit(eventName, body),
       event,
       payload
     );
