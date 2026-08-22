@@ -36,3 +36,15 @@ coverage/
 !packages/
 # Claude Code 個人設定 (GUIDE_03)
 .claude/settings.local.json
+
+# --- from template (sync-template) ---
+.claude/commit-context.md
+.claude/auto-refactor-skip.md
+.claude/auto-refactor-doc-review.md
+.claude/auto-refactor-test-review.md
+.claude/auto-audit-report.md
+.claude/auto-audit-fixed.md
+.claude/auto-audit-skip.md
+.claude/deps-update-merged.md
+.claude/deps-update-report.md
+.claude/deps-update-skip.md
