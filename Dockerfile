@@ -1,5 +1,5 @@
 # --- ステージ1: ビルド ---
-FROM node:20-slim AS builder
+FROM node:26-slim AS builder
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -23,7 +23,7 @@ RUN pnpm --filter server build
 RUN pnpm prune --prod
 
 # --- ステージ2: 本番実行 ---
-FROM node:20-slim AS runner
+FROM node:26-slim AS runner
 WORKDIR /app
 
 # 本番実行に必要なファイルだけを抽出
