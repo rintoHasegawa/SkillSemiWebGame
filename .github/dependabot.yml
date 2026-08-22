@@ -1,0 +1,51 @@
+# 依存パッケージの定期更新 PR（Dependabot version updates）
+# 脆弱性検出（Dependabot alerts / security updates）はリポジトリ設定で有効化済み（本ファイルとは独立に動く）
+# 生成規則: .claude/skills/setup/reference.md「依存バージョン更新の設定」
+version: 2
+updates:
+  # pnpm workspaces monorepo（apps/client・apps/server・packages/shared・test をルートから一括検出）
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "[update]"
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+  # Dockerfile のベースイメージ（node:20-slim）
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[update]"
+    groups:
+      docker:
+        patterns:
+          - "*"
+  # .devcontainer/devcontainer.json の features・イメージ
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[update]"
+    groups:
+      devcontainers:
+        patterns:
+          - "*"
+  # GitHub Actions（CI を組んだ時点で自動的に対象になる）
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[update]"
+    groups:
+      actions:
+        patterns:
+          - "*"
