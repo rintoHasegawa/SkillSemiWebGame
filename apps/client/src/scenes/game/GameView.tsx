@@ -16,6 +16,7 @@ import {
 import { config } from "@client/config";
 import { buildRespawnHeartGauge } from "./input/presentation/GameUiPresenter";
 import { TopRightHud } from "./presentation/TopRightHud";
+import { shouldShowFeverBanner } from "./presentation/shouldShowFeverBanner";
 
 /** 表示と入力に必要なプロパティ */
 type Props = {
@@ -93,7 +94,7 @@ export const GameView = ({
         localPlayerPosition={localPlayerPosition}
       />
 
-      {remainingSeconds === 60 && (
+      {shouldShowFeverBanner({ isFeverTime, remainingSeconds }) && (
         <div style={GAME_VIEW_FEVER_TEXT_STYLE}>！Fever Tieme！</div>
       )}
 
