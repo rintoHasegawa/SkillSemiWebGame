@@ -15,7 +15,11 @@ export async function loadRespawnEffectTexture(
   if (cachedTexture) return cachedTexture;
 
   if (!texturePromise) {
-    texturePromise = Assets.load<Texture>(imageUrl);
+    texturePromise = Assets.load<Texture>(imageUrl).catch((error: unknown) => {
+      // 失敗した Promise を残すと再ロードできなくなるためキャッシュを破棄する
+      texturePromise = null;
+      throw error;
+    });
   }
 
   cachedTexture = await texturePromise;
