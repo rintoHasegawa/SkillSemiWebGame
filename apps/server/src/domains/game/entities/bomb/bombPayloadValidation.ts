@@ -22,8 +22,20 @@ const isPayloadObject = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 };
 
+/**
+ * 爆弾関連のプロトコル内部ID（requestId・bombId）の最大長
+ * 正規値はサーバ・クライアントとも十進連番（仮IDは `temp:` 付き）で数文字に収まる
+ * 毎回ユニークな巨大IDを送られると重複排除テーブルへTTL付きで固定されるため上限を設ける
+ */
+export const MAX_BOMB_ID_LENGTH = 64;
+
 const isNonEmptyString = (value: unknown): value is string => {
   return typeof value === "string" && value.trim().length > 0;
+};
+
+// 非空かつ最大長以内のプロトコル内部IDか判定する
+const isBombIdString = (value: unknown): value is string => {
+  return isNonEmptyString(value) && value.length <= MAX_BOMB_ID_LENGTH;
 };
 
 // 0以上maxValue以下の有限数か判定する
@@ -48,7 +60,7 @@ export const isPlaceBombPayload = (
   }
 
   return (
-    isNonEmptyString(value.requestId)
+    isBombIdString(value.requestId)
     && isNumberInRange(value.x, MAX_BOMB_X)
     && isNumberInRange(value.y, MAX_BOMB_Y)
     && isNumberInRange(value.explodeAtElapsedMs, MAX_EXPLODE_AT_ELAPSED_MS)

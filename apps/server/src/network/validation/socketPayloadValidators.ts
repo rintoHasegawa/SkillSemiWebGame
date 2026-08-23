@@ -12,7 +12,10 @@ import type {
 } from "@repo/shared";
 import type { PingPayload } from "@repo/shared";
 import { config as sharedConfig } from "@repo/shared";
-import { isPlaceBombPayload as isValidPlaceBombPayload } from "@server/domains/game/entities/bomb/bombPayloadValidation";
+import {
+  isPlaceBombPayload as isValidPlaceBombPayload,
+  MAX_BOMB_ID_LENGTH,
+} from "@server/domains/game/entities/bomb/bombPayloadValidation";
 
 const isFiniteNumber = (value: unknown): value is number => {
   return typeof value === "number" && Number.isFinite(value);
@@ -63,7 +66,11 @@ export const isBombHitReportPayload = (
     return false;
   }
 
-  return isNonEmptyString(value.bombId);
+  // 巨大な bombId が重複排除テーブルへ固定されないよう最大長も検証する
+  return (
+    isNonEmptyString(value.bombId)
+    && value.bombId.length <= MAX_BOMB_ID_LENGTH
+  );
 };
 
 /** START_GAMEイベントのペイロードが開始要求情報であるか判定する */
