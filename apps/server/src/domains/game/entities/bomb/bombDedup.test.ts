@@ -364,3 +364,58 @@ describe("shouldBroadcastBombHitReport", () => {
     expect(hitReportTable.get("key-1")).toBe(placedTable.get("key-1"));
   });
 });
+
+// 掃除処理が走査したエントリ数を数えるMap（走査量の増加を検出するために使う）
+class ScanCountingMap extends Map<string, number> {
+  public scannedEntryCount = 0;
+
+  public override *[Symbol.iterator](): IterableIterator<[string, number]> {
+    for (const entry of super.entries()) {
+      this.scannedEntryCount += 1;
+      yield entry;
+    }
+  }
+
+  public override forEach(
+    callback: (value: number, key: string, map: Map<string, number>) => void,
+  ): void {
+    super.forEach((value, key, map) => {
+      this.scannedEntryCount += 1;
+      callback(value, key, map);
+    });
+  }
+}
+
+describe("重複排除テーブルの掃除コスト", () => {
+  it("ユニークキーを連続登録しても走査量が登録数に比例して収まること", () => {
+    const dedupTable = new ScanCountingMap();
+    const insertCount = 2000;
+
+    // 期限内エントリが積み上がる状況（1msごとにユニークキーを登録）を再現する
+    for (let index = 0; index < insertCount; index += 1) {
+      shouldBroadcastBombHitReport({
+        dedupTable,
+        dedupeKey: `socket-1:bomb-${index}`,
+        nowMs: index,
+      });
+    }
+
+    expect(dedupTable.scannedEntryCount).toBeLessThanOrEqual(insertCount * 4);
+  });
+
+  it("ユニークキーを連続登録してもTTLを過ぎたエントリは回収されること", () => {
+    const dedupTable = new Map<string, number>();
+    const insertCount = 5000;
+
+    for (let index = 0; index < insertCount; index += 1) {
+      shouldBroadcastBombHitReport({
+        dedupTable,
+        dedupeKey: `socket-1:bomb-${index}`,
+        nowMs: index,
+      });
+    }
+
+    // TTL幅より古いエントリは残らない
+    expect(dedupTable.size).toBeLessThanOrEqual(ttlMs + 1);
+  });
+});
