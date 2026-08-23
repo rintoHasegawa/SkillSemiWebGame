@@ -8,6 +8,7 @@ import {
   buildBombButtonHitAreaStyle,
   buildBombButtonStyle,
 } from "./BombButton.styles";
+import { resolveBombButtonLabel } from "./resolveBombButtonLabel";
 import { useImmediatePressHandlers } from "@client/scenes/game/input/presentation/useImmediatePressHandlers";
 import { useCallback } from "react";
 
@@ -31,6 +32,7 @@ export const BombButton = ({
   const frameStyle = buildBombButtonFrameStyle(cooldownProgress);
   const buttonStyle = buildBombButtonStyle(isReady, isFeverTime);
   const hitAreaStyle = buildBombButtonHitAreaStyle(isReady);
+  const label = resolveBombButtonLabel({ isReady, remainingSecText });
 
   const handleActivate = useCallback(() => {
     if (!isReady) {
@@ -61,7 +63,7 @@ export const BombButton = ({
           type="button"
           disabled={!isReady}
         >
-          {isReady ? "BOMB" : `${remainingSecText}s`}
+          {label}
         </button>
       </div>
     </div>
