@@ -276,6 +276,31 @@ describe("GameRoomSession", () => {
     expect(session.shouldBroadcastBombPlaced("socket-1:req-1", 0)).toBe(true);
   });
 
+  it("開始待機中の爆弾設置は受理しないこと", () => {
+    const session = createSession();
+    // 待機時間を差し引いて開始時刻がエポック0になるよう現在時刻を固定する
+    const nowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
+    session.start(50, createCallbacksStub());
+    nowSpy.mockReturnValue(-1);
+
+    expect(session.shouldAcceptBombPlacement("socket-1", -1)).toBe(false);
+    session.dispose();
+  });
+
+  it("開始時刻ちょうどに達した爆弾設置は受理すること", () => {
+    const session = createSession();
+    const nowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
+    session.start(50, createCallbacksStub());
+    nowSpy.mockReturnValue(0);
+
+    expect(session.shouldAcceptBombPlacement("socket-1", 0)).toBe(true);
+    session.dispose();
+  });
+
   it("通常クールダウン未経過の爆弾設置は受理しないこと", () => {
     const session = createSession();
     session.shouldAcceptBombPlacement("socket-1", 1_000);
