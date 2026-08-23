@@ -226,10 +226,16 @@ export class GameRoomSession {
   }
 
   /**
-   * 爆弾設置要求がクールダウンを満たすか判定し，受理時は直近受理時刻を更新する
+   * 爆弾設置要求が開始済みかつクールダウンを満たすか判定し，受理時は直近受理時刻を更新する
    * クールダウンはクライアントと同じ共有ロジックでサーバー経過時間から解決する
    */
   public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+    // 移動と同じ基準で開始カウントダウン中の設置を拒否する
+    // 0 も有効なエポック時刻のため未設定判定は undefined のみで行う
+    if (this.startTime !== undefined && nowMs < this.startTime) {
+      return false;
+    }
+
     // 開始時刻未設定時は経過 0 として通常クールダウンで判定する
     const elapsedMs = this.resolveElapsedMs(nowMs);
     // フィーバー境界付近でクライアントが先に短縮判定しても弾かないよう許容誤差ぶん先読みする
