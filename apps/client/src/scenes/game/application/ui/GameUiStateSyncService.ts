@@ -17,6 +17,7 @@ export type GameHudState = {
   isInputEnabled: boolean;
   teamPaintRates: number[];
   localBombHitCount: number;
+  isFeverTime: boolean;
 };
 
 /** ミニマップへ通知する状態スナップショット */
@@ -122,6 +123,7 @@ export class GameUiStateSyncService {
       && a.startCountdownSec === b.startCountdownSec
       && a.isInputEnabled === b.isInputEnabled
       && a.localBombHitCount === b.localBombHitCount
+      && a.isFeverTime === b.isFeverTime
       && isSamePaintRates(a.teamPaintRates, b.teamPaintRates);
   }
 

@@ -26,6 +26,7 @@ type Props = {
   miniMapTeamIds: number[];
   localBombHitCount: number;
   localPlayerPosition: { x: number; y: number } | null;
+  isFeverTime: boolean;
   pixiContainerRef: React.RefObject<HTMLDivElement | null>;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
@@ -71,13 +72,12 @@ export const GameView = ({
   miniMapTeamIds,
   localBombHitCount,
   localPlayerPosition,
+  isFeverTime,
   pixiContainerRef,
   onJoystickInput,
   onPlaceBomb,
 }: Props) => {
   const remainingSeconds = parseRemainingSeconds(timeLeft);
-  const isFeverTime =
-    remainingSeconds <= config.GAME_CONFIG.BOMB_FEVER_START_REMAINING_SEC;
   const heartGauge = buildRespawnHeartGauge(localBombHitCount);
 
   return (

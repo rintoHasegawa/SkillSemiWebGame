@@ -32,6 +32,7 @@ import {
   type MiniMapState,
   type GameUiState,
 } from "./application/ui/GameUiStateSyncService";
+import { isBombFeverTime } from "./application/ui/isBombFeverTime";
 import { preloadGameStartAssets } from "./application/assets/GameAssetPreloader";
 import { ClockSyncService } from "./application/time/ClockSyncService";
 import { SYSTEM_TIME_PROVIDER } from "./application/time/TimeProvider";
@@ -294,6 +295,8 @@ export class GameManager {
         isInputEnabled: this.runtime.isInputEnabled(),
         teamPaintRates: this.runtime.getPaintRatesByTeam(),
         localBombHitCount: this.localBombHitCount,
+        // 表示用に切り捨てた秒ではなく経過時間から実ゲートと同じ判定を導出する
+        isFeverTime: isBombFeverTime(this.sessionFacade.getElapsedMs()),
       },
       miniMap: {
         mapRevision: this.runtime.getMiniMapRevision(),
