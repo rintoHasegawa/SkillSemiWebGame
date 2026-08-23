@@ -208,4 +208,95 @@ describe("joinRoomUseCase", () => {
 
     expect(result).toEqual({ room: roomManager.room, status: "playing" });
   });
+
+  it("roomIdの前後空白を除去してルーム管理へ委譲すること", () => {
+    const roomManager = createRoomManagerStub("joined");
+
+    joinRoomUseCase({
+      roomManager,
+      runtimeRegistry: createRuntimeRegistryStub(),
+      socketId: "socket-1",
+      data: { roomId: "  room-1  ", playerName: "太郎" },
+      output: createOutputStub(),
+    });
+
+    expect(roomManager.addPlayerToRoom).toHaveBeenCalledWith(
+      "room-1",
+      "socket-1",
+      "太郎",
+    );
+  });
+
+  it("playerNameの前後空白を除去してルーム管理へ委譲すること", () => {
+    const roomManager = createRoomManagerStub("joined");
+
+    joinRoomUseCase({
+      roomManager,
+      runtimeRegistry: createRuntimeRegistryStub(),
+      socketId: "socket-1",
+      data: { roomId: "room-1", playerName: "  太郎  " },
+      output: createOutputStub(),
+    });
+
+    expect(roomManager.addPlayerToRoom).toHaveBeenCalledWith(
+      "room-1",
+      "socket-1",
+      "太郎",
+    );
+  });
+
+  it("前後空白の有無が異なるroomIdを同一ルームとして扱うこと", () => {
+    const roomManager = createRoomManagerStub("joined");
+
+    joinRoomUseCase({
+      roomManager,
+      runtimeRegistry: createRuntimeRegistryStub(),
+      socketId: "socket-1",
+      data: { roomId: "abc", playerName: "太郎" },
+      output: createOutputStub(),
+    });
+    joinRoomUseCase({
+      roomManager,
+      runtimeRegistry: createRuntimeRegistryStub(),
+      socketId: "socket-2",
+      data: { roomId: " abc ", playerName: "次郎" },
+      output: createOutputStub(),
+    });
+
+    const [firstCall, secondCall] = roomManager.addPlayerToRoom.mock.calls;
+    expect(secondCall?.[0]).toBe(firstCall?.[0]);
+  });
+
+  it("参加成功時は前後空白を除去したルームIDでゲームランタイムを確保すること", () => {
+    const runtimeRegistry = createRuntimeRegistryStub();
+
+    joinRoomUseCase({
+      roomManager: createRoomManagerStub("joined"),
+      runtimeRegistry,
+      socketId: "socket-1",
+      data: { roomId: "  room-1  ", playerName: "太郎" },
+      output: createOutputStub(),
+    });
+
+    expect(runtimeRegistry.ensureGameManagerForRoom).toHaveBeenCalledWith(
+      "room-1",
+    );
+  });
+
+  it("参加拒否通知は前後空白を除去したルームIDで送ること", () => {
+    const output = createOutputStub();
+
+    joinRoomUseCase({
+      roomManager: createRoomManagerStub("full"),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      socketId: "socket-1",
+      data: { roomId: "  room-1  ", playerName: "太郎" },
+      output,
+    });
+
+    expect(output.publishJoinRejectedToSocket).toHaveBeenCalledWith({
+      roomId: "room-1",
+      reason: "full",
+    });
+  });
 });
