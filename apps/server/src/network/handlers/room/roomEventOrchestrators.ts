@@ -174,12 +174,16 @@ export const handleJoinRoomEvent = async (
       return;
 
     case "joined":
-      await deps.joinRoom(payload.roomId);
-      deps.output.publishRoomUpdateToRoom(payload.roomId, joinResult.room);
+      // 参加先は正規化済みのルームIDで揃える（受信ペイロードの前後空白を持ち込まない）
+      await deps.joinRoom(joinResult.room.roomId);
+      deps.output.publishRoomUpdateToRoom(
+        joinResult.room.roomId,
+        joinResult.room,
+      );
       logEvent(logScopes.ROOM_USE_CASE, {
         event: roomUseCaseLogEvents.ROOM_UPDATE,
         result: logResults.EMITTED,
-        roomId: payload.roomId,
+        roomId: joinResult.room.roomId,
         socketId: deps.socketId,
         ownerId: joinResult.room.ownerId,
         totalPlayers: joinResult.room.players.length,

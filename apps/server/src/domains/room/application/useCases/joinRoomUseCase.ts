@@ -28,7 +28,9 @@ export const joinRoomUseCase = ({
   data,
   output,
 }: JoinRoomUseCaseParams): JoinRoomResult => {
-  const { roomId, playerName } = data;
+  // 入力の前後空白は意味を持たないため正規化し，同名ルームが空白差で分裂するのを防ぐ
+  const roomId = data.roomId.trim();
+  const playerName = data.playerName.trim();
   logEvent(logScopes.ROOM_USE_CASE, {
     event: roomUseCaseLogEvents.JOIN_ROOM,
     result: logResults.RECEIVED,
