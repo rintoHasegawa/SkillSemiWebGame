@@ -18,5 +18,11 @@ export const resolveBombButtonLabel = ({
   isReady,
   remainingSecText,
 }: BombButtonLabelParams): string => {
-  return isReady ? BOMB_BUTTON_READY_LABEL : `${remainingSecText}s`;
+  // 入力ロック中はクールダウンが動いていなくても非活性になるため，
+  // 残り秒が無い場合は既定ラベルへフォールバックする
+  if (isReady || remainingSecText === null) {
+    return BOMB_BUTTON_READY_LABEL;
+  }
+
+  return `${remainingSecText}s`;
 };
