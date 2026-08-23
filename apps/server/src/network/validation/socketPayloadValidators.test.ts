@@ -17,6 +17,9 @@ import {
   isStartGamePayload,
 } from "./socketPayloadValidators";
 
+// プロトコル内部IDの防御的な最大長（サーバ採番・クライアント採番とも十進連番で数文字）
+const MAX_BOMB_ID_LENGTH = 64;
+
 describe("isPingPayload", () => {
   it("有限数の場合はtrueを返すこと", () => {
     expect(isPingPayload(1700000000000)).toBe(true);
@@ -178,6 +181,24 @@ describe("isBombHitReportPayload", () => {
 
   it("bombIdが数値の場合はfalseを返すこと", () => {
     expect(isBombHitReportPayload({ bombId: 1 })).toBe(false);
+  });
+
+  it("bombIdが上限64文字の場合はtrueを返すこと", () => {
+    expect(
+      isBombHitReportPayload({ bombId: "a".repeat(MAX_BOMB_ID_LENGTH) }),
+    ).toBe(true);
+  });
+
+  it("bombIdが上限超過の65文字の場合はfalseを返すこと", () => {
+    expect(
+      isBombHitReportPayload({ bombId: "a".repeat(MAX_BOMB_ID_LENGTH + 1) }),
+    ).toBe(false);
+  });
+
+  it("bombIdが1MB相当の巨大文字列の場合はfalseを返すこと", () => {
+    expect(
+      isBombHitReportPayload({ bombId: "a".repeat(1_000_000) }),
+    ).toBe(false);
   });
 
   it("bombIdが欠落している場合はfalseを返すこと", () => {
