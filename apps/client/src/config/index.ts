@@ -13,21 +13,33 @@ export const setRuntimeMapSizeByPreset = (preset: FieldSizePreset): void => {
   runtimeMapSize.gridRows = resolved.rows;
 };
 
+// 受信したグリッドサイズがフィールドプリセット上限内の正の整数か判定する
+const isAcceptableRuntimeGridSize = (cols: number, rows: number): boolean => {
+  return (
+    Number.isInteger(cols)
+    && Number.isInteger(rows)
+    && cols > 0
+    && rows > 0
+    && cols <= sharedConfig.MAX_FIELD_GRID_SIZE.cols
+    && rows <= sharedConfig.MAX_FIELD_GRID_SIZE.rows
+  );
+};
+
 /** GAME_STARTペイロードを優先してクライアント実行中のマップサイズを更新する */
 export const applyRuntimeMapSizeFromGameStart = (
   payload: Pick<GameStartPayload, "fieldSizePreset" | "gridCols" | "gridRows">,
 ): void => {
-  if (
-    Number.isFinite(payload.gridCols)
-    && Number.isFinite(payload.gridRows)
-    && payload.gridCols > 0
-    && payload.gridRows > 0
-  ) {
+  if (isAcceptableRuntimeGridSize(payload.gridCols, payload.gridRows)) {
     runtimeMapSize.gridCols = payload.gridCols;
     runtimeMapSize.gridRows = payload.gridRows;
     return;
   }
 
+  // 想定外のグリッドサイズはマップ配列確保を破綻させるため採用せずプリセットへ戻す
+  console.error("[config] GAME_STARTのグリッドサイズが許容範囲外", {
+    gridCols: payload.gridCols,
+    gridRows: payload.gridRows,
+  });
   setRuntimeMapSizeByPreset(payload.fieldSizePreset);
 };
 
