@@ -92,6 +92,28 @@ describe("GameRoomSession", () => {
     ).toEqual([0, 1, 2]);
   });
 
+  it("チーム希望者が走査順の後方にいても全体が均等割り当てになること", () => {
+    const playerIds = Array.from(
+      { length: 8 },
+      (_, index) => `socket-${index + 1}`,
+    );
+    const teamPreferences: Record<string, number | null> = Object.fromEntries(
+      playerIds.map((playerId) => [playerId, null]),
+    );
+    teamPreferences["socket-8"] = 0;
+
+    const session = createSession(playerIds, {}, teamPreferences);
+
+    const teamPopulations = Array.from(
+      { length: config.GAME_CONFIG.TEAM_COUNT },
+      (_, teamId) =>
+        session.getPlayers().filter((player) => player.teamId === teamId)
+          .length,
+    );
+
+    expect(teamPopulations).toEqual([2, 2, 2, 2]);
+  });
+
   it("未参加プレイヤーのチームIDは-1を返すこと", () => {
     const session = createSession();
 
