@@ -80,6 +80,9 @@ export class CombatLifecycleFacade {
           return;
         }
 
+        // ローカルプレイヤーのみ初期位置へ戻す（リモートのコントローラ初期座標は
+        // AOI 進入点であり，リスポーン先はサーバから届く座標に従う）
+        localPlayer.respawnToInitialPosition();
         this.onLocalRespawnCompleted?.(localPlayer.getPosition());
       },
     });
