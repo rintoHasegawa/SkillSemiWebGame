@@ -231,8 +231,7 @@ export class GameRoomSession {
    */
   public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
     // 開始時刻未設定時は経過 0 として通常クールダウンで判定する
-    const elapsedMs =
-      this.startTime === undefined ? 0 : nowMs - this.startTime;
+    const elapsedMs = this.resolveElapsedMs(nowMs);
     // フィーバー境界付近でクライアントが先に短縮判定しても弾かないよう許容誤差ぶん先読みする
     const cooldownMs = domain.game.bomb.resolveBombCooldownMs(
       elapsedMs + BOMB_COOLDOWN_TOLERANCE_MS,
@@ -242,6 +241,21 @@ export class GameRoomSession {
       nowMs,
       cooldownMs,
     );
+  }
+
+  // 開始時刻未設定時は経過 0 とみなしてゲーム開始からの経過時間を返す
+  private resolveElapsedMs(nowMs: number): number {
+    return this.startTime === undefined ? 0 : nowMs - this.startTime;
+  }
+
+  /**
+   * サーバー経過時間を基準に爆発予定時刻を解決する
+   * クライアント申告の爆発予定時刻は信頼せず，導火線時間をサーバー側で加算する
+   * 開始待機中は経過を 0 に丸め，ゲームループの経過時間軸と揃える
+   */
+  public resolveBombExplodeAtElapsedMs(nowMs: number): number {
+    const elapsedMs = Math.max(0, this.resolveElapsedMs(nowMs));
+    return elapsedMs + config.GAME_CONFIG.BOMB_FUSE_MS;
   }
 
   public issueServerBombId(): string {

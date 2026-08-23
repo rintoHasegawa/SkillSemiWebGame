@@ -116,6 +116,11 @@ export class GameManager {
     return this.lifecycleService.issueServerBombId();
   }
 
+  /** 爆発予定時刻をサーバー経過時間から解決する */
+  resolveBombExplodeAtElapsedMs(nowMs: number): number {
+    return this.lifecycleService.resolveBombExplodeAtElapsedMs(nowMs);
+  }
+
   /** 指定プレイヤーのチームIDを返す */
   getPlayerTeamId(playerId: string): number {
     return this.lifecycleService.getPlayerTeamId(playerId);

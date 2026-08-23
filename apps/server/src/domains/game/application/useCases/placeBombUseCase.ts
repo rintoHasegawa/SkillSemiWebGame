@@ -63,19 +63,24 @@ export const placeBombUseCase = ({
 
   const ownerTeamId = bombStore.getPlayerTeamId(input.socketId);
 
+  // 爆発予定時刻はクライアント申告値を採用せずサーバー経過時間から決める
+  const explodeAtElapsedMs = bombStore.resolveBombExplodeAtElapsedMs(
+    input.nowMs,
+  );
+
   bombStore.registerActiveBomb({
     bombId,
     ownerPlayerId: input.socketId,
     x: input.payload.x,
     y: input.payload.y,
-    explodeAtElapsedMs: input.payload.explodeAtElapsedMs,
+    explodeAtElapsedMs,
   });
 
   output.publishBombPlacedToOthersInRoom(
     roomId,
     input.socketId,
     createBombPlacedPayload({
-      payload: input.payload,
+      payload: { ...input.payload, explodeAtElapsedMs },
       bombId,
       ownerTeamId,
     })

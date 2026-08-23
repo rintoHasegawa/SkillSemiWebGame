@@ -334,6 +334,38 @@ describe("GameRoomSession", () => {
     session.dispose();
   });
 
+  it("開始前の爆発予定時刻は経過0として導火線時間を返すこと", () => {
+    const session = createSession();
+
+    expect(session.resolveBombExplodeAtElapsedMs(5_000)).toBe(
+      config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+  });
+
+  it("開始後の爆発予定時刻はサーバー経過時間に導火線時間を加えること", () => {
+    const session = createSession();
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    session.start(50, createCallbacksStub());
+
+    expect(session.resolveBombExplodeAtElapsedMs(5_000)).toBe(
+      5_000 + config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+    session.dispose();
+  });
+
+  it("開始待機中の爆発予定時刻は経過0として導火線時間を返すこと", () => {
+    const session = createSession();
+    vi.spyOn(Date, "now").mockReturnValue(0);
+    session.start(50, createCallbacksStub());
+
+    expect(session.resolveBombExplodeAtElapsedMs(0)).toBe(
+      config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+    session.dispose();
+  });
+
   it("同一キーの被弾報告は2回目を配信不可とすること", () => {
     const session = createSession();
     session.shouldBroadcastBombHitReport("socket-1:bomb-1", 0);

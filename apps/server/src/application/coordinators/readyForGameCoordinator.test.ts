@@ -48,6 +48,9 @@ const createGameManagerStub = ({
     issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
       () => "bomb-1",
     ),
+    resolveBombExplodeAtElapsedMs: vi.fn<
+      RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
+    >(() => 1_000),
     registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
     getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 0),
     getActiveBombSnapshots: vi.fn<

@@ -148,6 +148,8 @@ export interface BombPlacementPort {
   shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean;
   /** サーバー採番の爆弾IDを返す，セッション未開始時は undefined を返す */
   issueServerBombId(): string | undefined;
+  /** サーバー経過時間を基準に爆発予定時刻を解決する */
+  resolveBombExplodeAtElapsedMs(nowMs: number): number;
   registerActiveBomb(registration: ActiveBombRegistration): void;
   getPlayerTeamId(playerId: string): number;
 }

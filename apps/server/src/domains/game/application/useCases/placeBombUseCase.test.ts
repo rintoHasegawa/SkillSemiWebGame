@@ -27,6 +27,8 @@ type BombStoreStubParams = {
   /** セッション未開始で採番できない状況を再現する場合はfalseを指定する */
   canIssueBombId?: boolean;
   ownerTeamId?: number;
+  /** サーバー経過時間から解決される爆発予定時刻 */
+  serverExplodeAtElapsedMs?: number;
 };
 
 /** 重複排除結果と採番結果を固定した BombPlacementPort スタブを生成する */
@@ -36,6 +38,7 @@ const createBombStoreStub = ({
   bombId = "bomb-1",
   canIssueBombId = true,
   ownerTeamId = 2,
+  serverExplodeAtElapsedMs = 9_000,
 }: BombStoreStubParams) => {
   return {
     shouldBroadcastBombPlaced: vi.fn<
@@ -46,6 +49,9 @@ const createBombStoreStub = ({
     >(() => shouldAccept),
     issueServerBombId: vi.fn<() => string | undefined>(() =>
       canIssueBombId ? bombId : undefined,
+    ),
+    resolveBombExplodeAtElapsedMs: vi.fn<(nowMs: number) => number>(
+      () => serverExplodeAtElapsedMs,
     ),
     registerActiveBomb: vi.fn<(registration: ActiveBombRegistration) => void>(),
     getPlayerTeamId: vi.fn<(playerId: string) => number>(() => ownerTeamId),
@@ -265,7 +271,7 @@ describe("placeBombUseCase", () => {
       ownerPlayerId: "socket-1",
       x: 3.5,
       y: 4.5,
-      explodeAtElapsedMs: 12_000,
+      explodeAtElapsedMs: 9_000,
     });
   });
 
@@ -283,7 +289,7 @@ describe("placeBombUseCase", () => {
         ownerTeamId: 2,
         x: 3.5,
         y: 4.5,
-        explodeAtElapsedMs: 12_000,
+        explodeAtElapsedMs: 9_000,
       },
     );
   });

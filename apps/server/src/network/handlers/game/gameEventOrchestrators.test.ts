@@ -28,6 +28,8 @@ import {
 } from "./gameEventOrchestrators";
 
 const FIXED_NOW_MS = 1_700_000_000_000;
+// サーバー経過時間から解決される爆発予定時刻（申告値と区別するため別値にする）
+const SERVER_EXPLODE_AT_ELAPSED_MS = 6_000;
 
 /** オーナー1名が在室するテスト用のルーム状態を生成する */
 const createRoom = (): domain.room.Room => {
@@ -68,6 +70,9 @@ const createGameManagerStub = ({
     issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
       () => "bomb-1",
     ),
+    resolveBombExplodeAtElapsedMs: vi.fn<
+      RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
+    >(() => SERVER_EXPLODE_AT_ELAPSED_MS),
     registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
     getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 2),
     getActiveBombSnapshots: vi.fn<
@@ -370,7 +375,13 @@ describe("handlePlaceBombEvent", () => {
     expect(deps.output.publishBombPlacedToOthersInRoom).toHaveBeenCalledWith(
       "room-1",
       "socket-1",
-      { bombId: "bomb-1", ownerTeamId: 2, x: 3, y: 4, explodeAtElapsedMs: 5_000 },
+      {
+        bombId: "bomb-1",
+        ownerTeamId: 2,
+        x: 3,
+        y: 4,
+        explodeAtElapsedMs: SERVER_EXPLODE_AT_ELAPSED_MS,
+      },
     );
   });
 

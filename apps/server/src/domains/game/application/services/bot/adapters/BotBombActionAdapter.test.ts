@@ -18,6 +18,8 @@ import type { ActiveBombRegistration } from "../../../ports/gameUseCasePorts";
 import { createBotBombActionHandler } from "./BotBombActionAdapter";
 
 const FIXED_NOW_MS = 1_700_000_000_000;
+// サーバー経過時間から解決される爆発予定時刻（申告値と区別するため別値にする）
+const SERVER_EXPLODE_AT_ELAPSED_MS = 11_000;
 
 /** 爆弾配信可否を固定した BombPlacementPort スタブを生成する */
 const createBombStoreStub = (shouldBroadcast: boolean) => {
@@ -29,6 +31,9 @@ const createBombStoreStub = (shouldBroadcast: boolean) => {
       (playerId: string, nowMs: number) => boolean
     >(() => true),
     issueServerBombId: vi.fn<() => string>(() => "bomb-1"),
+    resolveBombExplodeAtElapsedMs: vi.fn<(nowMs: number) => number>(
+      () => SERVER_EXPLODE_AT_ELAPSED_MS,
+    ),
     registerActiveBomb: vi.fn<(registration: ActiveBombRegistration) => void>(),
     getPlayerTeamId: vi.fn<(playerId: string) => number>(() => 1),
   };
@@ -128,7 +133,7 @@ describe("createBotBombActionHandler", () => {
         ownerTeamId: 1,
         x: 2,
         y: 3,
-        explodeAtElapsedMs: 9_000,
+        explodeAtElapsedMs: SERVER_EXPLODE_AT_ELAPSED_MS,
       },
     );
   });

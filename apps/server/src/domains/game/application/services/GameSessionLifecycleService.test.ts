@@ -46,6 +46,9 @@ const createSessionStub = () => {
       (playerId: string, nowMs: number) => boolean
     >(() => true),
     issueServerBombId: vi.fn<() => string>(() => "bomb-1"),
+    resolveBombExplodeAtElapsedMs: vi.fn<(nowMs: number) => number>(
+      () => 6_000,
+    ),
     getPlayerTeamId: vi.fn<(playerId: string) => number>(() => 3),
     registerActiveBomb: vi.fn<
       (registration: ActiveBombRegistration) => void
@@ -183,6 +186,21 @@ describe("GameSessionLifecycleService", () => {
     const { service } = createContext(true);
 
     expect(service.issueServerBombId()).toBe("bomb-1");
+  });
+
+  it("セッション未開始の爆発予定時刻解決は導火線時間を返すこと", () => {
+    const { service } = createContext(false);
+
+    expect(service.resolveBombExplodeAtElapsedMs(5_000)).toBe(
+      config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+  });
+
+  it("セッション開始済みの爆発予定時刻解決はセッション値を返すこと", () => {
+    const { service, session } = createContext(true);
+
+    expect(service.resolveBombExplodeAtElapsedMs(5_000)).toBe(6_000);
+    expect(session.resolveBombExplodeAtElapsedMs).toHaveBeenCalledWith(5_000);
   });
 
   it("セッション未開始のチームID取得は-1を返すこと", () => {

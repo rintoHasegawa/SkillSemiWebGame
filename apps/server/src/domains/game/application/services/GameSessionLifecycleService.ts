@@ -108,6 +108,14 @@ export class GameSessionLifecycleService {
     return this.sessionRef.current?.issueServerBombId();
   }
 
+  /** 爆発予定時刻をサーバー経過時間から解決する，セッション未開始時は導火線時間を返す */
+  public resolveBombExplodeAtElapsedMs(nowMs: number): number {
+    return (
+      this.sessionRef.current?.resolveBombExplodeAtElapsedMs(nowMs) ??
+      config.GAME_CONFIG.BOMB_FUSE_MS
+    );
+  }
+
   /** 指定プレイヤーのチームIDを返す，未参加時は UNKNOWN_TEAM_ID を返す */
   public getPlayerTeamId(playerId: string): number {
     return this.sessionRef.current?.getPlayerTeamId(playerId) ?? -1;
