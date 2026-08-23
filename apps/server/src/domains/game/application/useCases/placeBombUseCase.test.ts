@@ -6,6 +6,7 @@
 import type { BombPlacedAckPayload, BombPlacedPayload } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { config } from "@server/config";
 import {
   gameUseCaseLogEvents,
   logResults,
@@ -392,6 +393,71 @@ describe("placeBombUseCase", () => {
     placeBombUseCase({ roomId: "room-1", bombStore, input, output });
 
     expect(logSpy).not.toHaveBeenCalled();
+  });
+
+  it("クライアントが送った即時起爆の爆発予定時刻を配信しないこと", () => {
+    // 開始時刻を0に固定し，nowMs をそのままサーバー経過時間として扱う
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    const fieldConfig: GameFieldConfig = {
+      fieldSizePreset: "SMALL",
+      gridCols: 6,
+      gridRows: 6,
+    };
+    const session = new GameRoomSession("room-1", ["socket-1"], {}, fieldConfig);
+    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
+    const output = createOutputStub();
+
+    placeBombUseCase({
+      roomId: "room-1",
+      bombStore: session,
+      input: {
+        ...input,
+        payload: { ...input.payload, explodeAtElapsedMs: 0 },
+        nowMs: 5_000,
+      },
+      output,
+    });
+
+    expect(output.publishBombPlacedToOthersInRoom).toHaveBeenCalledWith(
+      "room-1",
+      "socket-1",
+      expect.objectContaining({
+        explodeAtElapsedMs: 5_000 + config.GAME_CONFIG.BOMB_FUSE_MS,
+      }),
+    );
+    session.dispose();
+  });
+
+  it("クライアントが送った即時起爆の爆発予定時刻を爆弾登録に使わないこと", () => {
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    const fieldConfig: GameFieldConfig = {
+      fieldSizePreset: "SMALL",
+      gridCols: 6,
+      gridRows: 6,
+    };
+    const session = new GameRoomSession("room-1", ["socket-1"], {}, fieldConfig);
+    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
+    const output = createOutputStub();
+
+    placeBombUseCase({
+      roomId: "room-1",
+      bombStore: session,
+      input: {
+        ...input,
+        payload: { ...input.payload, explodeAtElapsedMs: 0 },
+        nowMs: 5_000,
+      },
+      output,
+    });
+
+    expect(session.getActiveBombSnapshots()[0]?.explodeAtElapsedMs).toBe(
+      5_000 + config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+    session.dispose();
   });
 
   it("チームID未解決の場合はownerTeamIdに-1を配信すること", () => {
