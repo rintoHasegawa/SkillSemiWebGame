@@ -65,23 +65,41 @@ export class GameRoomSession {
     this.mapStore = new MapStore(this.getMapSize());
     this.bombStateStore = new BombStateStore();
 
-    playerIds.forEach((playerId) => {
-      // player_selectモードの希望チームIDがあればそれを使い，なければバランス割り当てする
-      const preferredTeamId = teamPreferences?.[playerId] ?? null;
-      const assignedTeamId = preferredTeamId !== null
-        ? preferredTeamId
-        : TeamAssignmentService.getBalancedTeamId(this.players);
-
-      // 算出したチームIDを指定してプレイヤーを生成する
+    // 生成順が走査順に依存しないよう，希望チーム確定分を先に積んでから均等割り当てする
+    const createdPlayers = new Map<string, Player>();
+    const createPlayerWithTeam = (playerId: string, teamId: number): void => {
       const playerName = playerNamesById[playerId] ?? playerId;
-      const player = createSpawnedPlayer(
+      createdPlayers.set(
         playerId,
-        playerName,
-        assignedTeamId,
-        this.getMapSize(),
+        createSpawnedPlayer(playerId, playerName, teamId, this.getMapSize()),
       );
+    };
 
-      this.players.set(playerId, player);
+    // 第1パス: player_selectモードの希望チームIDを持つプレイヤーを先に確定させる
+    const balancedTargetIds: string[] = [];
+    playerIds.forEach((playerId) => {
+      const preferredTeamId = teamPreferences?.[playerId] ?? null;
+      if (preferredTeamId !== null) {
+        createPlayerWithTeam(playerId, preferredTeamId);
+        return;
+      }
+      balancedTargetIds.push(playerId);
+    });
+
+    // 第2パス: 希望なしのプレイヤーを希望者込みの人数で均等割り当てする
+    balancedTargetIds.forEach((playerId) => {
+      createPlayerWithTeam(
+        playerId,
+        TeamAssignmentService.getBalancedTeamId(createdPlayers),
+      );
+    });
+
+    // 登録順は参加順（playerIdsの並び）を維持する
+    playerIds.forEach((playerId) => {
+      const player = createdPlayers.get(playerId);
+      if (player) {
+        this.players.set(playerId, player);
+      }
     });
   }
 
