@@ -142,12 +142,12 @@ export class CombatLifecycleFacade {
   ): void {
     const isLocalTarget = targetPlayerId === this.myId;
 
-    if (source === "bomb") {
-      this.playerHitPolicy.applyPlayerHitEvent({ playerId: targetPlayerId });
-    }
-
     if (this.respawnManager.isRespawning(targetPlayerId)) {
       return;
+    }
+
+    if (source === "bomb") {
+      this.playerHitPolicy.applyPlayerHitEvent({ playerId: targetPlayerId });
     }
 
     const hitCount = this.respawnManager.incrementHitCount(targetPlayerId);
