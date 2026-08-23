@@ -670,6 +670,16 @@ describe("GameLoop.detectHurricaneHits", () => {
     expect(harness.onHurricanePlayerHit).toHaveBeenCalledWith("human-1");
   });
 
+  it("Bot制御へ昇格した直後に被弾したプレイヤーを硬直させること", () => {
+    const harness = createHarness([createPlayer("human-1", 5, 5, 0)]);
+    harness.loop.promotePlayerToBotControl("human-1");
+    harness.loop.start();
+
+    runNextTickCycle(60_000);
+
+    expect(harness.players.get("human-1")).toMatchObject({ x: 5, y: 5 });
+  });
+
   it("接触していないプレイヤーではonHurricanePlayerHitを呼ばないこと", () => {
     const harness = createHarness([createPlayer("human-1", 9.5, 9.5, 0)]);
     harness.loop.start();

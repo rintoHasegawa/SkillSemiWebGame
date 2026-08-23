@@ -285,14 +285,15 @@ describe("BotTurnOrchestrator.decide", () => {
 });
 
 describe("BotTurnOrchestrator.applyHitStun", () => {
-  it("状態未生成のBotには硬直を適用しないこと", () => {
+  it("状態未生成のBotにも硬直を適用すること", () => {
     mockRandomSequence([0, 0], 0.9);
     const { orchestrator, decide } = createContext();
     orchestrator.applyHitStun(BOT_ID, 1_000);
 
     const decision = decide({ x: 0.5, y: 0.5 }, 1_500, 500);
 
-    expect(decision.nextX).toBeCloseTo(0.65, 6);
+    expect(decision.nextX).toBe(0.5);
+    expect(decision.nextY).toBe(0.5);
   });
 
   it("既存の硬直終了時刻より早い被弾では硬直を短縮しないこと", () => {
@@ -309,6 +310,21 @@ describe("BotTurnOrchestrator.applyHitStun", () => {
 });
 
 describe("BotTurnOrchestrator.applyRespawnStun", () => {
+  it("状態未生成のBotでもリスポーン時刻までは現在座標を維持すること", () => {
+    mockRandomSequence([0, 0], 0.9);
+    const { orchestrator, decide } = createContext();
+    orchestrator.applyRespawnStun(BOT_ID, 1_000);
+
+    const decision = decide(
+      { x: 0.5, y: 0.5, initialX: 5.5, initialY: 5.5 },
+      1_500,
+      500,
+    );
+
+    expect(decision.nextX).toBe(0.5);
+    expect(decision.nextY).toBe(0.5);
+  });
+
   it("リスポーン時刻前は現在座標を維持すること", () => {
     mockRandomSequence([], 0.9);
     const { orchestrator, decide } = createContext();
