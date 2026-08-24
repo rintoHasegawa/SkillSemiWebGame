@@ -11,6 +11,8 @@ type Props = {
   onPlayerNameChange: (value: string) => void;
   // 入室失敗時の表示メッセージ
   joinErrorMessage: string | null;
+  // 接続断でタイトルへ戻された場合の通知メッセージ
+  connectionNoticeMessage: string | null;
   // 入室リクエスト送信中フラグ
   isJoining: boolean;
 };
@@ -20,6 +22,7 @@ export const TitleScene = ({
   playerName,
   onPlayerNameChange,
   joinErrorMessage,
+  connectionNoticeMessage,
   isJoining,
 }: Props) => {
   // 🌟 追加：「TAP TO START」が押されてフォームを表示する状態かどうか
@@ -74,6 +77,22 @@ export const TitleScene = ({
           if (!showForm) setShowForm(true);
         }}
       >
+        {/* 接続断の通知 */}
+        {connectionNoticeMessage && (
+          <div
+            style={{
+              color: "#ff6b6b",
+              fontFamily: "monospace",
+              fontWeight: "bold",
+              textAlign: "center",
+              textShadow: "1px 1px 2px black",
+              marginBottom: "20px",
+            }}
+          >
+            {connectionNoticeMessage}
+          </div>
+        )}
+
         {/* 🌟 条件分岐：showForm が false なら「TAP TO START」、true ならフォームを表示 */}
         {!showForm ? (
           <div

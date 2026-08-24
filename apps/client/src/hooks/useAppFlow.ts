@@ -23,6 +23,7 @@ type AppFlowState = {
   gameResult: GameResultPayload | null;
   playerName: string;
   joinErrorMessage: string | null;
+  connectionNoticeMessage: string | null;
   isJoining: boolean;
   setPlayerName: (name: string) => void;
   requestJoin: (payload: domain.room.JoinRoomPayload) => void;
@@ -159,6 +160,8 @@ export const useAppFlow = (): AppFlowState => {
       }
 
       completeJoinRequest();
+      // 再参加を開始した時点で前回の接続断通知を消す
+      dispatchAppFlow({ type: "clearConnectionNotice" });
       dispatchJoin({ type: "start" });
 
       const handleJoinRejected = (
@@ -232,6 +235,9 @@ export const useAppFlow = (): AppFlowState => {
     gameResult: appFlow.gameResult,
     playerName: appFlow.playerName,
     joinErrorMessage: getJoinErrorMessage(joinState.joinFailure),
+    connectionNoticeMessage: appFlow.isConnectionLost
+      ? "接続が切れました，もう一度参加してください"
+      : null,
     isJoining: joinState.isJoining,
     setPlayerName,
     requestJoin,

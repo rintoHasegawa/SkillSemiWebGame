@@ -13,6 +13,29 @@ export const initialAppFlowData: AppFlowData = {
   myId: null,
   gameResult: null,
   playerName: "",
+  isConnectionLost: false,
+};
+
+// サーバ上のセッションに依存しているフェーズかどうかを判定する
+const isSessionBoundPhase = (
+  scenePhase: domain.app.ScenePhaseType,
+): boolean => {
+  return (
+    scenePhase === domain.app.ScenePhase.LOBBY ||
+    scenePhase === domain.app.ScenePhase.PLAYING
+  );
+};
+
+// セッションを破棄してタイトルへ戻した状態を生成する
+const createConnectionLostState = (state: AppFlowData): AppFlowData => {
+  return {
+    scenePhase: domain.app.ScenePhase.TITLE,
+    room: null,
+    myId: null,
+    gameResult: null,
+    playerName: state.playerName,
+    isConnectionLost: true,
+  };
 };
 
 /** アプリフロー状態をアクションに応じて更新する */
@@ -20,10 +43,31 @@ export const appFlowReducer = (
   state: AppFlowData,
   action: AppFlowAction,
 ): AppFlowData => {
-  if (action.type === "setMyId") {
+  if (action.type === "connectionEstablished") {
+    // 再接続で socket.id が変わった場合，サーバ上のセッションは既に破棄されている
+    const isReconnectedWithNewId =
+      state.myId !== null && state.myId !== action.myId;
+
+    if (isReconnectedWithNewId && isSessionBoundPhase(state.scenePhase)) {
+      return { ...createConnectionLostState(state), myId: action.myId };
+    }
+
+    return { ...state, myId: action.myId };
+  }
+
+  if (action.type === "connectionLost") {
+    // タイトル・リザルトでの切断は意図的な再接続を含むため無視する
+    if (!isSessionBoundPhase(state.scenePhase)) {
+      return state;
+    }
+
+    return createConnectionLostState(state);
+  }
+
+  if (action.type === "clearConnectionNotice") {
     return {
       ...state,
-      myId: action.myId,
+      isConnectionLost: false,
     };
   }
 
@@ -74,6 +118,8 @@ export const appFlowReducer = (
       myId: action.clearMyId ? null : state.myId,
       gameResult: null,
       playerName: state.playerName,
+      // 明示的なタイトル復帰では接続断の通知を消す
+      isConnectionLost: false,
     };
   }
 
