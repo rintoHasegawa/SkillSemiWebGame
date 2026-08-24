@@ -8,7 +8,8 @@ import type { PlaceBombPayload } from "@repo/shared";
 export type BotState = {
   targetCol: number;
   targetRow: number;
-  lastBombPlacedAtMs: number;
+  /** 直近で爆弾を設置したゲーム経過ms */
+  lastBombPlacedAtElapsedMs: number;
   bombSeq: number;
 };
 

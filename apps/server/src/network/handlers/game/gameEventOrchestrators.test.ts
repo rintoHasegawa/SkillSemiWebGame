@@ -1,7 +1,8 @@
 /**
  * gameEventOrchestrators.test
- * ゲーム受信イベント調停の現行挙動を固定する characterization test
+ * ゲーム受信イベント調停の挙動を検証するユニットテスト
  * ユースケースへの入力値変換とランタイム未解決時のログ分岐を検証する
+ * PINGもゲーム時計を持つランタイム経由で解決するため壁時計は使わない
  */
 import { contracts as protocol, domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +12,11 @@ import type {
   RoomPhaseTransitionResult,
   RoomScopedGamePort,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
-import { logResults, logScopes } from "@server/logging/index";
+import {
+  gameUseCaseLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 import {
   createRoom as createRoomFixture,
   createRoomMember,
@@ -27,7 +32,6 @@ import {
   type GameEventOrchestratorDeps,
 } from "./gameEventOrchestrators";
 
-const FIXED_NOW_MS = 1_700_000_000_000;
 // サーバー経過時間から解決される爆発予定時刻（申告値と区別するため別値にする）
 const SERVER_EXPLODE_AT_ELAPSED_MS = 6_000;
 
@@ -43,6 +47,8 @@ type GameManagerStubParams = {
   shouldBroadcastBombPlaced?: boolean;
   shouldBroadcastBombHitReport?: boolean;
   isSameTeamBombHitReport?: boolean;
+  /** 進行中セッションの符号付きゲーム経過ms（未開始は undefined） */
+  signedElapsedMs?: number;
 };
 
 /** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
@@ -50,12 +56,13 @@ const createGameManagerStub = ({
   shouldBroadcastBombPlaced = true,
   shouldBroadcastBombHitReport = true,
   isSameTeamBombHitReport = false,
+  signedElapsedMs,
 }: GameManagerStubParams = {}) => {
   return {
     startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
-    getRoomStartTime: vi.fn<RoomScopedGamePort["getRoomStartTime"]>(
-      () => undefined,
-    ),
+    getRoomSignedElapsedMs: vi.fn<
+      RoomScopedGamePort["getRoomSignedElapsedMs"]
+    >(() => signedElapsedMs),
     getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
       () => undefined,
     ),
@@ -209,7 +216,6 @@ let logSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-  vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
 });
 
 afterEach(() => {
@@ -217,23 +223,89 @@ afterEach(() => {
 });
 
 describe("handlePingEvent", () => {
-  it("受信したクライアント時刻とサーバー時刻でPONGを返すこと", () => {
-    const deps = createDeps({});
+  it("受信したクライアント時刻とゲーム経過msでPONGを返すこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({ signedElapsedMs: 1_000 }),
+    });
 
     handlePingEvent(deps, 123);
 
     expect(deps.output.publishPongToSocket).toHaveBeenCalledWith({
       clientTime: 123,
-      serverTime: FIXED_NOW_MS,
+      serverReceivedElapsedMs: 1_000,
+      serverSentElapsedMs: 1_000,
     });
   });
 
-  it("ランタイム解決を行わずにPONGを返すこと", () => {
-    const deps = createDeps({});
+  it("カウントダウン中は負のゲーム経過msでPONGを返すこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({ signedElapsedMs: -2_500 }),
+    });
 
     handlePingEvent(deps, 0);
 
-    expect(deps.roomManager.getRoomByPlayerId).not.toHaveBeenCalled();
+    expect(deps.output.publishPongToSocket).toHaveBeenCalledWith(
+      expect.objectContaining({ serverReceivedElapsedMs: -2_500 }),
+    );
+  });
+
+  it("ゲーム時計を引くためプレイヤー所属ルームを解決すること", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({ signedElapsedMs: 0 }),
+    });
+
+    handlePingEvent(deps, 0);
+
+    expect(deps.roomManager.getRoomByPlayerId).toHaveBeenCalledWith("socket-1");
+  });
+
+  it("セッション未開始の場合はPONGを返さないこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub(),
+    });
+
+    handlePingEvent(deps, 123);
+
+    expect(deps.output.publishPongToSocket).not.toHaveBeenCalled();
+  });
+
+  it("セッション未開始の場合はセッション未開始として記録すること", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub(),
+    });
+
+    handlePingEvent(deps, 123);
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.PING,
+      result: logResults.IGNORED_SESSION_NOT_STARTED,
+      socketId: "socket-1",
+    });
+  });
+
+  it("ランタイム未解決時はPONGを返さないこと", () => {
+    const deps = createDeps({ room: undefined, gameManager: undefined });
+
+    handlePingEvent(deps, 123);
+
+    expect(deps.output.publishPongToSocket).not.toHaveBeenCalled();
+  });
+
+  it("ランタイム未解決時はignored_missing_roomを記録すること", () => {
+    const deps = createDeps({ room: undefined, gameManager: undefined });
+
+    handlePingEvent(deps, 123);
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: protocol.SocketEvents.PING,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "socket-1",
+    });
   });
 });
 
@@ -404,7 +476,7 @@ describe("handlePlaceBombEvent", () => {
     );
   });
 
-  it("重複排除判定に現在時刻を渡すこと", () => {
+  it("重複排除判定へ壁時計を渡さずキーのみで委譲すること", () => {
     const gameManager = createGameManagerStub();
     const deps = createDeps({ room: createRoom(), gameManager });
 
@@ -417,7 +489,6 @@ describe("handlePlaceBombEvent", () => {
 
     expect(gameManager.shouldBroadcastBombPlaced).toHaveBeenCalledWith(
       "8:socket-1|5:req-1",
-      FIXED_NOW_MS,
     );
   });
 
@@ -480,7 +551,7 @@ describe("handleBombHitReportEvent", () => {
     expect(gameManager.recordBombHitForOwner).toHaveBeenCalledWith("bomb-1");
   });
 
-  it("重複排除判定に現在時刻を渡すこと", () => {
+  it("重複排除判定へ壁時計を渡さずキーのみで委譲すること", () => {
     const gameManager = createGameManagerStub();
     const deps = createDeps({ room: createRoom(), gameManager });
 
@@ -488,7 +559,6 @@ describe("handleBombHitReportEvent", () => {
 
     expect(gameManager.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
       "8:socket-1|6:bomb-1",
-      FIXED_NOW_MS,
     );
   });
 

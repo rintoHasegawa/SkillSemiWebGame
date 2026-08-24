@@ -1,7 +1,7 @@
 /**
  * GameNetworkEventAdapter.test
  * 受信ペイロード変換の仕様を検証するテスト
- * 開始時刻の有限数検証と不正時のエラーログ・null 返却を確認する
+ * サーバー経過msの有限数検証と不正時のエラーログ・null 返却を確認する
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -15,7 +15,7 @@ import type {
 
 import {
   toBombPlacementAcknowledgedPayload,
-  toGameStartedAt,
+  toGameStartElapsedMs,
   toRemoteBombPlacedPayload,
   toRemoteHurricaneHitPayload,
   toRemotePlayerHitPayload,
@@ -26,8 +26,7 @@ const createGameStartPayload = (
   overrides: Partial<GameStartPayload> = {},
 ): GameStartPayload => {
   return {
-    startTime: 5000,
-    serverNow: 4000,
+    serverElapsedMs: 5000,
     fieldSizePreset: "MEDIUM",
     gridCols: 20,
     gridRows: 15,
@@ -39,73 +38,85 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("toGameStartedAt", () => {
-  it("有限数の開始時刻をそのまま返すこと", () => {
-    expect(toGameStartedAt(createGameStartPayload())).toBe(5000);
+describe("toGameStartElapsedMs", () => {
+  it("有限数のサーバー経過msをそのまま返すこと", () => {
+    expect(toGameStartElapsedMs(createGameStartPayload())).toBe(5000);
   });
 
-  it("開始時刻が0でもそのまま返すこと", () => {
-    expect(toGameStartedAt(createGameStartPayload({ startTime: 0 }))).toBe(0);
+  it("サーバー経過msが0でもそのまま返すこと", () => {
+    expect(
+      toGameStartElapsedMs(createGameStartPayload({ serverElapsedMs: 0 })),
+    ).toBe(0);
   });
 
-  it("負の開始時刻もそのまま返すこと", () => {
-    expect(toGameStartedAt(createGameStartPayload({ startTime: -1 }))).toBe(-1);
+  it("カウントダウン中の負のサーバー経過msもそのまま返すこと", () => {
+    expect(
+      toGameStartElapsedMs(createGameStartPayload({ serverElapsedMs: -3000 })),
+    ).toBe(-3000);
   });
 
-  it("開始時刻がNaNの場合はnullを返すこと", () => {
+  it("サーバー経過msがNaNの場合はnullを返すこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     expect(
-      toGameStartedAt(createGameStartPayload({ startTime: Number.NaN })),
-    ).toBeNull();
-  });
-
-  it("開始時刻がInfinityの場合はnullを返すこと", () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-
-    expect(
-      toGameStartedAt(
-        createGameStartPayload({ startTime: Number.POSITIVE_INFINITY }),
+      toGameStartElapsedMs(
+        createGameStartPayload({ serverElapsedMs: Number.NaN }),
       ),
     ).toBeNull();
   });
 
-  it("開始時刻が-Infinityの場合はnullを返すこと", () => {
+  it("サーバー経過msがInfinityの場合はnullを返すこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     expect(
-      toGameStartedAt(
-        createGameStartPayload({ startTime: Number.NEGATIVE_INFINITY }),
+      toGameStartElapsedMs(
+        createGameStartPayload({ serverElapsedMs: Number.POSITIVE_INFINITY }),
       ),
     ).toBeNull();
   });
 
-  it("開始時刻がnullの場合はnullを返すこと", () => {
+  it("サーバー経過msが-Infinityの場合はnullを返すこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     expect(
-      toGameStartedAt(
-        createGameStartPayload({ startTime: null as unknown as number }),
+      toGameStartElapsedMs(
+        createGameStartPayload({ serverElapsedMs: Number.NEGATIVE_INFINITY }),
       ),
     ).toBeNull();
   });
 
-  it("開始時刻が欠落している場合はnullを返すこと", () => {
+  it("サーバー経過msがnullの場合はnullを返すこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     expect(
-      toGameStartedAt(
-        createGameStartPayload({ startTime: undefined as unknown as number }),
+      toGameStartElapsedMs(
+        createGameStartPayload({
+          serverElapsedMs: null as unknown as number,
+        }),
       ),
     ).toBeNull();
   });
 
-  it("開始時刻が数値以外の場合はnullを返すこと", () => {
+  it("サーバー経過msが欠落している場合はnullを返すこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     expect(
-      toGameStartedAt(
-        createGameStartPayload({ startTime: "5000" as unknown as number }),
+      toGameStartElapsedMs(
+        createGameStartPayload({
+          serverElapsedMs: undefined as unknown as number,
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it("サーバー経過msが数値以外の場合はnullを返すこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(
+      toGameStartElapsedMs(
+        createGameStartPayload({
+          serverElapsedMs: "5000" as unknown as number,
+        }),
       ),
     ).toBeNull();
   });
@@ -114,14 +125,16 @@ describe("toGameStartedAt", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     expect(
-      toGameStartedAt(undefined as unknown as GameStartPayload),
+      toGameStartElapsedMs(undefined as unknown as GameStartPayload),
     ).toBeNull();
   });
 
-  it("不正な開始時刻の場合はエラーログを出力すること", () => {
+  it("不正なサーバー経過msの場合はエラーログを出力すること", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    toGameStartedAt(createGameStartPayload({ startTime: Number.NaN }));
+    toGameStartElapsedMs(
+      createGameStartPayload({ serverElapsedMs: Number.NaN }),
+    );
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("[GameNetworkEventAdapter]"),
@@ -129,10 +142,10 @@ describe("toGameStartedAt", () => {
     );
   });
 
-  it("正常な開始時刻の場合はエラーログを出力しないこと", () => {
+  it("正常なサーバー経過msの場合はエラーログを出力しないこと", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    toGameStartedAt(createGameStartPayload());
+    toGameStartElapsedMs(createGameStartPayload());
 
     expect(errorSpy).not.toHaveBeenCalled();
   });

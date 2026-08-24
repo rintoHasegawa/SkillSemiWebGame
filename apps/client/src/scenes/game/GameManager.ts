@@ -122,7 +122,7 @@ export class GameManager {
     this.sessionFacade =
       dependencies.sessionFacade ??
       new GameSessionFacade({
-        nowMsProvider: () => this.clockSyncService.getSynchronizedNowMs(),
+        signedElapsedMsProvider: () => this.clockSyncService.getElapsedMs(),
       });
     this.lifecycleState =
       dependencies.lifecycleState ?? new SceneLifecycleState();
@@ -137,10 +137,9 @@ export class GameManager {
     this.worldContainer = new Container();
     this.worldContainer.sortableChildren = true;
     this.gameEventFacade = new GameEventFacade({
-      onGameStarted: (startTime) => {
+      onGameStarted: () => {
         // ゲーム開始カウントダウン中に先読みして初回被弾時の負荷を抑える
         preloadGameStartAssets();
-        this.sessionFacade.setGameStart(startTime);
         this.uiStateSyncService.emitIfChanged();
       },
       getBombManager: () => this.runtime.getBombManager(),
@@ -160,8 +159,8 @@ export class GameManager {
       onPongReceived: (payload) => {
         this.clockSyncService.updateFromPong(payload);
       },
-      onGameStartClockHint: (serverNowMs) => {
-        this.clockSyncService.seedFromServerNow(serverNowMs);
+      onGameStartClockHint: (serverElapsedMs) => {
+        this.clockSyncService.seedFromServerElapsed(serverElapsedMs);
       },
       eventPorts: {
         onGameStarted: this.gameEventFacade.applyGameStarted.bind(

@@ -34,10 +34,12 @@ type NetworkJoinRoomLogPayload = {
   roomId?: string;
 };
 
-/** NetworkのPING不正ペイロードログ契約 */
+/** NetworkのPING非適用ログ契約 */
 type NetworkPingLogPayload = {
   event: typeof protocol.SocketEvents.PING;
-  result: typeof logResults.IGNORED_INVALID_PAYLOAD;
+  result:
+    | typeof logResults.IGNORED_INVALID_PAYLOAD
+    | typeof logResults.IGNORED_MISSING_ROOM;
   socketId: string;
 };
 
@@ -101,6 +103,13 @@ type NetworkLogPayload =
   | NetworkBombHitReportLogPayload
   | NetworkLobbySettingsUpdateLogPayload
   | NetworkSelectTeamLogPayload;
+
+/** GameUseCaseのPINGログ契約 */
+type GameUseCasePingLogPayload = {
+  event: typeof gameUseCaseLogEvents.PING;
+  result: typeof logResults.IGNORED_SESSION_NOT_STARTED;
+  socketId: string;
+};
 
 /** GameUseCaseのSTART_GAMEログ契約 */
 type GameUseCaseStartGameLogPayload = {
@@ -172,6 +181,7 @@ type GameUseCaseDisconnectLogPayload = {
 
 /** GameUseCaseスコープのログ契約ユニオン */
 type GameUseCaseLogPayload =
+  | GameUseCasePingLogPayload
   | GameUseCaseStartGameLogPayload
   | GameUseCaseReadyForGameLogPayload
   | GameUseCaseGameStartLogPayload

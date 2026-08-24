@@ -53,8 +53,9 @@ export class GameSessionLifecycleService {
     private createSession: GameRoomSessionFactory = createGameRoomSession,
   ) {}
 
-  public getRoomStartTime(): number | undefined {
-    return this.sessionRef.current?.getStartTime();
+  /** 進行中セッションの符号付きゲーム経過msを返す，セッション未開始時は undefined を返す */
+  public getRoomSignedElapsedMs(): number | undefined {
+    return this.sessionRef.current?.getSignedElapsedMs();
   }
 
   public getRoomPlayers() {
@@ -65,20 +66,15 @@ export class GameSessionLifecycleService {
     return this.sessionRef.current?.getFieldConfig();
   }
 
-  public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
+  public shouldBroadcastBombPlaced(dedupeKey: string): boolean {
     return (
-      this.sessionRef.current?.shouldBroadcastBombPlaced(dedupeKey, nowMs) ??
-      false
+      this.sessionRef.current?.shouldBroadcastBombPlaced(dedupeKey) ?? false
     );
   }
 
-  public shouldBroadcastBombHitReport(
-    dedupeKey: string,
-    nowMs: number,
-  ): boolean {
+  public shouldBroadcastBombHitReport(dedupeKey: string): boolean {
     return (
-      this.sessionRef.current?.shouldBroadcastBombHitReport(dedupeKey, nowMs) ??
-      false
+      this.sessionRef.current?.shouldBroadcastBombHitReport(dedupeKey) ?? false
     );
   }
 
@@ -96,10 +92,9 @@ export class GameSessionLifecycleService {
   }
 
   /** 爆弾設置要求がクールダウンを満たすか判定する，セッション未開始時は false を返す */
-  public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+  public shouldAcceptBombPlacement(playerId: string): boolean {
     return (
-      this.sessionRef.current?.shouldAcceptBombPlacement(playerId, nowMs) ??
-      false
+      this.sessionRef.current?.shouldAcceptBombPlacement(playerId) ?? false
     );
   }
 
@@ -109,9 +104,9 @@ export class GameSessionLifecycleService {
   }
 
   /** 爆発予定時刻をサーバー経過時間から解決する，セッション未開始時は導火線時間を返す */
-  public resolveBombExplodeAtElapsedMs(nowMs: number): number {
+  public resolveBombExplodeAtElapsedMs(): number {
     return (
-      this.sessionRef.current?.resolveBombExplodeAtElapsedMs(nowMs) ??
+      this.sessionRef.current?.resolveBombExplodeAtElapsedMs() ??
       config.GAME_CONFIG.BOMB_FUSE_MS
     );
   }

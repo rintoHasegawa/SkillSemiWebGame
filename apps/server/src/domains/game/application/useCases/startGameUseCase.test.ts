@@ -1,7 +1,8 @@
 /**
  * startGameUseCase.test
- * ゲーム開始ユースケースの現行挙動を固定する characterization test
+ * ゲーム開始ユースケースの挙動を検証するユニットテスト
  * セッション開始，tick配信の省略条件，終了・被弾コールバックを検証する
+ * GAME_START通知は壁時計を載せず符号付きゲーム経過msのみを配信する
  */
 import type {
   BombPlacedAckPayload,
@@ -15,6 +16,7 @@ import type {
 } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { config } from "@server/config";
 import type {
   ActiveBombRegistration,
   GameFieldConfig,
@@ -22,7 +24,7 @@ import type {
 import type { GameSessionCallbacks } from "../services/GameRoomSession";
 import { startGameUseCase } from "./startGameUseCase";
 
-const FIXED_NOW_MS = 1_700_000_000_000;
+const { GAME_START_DELAY_MS } = config.GAME_CONFIG;
 
 const fieldConfig: GameFieldConfig = {
   fieldSizePreset: "SMALL",
@@ -31,13 +33,14 @@ const fieldConfig: GameFieldConfig = {
 };
 
 type GameSessionStubParams = {
-  startTime?: number;
+  /** 進行中セッションの符号付きゲーム経過ms（未開始は undefined） */
+  signedElapsedMs?: number;
   sessionFieldConfig?: GameFieldConfig;
 };
 
 /** 開始セッション状態を固定した StartGamePort スタブを生成する */
 const createGameSessionStub = ({
-  startTime,
+  signedElapsedMs,
   sessionFieldConfig,
 }: GameSessionStubParams = {}) => {
   return {
@@ -50,7 +53,9 @@ const createGameSessionStub = ({
         teamPreferences?: Record<string, number | null>,
       ) => void
     >(),
-    getRoomStartTime: vi.fn<() => number | undefined>(() => startTime),
+    getRoomSignedElapsedMs: vi.fn<() => number | undefined>(
+      () => signedElapsedMs,
+    ),
     getRoomFieldConfig: vi.fn<() => GameFieldConfig | undefined>(
       () => sessionFieldConfig,
     ),
@@ -63,14 +68,12 @@ const SERVER_EXPLODE_AT_ELAPSED_MS = 11_000;
 /** 爆弾配信可否を固定した BombPlacementPort スタブを生成する */
 const createBombStoreStub = (shouldBroadcast = true) => {
   return {
-    shouldBroadcastBombPlaced: vi.fn<
-      (dedupeKey: string, nowMs: number) => boolean
-    >(() => shouldBroadcast),
-    shouldAcceptBombPlacement: vi.fn<
-      (playerId: string, nowMs: number) => boolean
-    >(() => true),
+    shouldBroadcastBombPlaced: vi.fn<(dedupeKey: string) => boolean>(
+      () => shouldBroadcast,
+    ),
+    shouldAcceptBombPlacement: vi.fn<(playerId: string) => boolean>(() => true),
     issueServerBombId: vi.fn<() => string>(() => "bomb-1"),
-    resolveBombExplodeAtElapsedMs: vi.fn<(nowMs: number) => number>(
+    resolveBombExplodeAtElapsedMs: vi.fn<() => number>(
       () => SERVER_EXPLODE_AT_ELAPSED_MS,
     ),
     registerActiveBomb: vi.fn<(registration: ActiveBombRegistration) => void>(),
@@ -179,7 +182,6 @@ const runStartGameUseCase = ({
 describe("startGameUseCase", () => {
   beforeEach(() => {
     vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
   });
 
   afterEach(() => {
@@ -215,44 +217,59 @@ describe("startGameUseCase", () => {
     );
   });
 
-  it("セッション開始時刻でゲーム開始をルームへ配信すること", () => {
+  it("カウントダウン中の符号付き経過msでゲーム開始をルームへ配信すること", () => {
     const { output } = runStartGameUseCase({
-      gameSession: createGameSessionStub({ startTime: 5_000 }),
+      gameSession: createGameSessionStub({
+        signedElapsedMs: -GAME_START_DELAY_MS,
+      }),
     });
 
     expect(output.publishGameStartToRoom).toHaveBeenCalledWith("room-1", {
-      startTime: 5_000,
-      serverNow: FIXED_NOW_MS,
+      serverElapsedMs: -GAME_START_DELAY_MS,
       fieldSizePreset: "SMALL",
       gridCols: 24,
       gridRows: 24,
     });
   });
 
-  it("開始時刻が未確定の場合は現在時刻を開始時刻とすること", () => {
+  it("ゲーム開始通知に壁時計由来のフィールドを載せないこと", () => {
+    const { output } = runStartGameUseCase({
+      gameSession: createGameSessionStub({ signedElapsedMs: -1_000 }),
+    });
+
+    const payload = output.publishGameStartToRoom.mock.calls[0]?.[1];
+    expect(Object.keys(payload ?? {}).sort()).toEqual([
+      "fieldSizePreset",
+      "gridCols",
+      "gridRows",
+      "serverElapsedMs",
+    ]);
+  });
+
+  it("経過msが未確定の場合は開始待機時間の負値へ倒すこと", () => {
     const { output } = runStartGameUseCase();
 
     expect(output.publishGameStartToRoom).toHaveBeenCalledWith(
       "room-1",
-      expect.objectContaining({ startTime: FIXED_NOW_MS }),
+      expect.objectContaining({ serverElapsedMs: -GAME_START_DELAY_MS }),
     );
   });
 
-  it("開始時刻が0の場合はそのまま開始時刻として配信すること", () => {
+  it("経過msが0の場合はそのまま配信すること", () => {
     const { output } = runStartGameUseCase({
-      gameSession: createGameSessionStub({ startTime: 0 }),
+      gameSession: createGameSessionStub({ signedElapsedMs: 0 }),
     });
 
     expect(output.publishGameStartToRoom).toHaveBeenCalledWith(
       "room-1",
-      expect.objectContaining({ startTime: 0 }),
+      expect.objectContaining({ serverElapsedMs: 0 }),
     );
   });
 
   it("セッション側フィールド設定がある場合はそれを配信すること", () => {
     const { output } = runStartGameUseCase({
       gameSession: createGameSessionStub({
-        startTime: 5_000,
+        signedElapsedMs: -GAME_START_DELAY_MS,
         sessionFieldConfig: {
           fieldSizePreset: "LARGE",
           gridCols: 45,

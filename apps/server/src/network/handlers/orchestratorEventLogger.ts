@@ -8,6 +8,7 @@ import { logResults, logScopes } from "@server/logging/index";
 
 /** オーケストレータで未解決時に記録するイベント型 */
 type MissingRoomNetworkEvent =
+  | typeof protocol.SocketEvents.PING
   | typeof protocol.SocketEvents.MOVE
   | typeof protocol.SocketEvents.PLACE_BOMB
   | typeof protocol.SocketEvents.BOMB_HIT_REPORT

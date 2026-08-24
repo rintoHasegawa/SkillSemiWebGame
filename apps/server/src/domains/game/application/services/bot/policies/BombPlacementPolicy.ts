@@ -13,22 +13,21 @@ const clamp = (value: number, min: number, max: number): number => {
 /** 爆弾設置可否を判定して設置時の情報を返す */
 export const decideBombPlacement = (
   botPlayerId: BotPlayerId,
-  nowMs: number,
   elapsedMs: number,
-  lastBombPlacedAtMs: number,
+  lastBombPlacedAtElapsedMs: number,
   bombSeq: number,
   x: number,
   y: number,
 ): {
   placeBombPayload: PlaceBombPayload | null;
   nextBombSeq: number;
-  nextLastBombPlacedAtMs: number;
+  nextLastBombPlacedAtElapsedMs: number;
 } => {
   const { BOMB_FUSE_MS } = config.GAME_CONFIG;
 
   // 人間プレイヤーと同じ共有ロジックでクールダウンを解決する
   const cooldownMs = domain.game.bomb.resolveBombCooldownMs(elapsedMs);
-  const canPlaceBomb = nowMs - lastBombPlacedAtMs >= cooldownMs;
+  const canPlaceBomb = elapsedMs - lastBombPlacedAtElapsedMs >= cooldownMs;
 
   if (
     !canPlaceBomb ||
@@ -38,7 +37,7 @@ export const decideBombPlacement = (
     return {
       placeBombPayload: null,
       nextBombSeq: bombSeq,
-      nextLastBombPlacedAtMs: lastBombPlacedAtMs,
+      nextLastBombPlacedAtElapsedMs: lastBombPlacedAtElapsedMs,
     };
   }
 
@@ -51,6 +50,6 @@ export const decideBombPlacement = (
       explodeAtElapsedMs: elapsedMs + BOMB_FUSE_MS,
     },
     nextBombSeq,
-    nextLastBombPlacedAtMs: nowMs,
+    nextLastBombPlacedAtElapsedMs: elapsedMs,
   };
 };

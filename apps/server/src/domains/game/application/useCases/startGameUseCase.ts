@@ -8,6 +8,7 @@ import type {
   StartGameOutputPort,
   StartGamePort,
 } from "../ports/gameUseCasePorts";
+import { config } from "@server/config";
 import { logEvent } from "@server/logging/logger";
 import {
   gameUseCaseLogEvents,
@@ -159,12 +160,13 @@ export const startGameUseCase = ({
     teamPreferences,
   );
 
-  // 0 も有効なエポック時刻のため，未確定時のみ現在時刻へフォールバックする
-  const startTime = gameSession.getRoomStartTime() ?? Date.now();
+  // セッション開始直後のため未確定になることは無いが，念のため開始待機ぶんの負値へ倒す
+  const serverElapsedMs =
+    gameSession.getRoomSignedElapsedMs() ??
+    -config.GAME_CONFIG.GAME_START_DELAY_MS;
   const sessionFieldConfig = gameSession.getRoomFieldConfig() ?? fieldConfig;
   output.publishGameStartToRoom(roomId, {
-    startTime,
-    serverNow: Date.now(),
+    serverElapsedMs,
     fieldSizePreset: sessionFieldConfig.fieldSizePreset,
     gridCols: sessionFieldConfig.gridCols,
     gridRows: sessionFieldConfig.gridRows,

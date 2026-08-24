@@ -28,7 +28,6 @@ export const createBotBombActionHandler = ({
       input: {
         socketId: ownerId,
         payload,
-        nowMs: Date.now(),
       },
       output,
     });

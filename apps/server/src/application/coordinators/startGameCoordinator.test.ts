@@ -19,14 +19,13 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
+import { config } from "@server/config";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import {
   createRoom as createRoomFixture,
   createRoomMember,
 } from "@server/testing/roomFixtures";
 import { startGameCoordinator } from "./startGameCoordinator";
-
-const FIXED_NOW_MS = 1_700_000_000_000;
 
 type RoomParams = {
   roomId?: string;
@@ -61,12 +60,12 @@ const createRoom = ({
 };
 
 /** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
-const createGameManagerStub = (startTime?: number) => {
+const createGameManagerStub = (signedElapsedMs?: number) => {
   return {
     startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
-    getRoomStartTime: vi.fn<RoomScopedGamePort["getRoomStartTime"]>(
-      () => startTime,
-    ),
+    getRoomSignedElapsedMs: vi.fn<
+      RoomScopedGamePort["getRoomSignedElapsedMs"]
+    >(() => signedElapsedMs),
     getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
       () => undefined,
     ),
@@ -214,7 +213,6 @@ describe("startGameCoordinator", () => {
 
   beforeEach(() => {
     logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
   });
 
   afterEach(() => {
@@ -747,7 +745,7 @@ describe("startGameCoordinator", () => {
     expect(gameManager.startRoomSession.mock.calls[0]?.[4]).toBeUndefined();
   });
 
-  it("開始時刻が未設定の場合は現在時刻で開始通知を送ること", () => {
+  it("経過msが未確定の場合は開始待機時間の負値で開始通知を送ること", () => {
     const output = createOutputStub();
 
     startGameCoordinator({
@@ -760,12 +758,29 @@ describe("startGameCoordinator", () => {
     });
 
     expect(output.publishGameStartToRoom).toHaveBeenCalledWith("room-1", {
-      startTime: FIXED_NOW_MS,
-      serverNow: FIXED_NOW_MS,
+      serverElapsedMs: -config.GAME_CONFIG.GAME_START_DELAY_MS,
       fieldSizePreset: "MEDIUM",
       gridCols: 36,
       gridRows: 36,
     });
+  });
+
+  it("セッションの符号付き経過msをそのまま開始通知へ載せること", () => {
+    const output = createOutputStub();
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...createDeps({
+        room: createRoom(),
+        gameManager: createGameManagerStub(-4_800),
+      }),
+      output,
+    });
+
+    expect(output.publishGameStartToRoom).toHaveBeenCalledWith(
+      "room-1",
+      expect.objectContaining({ serverElapsedMs: -4_800 }),
+    );
   });
 
   it("セッション終了時にルーム削除とランタイム破棄を行うこと", () => {

@@ -1,7 +1,8 @@
 /**
  * reportBombHitValidation.test
- * 被弾報告の処理要否判定の現行挙動を固定する characterization test
+ * 被弾報告の処理要否判定を検証するユニットテスト
  * 重複排除キー生成と判定結果の透過を検証する
+ * 重複排除の時刻は爆弾ストア側のゲーム時間軸で解決するため引数では渡さない
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -13,9 +14,9 @@ const createValidationStub = (
   isSameTeam: boolean = false,
 ) => {
   return {
-    shouldBroadcastBombHitReport: vi.fn<
-      (dedupeKey: string, nowMs: number) => boolean
-    >(() => shouldBroadcast),
+    shouldBroadcastBombHitReport: vi.fn<(dedupeKey: string) => boolean>(
+      () => shouldBroadcast,
+    ),
     isSameTeamBombHitReport: vi.fn<
       (reporterPlayerId: string, bombId: string) => boolean
     >(() => isSameTeam),
@@ -25,7 +26,6 @@ const createValidationStub = (
 const input = {
   socketId: "socket-1",
   payload: { bombId: "bomb-9" },
-  nowMs: 500,
 };
 
 describe("shouldPublishPlayerHitFromBombHit", () => {
@@ -36,7 +36,6 @@ describe("shouldPublishPlayerHitFromBombHit", () => {
 
     expect(validation.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
       "8:socket-1|6:bomb-9",
-      500,
     );
   });
 
@@ -77,17 +76,26 @@ describe("shouldPublishPlayerHitFromBombHit", () => {
     expect(validation.shouldBroadcastBombHitReport).not.toHaveBeenCalled();
   });
 
-  it("nowMsが0でもそのまま重複排除へ渡すこと", () => {
+  it("重複排除キーへ時刻を渡さないこと", () => {
+    const validation = createValidationStub(true);
+
+    shouldPublishPlayerHitFromBombHit(validation, input);
+
+    expect(validation.shouldBroadcastBombHitReport.mock.calls[0]).toHaveLength(
+      1,
+    );
+  });
+
+  it("空の爆弾IDでも長さプレフィックス方式でキーを生成すること", () => {
     const validation = createValidationStub(true);
 
     shouldPublishPlayerHitFromBombHit(validation, {
       ...input,
-      nowMs: 0,
+      payload: { bombId: "" },
     });
 
     expect(validation.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
-      "8:socket-1|6:bomb-9",
-      0,
+      "8:socket-1|0:",
     );
   });
 });

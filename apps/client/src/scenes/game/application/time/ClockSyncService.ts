@@ -1,7 +1,7 @@
 /**
  * ClockSyncService
- * サーバー時刻との差分を平滑化して管理する
- * PING/PONGのRTTを使い，外れ値を除外して同期精度を安定化する
+ * サーバーのゲーム経過時間との差分を推定して管理する
+ * PING/PONGの最小RTTサンプルを採用し，slewで追従して同期精度を安定化する
  */
 import type { PongPayload } from "@repo/shared";
 import { config } from "@client/config";
@@ -10,7 +10,10 @@ import {
   PongSampleEstimator,
   type PongSampleEstimatorConfig,
 } from "./PongSampleEstimator";
-import { OffsetSmoother, type OffsetSmootherConfig } from "./OffsetSmoother";
+import {
+  ClockOffsetTracker,
+  type ClockOffsetTrackerConfig,
+} from "./ClockOffsetTracker";
 import {
   SyncIntervalPolicy,
   type SyncIntervalPolicyConfig,
@@ -19,7 +22,7 @@ import {
 /** 時刻同期に利用する更新パラメータ */
 export type ClockSyncConfig = {
   estimator: PongSampleEstimatorConfig;
-  smoother: OffsetSmootherConfig;
+  offsetTracker: ClockOffsetTrackerConfig;
   intervalPolicy: SyncIntervalPolicyConfig;
 };
 
@@ -37,13 +40,12 @@ export const DEFAULT_CLOCK_SYNC_CONFIG: ClockSyncConfig = {
     maxAcceptedRttMs:
       config.GAME_CONFIG.CLOCK_SYNC.ESTIMATOR.MAX_ACCEPTED_RTT_MS,
   },
-  smoother: {
-    offsetAlpha: config.GAME_CONFIG.CLOCK_SYNC.SMOOTHER.OFFSET_ALPHA,
-    rttAlpha: config.GAME_CONFIG.CLOCK_SYNC.SMOOTHER.RTT_ALPHA,
-    maxAcceptedOffsetJumpMs:
-      config.GAME_CONFIG.CLOCK_SYNC.SMOOTHER.MAX_ACCEPTED_OFFSET_JUMP_MS,
-    maxConsecutiveRejectedSamples:
-      config.GAME_CONFIG.CLOCK_SYNC.SMOOTHER.MAX_CONSECUTIVE_REJECTED_SAMPLES,
+  offsetTracker: {
+    sampleWindowSize:
+      config.GAME_CONFIG.CLOCK_SYNC.OFFSET_TRACKER.SAMPLE_WINDOW_SIZE,
+    maxSlewPerSampleMs:
+      config.GAME_CONFIG.CLOCK_SYNC.OFFSET_TRACKER.MAX_SLEW_PER_SAMPLE_MS,
+    rttAlpha: config.GAME_CONFIG.CLOCK_SYNC.OFFSET_TRACKER.RTT_ALPHA,
   },
   intervalPolicy: {
     defaultIntervalMs:
@@ -63,11 +65,11 @@ export const DEFAULT_CLOCK_SYNC_CONFIG: ClockSyncConfig = {
   },
 };
 
-/** サーバー時刻との差分を平滑化して保持する */
+/** サーバーのゲーム経過時間との差分を推定して保持する */
 export class ClockSyncService {
   private readonly nowProvider: TimeProvider["now"];
   private readonly estimator: PongSampleEstimator;
-  private readonly smoother: OffsetSmoother;
+  private readonly offsetTracker: ClockOffsetTracker;
   private readonly intervalPolicy: SyncIntervalPolicy;
 
   constructor(
@@ -79,9 +81,9 @@ export class ClockSyncService {
         ...DEFAULT_CLOCK_SYNC_CONFIG.estimator,
         ...config.estimator,
       },
-      smoother: {
-        ...DEFAULT_CLOCK_SYNC_CONFIG.smoother,
-        ...config.smoother,
+      offsetTracker: {
+        ...DEFAULT_CLOCK_SYNC_CONFIG.offsetTracker,
+        ...config.offsetTracker,
       },
       intervalPolicy: {
         ...DEFAULT_CLOCK_SYNC_CONFIG.intervalPolicy,
@@ -90,16 +92,16 @@ export class ClockSyncService {
     };
     this.nowProvider = nowProvider;
     this.estimator = new PongSampleEstimator(mergedConfig.estimator);
-    this.smoother = new OffsetSmoother(mergedConfig.smoother);
+    this.offsetTracker = new ClockOffsetTracker(mergedConfig.offsetTracker);
     this.intervalPolicy = new SyncIntervalPolicy(mergedConfig.intervalPolicy);
   }
 
-  /** 受信した serverNow をもとに差分を初期化する */
-  public seedFromServerNow(
-    serverNowMs: number,
+  /** 受信したサーバーのゲーム経過msをもとに差分を初期化する */
+  public seedFromServerElapsed(
+    serverElapsedMs: number,
     receivedAtMs = this.nowProvider(),
   ): void {
-    this.smoother.seed(serverNowMs, receivedAtMs);
+    this.offsetTracker.seed(serverElapsedMs, receivedAtMs);
   }
 
   /** PONGサンプルを取り込み，差分とRTTを更新する */
@@ -112,26 +114,36 @@ export class ClockSyncService {
       return;
     }
 
-    this.smoother.applySample(sample);
+    this.offsetTracker.applySample(sample);
   }
 
-  /** 平滑化済みの時刻差分ミリ秒を返す */
+  /** 推定済みの時刻差分ミリ秒を返す */
   public getClockOffsetMs(): number {
-    return this.smoother.getClockOffsetMs();
+    return this.offsetTracker.getClockOffsetMs();
   }
 
-  /** サーバー時刻基準へ補正した現在時刻ミリ秒を返す */
-  public getSynchronizedNowMs(): number {
+  /**
+   * サーバー基準の符号付きゲーム経過ミリ秒を返す
+   * ゲームプレイ開始前は負値を返し，時計未同期時は null を返す
+   */
+  public getElapsedMs(): number | null {
+    // 未同期のまま単調時計を返すと，読み込みからの経過が経過時間として通ってしまう
+    if (!this.offsetTracker.hasOffsetEstimate()) {
+      return null;
+    }
+
     return this.nowProvider() + this.getClockOffsetMs();
   }
 
   /** RTT状況に応じた次回同期推奨間隔ミリ秒を返す */
   public getRecommendedSyncIntervalMs(): number {
-    return this.intervalPolicy.getIntervalMs(this.smoother.getSmoothedRttMs());
+    return this.intervalPolicy.getIntervalMs(
+      this.offsetTracker.getSmoothedRttMs(),
+    );
   }
 
   /** 内部状態を初期化する */
   public reset(): void {
-    this.smoother.reset();
+    this.offsetTracker.reset();
   }
 }

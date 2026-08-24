@@ -56,25 +56,32 @@
 #### 全Botの動作 (All Bots Behavior)
 
 - `game-start`イベント受信後に`ready-for-game`を送信する
-- `game-start`に含まれる`startTime`まで待機してからゲームプレイを開始する
+- `game-start`に含まれる`serverElapsedMs`が0になるまで待機してからゲームプレイを開始する
 - `gridCols`/`gridRows`を受信し，フィールドサイズを動的に更新する
 
 ### クロック同期 (Clock Synchronization)
 
+Botもクライアント本体と同じく，ゲーム時間には壁時計を使わず単調時計（`performance.now()`）のみを使う．詳細な方式は[TECH_02_時刻同期_ラグ対策](../05_TECH/TECH_02_時刻同期_ラグ対策.md)を参照．
+
 #### Ping/Pong
 
-- 5秒間隔で`ping`イベントを送信する（初回は接続直後に即時送信）
-- `pong`受信時にRTTを計測し，`clockOffsetMs`を更新する
-- 計算式: `clockOffsetMs = serverTime + (RTT / 2) - clientNow`
+- 5秒間隔で`ping`イベントを送信する（初回は接続直後に即時送信．送信値は単調時計の値）
+- `pong`受信時に4つのタイムスタンプからRTTと`clockOffsetMs`を更新する
+- サーバー滞留時間: `serverProcessingMs = serverSentElapsedMs - serverReceivedElapsedMs`
+- RTT計測: `rttMs = (受信時刻 - clientTime) - serverProcessingMs`
+- 計算式: `clockOffsetMs = serverSentElapsedMs - (受信時刻 - rttMs / 2)`
+- `clockOffsetMs`は「クライアント単調時計 → サーバーのゲーム経過ms」への変換差分である
+- RTTが負になるサンプルは棄却する
 
 #### game-start時の補正 (Correction at Game Start)
 
-- `game-start`ペイロードの`serverNow`で`clockOffsetMs`を上書きする
-- ゲーム開始直前に最も正確なオフセットを取得する
+- `game-start`ペイロードの`serverElapsedMs`で`clockOffsetMs`を暫定的に置く
+- この値は片道遅延を補正していないため真値より過小だが，`pong`未着でもカウントダウンを開始できる
 
 #### 経過時間の算出 (Elapsed Time Calculation)
 
-- `getElapsedMs() = max(0, getServerNow() - gameStartTimeMs)`
+- 符号付き経過: `getSignedElapsedMs() = 単調時計 + clockOffsetMs`（カウントダウン中は負，未同期時は`null`）
+- 経過時間: `getElapsedMs() = max(0, getSignedElapsedMs())`
 - ボムの爆発判定やフィーバータイム判定に使用する
 
 ### 移動 (Movement)

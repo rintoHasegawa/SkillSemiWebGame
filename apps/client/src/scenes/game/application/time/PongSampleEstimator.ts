@@ -1,13 +1,14 @@
 /**
  * PongSampleEstimator
- * PONGペイロードからRTTと時計差分を推定する
- * 不正値や過大RTTサンプルを除外して品質を担保する
+ * PONGペイロードからRTTとゲーム時計との差分を推定する
+ * サーバー滞留時間を除いたRTTを求め，不正値や過大RTTサンプルを除外する
  */
 import type { PongPayload } from "@repo/shared";
 
 /** PONGサンプル推定結果の型 */
 export type PongSample = {
   rttMs: number;
+  /** クライアント単調時計からサーバーのゲーム経過msへ変換する差分 */
   offsetMs: number;
 };
 
@@ -32,19 +33,24 @@ export class PongSampleEstimator {
     };
   }
 
-  /** PONG受信情報からRTTとoffsetを推定して返す */
+  /** PONG受信情報からRTTとゲーム経過msへのoffsetを推定して返す */
   public estimate(
     payload: PongPayload,
     receivedAtMs: number,
   ): PongSample | null {
-    const measuredRttMs = receivedAtMs - payload.clientTime;
+    // サーバー内での滞留時間を除いた往復のみをRTTとして扱う
+    const serverProcessingMs =
+      payload.serverSentElapsedMs - payload.serverReceivedElapsedMs;
+    const measuredRttMs =
+      receivedAtMs - payload.clientTime - serverProcessingMs;
     if (measuredRttMs < 0 || measuredRttMs > this.config.maxAcceptedRttMs) {
       return null;
     }
 
+    // PONG送信時点のゲーム経過msを，受信時刻から片道遅延ぶん巻き戻した瞬間に対応付ける
     const estimatedOneWayMs = measuredRttMs / 2;
     const measuredOffsetMs =
-      payload.serverTime - (payload.clientTime + estimatedOneWayMs);
+      payload.serverSentElapsedMs - (receivedAtMs - estimatedOneWayMs);
 
     return {
       rttMs: measuredRttMs,

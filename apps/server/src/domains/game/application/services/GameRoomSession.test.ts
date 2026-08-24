@@ -1,7 +1,8 @@
 /**
  * GameRoomSession.test
- * ルームセッションの現行挙動を固定する characterization test
+ * ルームセッションの挙動を検証するユニットテスト
  * チーム割り当て，移動の無視条件，爆弾状態管理を検証する
+ * 時間判定はセッションが持つ単調時計（GameClock）1本のみを基準とする
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,6 +19,9 @@ const fieldConfig: GameFieldConfig = {
 
 // 仕様（SPEC_03 プレイヤー半径 0.5 グリッド）に基づく境界値
 const { PLAYER_RADIUS } = config.GAME_CONFIG;
+const { BOMB_FUSE_MS, GAME_START_DELAY_MS } = config.GAME_CONFIG;
+const TICK_RATE_MS = 50;
+const FIXED_WALL_CLOCK_MS = 1_700_000_000_000;
 
 /** テスト用のセッションを生成する */
 const createSession = (
@@ -40,6 +44,38 @@ const createCallbacksStub = (): GameSessionCallbacks => {
     onTick: vi.fn(),
     onGameEnd: vi.fn(),
   };
+};
+
+/** 単調時計を任意に進められる制御スタブ */
+type MonotonicClockStub = {
+  advance: (deltaMs: number) => void;
+};
+
+/** セッション内部の GameClock が読む単調時計を差し替える */
+const stubMonotonicClock = (initialMs: number = 10_000): MonotonicClockStub => {
+  let currentMs = initialMs;
+  vi.spyOn(performance, "now").mockImplementation(() => currentMs);
+
+  return {
+    advance: (deltaMs: number) => {
+      currentMs += deltaMs;
+    },
+  };
+};
+
+/**
+ * セッションを開始し，指定のゲーム経過msまで単調時計を進める
+ * 負の経過msを渡すとカウントダウン中の状態を再現できる
+ */
+const startSessionAtElapsed = (
+  session: GameRoomSession,
+  elapsedMs: number,
+): MonotonicClockStub => {
+  const clock = stubMonotonicClock();
+  session.start(TICK_RATE_MS, createCallbacksStub());
+  clock.advance(GAME_START_DELAY_MS + elapsedMs);
+
+  return clock;
 };
 
 describe("GameRoomSession", () => {
@@ -126,10 +162,10 @@ describe("GameRoomSession", () => {
     expect(session.getFieldConfig()).toEqual(fieldConfig);
   });
 
-  it("開始前は開始時刻がundefinedであること", () => {
+  it("開始前は符号付き経過msが開始待機時間の負値になること", () => {
     const session = createSession();
 
-    expect(session.getStartTime()).toBeUndefined();
+    expect(session.getSignedElapsedMs()).toBe(-GAME_START_DELAY_MS);
   });
 
   it("参加中プレイヤーの有無を判定できること", () => {
@@ -144,16 +180,31 @@ describe("GameRoomSession", () => {
     expect(session.hasPlayer("socket-9")).toBe(false);
   });
 
-  it("開始前の移動は座標へ反映すること", () => {
+  it("未開始セッションの移動は無視すること", () => {
     const session = createSession();
+    const before = { ...session.getPlayers()[0] };
+
+    session.movePlayer("socket-1", 2.5, 3.5);
+
+    expect(session.getPlayers()[0]).toMatchObject({
+      x: before.x,
+      y: before.y,
+    });
+  });
+
+  it("ゲームプレイ開始後の移動は座標へ反映すること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 0);
 
     session.movePlayer("socket-1", 2.5, 3.5);
 
     expect(session.getPlayers()[0]).toMatchObject({ x: 2.5, y: 3.5 });
+    session.dispose();
   });
 
   it("未参加プレイヤーの移動は無視すること", () => {
     const session = createSession();
+    startSessionAtElapsed(session, 0);
     const before = { ...session.getPlayers()[0] };
 
     session.movePlayer("socket-9", 2.5, 3.5);
@@ -162,19 +213,23 @@ describe("GameRoomSession", () => {
       x: before.x,
       y: before.y,
     });
+    session.dispose();
   });
 
   it("非有限座標の移動は無視すること", () => {
     const session = createSession();
+    startSessionAtElapsed(session, 0);
     session.movePlayer("socket-1", 2.5, 3.5);
 
     session.movePlayer("socket-1", Number.NaN, 1);
 
     expect(session.getPlayers()[0]).toMatchObject({ x: 2.5, y: 3.5 });
+    session.dispose();
   });
 
   it("フィールド範囲を超える移動はルームのグリッドサイズでクランプすること", () => {
     const session = createSession();
+    startSessionAtElapsed(session, 0);
 
     session.movePlayer("socket-1", 9999, 9999);
 
@@ -182,10 +237,12 @@ describe("GameRoomSession", () => {
       x: fieldConfig.gridCols - PLAYER_RADIUS,
       y: fieldConfig.gridRows - PLAYER_RADIUS,
     });
+    session.dispose();
   });
 
   it("負の座標への移動はマップ下限へクランプすること", () => {
     const session = createSession();
+    startSessionAtElapsed(session, 0);
 
     session.movePlayer("socket-1", -50, -50);
 
@@ -193,11 +250,12 @@ describe("GameRoomSession", () => {
       x: PLAYER_RADIUS,
       y: PLAYER_RADIUS,
     });
+    session.dispose();
   });
 
-  it("開始待機中の移動は無視すること", () => {
+  it("開始直後のカウントダウン中の移動は無視すること", () => {
     const session = createSession();
-    session.start(50, createCallbacksStub());
+    startSessionAtElapsed(session, -GAME_START_DELAY_MS);
 
     session.movePlayer("socket-1", 2.5, 3.5);
 
@@ -205,14 +263,9 @@ describe("GameRoomSession", () => {
     session.dispose();
   });
 
-  it("開始時刻が0でも開始前の移動は無視すること", () => {
+  it("ゲームプレイ開始の1ms手前の移動は無視すること", () => {
     const session = createSession();
-    // 待機時間を差し引いて開始時刻がエポック0になるよう現在時刻を固定する
-    const nowSpy = vi
-      .spyOn(Date, "now")
-      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
-    session.start(50, createCallbacksStub());
-    nowSpy.mockReturnValue(-1);
+    startSessionAtElapsed(session, -1);
 
     session.movePlayer("socket-1", 2.5, 3.5);
 
@@ -220,13 +273,9 @@ describe("GameRoomSession", () => {
     session.dispose();
   });
 
-  it("開始時刻が0ちょうどに達した移動は座標へ反映すること", () => {
+  it("ゲームプレイ開始時刻ちょうどの移動は座標へ反映すること", () => {
     const session = createSession();
-    const nowSpy = vi
-      .spyOn(Date, "now")
-      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
-    session.start(50, createCallbacksStub());
-    nowSpy.mockReturnValue(0);
+    startSessionAtElapsed(session, 0);
 
     session.movePlayer("socket-1", 2.5, 3.5);
 
@@ -234,13 +283,38 @@ describe("GameRoomSession", () => {
     session.dispose();
   });
 
-  it("開始時は待機時間を加えた開始時刻を設定すること", () => {
+  it("開始直後の符号付き経過msは開始待機時間の負値になること", () => {
     const session = createSession();
-    const beforeMs = Date.now();
+    startSessionAtElapsed(session, -GAME_START_DELAY_MS);
 
-    session.start(50, createCallbacksStub());
+    expect(session.getSignedElapsedMs()).toBe(-GAME_START_DELAY_MS);
+    session.dispose();
+  });
 
-    expect(session.getStartTime()).toBeGreaterThan(beforeMs);
+  it("ゲームプレイ開始時刻ちょうどの符号付き経過msは0になること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 0);
+
+    expect(session.getSignedElapsedMs()).toBe(0);
+    session.dispose();
+  });
+
+  it("ゲームプレイ開始後の符号付き経過msは正の経過を返すこと", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 1_234);
+
+    expect(session.getSignedElapsedMs()).toBe(1_234);
+    session.dispose();
+  });
+
+  it("壁時計が前方へステップしても符号付き経過msを変えないこと", () => {
+    const session = createSession();
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(FIXED_WALL_CLOCK_MS);
+    startSessionAtElapsed(session, 1_234);
+    // ホストの壁時計が試合中に1時間前方へ飛ぶ状況を再現する
+    nowSpy.mockReturnValue(FIXED_WALL_CLOCK_MS + 3_600_000);
+
+    expect(session.getSignedElapsedMs()).toBe(1_234);
     session.dispose();
   });
 
@@ -270,7 +344,7 @@ describe("GameRoomSession", () => {
 
   it("開始済みセッションのBot昇格はtrueを返すこと", () => {
     const session = createSession();
-    session.start(50, createCallbacksStub());
+    session.start(TICK_RATE_MS, createCallbacksStub());
 
     expect(session.promotePlayerToBotControl("socket-1")).toBe(true);
     session.dispose();
@@ -287,139 +361,143 @@ describe("GameRoomSession", () => {
 
   it("同一キーの爆弾設置は2回目を配信不可とすること", () => {
     const session = createSession();
-    session.shouldBroadcastBombPlaced("socket-1:req-1", 0);
+    session.shouldBroadcastBombPlaced("socket-1:req-1");
 
-    expect(session.shouldBroadcastBombPlaced("socket-1:req-1", 0)).toBe(false);
+    expect(session.shouldBroadcastBombPlaced("socket-1:req-1")).toBe(false);
   });
 
   it("初回の爆弾設置は配信可とすること", () => {
     const session = createSession();
 
-    expect(session.shouldBroadcastBombPlaced("socket-1:req-1", 0)).toBe(true);
+    expect(session.shouldBroadcastBombPlaced("socket-1:req-1")).toBe(true);
   });
 
-  it("開始待機中の爆弾設置は受理しないこと", () => {
+  it("未開始セッションの爆弾設置は受理しないこと", () => {
     const session = createSession();
-    // 待機時間を差し引いて開始時刻がエポック0になるよう現在時刻を固定する
-    const nowSpy = vi
-      .spyOn(Date, "now")
-      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
-    session.start(50, createCallbacksStub());
-    nowSpy.mockReturnValue(-1);
 
-    expect(session.shouldAcceptBombPlacement("socket-1", -1)).toBe(false);
+    expect(session.shouldAcceptBombPlacement("socket-1")).toBe(false);
+  });
+
+  it("カウントダウン中の爆弾設置は受理しないこと", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, -1);
+
+    expect(session.shouldAcceptBombPlacement("socket-1")).toBe(false);
     session.dispose();
   });
 
-  it("開始時刻ちょうどに達した爆弾設置は受理すること", () => {
+  it("ゲームプレイ開始時刻ちょうどの爆弾設置は受理すること", () => {
     const session = createSession();
-    const nowSpy = vi
-      .spyOn(Date, "now")
-      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
-    session.start(50, createCallbacksStub());
-    nowSpy.mockReturnValue(0);
+    startSessionAtElapsed(session, 0);
 
-    expect(session.shouldAcceptBombPlacement("socket-1", 0)).toBe(true);
+    expect(session.shouldAcceptBombPlacement("socket-1")).toBe(true);
     session.dispose();
   });
 
   it("通常クールダウン未経過の爆弾設置は受理しないこと", () => {
     const session = createSession();
-    session.shouldAcceptBombPlacement("socket-1", 1_000);
+    const clock = startSessionAtElapsed(session, 1_000);
+    session.shouldAcceptBombPlacement("socket-1");
 
-    expect(session.shouldAcceptBombPlacement("socket-1", 1_100)).toBe(false);
+    clock.advance(100);
+
+    expect(session.shouldAcceptBombPlacement("socket-1")).toBe(false);
+    session.dispose();
   });
 
   it("通常クールダウン経過後の爆弾設置は受理すること", () => {
     const session = createSession();
-    session.shouldAcceptBombPlacement("socket-1", 1_000);
+    const clock = startSessionAtElapsed(session, 1_000);
+    session.shouldAcceptBombPlacement("socket-1");
 
-    expect(
-      session.shouldAcceptBombPlacement(
-        "socket-1",
-        1_000 + config.GAME_CONFIG.BOMB_NORMAL_COOLDOWN_MS,
-      ),
-    ).toBe(true);
+    clock.advance(config.GAME_CONFIG.BOMB_NORMAL_COOLDOWN_MS);
+
+    expect(session.shouldAcceptBombPlacement("socket-1")).toBe(true);
+    session.dispose();
   });
 
   it("フィーバー時はフィーバークールダウン経過で爆弾設置を受理すること", () => {
     const session = createSession();
-    vi.spyOn(Date, "now").mockReturnValue(
-      -config.GAME_CONFIG.GAME_START_DELAY_MS,
-    );
-    session.start(50, createCallbacksStub());
+    // SPEC_03「タイムライン」: 残り60秒からフィーバー
     const feverElapsedMs =
       (config.GAME_CONFIG.GAME_DURATION_SEC
         - config.GAME_CONFIG.BOMB_FEVER_START_REMAINING_SEC)
         * 1_000
       + 1_000;
-    session.shouldAcceptBombPlacement("socket-1", feverElapsedMs);
+    const clock = startSessionAtElapsed(session, feverElapsedMs);
+    session.shouldAcceptBombPlacement("socket-1");
 
-    expect(
-      session.shouldAcceptBombPlacement(
-        "socket-1",
-        feverElapsedMs + config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS,
-      ),
-    ).toBe(true);
+    clock.advance(config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS);
+
+    expect(session.shouldAcceptBombPlacement("socket-1")).toBe(true);
     session.dispose();
   });
 
   it("通常時はフィーバークールダウン経過でも爆弾設置を受理しないこと", () => {
     const session = createSession();
-    vi.spyOn(Date, "now").mockReturnValue(
-      -config.GAME_CONFIG.GAME_START_DELAY_MS,
-    );
-    session.start(50, createCallbacksStub());
-    session.shouldAcceptBombPlacement("socket-1", 10_000);
+    const clock = startSessionAtElapsed(session, 10_000);
+    session.shouldAcceptBombPlacement("socket-1");
 
-    expect(
-      session.shouldAcceptBombPlacement(
-        "socket-1",
-        10_000 + config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS,
-      ),
-    ).toBe(false);
+    clock.advance(config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS);
+
+    expect(session.shouldAcceptBombPlacement("socket-1")).toBe(false);
     session.dispose();
   });
 
   it("開始前の爆発予定時刻は経過0として導火線時間を返すこと", () => {
     const session = createSession();
 
-    expect(session.resolveBombExplodeAtElapsedMs(5_000)).toBe(
-      config.GAME_CONFIG.BOMB_FUSE_MS,
-    );
+    expect(session.resolveBombExplodeAtElapsedMs()).toBe(BOMB_FUSE_MS);
   });
 
   it("開始後の爆発予定時刻はサーバー経過時間に導火線時間を加えること", () => {
     const session = createSession();
-    vi.spyOn(Date, "now").mockReturnValue(
-      -config.GAME_CONFIG.GAME_START_DELAY_MS,
-    );
-    session.start(50, createCallbacksStub());
+    startSessionAtElapsed(session, 5_000);
 
-    expect(session.resolveBombExplodeAtElapsedMs(5_000)).toBe(
-      5_000 + config.GAME_CONFIG.BOMB_FUSE_MS,
-    );
+    expect(session.resolveBombExplodeAtElapsedMs()).toBe(5_000 + BOMB_FUSE_MS);
     session.dispose();
   });
 
-  it("開始待機中の爆発予定時刻は経過0として導火線時間を返すこと", () => {
+  it("カウントダウン中の爆発予定時刻は経過0として導火線時間を返すこと", () => {
     const session = createSession();
-    vi.spyOn(Date, "now").mockReturnValue(0);
-    session.start(50, createCallbacksStub());
+    startSessionAtElapsed(session, -1);
 
-    expect(session.resolveBombExplodeAtElapsedMs(0)).toBe(
-      config.GAME_CONFIG.BOMB_FUSE_MS,
+    expect(session.resolveBombExplodeAtElapsedMs()).toBe(BOMB_FUSE_MS);
+    session.dispose();
+  });
+
+  it("壁時計が前方へステップしても爆発予定時刻を変えないこと", () => {
+    const session = createSession();
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(FIXED_WALL_CLOCK_MS);
+    startSessionAtElapsed(session, 3_000);
+    // 壁時計が飛んでも爆発予定時刻はゲーム時間軸のまま据え置く（Issue #346）
+    nowSpy.mockReturnValue(FIXED_WALL_CLOCK_MS + 3_600_000);
+
+    expect(session.resolveBombExplodeAtElapsedMs()).toBe(3_000 + BOMB_FUSE_MS);
+    session.dispose();
+  });
+
+  it("爆発予定時刻の解決に使う時計が経過msの参照と一致すること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 7_500);
+
+    expect(session.resolveBombExplodeAtElapsedMs()).toBe(
+      session.getSignedElapsedMs() + BOMB_FUSE_MS,
     );
     session.dispose();
   });
 
   it("同一キーの被弾報告は2回目を配信不可とすること", () => {
     const session = createSession();
-    session.shouldBroadcastBombHitReport("socket-1:bomb-1", 0);
+    session.shouldBroadcastBombHitReport("socket-1:bomb-1");
 
-    expect(session.shouldBroadcastBombHitReport("socket-1:bomb-1", 0)).toBe(
-      false,
-    );
+    expect(session.shouldBroadcastBombHitReport("socket-1:bomb-1")).toBe(false);
+  });
+
+  it("初回の被弾報告は配信可とすること", () => {
+    const session = createSession();
+
+    expect(session.shouldBroadcastBombHitReport("socket-1:bomb-1")).toBe(true);
   });
 
   it("自分が設置した爆弾への被弾報告を同チーム報告と判定すること", () => {

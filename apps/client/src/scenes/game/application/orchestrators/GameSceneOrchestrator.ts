@@ -30,14 +30,14 @@ export type CreateNetworkSyncOptions = {
   myId: string;
   gameMap: GameMapController;
   appearanceResolver: AppearanceResolver;
-  onGameStarted: (startTime: number) => void;
+  onGameStarted: (serverElapsedMs: number) => void;
   onGameEnded: () => void;
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
   onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
   onPongReceived: (payload: PongPayload) => void;
-  onGameStartClockHint: (serverNowMs: number) => void;
+  onGameStartClockHint: (serverElapsedMs: number) => void;
 };
 
 /** BombManager 生成入力型 */
@@ -52,7 +52,7 @@ export type CreateBombManagerOptions = {
 
 /** シーン層で扱うイベント通知ポート群 */
 export type GameSceneEventPorts = {
-  onGameStarted: (startTime: number) => void;
+  onGameStarted: (serverElapsedMs: number) => void;
   onGameEnded: () => void;
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
@@ -92,7 +92,7 @@ export type GameSceneOrchestratorOptions = {
   moveSender: MoveSender;
   eventPorts: GameSceneEventPorts;
   onPongReceived: (payload: PongPayload) => void;
-  onGameStartClockHint: (serverNowMs: number) => void;
+  onGameStartClockHint: (serverElapsedMs: number) => void;
   factories?: GameSceneFactoryOptions;
 };
 
@@ -117,7 +117,7 @@ export class GameSceneOrchestrator {
   private readonly moveSender: MoveSender;
   private readonly eventPorts: GameSceneEventPorts;
   private readonly onPongReceived: (payload: PongPayload) => void;
-  private readonly onGameStartClockHint: (serverNowMs: number) => void;
+  private readonly onGameStartClockHint: (serverElapsedMs: number) => void;
   private readonly createNetworkSync: (
     options: CreateNetworkSyncOptions,
   ) => GameNetworkSync;

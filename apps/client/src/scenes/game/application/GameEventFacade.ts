@@ -8,13 +8,13 @@ import type { BombManager } from "../entities/bomb/BombManager";
 
 /** GameEventFacade の初期化入力 */
 export type GameEventFacadeOptions = {
-  onGameStarted: (startTime: number) => void;
+  onGameStarted: (serverElapsedMs: number) => void;
   getBombManager: () => BombManager | null;
 };
 
 /** 受信イベントの適用窓口を提供する */
 export class GameEventFacade {
-  private readonly onGameStarted: (startTime: number) => void;
+  private readonly onGameStarted: (serverElapsedMs: number) => void;
   private readonly getBombManager: () => BombManager | null;
 
   constructor({ onGameStarted, getBombManager }: GameEventFacadeOptions) {
@@ -23,8 +23,8 @@ export class GameEventFacade {
   }
 
   /** 内部ゲーム開始イベントを適用する */
-  public applyGameStarted(startTime: number): void {
-    this.onGameStarted(startTime);
+  public applyGameStarted(serverElapsedMs: number): void {
+    this.onGameStarted(serverElapsedMs);
   }
 
   /** 内部リモート爆弾設置イベントを適用する */

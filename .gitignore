@@ -48,3 +48,6 @@ coverage/
 .claude/deps-update-merged.md
 .claude/deps-update-report.md
 .claude/deps-update-skip.md
+
+# TypeScript incremental build info
+*.tsbuildinfo

@@ -1,7 +1,8 @@
 /**
  * placeBombUseCase.test
- * 爆弾設置ユースケースの現行挙動を固定する characterization test
+ * 爆弾設置ユースケースの挙動を検証するユニットテスト
  * 重複排除の可否分岐と配信ペイロード内容を検証する
+ * 時刻はユースケースへ渡さず，爆弾ストア側のゲーム時間軸のみで判定される
  */
 import type { BombPlacedAckPayload, BombPlacedPayload } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -41,16 +42,16 @@ const createBombStoreStub = ({
   serverExplodeAtElapsedMs = 9_000,
 }: BombStoreStubParams) => {
   return {
-    shouldBroadcastBombPlaced: vi.fn<
-      (dedupeKey: string, nowMs: number) => boolean
-    >(() => shouldBroadcast),
-    shouldAcceptBombPlacement: vi.fn<
-      (playerId: string, nowMs: number) => boolean
-    >(() => shouldAccept),
+    shouldBroadcastBombPlaced: vi.fn<(dedupeKey: string) => boolean>(
+      () => shouldBroadcast,
+    ),
+    shouldAcceptBombPlacement: vi.fn<(playerId: string) => boolean>(
+      () => shouldAccept,
+    ),
     issueServerBombId: vi.fn<() => string | undefined>(() =>
       canIssueBombId ? bombId : undefined,
     ),
-    resolveBombExplodeAtElapsedMs: vi.fn<(nowMs: number) => number>(
+    resolveBombExplodeAtElapsedMs: vi.fn<() => number>(
       () => serverExplodeAtElapsedMs,
     ),
     registerActiveBomb: vi.fn<(registration: ActiveBombRegistration) => void>(),
@@ -82,7 +83,39 @@ const input = {
     y: 4.5,
     explodeAtElapsedMs: 12_000,
   },
-  nowMs: 1_000,
+};
+
+const fieldConfig: GameFieldConfig = {
+  fieldSizePreset: "SMALL",
+  gridCols: 6,
+  gridRows: 6,
+};
+
+const TICK_RATE_MS = 50;
+
+/** セッション内部の GameClock が読む単調時計を差し替える */
+const stubMonotonicClock = (initialMs: number = 10_000) => {
+  let currentMs = initialMs;
+  vi.spyOn(performance, "now").mockImplementation(() => currentMs);
+
+  return {
+    /** 単調時計を指定ms進める */
+    advance: (deltaMs: number) => {
+      currentMs += deltaMs;
+    },
+  };
+};
+
+/** セッションを開始し，指定のゲーム経過msまで単調時計を進める */
+const startSessionAtElapsed = (
+  session: GameRoomSession,
+  elapsedMs: number,
+) => {
+  const clock = stubMonotonicClock();
+  session.start(TICK_RATE_MS, { onTick: vi.fn(), onGameEnd: vi.fn() });
+  clock.advance(config.GAME_CONFIG.GAME_START_DELAY_MS + elapsedMs);
+
+  return clock;
 };
 
 let logSpy: ReturnType<typeof vi.spyOn>;
@@ -140,11 +173,10 @@ describe("placeBombUseCase", () => {
 
     expect(bombStore.shouldBroadcastBombPlaced).toHaveBeenCalledWith(
       "8:socket-1|5:req-1",
-      1_000,
     );
   });
 
-  it("クールダウン判定をプレイヤーIDと現在時刻で行うこと", () => {
+  it("クールダウン判定をプレイヤーIDのみで行うこと", () => {
     const bombStore = createBombStoreStub({ shouldBroadcast: true });
     const output = createOutputStub();
 
@@ -152,7 +184,6 @@ describe("placeBombUseCase", () => {
 
     expect(bombStore.shouldAcceptBombPlacement).toHaveBeenCalledWith(
       "socket-1",
-      1_000,
     );
   });
 
@@ -232,91 +263,85 @@ describe("placeBombUseCase", () => {
 
   it("同一プレイヤーがリクエストIDを変えてクールダウン未経過に連投しても2件目は配信しないこと", () => {
     // 実セッションを爆弾ストアとして用い，重複排除をすり抜ける連投を再現する
-    const fieldConfig: GameFieldConfig = {
-      fieldSizePreset: "SMALL",
-      gridCols: 6,
-      gridRows: 6,
-    };
     const session = new GameRoomSession(
       "room-1",
       ["socket-1", "socket-2"],
       {},
       fieldConfig,
     );
+    const clock = startSessionAtElapsed(session, 1_000);
     const output = createOutputStub();
 
     placeBombUseCase({ roomId: "room-1", bombStore: session, input, output });
+    clock.advance(100);
     placeBombUseCase({
       roomId: "room-1",
       bombStore: session,
       input: {
         ...input,
         payload: { ...input.payload, requestId: "req-2" },
-        nowMs: 1_100,
       },
       output,
     });
 
     expect(output.publishBombPlacedToOthersInRoom).toHaveBeenCalledTimes(1);
+    session.dispose();
   });
 
-  it("開始待機中の爆弾設置は他プレイヤーへ配信しないこと", () => {
-    // 実セッションを爆弾ストアとして用い，カウントダウン中の設置要求を再現する
-    const fieldConfig: GameFieldConfig = {
-      fieldSizePreset: "SMALL",
-      gridCols: 6,
-      gridRows: 6,
-    };
+  it("クールダウン経過後の連投は2件目も配信すること", () => {
     const session = new GameRoomSession(
       "room-1",
       ["socket-1", "socket-2"],
       {},
       fieldConfig,
     );
-    // 待機時間を差し引いて開始時刻がエポック0になるよう現在時刻を固定する
-    const nowSpy = vi
-      .spyOn(Date, "now")
-      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
-    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
-    nowSpy.mockReturnValue(-1);
+    const clock = startSessionAtElapsed(session, 1_000);
     const output = createOutputStub();
 
+    placeBombUseCase({ roomId: "room-1", bombStore: session, input, output });
+    clock.advance(config.GAME_CONFIG.BOMB_NORMAL_COOLDOWN_MS);
     placeBombUseCase({
       roomId: "room-1",
       bombStore: session,
-      input: { ...input, nowMs: -1 },
+      input: {
+        ...input,
+        payload: { ...input.payload, requestId: "req-2" },
+      },
       output,
     });
+
+    expect(output.publishBombPlacedToOthersInRoom).toHaveBeenCalledTimes(2);
+    session.dispose();
+  });
+
+  it("開始待機中の爆弾設置は他プレイヤーへ配信しないこと", () => {
+    // 実セッションを爆弾ストアとして用い，カウントダウン中の設置要求を再現する
+    const session = new GameRoomSession(
+      "room-1",
+      ["socket-1", "socket-2"],
+      {},
+      fieldConfig,
+    );
+    startSessionAtElapsed(session, -1);
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore: session, input, output });
 
     expect(output.publishBombPlacedToOthersInRoom).not.toHaveBeenCalled();
     session.dispose();
   });
 
   it("開始待機中の爆弾設置はアクティブ爆弾へ登録しないこと", () => {
-    const fieldConfig: GameFieldConfig = {
-      fieldSizePreset: "SMALL",
-      gridCols: 6,
-      gridRows: 6,
-    };
     const session = new GameRoomSession(
       "room-1",
       ["socket-1", "socket-2"],
       {},
       fieldConfig,
     );
-    const nowSpy = vi
-      .spyOn(Date, "now")
-      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
-    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
-    nowSpy.mockReturnValue(-1);
+    startSessionAtElapsed(session, -1);
     const output = createOutputStub();
 
-    placeBombUseCase({
-      roomId: "room-1",
-      bombStore: session,
-      input: { ...input, nowMs: -1 },
-      output,
-    });
+    placeBombUseCase({ roomId: "room-1", bombStore: session, input, output });
 
     expect(session.getActiveBombSnapshots()).toEqual([]);
     session.dispose();
@@ -464,17 +489,9 @@ describe("placeBombUseCase", () => {
   });
 
   it("クライアントが送った即時起爆の爆発予定時刻を配信しないこと", () => {
-    // 開始時刻を0に固定し，nowMs をそのままサーバー経過時間として扱う
-    vi.spyOn(Date, "now").mockReturnValue(
-      -config.GAME_CONFIG.GAME_START_DELAY_MS,
-    );
-    const fieldConfig: GameFieldConfig = {
-      fieldSizePreset: "SMALL",
-      gridCols: 6,
-      gridRows: 6,
-    };
     const session = new GameRoomSession("room-1", ["socket-1"], {}, fieldConfig);
-    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
+    // ゲーム経過5000msの時点で設置要求が届いた状況を再現する
+    startSessionAtElapsed(session, 5_000);
     const output = createOutputStub();
 
     placeBombUseCase({
@@ -483,7 +500,6 @@ describe("placeBombUseCase", () => {
       input: {
         ...input,
         payload: { ...input.payload, explodeAtElapsedMs: 0 },
-        nowMs: 5_000,
       },
       output,
     });
@@ -499,16 +515,8 @@ describe("placeBombUseCase", () => {
   });
 
   it("クライアントが送った即時起爆の爆発予定時刻を爆弾登録に使わないこと", () => {
-    vi.spyOn(Date, "now").mockReturnValue(
-      -config.GAME_CONFIG.GAME_START_DELAY_MS,
-    );
-    const fieldConfig: GameFieldConfig = {
-      fieldSizePreset: "SMALL",
-      gridCols: 6,
-      gridRows: 6,
-    };
     const session = new GameRoomSession("room-1", ["socket-1"], {}, fieldConfig);
-    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
+    startSessionAtElapsed(session, 5_000);
     const output = createOutputStub();
 
     placeBombUseCase({
@@ -517,7 +525,6 @@ describe("placeBombUseCase", () => {
       input: {
         ...input,
         payload: { ...input.payload, explodeAtElapsedMs: 0 },
-        nowMs: 5_000,
       },
       output,
     });

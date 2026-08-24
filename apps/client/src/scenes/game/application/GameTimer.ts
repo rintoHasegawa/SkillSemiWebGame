@@ -1,75 +1,56 @@
 /**
  * GameTimer
- * ゲーム開始時刻を基準に残り時間を計算する
- * 表示用の残り秒数取得を提供する
+ * サーバー基準の符号付きゲーム経過msから残り時間とカウントダウンを算出する
+ * 壁時計を介さず時計同期済みの経過時間のみを参照する
  */
 import { config } from "@client/config";
-import { SYSTEM_TIME_PROVIDER } from "@client/scenes/game/application/time/TimeProvider";
 
-/** 現在時刻ミリ秒を返す関数型 */
-export type NowMsProvider = () => number;
+/**
+ * サーバー基準の符号付きゲーム経過msを返す関数型
+ * ゲームプレイ開始前は負値を返し，時計未同期時は null を返す
+ */
+export type SignedElapsedMsProvider = () => number | null;
 
 /** ゲーム制限時間の残り秒数を管理するタイマーモデル */
 export class GameTimer {
-  private gameStartTime: number | null = null;
-  private nowMsProvider: NowMsProvider;
+  private readonly signedElapsedMsProvider: SignedElapsedMsProvider;
 
-  constructor(nowMsProvider: NowMsProvider = SYSTEM_TIME_PROVIDER.now) {
-    this.nowMsProvider = nowMsProvider;
-  }
-
-  public setGameStart(startTime: number): void {
-    this.gameStartTime = startTime;
-  }
-
-  public getStartTime(): number | null {
-    return this.gameStartTime;
+  constructor(signedElapsedMsProvider: SignedElapsedMsProvider = () => null) {
+    this.signedElapsedMsProvider = signedElapsedMsProvider;
   }
 
   public isStarted(): boolean {
-    // 0 も有効なエポック時刻のため未設定判定は null のみで行う
-    if (this.gameStartTime === null) {
+    const signedElapsedMs = this.signedElapsedMsProvider();
+    // 時計未同期の間は経過時間を信用できないため未開始として扱う
+    if (signedElapsedMs === null) {
       return false;
     }
 
-    return this.nowMsProvider() >= this.gameStartTime;
+    return signedElapsedMs >= 0;
   }
 
   public getPreStartRemainingSec(): number {
-    if (this.gameStartTime === null) {
+    const signedElapsedMs = this.signedElapsedMsProvider();
+    if (signedElapsedMs === null || signedElapsedMs >= 0) {
       return 0;
     }
 
-    const remainingMs = this.gameStartTime - this.nowMsProvider();
-    if (remainingMs <= 0) {
-      return 0;
-    }
-
-    return Math.ceil(remainingMs / 1000);
+    return Math.ceil(-signedElapsedMs / 1000);
   }
 
   public getRemainingTime(): number {
-    if (this.gameStartTime === null) {
-      return config.GAME_CONFIG.GAME_DURATION_SEC;
-    }
-
-    const nowMs = this.nowMsProvider();
-    if (nowMs < this.gameStartTime) {
-      return config.GAME_CONFIG.GAME_DURATION_SEC;
-    }
-
-    const elapsedMs = nowMs - this.gameStartTime;
     const remainingSec =
-      config.GAME_CONFIG.GAME_DURATION_SEC - elapsedMs / 1000;
+      config.GAME_CONFIG.GAME_DURATION_SEC - this.getElapsedMs() / 1000;
 
     return Math.max(0, remainingSec);
   }
 
   public getElapsedMs(): number {
-    if (this.gameStartTime === null) {
+    const signedElapsedMs = this.signedElapsedMsProvider();
+    if (signedElapsedMs === null) {
       return 0;
     }
 
-    return Math.max(0, this.nowMsProvider() - this.gameStartTime);
+    return Math.max(0, signedElapsedMs);
   }
 }

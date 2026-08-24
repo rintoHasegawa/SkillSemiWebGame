@@ -40,7 +40,7 @@ export type GameSceneRuntimeOptions = {
   getElapsedMs: () => number;
   eventPorts: GameSceneEventPorts;
   onPongReceived: (payload: PongPayload) => void;
-  onGameStartClockHint: (serverNowMs: number) => void;
+  onGameStartClockHint: (serverElapsedMs: number) => void;
   sceneFactories?: GameSceneFactoryOptions;
 };
 
@@ -56,7 +56,7 @@ export class GameSceneRuntime {
   private readonly getElapsedMs: () => number;
   private readonly eventPorts: GameSceneEventPorts;
   private readonly onPongReceived: (payload: PongPayload) => void;
-  private readonly onGameStartClockHint: (serverNowMs: number) => void;
+  private readonly onGameStartClockHint: (serverElapsedMs: number) => void;
   private readonly sceneFactories?: GameSceneFactoryOptions;
   private readonly playerRepository: PlayerRepository;
   private readonly disposableRegistry = new DisposableRegistry();

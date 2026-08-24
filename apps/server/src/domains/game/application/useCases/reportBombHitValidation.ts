@@ -21,5 +21,5 @@ export const shouldPublishPlayerHitFromBombHit = (
     input.socketId,
     input.payload.bombId,
   );
-  return validation.shouldBroadcastBombHitReport(dedupeKey, input.nowMs);
+  return validation.shouldBroadcastBombHitReport(dedupeKey);
 };
