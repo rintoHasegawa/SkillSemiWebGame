@@ -51,6 +51,7 @@ const createOutputStub = () => {
     publishSelectTeamRejectedToSocket: vi.fn<
       RoomOutputAdapter["publishSelectTeamRejectedToSocket"]
     >(),
+    closeRoomChannel: vi.fn<RoomOutputAdapter["closeRoomChannel"]>(),
   } satisfies RoomOutputAdapter;
 };
 

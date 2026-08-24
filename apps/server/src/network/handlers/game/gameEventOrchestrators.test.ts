@@ -154,6 +154,7 @@ const createRoomOutputStub = () => {
     publishRoomUpdateToRoom: vi.fn<
       RoomOutputPort["publishRoomUpdateToRoom"]
     >(),
+    closeRoomChannel: vi.fn<RoomOutputPort["closeRoomChannel"]>(),
   };
 };
 

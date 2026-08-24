@@ -69,7 +69,10 @@ export type RegisterGameHandlersParams = {
   roomManager: GameEventRoomUseCasePort;
   runtimeRegistry: GameEventRuntimeUseCasePort;
   gameOutputAdapter: GameOutputAdapter;
-  roomOutputAdapter: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
+  roomOutputAdapter: Pick<
+    RoomOutputPort,
+    "publishRoomUpdateToRoom" | "closeRoomChannel"
+  >;
 };
 
 /** ゲームイベント調停で利用する依存束を生成する */

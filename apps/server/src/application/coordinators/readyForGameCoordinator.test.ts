@@ -145,6 +145,7 @@ describe("readyForGameCoordinator", () => {
     });
 
     expect(output.publishGameStartToSocket).toHaveBeenCalledWith({
+      roomId: "room-1",
       serverElapsedMs: 1_234,
       fieldSizePreset: "SMALL",
       gridCols: 24,

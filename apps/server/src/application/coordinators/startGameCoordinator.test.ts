@@ -1,7 +1,7 @@
 /**
  * startGameCoordinator.test
  * START_GAME調停の仕様適合を検証するテスト
- * ルーム未検出・状態遷移失敗の分岐，フィールド設定解決とBot補充，終了時の後始末を検証する
+ * ルーム未検出・状態遷移失敗の分岐，フィールド設定解決とBot補充，終了時の後始末（配信チャンネル閉鎖を含む）を検証する
  * ランタイム未解決時はwaitingへロールバックしROOM_UPDATEで通知する（Issue #291）
  */
 import { domain } from "@repo/shared";
@@ -165,6 +165,7 @@ const createDeps = ({
       publishRoomUpdateToRoom: vi.fn<
         RoomOutputPort["publishRoomUpdateToRoom"]
       >(),
+      closeRoomChannel: vi.fn<RoomOutputPort["closeRoomChannel"]>(),
     },
   };
 };
@@ -703,7 +704,10 @@ describe("startGameCoordinator", () => {
         cleanupGameManagerForRoom: () => undefined,
       },
       output: createOutputStub(),
-      roomOutput: { publishRoomUpdateToRoom: vi.fn() },
+      roomOutput: {
+        publishRoomUpdateToRoom: vi.fn(),
+        closeRoomChannel: vi.fn(),
+      },
     });
 
     expect(roomManager.getRoomById("room-1")?.status).toBe(
@@ -761,6 +765,7 @@ describe("startGameCoordinator", () => {
     });
 
     expect(output.publishGameStartToRoom).toHaveBeenCalledWith("room-1", {
+      roomId: "room-1",
       serverElapsedMs: -config.GAME_CONFIG.GAME_START_DELAY_MS,
       fieldSizePreset: "MEDIUM",
       gridCols: 36,
@@ -803,5 +808,34 @@ describe("startGameCoordinator", () => {
     expect(deps.runtimeRegistry.cleanupGameManagerForRoom).toHaveBeenCalledWith(
       "room-1",
     );
+  });
+
+  it("セッション終了時に対象ルームの配信チャンネルを閉じること", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    const callbacks = gameManager.startRoomSession.mock.calls[0]?.[3];
+    callbacks?.onGameEnd({ rankings: [] });
+
+    expect(deps.roomOutput.closeRoomChannel.mock.calls).toEqual([["room-1"]]);
+  });
+
+  it("セッション終了前は配信チャンネルを閉じないこと", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    expect(deps.roomOutput.closeRoomChannel).not.toHaveBeenCalled();
   });
 });

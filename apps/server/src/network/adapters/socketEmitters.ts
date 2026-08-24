@@ -30,6 +30,8 @@ type EmitToSocketById = {
   <TEvent extends SocketEventName>(socketId: string, event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
 };
 
+type CloseRoomChannel = (roomId: string) => void;
+
 type EmitToAll = {
   <TEvent extends SocketEventName>(event: TEvent): void;
   <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
@@ -100,5 +102,17 @@ export const createEmitToSocketById = (io: Server): EmitToSocketById => {
 export const createEmitToAll = (io: Server): EmitToAll => {
   return (event: SocketEventName, payload?: unknown) => {
     emitWithOptionalPayload((eventName, body) => io.emit(eventName, body), event, payload);
+  };
+};
+
+/**
+ * ルームチャンネルの在室ソケットを一括退出させる関数を生成する
+ * ルーム削除後もソケットがチャンネルに残ると，同名ルーム再作成時に
+ * 無関係な配信を受け取ってしまうため，削除時に必ず閉じる
+ */
+export const createCloseRoomChannel = (io: Server): CloseRoomChannel => {
+  return (roomId: string) => {
+    const socketRoomName = toSocketRoomName(roomId);
+    io.in(socketRoomName).socketsLeave(socketRoomName);
   };
 };

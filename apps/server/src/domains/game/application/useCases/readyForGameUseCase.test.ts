@@ -184,6 +184,7 @@ describe("readyForGameUseCase", () => {
     });
 
     expect(output.publishGameStartToSocket).toHaveBeenCalledWith({
+      roomId: "room-1",
       serverElapsedMs: 1_234,
       fieldSizePreset: "SMALL",
       gridCols: 24,
@@ -206,6 +207,7 @@ describe("readyForGameUseCase", () => {
     });
 
     expect(output.publishGameStartToSocket).toHaveBeenCalledWith({
+      roomId: "room-1",
       serverElapsedMs: 1_234,
       fieldSizePreset: "MEDIUM",
       gridCols: 36,

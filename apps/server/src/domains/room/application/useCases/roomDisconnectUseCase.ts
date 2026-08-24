@@ -14,7 +14,10 @@ type RoomDisconnectUseCaseParams = {
   roomManager: DisconnectRoomPort;
   runtimeRegistry: CleanupGameRuntimePort;
   socketId: string;
-  output: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
+  output: Pick<
+    RoomOutputPort,
+    "publishRoomUpdateToRoom" | "closeRoomChannel"
+  >;
 };
 
 /** 切断ソケットを各ルームから退出させ，更新ルームを配信する */
@@ -46,5 +49,7 @@ export const roomDisconnectUseCase = ({
 
   deletedRoomIds.forEach((roomId) => {
     runtimeRegistry.cleanupGameManagerForRoom(roomId);
+    // 削除済みルームの配信チャンネルを閉じ，残存ソケットへの誤配信を防ぐ
+    output.closeRoomChannel(roomId);
   });
 };

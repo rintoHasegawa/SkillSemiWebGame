@@ -13,7 +13,10 @@ type DisconnectCoordinatorParams = {
   socketId: string;
 } & DisconnectCoordinatorDeps & {
   gameOutput: Pick<GameOutputPort, "publishPlayerRemovedToRoom">;
-  roomOutput: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
+  roomOutput: Pick<
+    RoomOutputPort,
+    "publishRoomUpdateToRoom" | "closeRoomChannel"
+  >;
 };
 
 /** 切断時にゲーム処理とルーム処理を調停し，一貫した離脱処理を実行する */

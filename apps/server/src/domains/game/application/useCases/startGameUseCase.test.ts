@@ -225,6 +225,7 @@ describe("startGameUseCase", () => {
     });
 
     expect(output.publishGameStartToRoom).toHaveBeenCalledWith("room-1", {
+      roomId: "room-1",
       serverElapsedMs: -GAME_START_DELAY_MS,
       fieldSizePreset: "SMALL",
       gridCols: 24,
@@ -242,6 +243,7 @@ describe("startGameUseCase", () => {
       "fieldSizePreset",
       "gridCols",
       "gridRows",
+      "roomId",
       "serverElapsedMs",
     ]);
   });

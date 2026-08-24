@@ -55,6 +55,7 @@ export const readyForGameUseCase = ({
   const fieldConfig = gameManager.getRoomFieldConfig();
 
   output.publishGameStartToSocket({
+    roomId,
     serverElapsedMs,
     fieldSizePreset:
       fieldConfig?.fieldSizePreset ?? config.GAME_CONFIG.DEFAULT_FIELD_PRESET,

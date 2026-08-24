@@ -166,6 +166,7 @@ export const startGameUseCase = ({
     -config.GAME_CONFIG.GAME_START_DELAY_MS;
   const sessionFieldConfig = gameSession.getRoomFieldConfig() ?? fieldConfig;
   output.publishGameStartToRoom(roomId, {
+    roomId,
     serverElapsedMs,
     fieldSizePreset: sessionFieldConfig.fieldSizePreset,
     gridCols: sessionFieldConfig.gridCols,
