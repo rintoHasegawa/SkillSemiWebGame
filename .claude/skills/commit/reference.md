@@ -1,7 +1,51 @@
 # Git 開発フロー・トラブルシューティング (Git Workflow Reference)
 
-`/commit` の push・PR・マージ処理で参照する詳細手順と，問題発生時の対処手順．
+`/commit` の実行フェーズ（ops-runner が担当）で参照する実行手順・push・PR・マージの詳細手順と，問題発生時の対処手順．
 ブランチ命名・コミットメッセージ等の規約は `.claude/rules/git-conventions.md` に従う．
+
+## コミット実行手順 (Commit Execution Flow)
+
+`/commit` の司令塔（メインループ）から委譲された ops-runner が実行する手順．ユーザーへの確認は不要，全ステップを一気に実行する（停止条件に該当した場合を除く）．
+
+### ステップ 1: 状態確認
+
+- `git branch --show-current` で現在のブランチを確認
+- `git status` で変更ファイルの一覧を確認
+- `git diff` および `git diff --cached` で変更内容を確認
+- 変更がない場合（クリーン）は空コミットせず，その旨を報告して終了する
+
+**main ブランチにいる場合は自動でブランチを作成する:**
+
+1. 司令塔からブランチ名が渡されていればそれを使う．渡されていなければ，変更内容から git-conventions のブランチ命名規則に従い適切なプレフィックスと英単語 2〜4 語のブランチ名を決め，決めた名前を報告に含める
+2. `git checkout -b {ブランチ名}` で作業ブランチを作成する
+
+### ステップ 2: ドキュメント関連の事実収集
+
+docs 更新の要否の**判断はしない**（司令塔が行う）．以下の事実を最終報告の「事実報告」に含める:
+
+- `.claude/commit-context.md` の有無と，あれば記録されたフラグ（`docs_updated` / `claude_md_updated` / `progress_md_updated`）
+- 変更ファイルの分類: `docs/` 配下・`CLAUDE.md`・`docs/PROGRESS.md` のそれぞれを含むか，およびそれ以外の変更ファイル一覧
+
+### ステップ 3: コミットメッセージの生成
+
+上位から渡された意図サマリ・引数と変更内容をもとに，git-conventions の「コミットメッセージ」書式で生成する．上位がメッセージ全文を確定して渡した場合はそのまま使う．意図サマリと実際の diff に食い違いがある場合は，diff を正としつつ食い違いを「警告」に含める．
+
+### ステップ 4: コミット
+
+1. `git add` で関連ファイルをステージングする（CLAUDE.md / `docs/PROGRESS.md` の変更がある場合はそれも含める．`.env` やクレデンシャルファイルはステージングしない）
+2. `git commit -m "{コミットメッセージ}"` でコミットする
+3. `.claude/commit-context.md` が存在する場合は削除する
+
+### ステップ 5: プッシュ・PR・マージ
+
+上位から渡された引数に以下のキーワードが含まれる場合のみ実行する（いずれも無ければスキップ）．
+
+| キーワード | 実行する操作 |
+| --- | --- |
+| `push` | プッシュ・PR 作成 |
+| `merge` | プッシュ・PR 作成・マージ・プル（`push` を含む全操作） |
+
+手順は後述「開発フロー」に従う（push → PR 作成（既存 PR があれば URL の確認のみ）→ `merge` の場合はマージの実行 → ローカル環境のクリーンアップ）．コンフリクト等の問題が起きた場合は「トラブルシューティング」を参照し，意味的な衝突の解消や force push を伴う操作は停止して報告する．
 
 ## 開発フロー (Development Workflow)
 
@@ -35,19 +79,20 @@ gh pr create --title "[add] 新機能を実装" --body "概要"
 
 - マージ方式は「Create a merge commit」を使用する（作業ブランチの全コミット履歴が `main` に残る）．
   - 「Squash and merge」「Rebase and merge」は使用しない．
+- **先に `main` へ移ってから**マージする．PR ブランチ上で `--delete-branch` を実行すると gh が暗黙に `main` への切替と pull を行い，ブランチ削除より前に pull が走る（post-merge hook 等の後処理が削除前の状態を見てしまう）．手順を明示的にして順序を固定する．
 
 ```bash
-gh pr merge --merge --delete-branch
+git checkout main
+gh pr merge feature/new-function --merge --delete-branch   # リモート・ローカルのブランチも削除される
 ```
 
 ### ローカル環境のクリーンアップ
 
-マージ完了後はローカル環境も最新状態に戻し，古いブランチを削除する．
+マージ完了後はローカルの `main` を最新化する（ブランチ削除の後に pull する順序を守る）．
 
 ```bash
-git checkout main
 git pull origin main
-git branch -d feature/new-function
+git branch -d feature/new-function   # gh が削除済みなら不要（残っていた場合のみ）
 ```
 
 ## トラブルシューティング (Troubleshooting)
