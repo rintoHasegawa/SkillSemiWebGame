@@ -135,11 +135,6 @@ export class ClockSyncService {
     return this.nowProvider() + this.getClockOffsetMs();
   }
 
-  /** 差分を一度でも取得済みかを返す */
-  public hasClockEstimate(): boolean {
-    return this.offsetTracker.hasOffsetEstimate();
-  }
-
   /** RTT状況に応じた次回同期推奨間隔ミリ秒を返す */
   public getRecommendedSyncIntervalMs(): number {
     return this.intervalPolicy.getIntervalMs(

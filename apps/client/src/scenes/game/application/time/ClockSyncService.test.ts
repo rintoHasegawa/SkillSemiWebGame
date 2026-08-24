@@ -130,12 +130,6 @@ describe("ClockSyncService 初期状態", () => {
     expect(service.getClockOffsetMs()).toBe(0);
   });
 
-  it("初期状態では時計未同期と判定すること", () => {
-    const service = new ClockSyncService({}, createFixedNowProvider(1000));
-
-    expect(service.hasClockEstimate()).toBe(false);
-  });
-
   it("時計未同期の間は経過msにnullを返すこと", () => {
     const service = new ClockSyncService({}, createFixedNowProvider(1000));
 
@@ -167,14 +161,6 @@ describe("ClockSyncService seedFromServerElapsed", () => {
     service.seedFromServerElapsed(5000, 2000);
 
     expect(service.getClockOffsetMs()).toBe(3000);
-  });
-
-  it("seed後は時計同期済みと判定すること", () => {
-    const service = new ClockSyncService({}, createFixedNowProvider(1000));
-
-    service.seedFromServerElapsed(5000);
-
-    expect(service.hasClockEstimate()).toBe(true);
   });
 
   it("seed後の経過msがローカル時刻にoffsetを加えた値になること", () => {
@@ -217,7 +203,7 @@ describe("ClockSyncService updateFromPong", () => {
     expect(service.getClockOffsetMs()).toBeCloseTo(TRUE_OFFSET_MS, 6);
   });
 
-  it("PONG取り込み後は時計同期済みと判定すること", () => {
+  it("PONG取り込み後は経過msを返すこと", () => {
     const service = new ClockSyncService({}, createFixedNowProvider(1000));
     const { payload, receivedAtMs } = createPongExchange({
       clientSentAtMs: 2000,
@@ -227,7 +213,7 @@ describe("ClockSyncService updateFromPong", () => {
 
     service.updateFromPong(payload, receivedAtMs);
 
-    expect(service.hasClockEstimate()).toBe(true);
+    expect(service.getElapsedMs()).not.toBeNull();
   });
 
   it("受信時刻を省略した場合は単調時計の現在値でRTTを求めること", () => {
@@ -290,7 +276,7 @@ describe("ClockSyncService updateFromPong", () => {
     expect(service.getClockOffsetMs()).toBe(4000);
   });
 
-  it("RTTが許容外のPONGだけでは時計同期済みとしないこと", () => {
+  it("RTTが許容外のPONGだけでは経過msがnullのままであること", () => {
     const service = new ClockSyncService({}, createFixedNowProvider(1000));
 
     service.updateFromPong(
@@ -302,7 +288,7 @@ describe("ClockSyncService updateFromPong", () => {
       3000,
     );
 
-    expect(service.hasClockEstimate()).toBe(false);
+    expect(service.getElapsedMs()).toBeNull();
   });
 
   it("RTTが許容外のPONGは推奨間隔にも反映しないこと", () => {
@@ -471,15 +457,6 @@ describe("ClockSyncService reset", () => {
     service.reset();
 
     expect(service.getClockOffsetMs()).toBe(0);
-  });
-
-  it("resetで時計未同期の状態へ戻すこと", () => {
-    const service = new ClockSyncService({}, createFixedNowProvider(1000));
-
-    applyConsistentPongs({ service, oneWayDelayMs: 20, sampleCount: 1 });
-    service.reset();
-
-    expect(service.hasClockEstimate()).toBe(false);
   });
 
   it("resetで推奨間隔を既定値へ戻すこと", () => {
