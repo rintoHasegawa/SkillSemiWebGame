@@ -1,6 +1,6 @@
 /**
  * readyForGameUseCase
- * READY_FOR_GAME受信時に現在プレイヤー状態と開始時刻を返却する
+ * READY_FOR_GAME受信時に現在プレイヤー状態とゲーム経過時間を返却する
  */
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
 import type { GameOutputPort } from "../ports/gameUseCasePorts";
@@ -17,7 +17,7 @@ type ReadyForGameUseCaseParams = {
   output: Pick<GameOutputPort, "publishCurrentPlayersToSocket" | "publishGameStartToSocket">;
 };
 
-/** 準備完了通知に対してルーム状態を返却し，開始済みなら開始時刻も通知する */
+/** 準備完了通知に対してルーム状態を返却し，セッション進行中ならゲーム経過時間も通知する */
 export const readyForGameUseCase = ({
   socketId,
   roomId,
@@ -46,17 +46,16 @@ export const readyForGameUseCase = ({
     totalPlayers: roomPlayers.length,
   });
 
-  // 0 も有効なエポック時刻のため未開始判定は undefined のみで行う
-  const startTime = gameManager.getRoomStartTime();
-  if (startTime === undefined) {
+  // カウントダウン中は負値になるため未開始判定は undefined のみで行う
+  const serverElapsedMs = gameManager.getRoomSignedElapsedMs();
+  if (serverElapsedMs === undefined) {
     return;
   }
 
   const fieldConfig = gameManager.getRoomFieldConfig();
 
   output.publishGameStartToSocket({
-    startTime,
-    serverNow: Date.now(),
+    serverElapsedMs,
     fieldSizePreset:
       fieldConfig?.fieldSizePreset ?? config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
     gridCols:
@@ -75,6 +74,6 @@ export const readyForGameUseCase = ({
     result: logResults.EMITTED,
     socketId,
     roomId,
-    startTime,
+    serverElapsedMs,
   });
 };

@@ -12,26 +12,23 @@ import type {
   PlayerHitPayload,
   domain,
 } from "@repo/shared";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { ActiveBombRegistration } from "../../../ports/gameUseCasePorts";
 import { createBotBombActionHandler } from "./BotBombActionAdapter";
 
-const FIXED_NOW_MS = 1_700_000_000_000;
 // サーバー経過時間から解決される爆発予定時刻（申告値と区別するため別値にする）
 const SERVER_EXPLODE_AT_ELAPSED_MS = 11_000;
 
 /** 爆弾配信可否を固定した BombPlacementPort スタブを生成する */
 const createBombStoreStub = (shouldBroadcast: boolean) => {
   return {
-    shouldBroadcastBombPlaced: vi.fn<
-      (dedupeKey: string, nowMs: number) => boolean
-    >(() => shouldBroadcast),
-    shouldAcceptBombPlacement: vi.fn<
-      (playerId: string, nowMs: number) => boolean
-    >(() => true),
+    shouldBroadcastBombPlaced: vi.fn<(dedupeKey: string) => boolean>(
+      () => shouldBroadcast,
+    ),
+    shouldAcceptBombPlacement: vi.fn<(playerId: string) => boolean>(() => true),
     issueServerBombId: vi.fn<() => string>(() => "bomb-1"),
-    resolveBombExplodeAtElapsedMs: vi.fn<(nowMs: number) => number>(
+    resolveBombExplodeAtElapsedMs: vi.fn<() => number>(
       () => SERVER_EXPLODE_AT_ELAPSED_MS,
     ),
     registerActiveBomb: vi.fn<(registration: ActiveBombRegistration) => void>(),
@@ -91,15 +88,7 @@ const payload = {
 };
 
 describe("createBotBombActionHandler", () => {
-  beforeEach(() => {
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("現在時刻を重複排除判定へ渡すこと", () => {
+  it("壁時計を介さず重複排除キーのみで判定を委譲すること", () => {
     const bombStore = createBombStoreStub(true);
     const handler = createBotBombActionHandler({
       roomId: "room-1",
@@ -111,8 +100,26 @@ describe("createBotBombActionHandler", () => {
 
     expect(bombStore.shouldBroadcastBombPlaced).toHaveBeenCalledWith(
       "12:bot:room-1:1|9:bot-req-1",
-      FIXED_NOW_MS,
     );
+  });
+
+  it("爆発予定時刻はBot申告値ではなくサーバー解決値を登録すること", () => {
+    const bombStore = createBombStoreStub(true);
+    const handler = createBotBombActionHandler({
+      roomId: "room-1",
+      bombStore,
+      output: createOutputStub(),
+    });
+
+    handler("bot:room-1:1", payload);
+
+    expect(bombStore.registerActiveBomb).toHaveBeenCalledWith({
+      bombId: "bomb-1",
+      ownerPlayerId: "bot:room-1:1",
+      x: 2,
+      y: 3,
+      explodeAtElapsedMs: SERVER_EXPLODE_AT_ELAPSED_MS,
+    });
   });
 
   it("配信可の場合は設置者を除いたルームへ配信すること", () => {

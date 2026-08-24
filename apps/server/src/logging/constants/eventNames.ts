@@ -6,6 +6,7 @@ import { contracts as protocol } from "@repo/shared";
 
 /** GameUseCaseログで利用するイベント名定数 */
 export const gameUseCaseLogEvents = {
+  PING: protocol.SocketEvents.PING,
   START_GAME: protocol.SocketEvents.START_GAME,
   READY_FOR_GAME: protocol.SocketEvents.READY_FOR_GAME,
   GAME_START: protocol.SocketEvents.GAME_START,

@@ -22,9 +22,9 @@ import { disconnectCoordinator } from "./disconnectCoordinator";
 const createGameManagerStub = (replacedWithBot: boolean) => {
   return {
     startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
-    getRoomStartTime: vi.fn<RoomScopedGamePort["getRoomStartTime"]>(
-      () => undefined,
-    ),
+    getRoomSignedElapsedMs: vi.fn<
+      RoomScopedGamePort["getRoomSignedElapsedMs"]
+    >(() => undefined),
     getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
       () => undefined,
     ),

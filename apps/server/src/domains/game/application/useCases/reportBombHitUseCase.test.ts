@@ -14,9 +14,9 @@ const createValidationStub = (
   isSameTeam: boolean = false,
 ) => {
   return {
-    shouldBroadcastBombHitReport: vi.fn<
-      (dedupeKey: string, nowMs: number) => boolean
-    >(() => shouldBroadcast),
+    shouldBroadcastBombHitReport: vi.fn<(dedupeKey: string) => boolean>(
+      () => shouldBroadcast,
+    ),
     isSameTeamBombHitReport: vi.fn<
       (reporterPlayerId: string, bombId: string) => boolean
     >(() => isSameTeam),
@@ -48,7 +48,6 @@ const createOutputStub = () => {
 const input = {
   socketId: "socket-1",
   payload: { bombId: "bomb-9" },
-  nowMs: 2_000,
 };
 
 describe("reportBombHitUseCase", () => {
@@ -131,7 +130,6 @@ describe("reportBombHitUseCase", () => {
 
     expect(validation.shouldBroadcastBombHitReport).toHaveBeenCalledWith(
       "8:socket-1|6:bomb-9",
-      2_000,
     );
   });
 

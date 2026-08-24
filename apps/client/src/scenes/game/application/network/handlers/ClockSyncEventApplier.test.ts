@@ -1,30 +1,30 @@
 /**
  * ClockSyncEventApplier.test
- * 時刻同期イベント反映の現行挙動を固定する characterization test
- * 開始時刻欠落時の分岐とコールバック呼び出し順を検証する
+ * 時刻同期イベント反映の仕様を検証するテスト
+ * サーバー経過msの検証分岐とコールバック呼び出し順を検証する
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { GameStartPayload } from "@repo/shared";
+import type { GameStartPayload, PongPayload } from "@repo/shared";
 
 import { ClockSyncEventApplier } from "./ClockSyncEventApplier";
 
 /** 呼び出し記録付きの反映器を生成する */
 const createApplier = (options: { withDebugLog?: boolean } = {}) => {
   const calls: string[] = [];
-  const startTimes: number[] = [];
-  const serverNows: number[] = [];
-  const pongs: { clientTime: number; serverTime: number }[] = [];
+  const startedElapsedMsList: number[] = [];
+  const clockHintElapsedMsList: number[] = [];
+  const pongs: PongPayload[] = [];
   const debugMessages: string[] = [];
 
   const applier = new ClockSyncEventApplier({
-    onGameStarted: (startTime) => {
+    onGameStarted: (serverElapsedMs) => {
       calls.push("onGameStarted");
-      startTimes.push(startTime);
+      startedElapsedMsList.push(serverElapsedMs);
     },
-    onGameStartClockHint: (serverNowMs) => {
+    onGameStartClockHint: (serverElapsedMs) => {
       calls.push("onGameStartClockHint");
-      serverNows.push(serverNowMs);
+      clockHintElapsedMsList.push(serverElapsedMs);
     },
     onPongReceived: (payload) => {
       calls.push("onPongReceived");
@@ -38,7 +38,14 @@ const createApplier = (options: { withDebugLog?: boolean } = {}) => {
       : undefined,
   });
 
-  return { applier, calls, startTimes, serverNows, pongs, debugMessages };
+  return {
+    applier,
+    calls,
+    startedElapsedMsList,
+    clockHintElapsedMsList,
+    pongs,
+    debugMessages,
+  };
 };
 
 /** テスト用のゲーム開始ペイロードを生成する */
@@ -46,12 +53,20 @@ const createGameStartPayload = (
   overrides: Partial<GameStartPayload> = {},
 ): GameStartPayload => {
   return {
-    startTime: 5000,
-    serverNow: 4000,
+    serverElapsedMs: 5000,
     fieldSizePreset: "MEDIUM",
     gridCols: 20,
     gridRows: 15,
     ...overrides,
+  };
+};
+
+/** テスト用のPONGペイロードを生成する */
+const createPongPayload = (): PongPayload => {
+  return {
+    clientTime: 100,
+    serverReceivedElapsedMs: 200,
+    serverSentElapsedMs: 210,
   };
 };
 
@@ -60,23 +75,23 @@ afterEach(() => {
 });
 
 describe("ClockSyncEventApplier", () => {
-  it("GAME_START受信でサーバー時刻ヒントを通知すること", () => {
-    const { applier, serverNows } = createApplier();
+  it("GAME_START受信でサーバー経過msを時計補正へ通知すること", () => {
+    const { applier, clockHintElapsedMsList } = createApplier();
 
     applier.applyGameStart(createGameStartPayload());
 
-    expect(serverNows).toEqual([4000]);
+    expect(clockHintElapsedMsList).toEqual([5000]);
   });
 
-  it("GAME_START受信で開始時刻を通知すること", () => {
-    const { applier, startTimes } = createApplier();
+  it("GAME_START受信でサーバー経過msを開始通知へ渡すこと", () => {
+    const { applier, startedElapsedMsList } = createApplier();
 
     applier.applyGameStart(createGameStartPayload());
 
-    expect(startTimes).toEqual([5000]);
+    expect(startedElapsedMsList).toEqual([5000]);
   });
 
-  it("GAME_START受信では時刻ヒントを開始時刻より先に通知すること", () => {
+  it("GAME_START受信では時計補正を開始通知より先に行うこと", () => {
     const { applier, calls } = createApplier();
 
     applier.applyGameStart(createGameStartPayload());
@@ -84,42 +99,62 @@ describe("ClockSyncEventApplier", () => {
     expect(calls).toEqual(["onGameStartClockHint", "onGameStarted"]);
   });
 
-  it("開始時刻が0の場合もそのまま通知すること", () => {
-    const { applier, startTimes } = createApplier();
+  it("サーバー経過msが0の場合もそのまま通知すること", () => {
+    const { applier, startedElapsedMsList } = createApplier();
 
-    applier.applyGameStart(createGameStartPayload({ startTime: 0 }));
+    applier.applyGameStart(createGameStartPayload({ serverElapsedMs: 0 }));
 
-    expect(startTimes).toEqual([0]);
+    expect(startedElapsedMsList).toEqual([0]);
   });
 
-  it("開始時刻がnullの場合はコールバックを一切呼ばないこと", () => {
+  it("カウントダウン中の負のサーバー経過msもそのまま通知すること", () => {
+    const { applier, startedElapsedMsList } = createApplier();
+
+    applier.applyGameStart(createGameStartPayload({ serverElapsedMs: -3000 }));
+
+    expect(startedElapsedMsList).toEqual([-3000]);
+  });
+
+  it("カウントダウン中の負のサーバー経過msでも時計補正を行うこと", () => {
+    const { applier, clockHintElapsedMsList } = createApplier();
+
+    applier.applyGameStart(createGameStartPayload({ serverElapsedMs: -3000 }));
+
+    expect(clockHintElapsedMsList).toEqual([-3000]);
+  });
+
+  it("サーバー経過msがnullの場合はコールバックを一切呼ばないこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { applier, calls } = createApplier();
 
     applier.applyGameStart(
-      createGameStartPayload({ startTime: null as unknown as number }),
+      createGameStartPayload({ serverElapsedMs: null as unknown as number }),
     );
 
     expect(calls).toEqual([]);
   });
 
-  it("開始時刻が欠落している場合はサーバー時刻ヒントも通知しないこと", () => {
+  it("サーバー経過msが欠落している場合は時計補正も行わないこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    const { applier, serverNows } = createApplier();
+    const { applier, clockHintElapsedMsList } = createApplier();
 
     applier.applyGameStart(
-      createGameStartPayload({ startTime: undefined as unknown as number }),
+      createGameStartPayload({
+        serverElapsedMs: undefined as unknown as number,
+      }),
     );
 
-    expect(serverNows).toEqual([]);
+    expect(clockHintElapsedMsList).toEqual([]);
   });
 
-  it("開始時刻が欠落している場合はエラーログを出力すること", () => {
+  it("サーバー経過msが欠落している場合はエラーログを出力すること", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { applier } = createApplier();
 
     applier.applyGameStart(
-      createGameStartPayload({ startTime: undefined as unknown as number }),
+      createGameStartPayload({
+        serverElapsedMs: undefined as unknown as number,
+      }),
     );
 
     expect(errorSpy).toHaveBeenCalledWith(
@@ -127,80 +162,53 @@ describe("ClockSyncEventApplier", () => {
     );
   });
 
-  it("開始時刻がNaNの場合はコールバックを一切呼ばないこと", () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const { applier, calls } = createApplier();
-
-    applier.applyGameStart(createGameStartPayload({ startTime: Number.NaN }));
-
-    expect(calls).toEqual([]);
-  });
-
-  it("開始時刻がInfinityの場合はコールバックを一切呼ばないこと", () => {
+  it("サーバー経過msがNaNの場合はコールバックを一切呼ばないこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { applier, calls } = createApplier();
 
     applier.applyGameStart(
-      createGameStartPayload({ startTime: Number.POSITIVE_INFINITY }),
+      createGameStartPayload({ serverElapsedMs: Number.NaN }),
     );
 
     expect(calls).toEqual([]);
   });
 
-  it("サーバー時刻が非有限の場合は時計補正を行わないこと", () => {
+  it("サーバー経過msがInfinityの場合はコールバックを一切呼ばないこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    const { applier, serverNows } = createApplier();
-
-    applier.applyGameStart(createGameStartPayload({ serverNow: Number.NaN }));
-
-    expect(serverNows).toEqual([]);
-  });
-
-  it("サーバー時刻が非有限でも開始時刻が正しければ開始通知は行うこと", () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const { applier, startTimes } = createApplier();
-
-    applier.applyGameStart(createGameStartPayload({ serverNow: Number.NaN }));
-
-    expect(startTimes).toEqual([5000]);
-  });
-
-  it("サーバー時刻が欠落している場合は時計補正を行わないこと", () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const { applier, serverNows } = createApplier();
+    const { applier, calls } = createApplier();
 
     applier.applyGameStart(
-      createGameStartPayload({ serverNow: undefined as unknown as number }),
+      createGameStartPayload({ serverElapsedMs: Number.POSITIVE_INFINITY }),
     );
 
-    expect(serverNows).toEqual([]);
+    expect(calls).toEqual([]);
   });
 
-  it("サーバー時刻が非有限の場合はエラーログを出力すること", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const { applier } = createApplier();
+  it("ペイロード自体が欠落している場合はコールバックを一切呼ばないこと", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { applier, calls } = createApplier();
 
-    applier.applyGameStart(createGameStartPayload({ serverNow: Number.NaN }));
+    applier.applyGameStart(undefined as unknown as GameStartPayload);
 
-    expect(errorSpy).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual([]);
   });
 
-  it("デバッグログ指定時は開始時刻を含むメッセージを出力すること", () => {
+  it("デバッグログ指定時はサーバー経過msを含むメッセージを出力すること", () => {
     const { applier, debugMessages } = createApplier({ withDebugLog: true });
 
     applier.applyGameStart(createGameStartPayload());
 
     expect(debugMessages).toEqual([
-      "[GameNetworkSync] ゲーム開始時刻同期完了: 5000",
+      "[GameNetworkSync] ゲーム経過時間同期完了: 5000",
     ]);
   });
 
-  it("開始時刻がnullの場合はデバッグログを出力しないこと", () => {
+  it("サーバー経過msがnullの場合はデバッグログを出力しないこと", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { applier, debugMessages } = createApplier({ withDebugLog: true });
 
     applier.applyGameStart(
-      createGameStartPayload({ startTime: null as unknown as number }),
+      createGameStartPayload({ serverElapsedMs: null as unknown as number }),
     );
 
     expect(debugMessages).toEqual([]);
@@ -214,7 +222,7 @@ describe("ClockSyncEventApplier", () => {
 
   it("PONG受信でペイロードをそのまま通知すること", () => {
     const { applier, pongs } = createApplier();
-    const payload = { clientTime: 100, serverTime: 200 };
+    const payload = createPongPayload();
 
     applier.applyPong(payload);
 
@@ -224,7 +232,7 @@ describe("ClockSyncEventApplier", () => {
   it("PONG受信では他のコールバックを呼ばないこと", () => {
     const { applier, calls } = createApplier();
 
-    applier.applyPong({ clientTime: 100, serverTime: 200 });
+    applier.applyPong(createPongPayload());
 
     expect(calls).toEqual(["onPongReceived"]);
   });

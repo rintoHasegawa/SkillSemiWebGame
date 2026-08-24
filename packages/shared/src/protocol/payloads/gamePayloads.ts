@@ -124,10 +124,11 @@ export type RemovePlayerPayload = PlayerData["id"];
 
 /** game-start イベントで送受信するゲーム開始情報 */
 export type GameStartPayload = {
-  /** ゲーム開始予定のUNIXタイムスタンプ（サーバー時計基準, ms） */
-  startTime: number;
-  /** ペイロード送信時のサーバー時刻（クライアント側クロックオフセット補正用, ms） */
-  serverNow: number;
+  /**
+   * ペイロード送信時点のゲーム経過ms（クライアント側クロック同期用）
+   * ゲームプレイ開始前のカウントダウン中は負値になる
+   */
+  serverElapsedMs: number;
   /** 今回のゲームで採用するフィールドサイズ種別 */
   fieldSizePreset: FieldSizePreset;
   /** 今回のゲームで採用するマップ横幅（グリッド単位） */

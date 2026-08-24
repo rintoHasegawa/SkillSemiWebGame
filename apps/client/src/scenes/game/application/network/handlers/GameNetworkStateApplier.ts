@@ -36,14 +36,14 @@ export type GameNetworkStateApplierOptions = {
   myId: string;
   gameMap: GameMapController;
   appearanceResolver: AppearanceResolver;
-  onGameStarted: (startTime: number) => void;
+  onGameStarted: (serverElapsedMs: number) => void;
   onGameEnded: () => void;
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
   onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
   onPongReceived: (payload: PongPayload) => void;
-  onGameStartClockHint: (serverNowMs: number) => void;
+  onGameStartClockHint: (serverElapsedMs: number) => void;
   onDebugLog?: (message: string) => void;
 };
 

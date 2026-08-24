@@ -19,6 +19,7 @@ import type {
 } from "../ports/gameUseCasePorts";
 import { config } from "@server/config";
 import { GameLoop, type GameLoopCallbacks } from "../../loop/GameLoop";
+import { GameClock, type NowProvider } from "../../loop/GameClock";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
 import { BombStateStore } from "../../entities/bomb/BombStateStore";
@@ -49,8 +50,8 @@ export class GameRoomSession {
   private mapStore: MapStore;
   private bombStateStore: BombStateStore;
   private gameLoop: GameLoop | null = null;
-  private startTime: number | undefined;
-  private startDelayTimer: NodeJS.Timeout | null = null;
+  /** サーバー側ゲーム時間の唯一の基準，GameLoop と共有する */
+  private readonly gameClock: GameClock;
   private fieldConfig: GameFieldConfig;
 
   constructor(
@@ -59,8 +60,15 @@ export class GameRoomSession {
     playerNamesById: Record<string, string>,
     fieldConfig: GameFieldConfig,
     teamPreferences?: Record<string, number | null>,
+    // 単調時計を差し替え可能にし，セッション経由の時間判定をスタブで検証できるようにする
+    nowProvider?: NowProvider,
   ) {
     this.fieldConfig = fieldConfig;
+    // 開始待機時間は GameClock だけが保持し，ループ側もそこから読む
+    this.gameClock = new GameClock(
+      config.GAME_CONFIG.GAME_START_DELAY_MS,
+      nowProvider,
+    );
     this.players = new Map();
     this.mapStore = new MapStore(this.getMapSize());
     this.bombStateStore = new BombStateStore();
@@ -116,14 +124,6 @@ export class GameRoomSession {
       return;
     }
 
-    const gameStartDelayMs = (
-      config.GAME_CONFIG as typeof config.GAME_CONFIG & {
-        GAME_START_DELAY_MS?: number;
-      }
-    ).GAME_START_DELAY_MS;
-    const startDelayMs = Math.max(0, gameStartDelayMs ?? 0);
-    this.startTime = Date.now() + startDelayMs;
-
     const loopCallbacks: GameLoopCallbacks = {
       onTick: callbacks.onTick,
       onGameEnd: () => {
@@ -147,26 +147,20 @@ export class GameRoomSession {
       players: this.players,
       mapStore: this.mapStore,
       activeBombRegistry: this.bombStateStore.activeBombRegistry,
+      gameClock: this.gameClock,
       callbacks: loopCallbacks,
     });
 
-    // startDelayMs の待機中にJITとボット初期状態を準備する
+    // 開始待機の待ち時間中にJITとボット初期状態を準備する
     this.gameLoop.warmUp();
 
-    if (startDelayMs === 0) {
-      this.gameLoop.start();
-      return;
-    }
-
-    this.startDelayTimer = setTimeout(() => {
-      this.startDelayTimer = null;
-      this.gameLoop?.start();
-    }, startDelayMs);
+    // 開始待機時間は GameClock 側の値が使われるため引数では渡さない
+    this.gameLoop.start();
   }
 
   public movePlayer(id: string, x: number, y: number): void {
-    // 0 も有効なエポック時刻のため未設定判定は undefined のみで行う
-    if (this.startTime !== undefined && Date.now() < this.startTime) {
+    // 開始カウントダウン中の入力はゲーム時間軸を基準に拒否する
+    if (!this.gameClock.hasGameplayStarted()) {
       logEvent(logScopes.GAME_ROOM_SESSION, {
         event: gameDomainLogEvents.MOVE,
         result: logResults.IGNORED_INVALID_PAYLOAD,
@@ -215,8 +209,12 @@ export class GameRoomSession {
     return true;
   }
 
-  public getStartTime(): number | undefined {
-    return this.startTime;
+  /**
+   * クライアントへ配信する符号付きゲーム経過msを返す
+   * カウントダウン中は負値になり，壁時計を介さずに時計同期できる
+   */
+  public getSignedElapsedMs(): number {
+    return this.gameClock.getSignedElapsedMs();
   }
 
   /** 現在セッションで確定したフィールド設定を返す */
@@ -232,54 +230,49 @@ export class GameRoomSession {
     return this.players.has(id);
   }
 
-  public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
-    return this.bombStateStore.shouldBroadcastBombPlaced(dedupeKey, nowMs);
+  public shouldBroadcastBombPlaced(dedupeKey: string): boolean {
+    return this.bombStateStore.shouldBroadcastBombPlaced(
+      dedupeKey,
+      this.gameClock.getElapsedMs(),
+    );
   }
 
-  public shouldBroadcastBombHitReport(
-    dedupeKey: string,
-    nowMs: number,
-  ): boolean {
-    return this.bombStateStore.shouldBroadcastBombHitReport(dedupeKey, nowMs);
+  public shouldBroadcastBombHitReport(dedupeKey: string): boolean {
+    return this.bombStateStore.shouldBroadcastBombHitReport(
+      dedupeKey,
+      this.gameClock.getElapsedMs(),
+    );
   }
 
   /**
    * 爆弾設置要求が開始済みかつクールダウンを満たすか判定し，受理時は直近受理時刻を更新する
    * クールダウンはクライアントと同じ共有ロジックでサーバー経過時間から解決する
    */
-  public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+  public shouldAcceptBombPlacement(playerId: string): boolean {
     // 移動と同じ基準で開始カウントダウン中の設置を拒否する
-    // 0 も有効なエポック時刻のため未設定判定は undefined のみで行う
-    if (this.startTime !== undefined && nowMs < this.startTime) {
+    if (!this.gameClock.hasGameplayStarted()) {
       return false;
     }
 
-    // 開始時刻未設定時は経過 0 として通常クールダウンで判定する
-    const elapsedMs = this.resolveElapsedMs(nowMs);
+    const elapsedMs = this.gameClock.getElapsedMs();
     // フィーバー境界付近でクライアントが先に短縮判定しても弾かないよう許容誤差ぶん先読みする
     const cooldownMs = domain.game.bomb.resolveBombCooldownMs(
       elapsedMs + BOMB_COOLDOWN_TOLERANCE_MS,
     );
     return this.bombStateStore.shouldAcceptBombPlacement(
       playerId,
-      nowMs,
+      elapsedMs,
       cooldownMs,
     );
-  }
-
-  // 開始時刻未設定時は経過 0 とみなしてゲーム開始からの経過時間を返す
-  private resolveElapsedMs(nowMs: number): number {
-    return this.startTime === undefined ? 0 : nowMs - this.startTime;
   }
 
   /**
    * サーバー経過時間を基準に爆発予定時刻を解決する
    * クライアント申告の爆発予定時刻は信頼せず，導火線時間をサーバー側で加算する
-   * 開始待機中は経過を 0 に丸め，ゲームループの経過時間軸と揃える
+   * 経過時間はゲームループと同一の GameClock から取るため回収判定と軸が揃う
    */
-  public resolveBombExplodeAtElapsedMs(nowMs: number): number {
-    const elapsedMs = Math.max(0, this.resolveElapsedMs(nowMs));
-    return elapsedMs + config.GAME_CONFIG.BOMB_FUSE_MS;
+  public resolveBombExplodeAtElapsedMs(): number {
+    return this.gameClock.getElapsedMs() + config.GAME_CONFIG.BOMB_FUSE_MS;
   }
 
   public issueServerBombId(): string {
@@ -353,11 +346,6 @@ export class GameRoomSession {
   }
 
   public dispose(): void {
-    if (this.startDelayTimer) {
-      clearTimeout(this.startDelayTimer);
-      this.startDelayTimer = null;
-    }
-
     if (this.gameLoop) {
       this.gameLoop.stop();
       this.gameLoop = null;

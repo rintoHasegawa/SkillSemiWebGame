@@ -179,8 +179,19 @@ describe("ClockSyncLoop", () => {
     expect(loop.isRunning()).toBe(false);
   });
 
-  it("時刻取得関数を省略した場合はDate.nowを使うこと", () => {
-    vi.spyOn(Date, "now").mockReturnValue(4242);
+  it("時刻取得関数を省略した場合は単調時計を使うこと", () => {
+    vi.spyOn(performance, "now").mockReturnValue(4242);
+    const { loop, sentClientTimes } = createLoop({ intervalsMs: [1000] });
+
+    loop.start();
+
+    expect(sentClientTimes).toEqual([4242]);
+  });
+
+  it("時刻取得関数を省略した場合は壁時計を参照しないこと", () => {
+    // 端末の壁時計がステップしてもPING送信時刻が飛ばないこと
+    vi.spyOn(performance, "now").mockReturnValue(4242);
+    vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
     const { loop, sentClientTimes } = createLoop({ intervalsMs: [1000] });
 
     loop.start();

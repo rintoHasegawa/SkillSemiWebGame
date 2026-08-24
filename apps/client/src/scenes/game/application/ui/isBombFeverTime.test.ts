@@ -19,12 +19,9 @@ const {
 const FEVER_START_ELAPSED_MS =
   (GAME_DURATION_SEC - BOMB_FEVER_START_REMAINING_SEC) * 1000;
 
-// 開始時刻 0 のタイマーを任意の経過時間で評価する
-const createTimerAt = (elapsedMs: number): GameTimer => {
-  const timer = new GameTimer(() => elapsedMs);
-  timer.setGameStart(0);
-
-  return timer;
+// サーバー基準の符号付き経過msを注入したタイマーを生成する
+const createTimerAt = (signedElapsedMs: number): GameTimer => {
+  return new GameTimer(() => signedElapsedMs);
 };
 
 describe("isBombFeverTime", () => {
@@ -51,6 +48,18 @@ describe("isBombFeverTime", () => {
     expect(domain.game.bomb.resolveBombCooldownMs(elapsedMs)).toBe(
       BOMB_NORMAL_COOLDOWN_MS,
     );
+    expect(isBombFeverTime(timer.getElapsedMs())).toBe(false);
+  });
+
+  it("時計未同期の間はフィーバーとみなさないこと", () => {
+    const timer = new GameTimer();
+
+    expect(isBombFeverTime(timer.getElapsedMs())).toBe(false);
+  });
+
+  it("カウントダウン中の負の経過msではフィーバーとみなさないこと", () => {
+    const timer = createTimerAt(-3000);
+
     expect(isBombFeverTime(timer.getElapsedMs())).toBe(false);
   });
 

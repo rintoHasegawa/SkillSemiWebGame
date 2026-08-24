@@ -24,8 +24,8 @@ export class BombStateStore {
   private bombHitReportDedupTable = new Map<string, number>();
   private bombSerial = 0;
 
-  /** プレイヤーごとの直近の爆弾設置受理時刻（壁時計ms） */
-  private lastBombAcceptedAtMsByPlayerId = new Map<string, number>();
+  /** プレイヤーごとの直近の爆弾設置受理時刻（ゲーム経過ms） */
+  private lastBombAcceptedAtElapsedMsByPlayerId = new Map<string, number>();
 
   /**
    * アクティブ爆弾のライフサイクルを追跡するレジストリ
@@ -44,34 +44,40 @@ export class BombStateStore {
   private bombOwnerReleaseAtElapsedMs = new Map<string, number>();
 
   /** 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する */
-  public shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
+  public shouldBroadcastBombPlaced(
+    dedupeKey: string,
+    elapsedMs: number,
+  ): boolean {
     return shouldBroadcastBombPlaced({
       dedupTable: this.bombDedupTable,
       dedupeKey,
-      nowMs,
+      nowMs: elapsedMs,
     });
   }
 
   /** 爆弾設置要求がクールダウンを満たすか判定し，受理時は直近受理時刻を更新する */
   public shouldAcceptBombPlacement(
     playerId: string,
-    nowMs: number,
+    elapsedMs: number,
     cooldownMs: number,
   ): boolean {
     return shouldAcceptBombPlacement({
-      lastAcceptedAtMsByPlayerId: this.lastBombAcceptedAtMsByPlayerId,
+      lastAcceptedAtMsByPlayerId: this.lastBombAcceptedAtElapsedMsByPlayerId,
       playerId,
-      nowMs,
+      nowMs: elapsedMs,
       cooldownMs,
     });
   }
 
   /** 被弾報告イベントを配信すべきか判定し，配信時は重複排除状態を更新する */
-  public shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean {
+  public shouldBroadcastBombHitReport(
+    dedupeKey: string,
+    elapsedMs: number,
+  ): boolean {
     return shouldBroadcastBombHitReport({
       dedupTable: this.bombHitReportDedupTable,
       dedupeKey,
-      nowMs,
+      nowMs: elapsedMs,
     });
   }
 

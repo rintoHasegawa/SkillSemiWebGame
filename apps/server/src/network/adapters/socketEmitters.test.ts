@@ -18,7 +18,10 @@ import {
 const createIoStub = () => {
   const emit = vi.fn();
   const except = vi.fn(() => ({ emit }));
-  const to = vi.fn(() => ({ emit, except }));
+  // 呼び出し引数（配信先ルームID）を検証できるよう引数付きで型付けする
+  const to = vi.fn<
+    (roomId: string) => { emit: typeof emit; except: typeof except }
+  >(() => ({ emit, except }));
   const io = { to } as unknown as Server;
 
   return { io, to, except, emit };

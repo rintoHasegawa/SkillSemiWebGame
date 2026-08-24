@@ -12,19 +12,21 @@ import type {
 } from "@repo/shared";
 
 /**
- * ゲーム開始受信ペイロードから開始時刻を抽出する
- * サーバー時刻基準の開始時刻を返し，NaN・Infinity 等の不正値は null を返す
+ * ゲーム開始受信ペイロードからサーバーのゲーム経過msを抽出する
+ * カウントダウン中は負値を返し，NaN・Infinity 等の不正値は null を返す
  */
-export const toGameStartedAt = (payload: GameStartPayload): number | null => {
-  if (!payload || !Number.isFinite(payload.startTime)) {
+export const toGameStartElapsedMs = (
+  payload: GameStartPayload,
+): number | null => {
+  if (!payload || !Number.isFinite(payload.serverElapsedMs)) {
     console.error(
-      "[GameNetworkEventAdapter] GAME_STARTの開始時刻が有限数でないため破棄する",
-      payload?.startTime,
+      "[GameNetworkEventAdapter] GAME_STARTのサーバー経過時間が有限数でないため破棄する",
+      payload?.serverElapsedMs,
     );
     return null;
   }
 
-  return payload.startTime;
+  return payload.serverElapsedMs;
 };
 
 /** 爆弾設置受信ペイロードを内部ペイロードへ正規化する */

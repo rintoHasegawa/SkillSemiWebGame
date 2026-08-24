@@ -28,6 +28,7 @@ import { chooseNextTarget } from "../application/services/bot/policies/TargetSel
 import { setPlayerPosition } from "../entities/player/playerMovement.js";
 import type { ActiveBombRegistry } from "../entities/bomb/ActiveBombRegistry.js";
 import { HurricaneSystem } from "./HurricaneSystem";
+import type { GameClock } from "./GameClock";
 
 const { checkBombHit } = domain.game.bombHit;
 
@@ -40,6 +41,8 @@ export type GameLoopOptions = {
   players: Map<string, Player>;
   mapStore: MapStore;
   activeBombRegistry: ActiveBombRegistry;
+  /** セッションと共有するゲーム時間軸 */
+  gameClock: GameClock;
   callbacks: GameLoopCallbacks;
 };
 
@@ -57,7 +60,7 @@ type PlayerGridCacheEntry = PlayerGridEntry & { player: Player };
 
 /** 1秒間のパフォーマンス統計蓄積バッファ */
 type PerfAccumulator = {
-  windowStartMs: number;
+  windowStartRawElapsedMs: number;
   tickCount: number;
   totalTickMs: number;
   maxTickMs: number;
@@ -68,9 +71,10 @@ type PerfAccumulator = {
 export class GameLoop {
   private loopId: NodeJS.Timeout | null = null;
   private isRunning: boolean = false;
-  private startMonotonicTimeMs: number = 0;
-  private endMonotonicTimeMs: number = 0;
-  private nextTickAtMs: number = 0;
+  /** ゲーム終了となる原点からの経過ms */
+  private endRawElapsedMs: number = 0;
+  /** 次tickを実行する原点からの経過ms */
+  private nextTickAtRawElapsedMs: number = 0;
   private readonly maxCatchUpTicks: number = 3;
   private lastSentPlayers: Map<string, domain.game.tick.PlayerPositionUpdate> =
     new Map();
@@ -80,7 +84,7 @@ export class GameLoop {
   private readonly botReceivedHitCountById = new Map<string, number>();
   private readonly hurricaneSystem: HurricaneSystem;
   private perfAccumulator: PerfAccumulator = {
-    windowStartMs: 0,
+    windowStartRawElapsedMs: 0,
     tickCount: 0,
     totalTickMs: 0,
     maxTickMs: 0,
@@ -92,6 +96,7 @@ export class GameLoop {
   private readonly players: Map<string, Player>;
   private readonly mapStore: MapStore;
   private readonly activeBombRegistry: ActiveBombRegistry;
+  private readonly gameClock: GameClock;
   private readonly callbacks: GameLoopCallbacks;
 
   constructor(options: GameLoopOptions) {
@@ -106,6 +111,7 @@ export class GameLoop {
     this.players = options.players;
     this.mapStore = options.mapStore;
     this.activeBombRegistry = options.activeBombRegistry;
+    this.gameClock = options.gameClock;
     this.callbacks = options.callbacks;
   }
 
@@ -114,7 +120,6 @@ export class GameLoop {
    * startDelayMs の待機中に呼ぶことで tick1 の chooseNextTarget 集中を防ぐ
    */
   public warmUp(): void {
-    const nowMs = Date.now();
     const gridColorsView = this.mapStore.getGridColorsView();
     const maxChain = 4;
     let botIndex = 0;
@@ -132,7 +137,6 @@ export class GameLoop {
         player.id as BotPlayerId,
         player,
         gridColorsView,
-        nowMs,
         0,
       );
 
@@ -164,18 +168,23 @@ export class GameLoop {
     });
   }
 
-  start() {
+  /**
+   * ゲーム時間軸の原点を確定し，開始待機ぶんずらした初回tickから定周期実行を始める
+   * カウントダウン中にtickを回さないよう初回tickは 原点 + startDelayMs + tickRate に置く
+   * 開始待機時間は時計と食い違わないよう GameClock から読む
+   */
+  public start(): void {
     // 既にループが回っている場合は何もしない
     if (this.isRunning) return;
 
-    const nowMs = performance.now();
-    this.startMonotonicTimeMs = nowMs;
-    this.endMonotonicTimeMs =
-      nowMs + config.GAME_CONFIG.GAME_DURATION_SEC * 1000;
-    this.nextTickAtMs = nowMs + this.tickRate;
+    const startDelayMs = this.gameClock.getStartDelayMs();
+    this.gameClock.start();
+    this.endRawElapsedMs =
+      startDelayMs + config.GAME_CONFIG.GAME_DURATION_SEC * 1000;
+    this.nextTickAtRawElapsedMs = startDelayMs + this.tickRate;
     this.lastSentPlayers.clear();
     this.perfAccumulator = {
-      windowStartMs: nowMs,
+      windowStartRawElapsedMs: this.gameClock.getRawElapsedMs(),
       tickCount: 0,
       totalTickMs: 0,
       maxTickMs: 0,
@@ -195,7 +204,10 @@ export class GameLoop {
   private scheduleNextTick(): void {
     if (!this.isRunning) return;
 
-    const delayMs = Math.max(0, this.nextTickAtMs - performance.now());
+    const delayMs = Math.max(
+      0,
+      this.nextTickAtRawElapsedMs - this.gameClock.getRawElapsedMs(),
+    );
     this.loopId = setTimeout(() => {
       this.loopId = null;
       this.runTickCycle();
@@ -205,8 +217,8 @@ export class GameLoop {
   private runTickCycle(): void {
     if (!this.isRunning) return;
 
-    let nowMs = performance.now();
-    if (nowMs >= this.endMonotonicTimeMs) {
+    let rawElapsedMs = this.gameClock.getRawElapsedMs();
+    if (rawElapsedMs >= this.endRawElapsedMs) {
       this.stop();
       this.callbacks.onGameEnd();
       return;
@@ -215,46 +227,45 @@ export class GameLoop {
     let processedTicks = 0;
 
     while (
-      nowMs >= this.nextTickAtMs &&
+      rawElapsedMs >= this.nextTickAtRawElapsedMs &&
       processedTicks < this.maxCatchUpTicks
     ) {
       this.processSingleTick();
-      this.nextTickAtMs += this.tickRate;
+      this.nextTickAtRawElapsedMs += this.tickRate;
       processedTicks += 1;
 
-      nowMs = performance.now();
-      if (nowMs >= this.endMonotonicTimeMs) {
+      rawElapsedMs = this.gameClock.getRawElapsedMs();
+      if (rawElapsedMs >= this.endRawElapsedMs) {
         this.stop();
         this.callbacks.onGameEnd();
         return;
       }
     }
 
-    if (processedTicks === this.maxCatchUpTicks && nowMs >= this.nextTickAtMs) {
-      this.nextTickAtMs = nowMs + this.tickRate;
+    if (
+      processedTicks === this.maxCatchUpTicks &&
+      rawElapsedMs >= this.nextTickAtRawElapsedMs
+    ) {
+      this.nextTickAtRawElapsedMs = rawElapsedMs + this.tickRate;
     }
 
     this.scheduleNextTick();
   }
 
   private processSingleTick(): void {
-    const tickStartMs = performance.now();
-    const wallClockNowMs = Date.now();
-    const elapsedMs = Math.max(
-      0,
-      Math.round(tickStartMs - this.startMonotonicTimeMs),
-    );
+    const tickStartRawElapsedMs = this.gameClock.getRawElapsedMs();
+    const elapsedMs = Math.round(this.gameClock.getElapsedMs());
     this.hurricaneSystem.ensureSpawned(elapsedMs);
     this.hurricaneSystem.update(this.tickRate / 1000);
-    this.detectHurricaneHits(elapsedMs, wallClockNowMs);
+    this.detectHurricaneHits(elapsedMs);
     const gridColorsView = this.mapStore.getGridColorsView();
-    this.updateBotPlayers(wallClockNowMs, elapsedMs, gridColorsView);
-    this.detectBotBombHits(elapsedMs, wallClockNowMs);
+    this.updateBotPlayers(elapsedMs, gridColorsView);
+    this.detectBotBombHits(elapsedMs);
     const tickData = this.buildTickData(elapsedMs);
     this.callbacks.onTick(tickData);
 
     // パフォーマンス統計を蓄積し，1秒ごとにログ出力する
-    const tickMs = performance.now() - tickStartMs;
+    const tickMs = this.gameClock.getRawElapsedMs() - tickStartRawElapsedMs;
     const payloadBytes = JSON.stringify(tickData).length;
     this.accumulatePerfStats(tickMs, payloadBytes);
   }
@@ -267,7 +278,8 @@ export class GameLoop {
     acc.maxTickMs = Math.max(acc.maxTickMs, tickMs);
     acc.totalPayloadBytes += payloadBytes;
 
-    const windowMs = performance.now() - acc.windowStartMs;
+    const windowMs =
+      this.gameClock.getRawElapsedMs() - acc.windowStartRawElapsedMs;
     if (windowMs < 1000) return;
 
     const playerCount = this.players.size;
@@ -302,7 +314,7 @@ export class GameLoop {
 
     // ウィンドウをリセット
     this.perfAccumulator = {
-      windowStartMs: performance.now(),
+      windowStartRawElapsedMs: this.gameClock.getRawElapsedMs(),
       tickCount: 0,
       totalTickMs: 0,
       maxTickMs: 0,
@@ -311,7 +323,6 @@ export class GameLoop {
   }
 
   private updateBotPlayers(
-    nowMs: number,
     elapsedMs: number,
     gridColorsView: readonly number[],
   ): void {
@@ -324,7 +335,6 @@ export class GameLoop {
           player.id as BotPlayerId,
           player,
           gridColorsView,
-          nowMs,
           elapsedMs,
         );
         setPlayerPosition({
@@ -342,7 +352,7 @@ export class GameLoop {
   }
 
   /** 爆発済み爆弾とBotプレイヤーの当たり判定を実行する */
-  private detectBotBombHits(elapsedMs: number, nowMs: number): void {
+  private detectBotBombHits(elapsedMs: number): void {
     // 被弾コールバックの有無に関わらず回収し，爆発済み爆弾の残留を防ぐ
     const explodedBombs =
       this.activeBombRegistry.collectExplodedBombs(elapsedMs);
@@ -373,7 +383,7 @@ export class GameLoop {
         });
 
         if (result.isHit) {
-          this.applyBotDamage(player.id, nowMs);
+          this.applyBotDamage(player.id, elapsedMs);
 
           // 爆弾所有者の bombHitCount を加算する
           const owner = this.players.get(bomb.ownerPlayerId);
@@ -416,9 +426,9 @@ export class GameLoop {
 
   /**
    * ハリケーン接触を検知し，被弾通知を配信する
-   * 被弾クールダウンは単調増加の elapsedMs で判定し，Bot硬直のみ壁時計を使う
+   * 被弾クールダウンもBot硬直も単調増加の elapsedMs で判定する
    */
-  private detectHurricaneHits(elapsedMs: number, wallClockNowMs: number): void {
+  private detectHurricaneHits(elapsedMs: number): void {
     const hitPlayerIds = this.hurricaneSystem.collectHitPlayerIds(
       this.players,
       elapsedMs,
@@ -429,7 +439,7 @@ export class GameLoop {
         isBotPlayerId(playerId) ||
         this.disconnectedBotControlledPlayerIds.has(playerId)
       ) {
-        this.applyBotDamage(playerId, wallClockNowMs);
+        this.applyBotDamage(playerId, elapsedMs);
       }
 
       this.callbacks.onHurricanePlayerHit?.(playerId);
@@ -440,19 +450,19 @@ export class GameLoop {
    * Bot被弾時のスタン適用とカウント更新を行う
    * 爆弾・ハリケーンで処理内容が同一のため被弾元は受け取らない
    */
-  private applyBotDamage(playerId: string, nowMs: number): void {
+  private applyBotDamage(playerId: string, elapsedMs: number): void {
     const botPlayerId = playerId as BotPlayerId;
     const prevCount = this.botReceivedHitCountById.get(playerId) ?? 0;
     const nextCount = prevCount + 1;
 
     if (nextCount >= config.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT) {
       this.botReceivedHitCountById.set(playerId, 0);
-      this.botTurnOrchestrator.applyRespawnStun(botPlayerId, nowMs);
+      this.botTurnOrchestrator.applyRespawnStun(botPlayerId, elapsedMs);
       return;
     }
 
     this.botReceivedHitCountById.set(playerId, nextCount);
-    this.botTurnOrchestrator.applyHitStun(botPlayerId, nowMs);
+    this.botTurnOrchestrator.applyHitStun(botPlayerId, elapsedMs);
   }
 
   private collectChangedPlayerUpdates(
@@ -539,10 +549,7 @@ export class GameLoop {
       event: gameDomainLogEvents.GAME_LOOP,
       result: logResults.STOPPED,
       roomId: this.roomId,
-      elapsedMs: Math.max(
-        0,
-        Math.round(performance.now() - this.startMonotonicTimeMs),
-      ),
+      elapsedMs: Math.round(this.gameClock.getElapsedMs()),
     });
   }
 }

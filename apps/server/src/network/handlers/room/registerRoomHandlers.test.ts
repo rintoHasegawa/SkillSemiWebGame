@@ -19,7 +19,10 @@ type EventListener = (payload: unknown) => void;
 /** 受信リスナーと join 呼び出しを記録するソケットスタブを生成する */
 const createSocketStub = (socketId: string) => {
   const listeners = new Map<string, EventListener>();
-  const join = vi.fn(async () => undefined);
+  // 呼び出し引数（参加ルームID）を検証できるよう引数付きで型付けする
+  const join = vi.fn<(roomId: string) => Promise<undefined>>(
+    async () => undefined,
+  );
   const socket = {
     id: socketId,
     on: (event: string, listener: EventListener) => {

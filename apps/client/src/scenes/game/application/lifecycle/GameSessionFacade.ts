@@ -3,12 +3,16 @@
  * ゲーム進行状態と入力可否の問い合わせを仲介する
  * タイマーと入力ゲートの操作窓口を統一する
  */
-import { GameTimer } from "@client/scenes/game/application/GameTimer";
+import {
+  GameTimer,
+  type SignedElapsedMsProvider,
+} from "@client/scenes/game/application/GameTimer";
 import { InputGate, type JoystickInput } from "./InputGate";
 
 /** GameSessionFacade の初期化入力型 */
 export type GameSessionFacadeOptions = {
-  nowMsProvider?: () => number;
+  /** サーバー基準の符号付きゲーム経過msを返す関数，未同期時は null を返す */
+  signedElapsedMsProvider?: SignedElapsedMsProvider;
 };
 
 /** ゲーム進行状態と入力可否の窓口を提供する */
@@ -17,16 +21,11 @@ export class GameSessionFacade {
   private readonly inputGate: InputGate;
 
   constructor(options: GameSessionFacadeOptions = {}) {
-    this.timer = new GameTimer(options.nowMsProvider);
+    this.timer = new GameTimer(options.signedElapsedMsProvider);
     this.inputGate = new InputGate({
       isStartedProvider: () => this.timer.isStarted(),
       isPlayableTimeProvider: () => this.timer.getRemainingTime() > 0,
     });
-  }
-
-  /** サーバー同期のゲーム開始時刻を設定する */
-  public setGameStart(startTime: number): void {
-    this.timer.setGameStart(startTime);
   }
 
   /** ゲーム開始前カウントダウンの残り秒数を返す */

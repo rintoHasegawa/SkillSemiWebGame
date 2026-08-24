@@ -38,9 +38,9 @@ export class GameManager {
     );
   }
 
-  // 外部（GameHandlerなど）から開始時刻を取得できるようにする
-  getRoomStartTime(): number | undefined {
-    return this.lifecycleService.getRoomStartTime();
+  // 外部（GameHandlerなど）から符号付きゲーム経過時間を取得できるようにする
+  getRoomSignedElapsedMs(): number | undefined {
+    return this.lifecycleService.getRoomSignedElapsedMs();
   }
 
   getRoomFieldConfig(): GameFieldConfig | undefined {
@@ -89,13 +89,13 @@ export class GameManager {
   }
 
   // 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する
-  shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean {
-    return this.lifecycleService.shouldBroadcastBombPlaced(dedupeKey, nowMs);
+  shouldBroadcastBombPlaced(dedupeKey: string): boolean {
+    return this.lifecycleService.shouldBroadcastBombPlaced(dedupeKey);
   }
 
   // 被弾報告イベントを配信すべきか判定し，配信時は重複排除状態を更新する
-  shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean {
-    return this.lifecycleService.shouldBroadcastBombHitReport(dedupeKey, nowMs);
+  shouldBroadcastBombHitReport(dedupeKey: string): boolean {
+    return this.lifecycleService.shouldBroadcastBombHitReport(dedupeKey);
   }
 
   // 被弾報告が爆弾設置者と同チーム（設置者本人・味方）からのものか判定する
@@ -107,8 +107,8 @@ export class GameManager {
   }
 
   // 爆弾設置要求がクールダウンを満たすか判定し，受理時は直近受理時刻を更新する
-  shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
-    return this.lifecycleService.shouldAcceptBombPlacement(playerId, nowMs);
+  shouldAcceptBombPlacement(playerId: string): boolean {
+    return this.lifecycleService.shouldAcceptBombPlacement(playerId);
   }
 
   // サーバー採番の爆弾IDを生成する（セッション未開始時は undefined）
@@ -117,8 +117,8 @@ export class GameManager {
   }
 
   /** 爆発予定時刻をサーバー経過時間から解決する */
-  resolveBombExplodeAtElapsedMs(nowMs: number): number {
-    return this.lifecycleService.resolveBombExplodeAtElapsedMs(nowMs);
+  resolveBombExplodeAtElapsedMs(): number {
+    return this.lifecycleService.resolveBombExplodeAtElapsedMs();
   }
 
   /** 指定プレイヤーのチームIDを返す */

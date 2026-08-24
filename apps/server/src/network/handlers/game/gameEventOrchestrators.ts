@@ -50,10 +50,23 @@ export const handlePingEvent = (
   deps: GameEventOrchestratorDeps,
   clientTime: PingPayload,
 ): void => {
-  pingUseCase({
-    clientTime,
-    output: deps.output,
-  });
+  // ゲーム時計はセッションが持つため，プレイヤー所属ルームのランタイム経由で解決する
+  const resolved = runWithRuntimeByPlayerId(
+    deps.roomManager,
+    deps.runtimeRegistry,
+    deps.socketId,
+    ({ gameManager }) => {
+      pingUseCase({
+        socketId: deps.socketId,
+        clientTime,
+        gameClock: gameManager,
+        output: deps.output,
+      });
+    },
+  );
+  if (!resolved) {
+    logIgnoredMissingRoom(protocol.SocketEvents.PING, deps.socketId);
+  }
 };
 
 /** START_GAMEイベントを調停してゲーム開始ユースケースを起動する */
@@ -123,7 +136,6 @@ export const handlePlaceBombEvent = (
         input: {
           socketId: deps.socketId,
           payload,
-          nowMs: Date.now(),
         },
         output: deps.output,
       });
@@ -151,7 +163,6 @@ export const handleBombHitReportEvent = (
         input: {
           socketId: deps.socketId,
           payload,
-          nowMs: Date.now(),
         },
         output: deps.output,
       });

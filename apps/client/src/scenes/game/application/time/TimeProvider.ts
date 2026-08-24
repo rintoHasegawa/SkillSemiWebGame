@@ -9,7 +9,10 @@ export type TimeProvider = {
   now: () => number;
 };
 
-/** 実行環境の現在時刻を返す既定の時刻取得実装 */
+/**
+ * 実行環境の単調時計を返す既定の時刻取得実装
+ * 端末の壁時計がステップしてもゲーム時間が壊れないよう performance.now を使う
+ */
 export const SYSTEM_TIME_PROVIDER: TimeProvider = {
-  now: () => Date.now(),
+  now: () => performance.now(),
 };

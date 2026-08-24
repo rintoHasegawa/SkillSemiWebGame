@@ -29,9 +29,9 @@ export class BotTurnOrchestrator {
   private readonly hitStunPolicy = new BotHitStunPolicy({
     hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
   });
-  private readonly respawnAtMsByBotId = new Map<BotPlayerId, number>();
+  private readonly respawnAtElapsedMsByBotId = new Map<BotPlayerId, number>();
   // 硬直はBot状態の生成前にも適用されうるため状態とは別に保持する
-  private readonly stunUntilMsByBotId = new Map<BotPlayerId, number>();
+  private readonly stunUntilElapsedMsByBotId = new Map<BotPlayerId, number>();
 
   constructor(mapSize: MapGridSize) {
     this.mapSize = mapSize;
@@ -41,7 +41,6 @@ export class BotTurnOrchestrator {
     botPlayerId: BotPlayerId,
     player: Player,
     gridColors: readonly number[],
-    nowMs: number,
     elapsedMs: number,
   ): BotDecision {
     const currentCell = this.toMapCell(player.x, player.y);
@@ -49,14 +48,14 @@ export class BotTurnOrchestrator {
     const currentState = this.stateStore.getOrCreate(botPlayerId, {
       targetCol: currentCell.col,
       targetRow: currentCell.row,
-      lastBombPlacedAtMs: Number.NEGATIVE_INFINITY,
+      lastBombPlacedAtElapsedMs: Number.NEGATIVE_INFINITY,
       bombSeq: 0,
     });
 
     // リスポーン時刻に達していたら初期位置へ座標をリセットする
-    const respawnAtMs = this.respawnAtMsByBotId.get(botPlayerId);
-    if (respawnAtMs !== undefined && nowMs >= respawnAtMs) {
-      this.respawnAtMsByBotId.delete(botPlayerId);
+    const respawnAtElapsedMs = this.respawnAtElapsedMsByBotId.get(botPlayerId);
+    if (respawnAtElapsedMs !== undefined && elapsedMs >= respawnAtElapsedMs) {
+      this.respawnAtElapsedMsByBotId.delete(botPlayerId);
 
       // 初期位置も移動時と同じ境界式でマップ範囲内へ収める
       const respawnPosition = domain.game.player.clampPositionToMapBounds(
@@ -77,7 +76,8 @@ export class BotTurnOrchestrator {
     }
 
     // 硬直中は状態を更新せず現在座標を維持する
-    if (this.hitStunPolicy.isStunned(nowMs, this.getStunUntilMs(botPlayerId))) {
+    const stunUntilElapsedMs = this.getStunUntilElapsedMs(botPlayerId);
+    if (this.hitStunPolicy.isStunned(elapsedMs, stunUntilElapsedMs)) {
       return {
         nextX: player.x,
         nextY: player.y,
@@ -110,9 +110,8 @@ export class BotTurnOrchestrator {
 
     const bombDecision = decideBombPlacement(
       botPlayerId,
-      nowMs,
       elapsedMs,
-      currentState.lastBombPlacedAtMs,
+      currentState.lastBombPlacedAtElapsedMs,
       currentState.bombSeq,
       moved.nextX,
       moved.nextY,
@@ -122,7 +121,7 @@ export class BotTurnOrchestrator {
       targetCol: nextTarget.col,
       targetRow: nextTarget.row,
       bombSeq: bombDecision.nextBombSeq,
-      lastBombPlacedAtMs: bombDecision.nextLastBombPlacedAtMs,
+      lastBombPlacedAtElapsedMs: bombDecision.nextLastBombPlacedAtElapsedMs,
     });
 
     return {
@@ -132,25 +131,25 @@ export class BotTurnOrchestrator {
     };
   }
 
-  /** 指定Botへ被弾硬直を適用する */
-  public applyHitStun(botPlayerId: BotPlayerId, nowMs: number): void {
-    this.stunUntilMsByBotId.set(
+  /** 指定Botへ被弾硬直を適用する（時刻はゲーム経過msで扱う） */
+  public applyHitStun(botPlayerId: BotPlayerId, elapsedMs: number): void {
+    this.stunUntilElapsedMsByBotId.set(
       botPlayerId,
       this.hitStunPolicy.calculateNextStunUntilMs(
-        this.getStunUntilMs(botPlayerId),
-        nowMs,
+        this.getStunUntilElapsedMs(botPlayerId),
+        elapsedMs,
       ),
     );
   }
 
   /** 指定Botへリスポーン用硬直と位置リセットタイマーを適用する */
-  public applyRespawnStun(botPlayerId: BotPlayerId, nowMs: number): void {
+  public applyRespawnStun(botPlayerId: BotPlayerId, elapsedMs: number): void {
     const respawnStunMs = config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS;
-    const respawnAtMs = nowMs + respawnStunMs;
-    this.respawnAtMsByBotId.set(botPlayerId, respawnAtMs);
-    this.stunUntilMsByBotId.set(
+    const respawnAtElapsedMs = elapsedMs + respawnStunMs;
+    this.respawnAtElapsedMsByBotId.set(botPlayerId, respawnAtElapsedMs);
+    this.stunUntilElapsedMsByBotId.set(
       botPlayerId,
-      Math.max(this.getStunUntilMs(botPlayerId), respawnAtMs),
+      Math.max(this.getStunUntilElapsedMs(botPlayerId), respawnAtElapsedMs),
     );
   }
 
@@ -165,13 +164,16 @@ export class BotTurnOrchestrator {
 
   public clear(): void {
     this.stateStore.clear();
-    this.respawnAtMsByBotId.clear();
-    this.stunUntilMsByBotId.clear();
+    this.respawnAtElapsedMsByBotId.clear();
+    this.stunUntilElapsedMsByBotId.clear();
   }
 
   /** 指定Botの硬直終了時刻を返し，未適用なら硬直なしとして扱う */
-  private getStunUntilMs(botPlayerId: BotPlayerId): number {
-    return this.stunUntilMsByBotId.get(botPlayerId) ?? Number.NEGATIVE_INFINITY;
+  private getStunUntilElapsedMs(botPlayerId: BotPlayerId): number {
+    return (
+      this.stunUntilElapsedMsByBotId.get(botPlayerId) ??
+      Number.NEGATIVE_INFINITY
+    );
   }
 
   /** グリッド座標をマップ範囲内のセル添字へ変換する */

@@ -29,7 +29,7 @@ export type GameSceneRuntimeWiringOptions = {
   moveSender: MoveSender;
   eventPorts: GameSceneEventPorts;
   onPongReceived: (payload: PongPayload) => void;
-  onGameStartClockHint: (serverNowMs: number) => void;
+  onGameStartClockHint: (serverElapsedMs: number) => void;
   sceneFactories?: GameSceneFactoryOptions;
 };
 

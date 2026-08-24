@@ -16,7 +16,7 @@ const createState = (overrides: Partial<BotState> = {}): BotState => {
   return {
     targetCol: 0,
     targetRow: 0,
-    lastBombPlacedAtMs: 0,
+    lastBombPlacedAtElapsedMs: 0,
     bombSeq: 0,
     ...overrides,
   };

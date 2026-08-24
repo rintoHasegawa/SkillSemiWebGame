@@ -16,9 +16,8 @@ const FEVER_START_ELAPSED_MS =
   (GAME_DURATION_SEC - BOMB_FEVER_START_REMAINING_SEC) * 1000;
 
 // GameManager が HUD へ載せる値と同じ手順でバナー表示条件を評価する
-const evaluateBannerAt = (elapsedMs: number): boolean => {
-  const timer = new GameTimer(() => elapsedMs);
-  timer.setGameStart(0);
+const evaluateBannerAt = (signedElapsedMs: number): boolean => {
+  const timer = new GameTimer(() => signedElapsedMs);
 
   return shouldShowFeverBanner({
     isFeverTime: isBombFeverTime(timer.getElapsedMs()),
@@ -45,6 +44,21 @@ describe("shouldShowFeverBanner", () => {
 
   it("フィーバー開始から1秒を過ぎたらバナーを消すこと", () => {
     expect(evaluateBannerAt(FEVER_START_ELAPSED_MS + 1_500)).toBe(false);
+  });
+
+  it("カウントダウン中はバナーを表示しないこと", () => {
+    expect(evaluateBannerAt(-3000)).toBe(false);
+  });
+
+  it("時計未同期の間はバナーを表示しないこと", () => {
+    const timer = new GameTimer();
+
+    expect(
+      shouldShowFeverBanner({
+        isFeverTime: isBombFeverTime(timer.getElapsedMs()),
+        remainingSeconds: Math.floor(timer.getRemainingTime()),
+      }),
+    ).toBe(false);
   });
 
   it("フィーバー判定が偽の間はしきい値の表示秒でもバナーを表示しないこと", () => {

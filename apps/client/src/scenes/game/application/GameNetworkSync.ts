@@ -26,14 +26,14 @@ type GameNetworkSyncOptions = {
   myId: string;
   gameMap: GameMapController;
   appearanceResolver: AppearanceResolver;
-  onGameStarted: (startTime: number) => void;
+  onGameStarted: (serverElapsedMs: number) => void;
   onGameEnded: () => void;
   onRemoteBombPlaced: (payload: BombPlacedPayload) => void;
   onBombPlacementAcknowledged: (payload: BombPlacedAckPayload) => void;
   onRemotePlayerHit: (payload: PlayerHitPayload) => void;
   onRemoteHurricaneHit: (payload: HurricaneHitPayload) => void;
   onPongReceived: (payload: PongPayload) => void;
-  onGameStartClockHint: (serverNowMs: number) => void;
+  onGameStartClockHint: (serverElapsedMs: number) => void;
 };
 
 /** ゲーム中のネットワークイベント購読と同期処理を管理する */

@@ -1,7 +1,8 @@
 /**
  * readyForGameCoordinator.test
- * READY_FOR_GAME調停の現行挙動を固定する characterization test
+ * READY_FOR_GAME調停の挙動を検証するユニットテスト
  * ランタイム解決成否によるユースケース入力の差を検証する
+ * 開始通知は壁時計を載せず符号付きゲーム経過msのみを配信する
  */
 import type { CurrentPlayersPayload, GameStartPayload } from "@repo/shared";
 import { domain } from "@repo/shared";
@@ -13,25 +14,24 @@ import { createRoom } from "@server/testing/roomFixtures";
 import { createPlayerData } from "@server/testing/playerFixtures";
 import { readyForGameCoordinator } from "./readyForGameCoordinator";
 
-const FIXED_NOW_MS = 1_700_000_000_000;
-
 type GameManagerStubParams = {
   roomPlayers?: domain.game.player.PlayerData[];
-  startTime?: number;
+  /** 進行中セッションの符号付きゲーム経過ms（未開始は undefined） */
+  signedElapsedMs?: number;
   fieldConfig?: GameFieldConfig;
 };
 
 /** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
 const createGameManagerStub = ({
   roomPlayers = [],
-  startTime,
+  signedElapsedMs,
   fieldConfig,
 }: GameManagerStubParams) => {
   return {
     startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
-    getRoomStartTime: vi.fn<RoomScopedGamePort["getRoomStartTime"]>(
-      () => startTime,
-    ),
+    getRoomSignedElapsedMs: vi.fn<
+      RoomScopedGamePort["getRoomSignedElapsedMs"]
+    >(() => signedElapsedMs),
     getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
       () => fieldConfig,
     ),
@@ -104,7 +104,6 @@ const createDeps = (
 describe("readyForGameCoordinator", () => {
   beforeEach(() => {
     vi.spyOn(console, "log").mockImplementation(() => undefined);
-    vi.spyOn(Date, "now").mockReturnValue(FIXED_NOW_MS);
   });
 
   afterEach(() => {
@@ -132,7 +131,7 @@ describe("readyForGameCoordinator", () => {
     const output = createOutputStub();
     const gameManager = createGameManagerStub({
       roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
-      startTime: 1_234,
+      signedElapsedMs: 1_234,
       fieldConfig: { fieldSizePreset: "SMALL", gridCols: 24, gridRows: 24 },
     });
 
@@ -143,8 +142,7 @@ describe("readyForGameCoordinator", () => {
     });
 
     expect(output.publishGameStartToSocket).toHaveBeenCalledWith({
-      startTime: 1_234,
-      serverNow: FIXED_NOW_MS,
+      serverElapsedMs: 1_234,
       fieldSizePreset: "SMALL",
       gridCols: 24,
       gridRows: 24,

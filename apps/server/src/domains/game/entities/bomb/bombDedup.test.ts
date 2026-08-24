@@ -369,7 +369,7 @@ describe("shouldBroadcastBombHitReport", () => {
 class ScanCountingMap extends Map<string, number> {
   public scannedEntryCount = 0;
 
-  public override *[Symbol.iterator](): IterableIterator<[string, number]> {
+  public override *[Symbol.iterator](): MapIterator<[string, number]> {
     for (const entry of super.entries()) {
       this.scannedEntryCount += 1;
       yield entry;

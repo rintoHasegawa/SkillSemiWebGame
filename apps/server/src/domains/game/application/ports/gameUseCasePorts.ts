@@ -29,8 +29,17 @@ export type GameFieldConfig = {
   gridRows: number;
 };
 
+/** 進行中セッションのゲーム経過時間を参照する入力ポート */
+export interface GameElapsedTimePort {
+  /**
+   * 進行中セッションの符号付きゲーム経過msを返す
+   * カウントダウン中は負値，セッション未開始時は undefined を返す
+   */
+  getRoomSignedElapsedMs(): number | undefined;
+}
+
 /** ゲーム開始ユースケースが利用するゲーム管理入力ポート */
-export interface StartGamePort {
+export interface StartGamePort extends GameElapsedTimePort {
   startRoomSession(
     playerIds: string[],
     playerNamesById: Record<string, string>,
@@ -38,14 +47,12 @@ export interface StartGamePort {
     callbacks: GameSessionCallbacks,
     teamPreferences?: Record<string, number | null>,
   ): void;
-  getRoomStartTime(): number | undefined;
   getRoomFieldConfig(): GameFieldConfig | undefined;
 }
 
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
-export interface ReadyForGamePort {
+export interface ReadyForGamePort extends GameElapsedTimePort {
   getRoomPlayers(): domain.game.player.PlayerData[];
-  getRoomStartTime(): number | undefined;
   getRoomFieldConfig(): GameFieldConfig | undefined;
 }
 
@@ -143,13 +150,13 @@ export type StartGameOutputPort = Pick<
 
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {
-  shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
+  shouldBroadcastBombPlaced(dedupeKey: string): boolean;
   /** プレイヤーごとのクールダウンを満たすか判定し，受理時は直近受理時刻を更新する */
-  shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean;
+  shouldAcceptBombPlacement(playerId: string): boolean;
   /** サーバー採番の爆弾IDを返す，セッション未開始時は undefined を返す */
   issueServerBombId(): string | undefined;
   /** サーバー経過時間を基準に爆発予定時刻を解決する */
-  resolveBombExplodeAtElapsedMs(nowMs: number): number;
+  resolveBombExplodeAtElapsedMs(): number;
   registerActiveBomb(registration: ActiveBombRegistration): void;
   getPlayerTeamId(playerId: string): number;
 }
@@ -180,7 +187,7 @@ export interface ActiveBombQueryPort {
 
 /** 被弾報告ユースケースが利用する重複排除・同チーム判定入力ポート */
 export interface BombHitReportValidationPort {
-  shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean;
+  shouldBroadcastBombHitReport(dedupeKey: string): boolean;
   isSameTeamBombHitReport(reporterPlayerId: string, bombId: string): boolean;
 }
 
@@ -193,12 +200,10 @@ export interface BombHitStatsPort {
 export type PlaceBombInput = {
   socketId: string;
   payload: PlaceBombPayload;
-  nowMs: number;
 };
 
 /** 被弾報告ユースケースの入力値 */
 export type ReportBombHitInput = {
   socketId: string;
   payload: BombHitReportPayload;
-  nowMs: number;
 };
