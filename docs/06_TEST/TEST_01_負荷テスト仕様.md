@@ -15,6 +15,7 @@
 - 通信: Socket.IO クライアント
 - 設定ファイル: `test/load-bot.constants.ts`
 - 環境変数: `test/.env.local`
+- ペイロード型: `@repo/shared` のプロトコル型を参照する（Bot 側で再定義しない）
 
 ### テスト構成 (Test Structure)
 
@@ -23,6 +24,8 @@
 - ゲーム終了通知を受信したら全Botが切断する
 
 ※ 環境構築・実行手順は docs/02_ENV/ENV_06_テスト操作手順.md を参照すること
+
+※ Bot は `@repo/shared` のペイロード型を参照するため，プロトコルのペイロード型を変更した際の追随漏れはルートの `pnpm typecheck` で型エラーとして検出される．検証コマンドは docs/02_ENV/ENV_04_開発コマンド.md を参照すること
 
 ## Botのシミュレーション動作 (Bot Behavior)
 

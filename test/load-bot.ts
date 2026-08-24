@@ -4,6 +4,23 @@
  */
 import { io } from "socket.io-client";
 import { config as sharedConfig } from "@repo/shared";
+import type {
+  BombHitReportPayload,
+  BombPlacedAckPayload,
+  BombPlacedPayload,
+  CurrentPlayersPayload,
+  GameStartPayload,
+  HurricaneHitPayload,
+  HurricaneStatePayload,
+  JoinRoomPayload,
+  MovePayload,
+  PingPayload,
+  PlaceBombPayload,
+  PlayerHitPayload,
+  PongPayload,
+  RemovePlayerPayload,
+  StartGameRequestPayload,
+} from "@repo/shared";
 import {
   BOTS,
   BOT_CAN_MOVE,
@@ -41,59 +58,8 @@ type Bot = {
   stop: () => void;
 };
 
-// current-players で配信されるプレイヤー情報
-type CurrentPlayerPayload =
-  | { id: string; name: string; teamId: number }
-  | { id: string; name: string; teamId: number; x: number; y: number };
-
-// game-start で受信するゲーム開始情報
-type GameStartPayload = {
-  // 送信時点のサーバーのゲーム経過ms（カウントダウン中は負）
-  serverElapsedMs: number;
-  fieldSizePreset: string;
-  gridCols: number;
-  gridRows: number;
-};
-
-// pong で受信する時刻同期レスポンス
-type PongPayload = {
-  clientTime: number;
-  serverReceivedElapsedMs: number;
-  serverSentElapsedMs: number;
-};
-
-// bomb-placed で受信する他プレイヤーの爆弾情報
-type BombPlacedPayload = {
-  bombId: string;
-  ownerTeamId: number;
-  x: number;
-  y: number;
-  explodeAtElapsedMs: number;
-};
-
-// bomb-placed-ack で受信する自分の爆弾確定情報
-type BombPlacedAckPayload = {
-  bombId: string;
-  requestId: string;
-};
-
-// ハリケーン状態
-type HurricaneStatePayload = {
-  id: string;
-  x: number;
-  y: number;
-  radius: number;
-  rotationRad: number;
-};
-
-// 追跡中の爆弾
-type TrackedBomb = {
-  bombId: string;
-  ownerTeamId: number;
-  x: number;
-  y: number;
-  explodeAtElapsedMs: number;
-};
+// 追跡中の爆弾（bomb-placed のペイロードをそのまま保持する）
+type TrackedBomb = BombPlacedPayload;
 
 // 実行後の簡易サマリ用カウンタ
 const stats: Stats = {
@@ -300,7 +266,10 @@ function createBot(index: number, counters: Stats, url: string): Bot {
         if (dist <= blastRadius) {
           // server は player-hit を被弾者自身へ送らないため，ここで hitCount を自前管理する
           applyDamage();
-          socket.emit("bomb-hit-report", { bombId });
+          socket.emit(
+            "bomb-hit-report",
+            { bombId } satisfies BombHitReportPayload,
+          );
         }
         trackedBombs.delete(bombId);
       }
@@ -338,7 +307,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
       x: posX,
       y: posY,
       explodeAtElapsedMs,
-    });
+    } satisfies PlaceBombPayload);
     lastBombPlacedElapsedMs = elapsedMs;
   };
 
@@ -376,7 +345,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
       updateDirection();
     }
 
-    socket.emit("move", { x: posX, y: posY });
+    socket.emit("move", { x: posX, y: posY } satisfies MovePayload);
     counters.moveSent += 1;
 
     tryPlaceBomb();
@@ -393,11 +362,11 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     // 5秒ごとに ping を送ってクロックオフセットを更新
     pingTimer = setInterval(() => {
       if (!gameEnded) {
-        socket.emit("ping", monotonicNowMs());
+        socket.emit("ping", monotonicNowMs() satisfies PingPayload);
       }
     }, 5000);
     // 初回 ping を即時送信
-    socket.emit("ping", monotonicNowMs());
+    socket.emit("ping", monotonicNowMs() satisfies PingPayload);
   };
 
   const startBombCheckTimer = () => {
@@ -427,12 +396,12 @@ function createBot(index: number, counters: Stats, url: string): Bot {
 
   socket.on("connect", () => {
     counters.connected += 1;
-    socket.emit("join-room", { roomId, playerName });
+    socket.emit("join-room", { roomId, playerName } satisfies JoinRoomPayload);
     counters.joined += 1;
 
     if (START_GAME && isOwner) {
       setTimeout(() => {
-        socket.emit("start-game", {});
+        socket.emit("start-game", {} satisfies StartGameRequestPayload);
         counters.startSent += 1;
       }, START_DELAY_MS);
     }
@@ -493,7 +462,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   });
 
   // 初期プレイヤー一覧（自分の座標・チームIDを同期）
-  socket.on("current-players", (players: CurrentPlayerPayload[]) => {
+  socket.on("current-players", (players: CurrentPlayersPayload) => {
     const self = players.find((p) => p.id === socket.id);
     if (self) {
       myTeamId = self.teamId;
@@ -515,7 +484,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   // socket.on("new-player", ...) は省略
 
   // プレイヤー退場通知
-  socket.on("remove-player", (_playerId: string) => {
+  socket.on("remove-player", (_playerId: RemovePlayerPayload) => {
     // 追跡中プレイヤーの削除が必要な場合はここで処理
   });
 
@@ -544,7 +513,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   );
 
   // ハリケーン被弾
-  socket.on("hurricane-hit", (payload: { playerId: string }) => {
+  socket.on("hurricane-hit", (payload: HurricaneHitPayload) => {
     if (payload.playerId !== socket.id) return;
     applyDamage();
   });
@@ -566,7 +535,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   });
 
   // 被弾通知（server は被弾者自身を除外して送信するため自分宛は届かない。念のため残す）
-  socket.on("player-hit", (payload: { playerId: string }) => {
+  socket.on("player-hit", (payload: PlayerHitPayload) => {
     if (payload.playerId !== socket.id) return;
     applyDamage();
   });

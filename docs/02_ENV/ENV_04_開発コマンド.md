@@ -65,6 +65,30 @@ pnpm --filter client preview
 
 クライアントのビルド成果物をローカルでプレビューする．
 
+## 型チェック (Type Check)
+
+```bash
+pnpm typecheck
+```
+
+ワークスペース全体（shared・server・client・負荷テストBot）の型チェックを実行する（ルートで実行）．shared のビルドを先に行ってから `pnpm -r typecheck` を呼ぶため，型定義（`.d.ts`）の未生成による誤検出が起きない．
+
+```bash
+pnpm verify
+```
+
+型チェックとユニットテストをまとめて実行する（`pnpm typecheck` の後に `pnpm -r test`）．プロトコル（`packages/shared/src/protocol`）を変更したときは本コマンドで検証する．
+
+```bash
+pnpm shared:build
+```
+
+shared パッケージをビルドする（`pnpm --filter @repo/shared build` のエイリアス）．
+
+※ `pnpm -r typecheck` を直接実行してはならない．server・client・負荷テストBot はいずれも `packages/shared/dist` の型定義を参照するため，shared をビルドせずに実行すると `TS2307`（モジュールが見つからない）が大量に発生する．必ずルートの `pnpm typecheck` または `pnpm verify` を使用する．
+
+※ 負荷テストBot（`test/load-bot.ts`）は `@repo/shared` のペイロード型を参照する．プロトコルのペイロード型を変更して Bot が追随できていない場合，`pnpm typecheck` が型エラーで失敗する．ビルド（`pnpm --filter server build` 等）だけでは Bot の追随漏れを検出できないため，プロトコル変更時は必ず `pnpm typecheck` を実行すること．
+
 ## テスト (Test)
 
 ### ユニットテスト (Unit Test)
@@ -101,7 +125,7 @@ pnpm -r test
 cd /workspace/test && pnpm install
 ```
 
-負荷テスト用の依存関係をインストールする（初回のみ．test 配下は独立した依存関係を持つ）．
+負荷テスト用の依存関係をインストールする（初回のみ）．`test` は pnpm workspace のメンバーであるため，ルートで `pnpm install` を実行済みであれば本コマンドは不要である．
 
 ```bash
 pnpm start
@@ -138,6 +162,8 @@ shared の ESLint を自動修正付きで実行する．
 ## その他 (Miscellaneous)
 
 ルートの `/workspace/package.json` に定義されたコマンド．
+
+※ ルートには型チェック用の `pnpm typecheck` / `pnpm verify` / `pnpm shared:build` も定義されている．これらは「型チェック (Type Check)」節を参照すること．
 
 ```bash
 pnpm shared:prune
