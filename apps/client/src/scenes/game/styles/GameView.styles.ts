@@ -157,3 +157,40 @@ export const GAME_VIEW_HURRICANE_WARNING_STYLE: CSSProperties = {
   pointerEvents: "none",
   animation: "hurricaneWarningBlink 0.6s step-end infinite",
 };
+
+/** 初期化失敗時に全面表示するエラーオーバーレイのスタイル */
+export const GAME_VIEW_INIT_ERROR_OVERLAY_STYLE: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  zIndex: 40,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "16px",
+  padding: "24px",
+  backgroundColor: "rgba(0, 0, 0, 0.88)",
+  textAlign: "center",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  pointerEvents: "auto",
+};
+
+/** 初期化失敗時のエラー見出しスタイル */
+export const GAME_VIEW_INIT_ERROR_TITLE_STYLE: CSSProperties = {
+  color: "#ff6b6b",
+  fontSize: "clamp(1.2rem, 5.6vw, 2.2rem)",
+  fontWeight: 900,
+  letterSpacing: "0.04em",
+  fontFamily: "monospace",
+};
+
+/** 初期化失敗時のエラー本文スタイル */
+export const GAME_VIEW_INIT_ERROR_TEXT_STYLE: CSSProperties = {
+  color: "white",
+  fontSize: "clamp(0.9rem, 3.6vw, 1.2rem)",
+  fontWeight: 700,
+  lineHeight: 1.6,
+  maxWidth: "32rem",
+  fontFamily: "monospace",
+};

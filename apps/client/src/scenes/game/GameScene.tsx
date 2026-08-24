@@ -23,6 +23,7 @@ export function GameScene({ myId }: GameSceneProps) {
     localBombHitCount,
     localPlayerPosition,
     isFeverTime,
+    initStatus,
     handleInput,
     handlePlaceBomb,
   } = useGameSceneController(myId);
@@ -37,6 +38,7 @@ export function GameScene({ myId }: GameSceneProps) {
       localBombHitCount={localBombHitCount}
       localPlayerPosition={localPlayerPosition}
       isFeverTime={isFeverTime}
+      initStatus={initStatus}
       pixiContainerRef={pixiContainerRef}
       onJoystickInput={handleInput}
       onPlaceBomb={handlePlaceBomb}
