@@ -1,9 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { domain } from "@repo/shared";
-import type { FieldSizePreset, StartGameRequestPayload, TeamAssignmentMode } from "@repo/shared";
+import type { StartGameRequestPayload } from "@repo/shared";
 import { config } from "@client/config";
 import { socketManager } from "@client/network/SocketManager";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
+import {
+  resolveGameSettingsFromRoom,
+  resolveStartGameRequest,
+  shouldPushLobbySettings,
+  type LobbyGameSettings,
+  type LobbyRoomSettings,
+} from "./application/lobbySettingsSync";
 import { GearIcon } from "./components/GearIcon";
 import { LobbyRuleModal } from "./components/LobbyRuleModal";
 import { LobbySettingsModal, toFieldPresetLabel } from "./components/LobbySettingsModal";
@@ -28,13 +35,6 @@ import {
   LOBBY_TITLE_STYLE,
   LOBBY_WAITING_STYLE,
 } from "./styles/LobbyScene.styles";
-
-/** ホスト側で管理するゲーム設定 */
-export type LobbyGameSettings = {
-  targetPlayerCount: number;
-  fieldSizePreset: FieldSizePreset;
-  teamAssignmentMode: TeamAssignmentMode;
-};
 
 /** プレイヤーリストの並び順 */
 type PlayerSortKey = "join" | "team" | "name";
@@ -134,6 +134,9 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     fieldSizePreset: config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
     teamAssignmentMode: "random",
   });
+  // オーナー獲得後にroomの現在設定を取り込んだか，直近に送信した設定を保持する
+  const hasAdoptedRoomSettingsRef = useRef(false);
+  const lastPushedSettingsRef = useRef<LobbyGameSettings | null>(null);
   const [teamFullMessage, setTeamFullMessage] = useState<string | null>(null);
   const [isRuleModalOpen, setIsRuleModalOpen] = useState(false);
   const [isStartConfirmVisible, setIsStartConfirmVisible] = useState(false);
@@ -141,6 +144,16 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
   const [playerSortKey, setPlayerSortKey] = useState<PlayerSortKey>("join");
 
   const isPlayerSelect = room.teamAssignmentMode === "player_select";
+
+  // roomのうち同期対象の設定だけを取り出し，参照の変化を最小化する
+  const roomSettings = useMemo<LobbyRoomSettings>(
+    () => ({
+      targetPlayerCount: room.targetPlayerCount,
+      fieldSizePreset: room.fieldSizePreset,
+      teamAssignmentMode: room.teamAssignmentMode,
+    }),
+    [room.targetPlayerCount, room.fieldSizePreset, room.teamAssignmentMode],
+  );
 
   // チーム選択モードでないときは「チーム順」を選択肢から除外し，選択中ならリセットする
   const playerSortOptions = useMemo(
@@ -180,18 +193,36 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
     });
   }, [minimumStartPlayerCount, maxStartPlayerCount]);
 
-  // ホストが設定を変更したらサーバーに通知して全員に反映する
+  // オーナーはroomの現在設定を一度取り込んでから，自分の変更だけをサーバーへ通知する
   useEffect(() => {
     if (!isMeOwner) {
+      // オーナーでなくなったら次にオーナーを得たとき再同期する
+      hasAdoptedRoomSettingsRef.current = false;
+      lastPushedSettingsRef.current = null;
       return;
     }
 
-    socketManager.lobby.updateLobbySettings({
-      targetPlayerCount: gameSettings.targetPlayerCount,
-      fieldSizePreset: gameSettings.fieldSizePreset,
-      teamAssignmentMode: gameSettings.teamAssignmentMode,
+    // オーナー獲得直後はroomの現在設定でローカルを上書きし，既定値での巻き戻りを防ぐ
+    if (!hasAdoptedRoomSettingsRef.current) {
+      hasAdoptedRoomSettingsRef.current = true;
+      setGameSettings((prev) => resolveGameSettingsFromRoom(roomSettings, prev));
+      return;
+    }
+
+    const shouldPush = shouldPushLobbySettings({
+      isMeOwner,
+      hasAdoptedRoomSettings: true,
+      roomSettings,
+      localSettings: gameSettings,
+      lastPushedSettings: lastPushedSettingsRef.current,
     });
-  }, [isMeOwner, gameSettings.targetPlayerCount, gameSettings.fieldSizePreset, gameSettings.teamAssignmentMode]);
+    if (!shouldPush) {
+      return;
+    }
+
+    lastPushedSettingsRef.current = gameSettings;
+    socketManager.lobby.updateLobbySettings({ ...gameSettings });
+  }, [isMeOwner, roomSettings, gameSettings]);
 
   const handleStartClick = () => {
     setIsStartConfirmVisible(true);
@@ -199,10 +230,13 @@ export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
 
   const handleStartConfirm = () => {
     setIsStartConfirmVisible(false);
-    onStart({
-      targetPlayerCount: gameSettings.targetPlayerCount,
-      fieldSizePreset: gameSettings.fieldSizePreset,
-    });
+    onStart(
+      resolveStartGameRequest({
+        hasAdoptedRoomSettings: hasAdoptedRoomSettingsRef.current,
+        roomSettings,
+        localSettings: gameSettings,
+      }),
+    );
   };
 
   const handleStartCancel = () => {
