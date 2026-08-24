@@ -2,8 +2,8 @@
  * socketPayloadValidators
  * ソケット受信ペイロードの型ガードを提供する
  */
+import { domain } from "@repo/shared";
 import type {
-  domain,
   LobbySettingsUpdatePayload,
   PlaceBombPayload,
   BombHitReportPayload,
@@ -137,7 +137,10 @@ export const isSelectTeamPayload = (
   );
 };
 
-/** JOIN_ROOMイベントのペイロードが参加情報であるか判定する */
+/**
+ * JOIN_ROOMイベントのペイロードが参加情報であるか判定する
+ * 長さ・文字種の条件は shared の判定へ委譲し，client の入力制限と揃える
+ */
 export const isJoinRoomPayload = (
   value: unknown,
 ): value is domain.room.JoinRoomPayload => {
@@ -145,5 +148,12 @@ export const isJoinRoomPayload = (
     return false;
   }
 
-  return isNonEmptyString(value.roomId) && isNonEmptyString(value.playerName);
+  const { roomId, playerName } = value;
+
+  return (
+    typeof roomId === "string"
+    && typeof playerName === "string"
+    && domain.room.isValidRoomId(roomId)
+    && domain.room.isValidPlayerName(playerName)
+  );
 };

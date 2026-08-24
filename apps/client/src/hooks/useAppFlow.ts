@@ -128,6 +128,15 @@ export const useAppFlow = (): AppFlowState => {
         return `ルーム ${joinFailure.roomId ?? ""} への参加要求が重複しました`;
       }
 
+      if (joinFailure.reason === "invalid") {
+        // サーバが入力そのものを受け付けなかった場合は再入力条件を案内する
+        return (
+          `プレイヤー名は${domain.room.PLAYER_NAME_MAX_LENGTH}文字以内，`
+          + `ルームIDは${domain.room.ROOM_ID_MAX_LENGTH}文字以内で，`
+          + "改行や特殊文字を含まずに入力してください"
+        );
+      }
+
       if (joinFailure.reason === "timeout") {
         return "参加要求がタイムアウトしました，もう一度お試しください";
       }

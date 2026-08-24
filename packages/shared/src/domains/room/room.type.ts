@@ -42,8 +42,15 @@ export interface JoinRoomPayload {
   playerName: string;
 }
 
-/** ルーム参加拒否理由 */
-export type JoinRoomRejectedReason = "full" | "duplicate" | "playing";
+/**
+ * ルーム参加拒否理由
+ * invalid は入力そのもの（ルームID・プレイヤー名）が受け入れ条件を満たさないことを表す
+ */
+export type JoinRoomRejectedReason =
+  | "full"
+  | "duplicate"
+  | "playing"
+  | "invalid";
 
 /** ルーム参加拒否通知ペイロード */
 export interface JoinRoomRejectedPayload {
