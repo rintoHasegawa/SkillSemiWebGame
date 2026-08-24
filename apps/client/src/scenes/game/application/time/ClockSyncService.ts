@@ -124,9 +124,14 @@ export class ClockSyncService {
 
   /**
    * サーバー基準の符号付きゲーム経過ミリ秒を返す
-   * ゲームプレイ開始前のカウントダウン中は負値になる
+   * ゲームプレイ開始前は負値を返し，時計未同期時は null を返す
    */
-  public getElapsedMs(): number {
+  public getElapsedMs(): number | null {
+    // 未同期のまま単調時計を返すと，読み込みからの経過が経過時間として通ってしまう
+    if (!this.offsetTracker.hasOffsetEstimate()) {
+      return null;
+    }
+
     return this.nowProvider() + this.getClockOffsetMs();
   }
 

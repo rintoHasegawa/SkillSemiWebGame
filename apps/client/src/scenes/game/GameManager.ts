@@ -122,11 +122,7 @@ export class GameManager {
     this.sessionFacade =
       dependencies.sessionFacade ??
       new GameSessionFacade({
-        // 時計未同期の間は経過時間を確定できないため null を返す
-        signedElapsedMsProvider: () =>
-          this.clockSyncService.hasClockEstimate()
-            ? this.clockSyncService.getElapsedMs()
-            : null,
+        signedElapsedMsProvider: () => this.clockSyncService.getElapsedMs(),
       });
     this.lifecycleState =
       dependencies.lifecycleState ?? new SceneLifecycleState();

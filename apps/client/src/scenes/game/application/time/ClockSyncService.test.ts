@@ -136,10 +136,19 @@ describe("ClockSyncService 初期状態", () => {
     expect(service.hasClockEstimate()).toBe(false);
   });
 
-  it("初期状態の経過msはローカル単調時計と一致すること", () => {
+  it("時計未同期の間は経過msにnullを返すこと", () => {
     const service = new ClockSyncService({}, createFixedNowProvider(1000));
 
-    expect(service.getElapsedMs()).toBe(1000);
+    expect(service.getElapsedMs()).toBeNull();
+  });
+
+  it("reset後は経過msがnullに戻ること", () => {
+    const service = new ClockSyncService({}, createFixedNowProvider(1000));
+
+    service.seedFromServerElapsed(5000);
+    service.reset();
+
+    expect(service.getElapsedMs()).toBeNull();
   });
 });
 
