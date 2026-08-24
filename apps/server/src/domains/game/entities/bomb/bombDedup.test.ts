@@ -14,6 +14,12 @@ import {
 const ttlMs
   = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
 
+// 被弾報告は受理窓（爆発予定時刻＋受理猶予）より必ず長いTTLで登録する
+const hitReportTtlMs
+  = config.GAME_CONFIG.BOMB_FUSE_MS
+  + config.GAME_CONFIG.BOMB_HIT_REPORT_RETENTION_MS
+  + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+
 describe("shouldBroadcastBombPlaced", () => {
   it("未登録キーの場合はtrueを返すこと", () => {
     const dedupTable = new Map<string, number>();
@@ -220,7 +226,7 @@ describe("shouldBroadcastBombHitReport", () => {
 
     shouldBroadcastBombHitReport({ dedupTable, dedupeKey: "key-1", nowMs: 100 });
 
-    expect(dedupTable.get("key-1")).toBe(100 + ttlMs);
+    expect(dedupTable.get("key-1")).toBe(100 + hitReportTtlMs);
   });
 
   it("同一キーの二度目の判定ではfalseを返すこと", () => {
@@ -294,7 +300,7 @@ describe("shouldBroadcastBombHitReport", () => {
 
     shouldBroadcastBombHitReport({ dedupTable, dedupeKey: "key-1", nowMs: 0 });
 
-    expect(dedupTable.get("key-1")).toBe(ttlMs);
+    expect(dedupTable.get("key-1")).toBe(hitReportTtlMs);
   });
 
   it("期限切れ後は同一キーで再度trueを返すこと", () => {
@@ -305,7 +311,7 @@ describe("shouldBroadcastBombHitReport", () => {
       shouldBroadcastBombHitReport({
         dedupTable,
         dedupeKey: "key-1",
-        nowMs: ttlMs,
+        nowMs: hitReportTtlMs,
       }),
     ).toBe(true);
   });
@@ -346,7 +352,7 @@ describe("shouldBroadcastBombHitReport", () => {
     expect(dedupTable.has("broken")).toBe(false);
   });
 
-  it("設置用と同一のTTLを使用すること", () => {
+  it("設置用より長いTTLを使用すること", () => {
     const placedTable = new Map<string, number>();
     const hitReportTable = new Map<string, number>();
 
@@ -361,7 +367,9 @@ describe("shouldBroadcastBombHitReport", () => {
       nowMs: 0,
     });
 
-    expect(hitReportTable.get("key-1")).toBe(placedTable.get("key-1"));
+    expect(hitReportTable.get("key-1")).toBe(hitReportTtlMs);
+    expect(hitReportTtlMs).toBeGreaterThan(ttlMs);
+    expect(placedTable.get("key-1")).toBe(ttlMs);
   });
 });
 
@@ -416,6 +424,6 @@ describe("重複排除テーブルの掃除コスト", () => {
     }
 
     // TTL幅より古いエントリは残らない
-    expect(dedupTable.size).toBeLessThanOrEqual(ttlMs + 1);
+    expect(dedupTable.size).toBeLessThanOrEqual(hitReportTtlMs + 1);
   });
 });

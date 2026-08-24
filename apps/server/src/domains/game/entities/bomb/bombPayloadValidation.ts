@@ -24,7 +24,8 @@ const isPayloadObject = (value: unknown): value is Record<string, unknown> => {
 
 /**
  * 爆弾関連のプロトコル内部ID（requestId・bombId）の最大長
- * 正規値はサーバ・クライアントとも十進連番（仮IDは `temp:` 付き）で数文字に収まる
+ * 正規値はサーバ採番のbombIdがUUID（36文字），クライアント採番のrequestIdと
+ * 仮ID（`temp:` 付き）が十進連番で，いずれも上限に収まる
  * 毎回ユニークな巨大IDを送られると重複排除テーブルへTTL付きで固定されるため上限を設ける
  */
 export const MAX_BOMB_ID_LENGTH = 64;

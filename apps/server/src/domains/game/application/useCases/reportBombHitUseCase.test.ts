@@ -1,17 +1,19 @@
 /**
  * reportBombHitUseCase.test
- * 被弾報告ユースケースの現行挙動を固定する characterization test
- * 重複排除の可否分岐とスタッツ更新・配信内容を検証する
+ * 被弾報告ユースケースの挙動を検証するユニットテスト
+ * 受理可否の分岐とスタッツ更新・配信内容・判定結果の返却を検証する
  */
 import type { PlayerHitPayload } from "@repo/shared";
 import { describe, expect, it, vi } from "vitest";
 
+import type { BombHitReportOriginDecision } from "../ports/gameUseCasePorts";
 import { reportBombHitUseCase } from "./reportBombHitUseCase";
 
-/** 重複排除結果と同チーム判定結果を固定した検証ポートスタブを生成する */
+/** 重複排除・同チーム・爆弾状態の判定結果を固定した検証ポートスタブを生成する */
 const createValidationStub = (
   shouldBroadcast: boolean,
   isSameTeam: boolean = false,
+  origin: BombHitReportOriginDecision = { status: "valid" },
 ) => {
   return {
     shouldBroadcastBombHitReport: vi.fn<(dedupeKey: string) => boolean>(
@@ -20,6 +22,12 @@ const createValidationStub = (
     isSameTeamBombHitReport: vi.fn<
       (reporterPlayerId: string, bombId: string) => boolean
     >(() => isSameTeam),
+    checkBombHitReportOrigin: vi.fn<
+      (
+        reporterPlayerId: string,
+        bombId: string,
+      ) => BombHitReportOriginDecision
+    >(() => origin),
   };
 };
 
@@ -183,5 +191,88 @@ describe("reportBombHitUseCase", () => {
     });
 
     expect(output.publishPlayerHitToRoom).not.toHaveBeenCalled();
+  });
+
+  it("配信可の場合はacceptedを返すこと", () => {
+    const decision = reportBombHitUseCase({
+      roomId: "room-1",
+      validation: createValidationStub(true),
+      stats: createStatsStub(),
+      input,
+      output: createOutputStub(),
+    });
+
+    expect(decision).toEqual({ status: "accepted" });
+  });
+
+  it("重複報告の場合はduplicateを返すこと", () => {
+    const decision = reportBombHitUseCase({
+      roomId: "room-1",
+      validation: createValidationStub(false),
+      stats: createStatsStub(),
+      input,
+      output: createOutputStub(),
+    });
+
+    expect(decision).toEqual({ status: "duplicate" });
+  });
+
+  it("実在しない爆弾の報告はunknown_bombを返しスタッツを更新しないこと", () => {
+    const stats = createStatsStub();
+
+    const decision = reportBombHitUseCase({
+      roomId: "room-1",
+      validation: createValidationStub(true, false, {
+        status: "unknown_bomb",
+      }),
+      stats,
+      input,
+      output: createOutputStub(),
+    });
+
+    expect(decision).toEqual({ status: "unknown_bomb" });
+    expect(stats.recordBombHitForOwner).not.toHaveBeenCalled();
+  });
+
+  it("受理時刻窓を過ぎた報告はexpiredを返し配信しないこと", () => {
+    const output = createOutputStub();
+
+    const decision = reportBombHitUseCase({
+      roomId: "room-1",
+      validation: createValidationStub(true, false, { status: "expired" }),
+      stats: createStatsStub(),
+      input,
+      output,
+    });
+
+    expect(decision).toEqual({ status: "expired" });
+    expect(output.publishPlayerHitToOthersInRoom).not.toHaveBeenCalled();
+  });
+
+  it("爆風から離れすぎた報告はtoo_farを返し配信しないこと", () => {
+    const output = createOutputStub();
+
+    const decision = reportBombHitUseCase({
+      roomId: "room-1",
+      validation: createValidationStub(true, false, { status: "too_far" }),
+      stats: createStatsStub(),
+      input,
+      output,
+    });
+
+    expect(decision).toEqual({ status: "too_far" });
+    expect(output.publishPlayerHitToOthersInRoom).not.toHaveBeenCalled();
+  });
+
+  it("同チームの報告はsame_teamを返すこと", () => {
+    const decision = reportBombHitUseCase({
+      roomId: "room-1",
+      validation: createValidationStub(true, true),
+      stats: createStatsStub(),
+      input,
+      output: createOutputStub(),
+    });
+
+    expect(decision).toEqual({ status: "same_team" });
   });
 });

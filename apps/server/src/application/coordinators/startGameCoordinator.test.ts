@@ -94,6 +94,9 @@ const createGameManagerStub = (signedElapsedMs?: number) => {
     isSameTeamBombHitReport: vi.fn<
       RoomScopedGamePort["isSameTeamBombHitReport"]
     >(() => false),
+    checkBombHitReportOrigin: vi.fn<
+      RoomScopedGamePort["checkBombHitReportOrigin"]
+    >(() => ({ status: "valid" })),
     recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
     removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
     replaceDisconnectedPlayerWithBot: vi.fn<

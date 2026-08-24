@@ -1,6 +1,7 @@
 /**
  * bombDedup
  * 爆弾設置・被弾報告イベントの重複排除テーブル操作を提供する
+ * 保持時間はテーブルごとに異なるため，登録時にTTLを受け取って適用する
  */
 import { config } from "@repo/shared";
 
@@ -10,11 +11,34 @@ type BombDedupParams = {
   nowMs: number;
 };
 
+type MarkDedupeKeyParams = BombDedupParams & {
+  ttlMs: number;
+};
+
+// 設置イベントの重複排除保持時間（導火線時間＋追加猶予）
+const BOMB_PLACED_DEDUP_TTL_MS =
+  config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+
+/**
+ * 被弾報告の重複排除保持時間（導火線時間＋爆発後の受理猶予＋追加猶予）
+ * 受理窓（爆発予定時刻＋受理猶予）は設置時刻から最大で
+ * BOMB_FUSE_MS + BOMB_HIT_REPORT_RETENTION_MS となる
+ * TTLを受理窓と同じ長さにすると，設置と同時刻に報告した場合に
+ * 「窓が閉じる境界時刻」でTTLも同時に切れ，同一報告が二重加算され得る
+ * 追加猶予を上乗せしてTTLを受理窓より必ず長くし，境界での二重加算を防ぐ
+ */
+const BOMB_HIT_REPORT_DEDUP_TTL_MS =
+  config.GAME_CONFIG.BOMB_FUSE_MS
+  + config.GAME_CONFIG.BOMB_HIT_REPORT_RETENTION_MS
+  + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+
 /**
  * 重複排除テーブルの期限切れエントリを先頭から削除する
- * 登録は常に同じTTLで行うため挿入順が期限順となり，期限内のエントリへ到達した
- * 時点で走査を打ち切れる．毎回の全表走査を避け，連打時の走査量を登録数に対して
- * 線形に保つ
+ * 1つのテーブル内では常に同じTTLで登録するため挿入順が期限順となり，期限内の
+ * エントリへ到達した時点で走査を打ち切れる．毎回の全表走査を避け，連打時の
+ * 走査量を登録数に対して線形に保つ
+ * この不変条件を保つため，同一テーブルへ異なるTTLを混在させてはならない
+ * （設置用と被弾報告用はTTLが異なるので別テーブルとして扱う）
  */
 const cleanupExpiredBombDedup = (
   dedupTable: Map<string, number>,
@@ -35,7 +59,8 @@ const markDedupeKeyIfAbsent = ({
   dedupTable,
   dedupeKey,
   nowMs,
-}: BombDedupParams): boolean => {
+  ttlMs,
+}: MarkDedupeKeyParams): boolean => {
   // 現在時刻が非有限の場合は期限を決められないため配信不可として扱う
   if (!Number.isFinite(nowMs)) {
     return false;
@@ -53,9 +78,6 @@ const markDedupeKeyIfAbsent = ({
     return false;
   }
 
-  const ttlMs =
-    config.GAME_CONFIG.BOMB_FUSE_MS +
-    config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
   // 挿入順を期限順に保つため，再登録時は既存エントリを削除してから登録する
   dedupTable.delete(dedupeKey);
   dedupTable.set(dedupeKey, nowMs + ttlMs);
@@ -69,15 +91,22 @@ const markDedupeKeyIfAbsent = ({
 export const shouldBroadcastBombPlaced = (
   params: BombDedupParams,
 ): boolean => {
-  return markDedupeKeyIfAbsent(params);
+  return markDedupeKeyIfAbsent({
+    ...params,
+    ttlMs: BOMB_PLACED_DEDUP_TTL_MS,
+  });
 };
 
 /**
  * 被弾報告イベントを配信すべきか判定し，配信時は重複排除状態を更新する
+ * 受理窓より長いTTLで登録し，窓の内側での再報告を二重加算させない
  * 現在時刻が非有限の場合は期限を決められないため配信不可として扱う
  */
 export const shouldBroadcastBombHitReport = (
   params: BombDedupParams,
 ): boolean => {
-  return markDedupeKeyIfAbsent(params);
+  return markDedupeKeyIfAbsent({
+    ...params,
+    ttlMs: BOMB_HIT_REPORT_DEDUP_TTL_MS,
+  });
 };

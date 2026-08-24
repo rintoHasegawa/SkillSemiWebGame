@@ -9,7 +9,15 @@ export type {
   TeamCollisionCircle,
   BombHitCheckInput,
   BombHitCheckResult,
+  BombHitReportPoint,
+  BombHitReportRangeInput,
 } from "./bombHit.type";
 
 /** 爆弾当たり判定ロジックを再公開する */
 export { checkBombHit } from "./bombHit.logic";
+
+/** 被弾報告の距離しきい値と距離判定を再公開する */
+export {
+  BOMB_HIT_REPORT_MAX_DISTANCE_GRID,
+  isWithinBombHitReportRange,
+} from "./bombHit.logic";

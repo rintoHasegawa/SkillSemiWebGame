@@ -185,10 +185,25 @@ export interface ActiveBombQueryPort {
   getActiveBombSnapshots(): ActiveBombSnapshot[];
 }
 
+/**
+ * 被弾報告の爆弾実在・受理時刻窓・距離検証の結果
+ * valid はサーバー側の爆弾状態から見て報告が妥当であることのみを表す
+ */
+export type BombHitReportOriginDecision =
+  | { status: "valid" }
+  | { status: "unknown_bomb" }
+  | { status: "expired" }
+  | { status: "too_far" };
+
 /** 被弾報告ユースケースが利用する重複排除・同チーム判定入力ポート */
 export interface BombHitReportValidationPort {
   shouldBroadcastBombHitReport(dedupeKey: string): boolean;
   isSameTeamBombHitReport(reporterPlayerId: string, bombId: string): boolean;
+  /** 報告対象の爆弾が実在し，受理時刻窓と距離しきい値の内側か判定する */
+  checkBombHitReportOrigin(
+    reporterPlayerId: string,
+    bombId: string,
+  ): BombHitReportOriginDecision;
 }
 
 /** 被弾時に爆弾所有者のスタッツを更新するポート */

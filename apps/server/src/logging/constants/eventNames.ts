@@ -12,6 +12,7 @@ export const gameUseCaseLogEvents = {
   GAME_START: protocol.SocketEvents.GAME_START,
   GAME_END: protocol.SocketEvents.GAME_END,
   PLACE_BOMB: protocol.SocketEvents.PLACE_BOMB,
+  BOMB_HIT_REPORT: protocol.SocketEvents.BOMB_HIT_REPORT,
   DISCONNECT: protocol.SocketEvents.DISCONNECT,
 } as const;
 

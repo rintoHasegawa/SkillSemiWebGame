@@ -9,6 +9,7 @@ import type { GameSessionCallbacks } from "./application/services/GameRoomSessio
 import type { ActiveBombRegistration } from "./application/ports/gameUseCasePorts";
 import type { ActiveBombSnapshot } from "./application/ports/gameUseCasePorts";
 import type { GameFieldConfig } from "./application/ports/gameUseCasePorts";
+import type { BombHitReportOriginDecision } from "./application/ports/gameUseCasePorts";
 import { GameSessionLifecycleService } from "./application/services/GameSessionLifecycleService";
 import { GamePlayerOperationService } from "./application/services/GamePlayerOperationService";
 
@@ -96,6 +97,17 @@ export class GameManager {
   // 被弾報告イベントを配信すべきか判定し，配信時は重複排除状態を更新する
   shouldBroadcastBombHitReport(dedupeKey: string): boolean {
     return this.lifecycleService.shouldBroadcastBombHitReport(dedupeKey);
+  }
+
+  // 被弾報告の爆弾が実在し，受理時刻窓と距離しきい値の内側か判定する
+  checkBombHitReportOrigin(
+    reporterPlayerId: string,
+    bombId: string,
+  ): BombHitReportOriginDecision {
+    return this.lifecycleService.checkBombHitReportOrigin(
+      reporterPlayerId,
+      bombId,
+    );
   }
 
   // 被弾報告が爆弾設置者と同チーム（設置者本人・味方）からのものか判定する

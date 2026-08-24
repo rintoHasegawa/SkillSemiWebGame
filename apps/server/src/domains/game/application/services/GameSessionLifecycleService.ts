@@ -6,6 +6,7 @@ import { config } from "@server/config";
 import type {
   ActiveBombSnapshot,
   ActiveBombRegistration,
+  BombHitReportOriginDecision,
   GameFieldConfig,
 } from "../ports/gameUseCasePorts";
 import { logEvent } from "@server/logging/logger";
@@ -75,6 +76,22 @@ export class GameSessionLifecycleService {
   public shouldBroadcastBombHitReport(dedupeKey: string): boolean {
     return (
       this.sessionRef.current?.shouldBroadcastBombHitReport(dedupeKey) ?? false
+    );
+  }
+
+  /**
+   * 被弾報告の爆弾実在・受理時刻窓・距離を判定する
+   * セッション未開始時は照合対象の爆弾が存在しないため unknown_bomb を返す
+   */
+  public checkBombHitReportOrigin(
+    reporterPlayerId: string,
+    bombId: string,
+  ): BombHitReportOriginDecision {
+    return (
+      this.sessionRef.current?.checkBombHitReportOrigin(
+        reporterPlayerId,
+        bombId,
+      ) ?? { status: "unknown_bomb" }
     );
   }
 

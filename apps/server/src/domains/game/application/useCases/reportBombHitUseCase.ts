@@ -9,7 +9,10 @@ import type {
   BombHitStatsPort,
   ReportBombHitInput,
 } from "../ports/gameUseCasePorts";
-import { shouldPublishPlayerHitFromBombHit } from "./reportBombHitValidation";
+import {
+  decideBombHitReport,
+  type BombHitReportDecision,
+} from "./reportBombHitValidation";
 
 type ReportBombHitUseCaseParams = {
   roomId: string;
@@ -19,16 +22,17 @@ type ReportBombHitUseCaseParams = {
   output: PlayerHitOutputPort;
 };
 
-/** 被弾報告を受け取り，死亡通知を同一ルームへ配信する */
+/** 被弾報告を受け取り，受理時のみ死亡通知を同一ルームへ配信する */
 export const reportBombHitUseCase = ({
   roomId,
   validation,
   stats,
   input,
   output,
-}: ReportBombHitUseCaseParams): void => {
-  if (!shouldPublishPlayerHitFromBombHit(validation, input)) {
-    return;
+}: ReportBombHitUseCaseParams): BombHitReportDecision => {
+  const decision = decideBombHitReport(validation, input);
+  if (decision.status !== "accepted") {
+    return decision;
   }
 
   stats.recordBombHitForOwner(input.payload.bombId);
@@ -38,4 +42,6 @@ export const reportBombHitUseCase = ({
   output.publishPlayerHitToOthersInRoom(roomId, deadPlayerId, {
     playerId: deadPlayerId,
   });
+
+  return decision;
 };

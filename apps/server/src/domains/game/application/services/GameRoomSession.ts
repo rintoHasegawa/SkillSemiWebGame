@@ -16,6 +16,7 @@ import {
 import type {
   ActiveBombRegistration,
   ActiveBombSnapshot,
+  BombHitReportOriginDecision,
 } from "../ports/gameUseCasePorts";
 import { config } from "@server/config";
 import { GameLoop, type GameLoopCallbacks } from "../../loop/GameLoop";
@@ -297,10 +298,52 @@ export class GameRoomSession {
       explodeAtElapsedMs: registration.explodeAtElapsedMs,
       ownerTeamId,
     });
-    this.bombStateStore.registerBombOwner(
-      registration.bombId,
-      registration.ownerPlayerId,
-    );
+    // 被弾報告の検証に使うレコードは爆発後も猶予付きで別テーブルに保持する
+    this.bombStateStore.registerBombRecord(registration.bombId, {
+      ownerPlayerId: registration.ownerPlayerId,
+      x: registration.x,
+      y: registration.y,
+      explodeAtElapsedMs: registration.explodeAtElapsedMs,
+    });
+  }
+
+  /**
+   * 被弾報告の爆弾が実在し，受理時刻窓と距離しきい値の内側か判定する
+   * 受理時刻窓は「登録済み」かつ「爆発予定時刻＋受理猶予まで」とし，設置から
+   * 爆発前の報告も受理する（時計同期誤差で正規報告が爆発時刻より早く届き得るため）
+   * 判定に必要な値が欠けている場合は正規プレイヤーの報告を落とさないよう受理側へ倒す
+   */
+  public checkBombHitReportOrigin(
+    reporterPlayerId: string,
+    bombId: string,
+  ): BombHitReportOriginDecision {
+    const record = this.bombStateStore.getRetainedBombRecord(bombId);
+    if (!record) {
+      return { status: "unknown_bomb" };
+    }
+
+    const elapsedMs = this.gameClock.getElapsedMs();
+    const acceptUntilElapsedMs =
+      record.explodeAtElapsedMs
+      + config.GAME_CONFIG.BOMB_HIT_REPORT_RETENTION_MS;
+    // 非有限の時刻では窓を判定できないため時刻検証を行わない
+    const isTimeComparable =
+      Number.isFinite(elapsedMs) && Number.isFinite(acceptUntilElapsedMs);
+    if (isTimeComparable && elapsedMs > acceptUntilElapsedMs) {
+      return { status: "expired" };
+    }
+
+    // 報告者のサーバー既知座標が引けない場合は距離を判定できないため受理する
+    const reporter = this.players.get(reporterPlayerId);
+    if (!reporter) {
+      return { status: "valid" };
+    }
+
+    const isWithinRange = domain.game.bombHit.isWithinBombHitReportRange({
+      bomb: { x: record.x, y: record.y },
+      reporter: { x: reporter.x, y: reporter.y },
+    });
+    return isWithinRange ? { status: "valid" } : { status: "too_far" };
   }
 
   /**
