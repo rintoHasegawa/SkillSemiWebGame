@@ -42,6 +42,8 @@ export const DEFAULT_CLOCK_SYNC_CONFIG: ClockSyncConfig = {
     rttAlpha: config.GAME_CONFIG.CLOCK_SYNC.SMOOTHER.RTT_ALPHA,
     maxAcceptedOffsetJumpMs:
       config.GAME_CONFIG.CLOCK_SYNC.SMOOTHER.MAX_ACCEPTED_OFFSET_JUMP_MS,
+    maxConsecutiveRejectedSamples:
+      config.GAME_CONFIG.CLOCK_SYNC.SMOOTHER.MAX_CONSECUTIVE_REJECTED_SAMPLES,
   },
   intervalPolicy: {
     defaultIntervalMs:

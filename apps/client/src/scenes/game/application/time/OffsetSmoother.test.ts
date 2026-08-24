@@ -1,7 +1,7 @@
 /**
  * OffsetSmoother.test
- * 時計差分とRTT平滑化の現行挙動を固定する characterization test
- * 初回取り込み・EWMA更新・外れ値除外の境界を検証する
+ * 時計差分とRTT平滑化の仕様を検証するテスト
+ * 暫定seedの置換・EWMA更新・外れ値除外の境界・連続棄却からの復帰を検証する
  */
 import { describe, expect, it } from "vitest";
 
@@ -16,6 +16,7 @@ describe("DEFAULT_OFFSET_SMOOTHER_CONFIG", () => {
       offsetAlpha: 0.12,
       rttAlpha: 0.25,
       maxAcceptedOffsetJumpMs: 250,
+      maxConsecutiveRejectedSamples: 3,
     });
   });
 });
@@ -41,13 +42,22 @@ describe("OffsetSmoother", () => {
     expect(smoother.getClockOffsetMs()).toBe(4000);
   });
 
-  it("seedは呼び出しごとに差分を上書きすること", () => {
+  it("実測前のseedは呼び出しごとに差分を上書きすること", () => {
     const smoother = new OffsetSmoother();
 
     smoother.seed(5000, 1000);
     smoother.seed(3000, 1000);
 
     expect(smoother.getClockOffsetMs()).toBe(2000);
+  });
+
+  it("seedは測定済みoffsetを上書きしないこと", () => {
+    const smoother = new OffsetSmoother();
+
+    smoother.applySample({ rttMs: 100, offsetMs: 5000 });
+    smoother.seed(9000, 1000);
+
+    expect(smoother.getClockOffsetMs()).toBe(5000);
   });
 
   it("最初のサンプル取り込みでRTTを実測値そのものにすること", () => {
@@ -75,10 +85,34 @@ describe("OffsetSmoother", () => {
     expect(smoother.getClockOffsetMs()).toBe(4000);
   });
 
-  it("seed済みのoffsetをEWMAで更新すること", () => {
+  it("seed直後の最初の有効サンプルはoffsetを実測値で置換すること", () => {
+    const smoother = new OffsetSmoother();
+
+    // seedは片道遅延ぶん過小な暫定値なので，跳躍量にかかわらず実測値へ置き換わる
+    smoother.seed(5700, 1000);
+    smoother.applySample({ rttMs: 600, offsetMs: 5000 });
+
+    expect(smoother.getClockOffsetMs()).toBe(5000);
+  });
+
+  it("片道遅延300ms相当のseedからでもoffsetが真値へ収束すること", () => {
+    const smoother = new OffsetSmoother();
+
+    // 真のoffset5000msに対し，seedは片道遅延300msぶん過小な4700msになる
+    smoother.seed(5700, 1000);
+    for (let index = 0; index < 5; index += 1) {
+      smoother.applySample({ rttMs: 600, offsetMs: 5000 });
+    }
+
+    expect(smoother.getClockOffsetMs()).toBeCloseTo(5000, 6);
+  });
+
+  it("実測サンプルで確立したoffsetを以降はEWMAで更新すること", () => {
     const smoother = new OffsetSmoother();
 
     smoother.seed(5000, 1000);
+    // 暫定seedは最初の有効サンプルで置換されるため，2件目からEWMAが効く
+    smoother.applySample({ rttMs: 10, offsetMs: 4000 });
     smoother.applySample({ rttMs: 10, offsetMs: 4100 });
 
     expect(smoother.getClockOffsetMs()).toBeCloseTo(4012, 10);
@@ -87,7 +121,7 @@ describe("OffsetSmoother", () => {
   it("offset差が許容跳躍ちょうどの場合は取り込むこと", () => {
     const smoother = new OffsetSmoother();
 
-    smoother.seed(5000, 1000);
+    smoother.applySample({ rttMs: 10, offsetMs: 4000 });
     smoother.applySample({ rttMs: 10, offsetMs: 4250 });
 
     expect(smoother.getClockOffsetMs()).toBeCloseTo(4030, 10);
@@ -96,19 +130,19 @@ describe("OffsetSmoother", () => {
   it("offset差が許容跳躍を超える場合はoffsetを更新しないこと", () => {
     const smoother = new OffsetSmoother();
 
-    smoother.seed(5000, 1000);
+    smoother.applySample({ rttMs: 10, offsetMs: 4000 });
     smoother.applySample({ rttMs: 10, offsetMs: 4251 });
 
     expect(smoother.getClockOffsetMs()).toBe(4000);
   });
 
-  it("offsetを棄却した場合はRTTも更新しないこと", () => {
+  it("負方向の跳躍も許容跳躍を超える場合は棄却すること", () => {
     const smoother = new OffsetSmoother();
 
-    smoother.seed(5000, 1000);
-    smoother.applySample({ rttMs: 42, offsetMs: 99999 });
+    smoother.applySample({ rttMs: 10, offsetMs: 4000 });
+    smoother.applySample({ rttMs: 10, offsetMs: 3749 });
 
-    expect(smoother.getSmoothedRttMs()).toBeNull();
+    expect(smoother.getClockOffsetMs()).toBe(4000);
   });
 
   it("棄却サンプルは計測済みRTTも書き換えないこと", () => {
@@ -125,19 +159,94 @@ describe("OffsetSmoother", () => {
     const smoother = new OffsetSmoother();
 
     smoother.seed(5000, 1000);
-    smoother.applySample({ rttMs: 900, offsetMs: 99999 });
     smoother.applySample({ rttMs: 100, offsetMs: 4000 });
+    smoother.applySample({ rttMs: 900, offsetMs: 99999 });
+    smoother.applySample({ rttMs: 300, offsetMs: 4000 });
 
-    expect(smoother.getSmoothedRttMs()).toBe(100);
+    expect(smoother.getSmoothedRttMs()).toBe(150);
   });
 
-  it("負方向の跳躍も許容跳躍を超える場合は棄却すること", () => {
+  it("ベースライン再構築サンプルでもRTTをEWMAで更新すること", () => {
     const smoother = new OffsetSmoother();
 
-    smoother.seed(5000, 1000);
-    smoother.applySample({ rttMs: 10, offsetMs: 3749 });
+    smoother.applySample({ rttMs: 100, offsetMs: 4000 });
+    // 連続棄却の上限まで外れ値を与え，次のサンプルでベースラインを組み直させる
+    for (let index = 0; index < 3; index += 1) {
+      smoother.applySample({ rttMs: 999, offsetMs: 9000 });
+    }
+    smoother.applySample({ rttMs: 300, offsetMs: 9000 });
+
+    expect(smoother.getSmoothedRttMs()).toBe(150);
+  });
+
+  it("連続棄却が上限に達するまではoffsetを保持すること", () => {
+    const smoother = new OffsetSmoother();
+
+    smoother.applySample({ rttMs: 10, offsetMs: 4000 });
+    for (let index = 0; index < 3; index += 1) {
+      smoother.applySample({ rttMs: 10, offsetMs: 9000 });
+    }
 
     expect(smoother.getClockOffsetMs()).toBe(4000);
+  });
+
+  it("連続棄却が上限に達した後のサンプルでベースラインを組み直すこと", () => {
+    const smoother = new OffsetSmoother();
+
+    smoother.applySample({ rttMs: 10, offsetMs: 4000 });
+    for (let index = 0; index < 4; index += 1) {
+      smoother.applySample({ rttMs: 10, offsetMs: 9000 });
+    }
+
+    expect(smoother.getClockOffsetMs()).toBe(9000);
+  });
+
+  it("サンプル採用で連続棄却の数え直しが行われること", () => {
+    const smoother = new OffsetSmoother();
+
+    smoother.applySample({ rttMs: 10, offsetMs: 4000 });
+    smoother.applySample({ rttMs: 10, offsetMs: 9000 });
+    smoother.applySample({ rttMs: 10, offsetMs: 9000 });
+    // 採用サンプルでカウンタが0に戻るため，以降2回棄却してもベースラインは保たれる
+    smoother.applySample({ rttMs: 10, offsetMs: 4100 });
+    smoother.applySample({ rttMs: 10, offsetMs: 9000 });
+    smoother.applySample({ rttMs: 10, offsetMs: 9000 });
+
+    expect(smoother.getClockOffsetMs()).toBeCloseTo(4012, 10);
+  });
+
+  it("連続棄却の許容回数を設定で変更できること", () => {
+    const smoother = new OffsetSmoother({ maxConsecutiveRejectedSamples: 1 });
+
+    smoother.applySample({ rttMs: 10, offsetMs: 4000 });
+    smoother.applySample({ rttMs: 10, offsetMs: 9000 });
+    smoother.applySample({ rttMs: 10, offsetMs: 9000 });
+
+    expect(smoother.getClockOffsetMs()).toBe(9000);
+  });
+
+  it("連続棄却の許容回数が0の場合は生成時に落とすこと", () => {
+    expect(() => new OffsetSmoother({ maxConsecutiveRejectedSamples: 0 })).toThrow(
+      /maxConsecutiveRejectedSamples/,
+    );
+  });
+
+  it("連続棄却の許容回数が負値の場合は生成時に落とすこと", () => {
+    expect(
+      () => new OffsetSmoother({ maxConsecutiveRejectedSamples: -1 }),
+    ).toThrow(/maxConsecutiveRejectedSamples/);
+  });
+
+  it("連続棄却の許容回数が非整数の場合は生成時に落とすこと", () => {
+    expect(
+      () => new OffsetSmoother({ maxConsecutiveRejectedSamples: 2.5 }),
+    ).toThrow(/maxConsecutiveRejectedSamples/);
+  });
+
+  it("連続棄却の許容回数が1の場合は生成できること", () => {
+    expect(
+      () => new OffsetSmoother({ maxConsecutiveRejectedSamples: 1 }),
+    ).not.toThrow();
   });
 
   it("resetでoffsetを未設定に戻すこと", () => {
@@ -168,10 +277,21 @@ describe("OffsetSmoother", () => {
     expect(smoother.getClockOffsetMs()).toBe(99999);
   });
 
+  it("reset後のseedは再び暫定値として反映されること", () => {
+    const smoother = new OffsetSmoother();
+
+    smoother.applySample({ rttMs: 100, offsetMs: 5000 });
+    smoother.reset();
+    smoother.seed(9000, 1000);
+
+    expect(smoother.getClockOffsetMs()).toBe(8000);
+  });
+
   it("設定を部分指定した場合は指定値のみ上書きすること", () => {
     const smoother = new OffsetSmoother({ offsetAlpha: 0.5 });
 
     smoother.seed(1000, 0);
+    smoother.applySample({ rttMs: 10, offsetMs: 1000 });
     smoother.applySample({ rttMs: 10, offsetMs: 1200 });
 
     expect(smoother.getClockOffsetMs()).toBe(1100);

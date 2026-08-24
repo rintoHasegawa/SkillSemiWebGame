@@ -1,15 +1,16 @@
 /**
  * OffsetSmoother
  * 時計差分とRTTの平滑化を管理する
- * 外れ値除外とEWMA更新を集中管理する
+ * 外れ値除外・EWMA更新・暫定値からのベースライン再構築を集中管理する
  */
-import type { PongSample } from "@client/scenes/game/application/time/PongSampleEstimator";
+import type { PongSample } from "./PongSampleEstimator";
 
 /** 平滑化処理の設定値 */
 export type OffsetSmootherConfig = {
   offsetAlpha: number;
   rttAlpha: number;
   maxAcceptedOffsetJumpMs: number;
+  maxConsecutiveRejectedSamples: number;
 };
 
 /** 平滑化処理の既定設定 */
@@ -17,6 +18,7 @@ export const DEFAULT_OFFSET_SMOOTHER_CONFIG: OffsetSmootherConfig = {
   offsetAlpha: 0.12,
   rttAlpha: 0.25,
   maxAcceptedOffsetJumpMs: 250,
+  maxConsecutiveRejectedSamples: 3,
 };
 
 /** 時計差分とRTTの平滑化状態を保持する */
@@ -24,41 +26,67 @@ export class OffsetSmoother {
   private readonly config: OffsetSmootherConfig;
   private smoothedOffsetMs: number | null = null;
   private smoothedRttMs: number | null = null;
+  // seed由来のoffsetは片道遅延ぶん過小な暫定値なので，実測サンプルで置換するまで印を立てる
+  private isOffsetProvisional = false;
+  private consecutiveRejectedSampleCount = 0;
 
   constructor(config: Partial<OffsetSmootherConfig> = {}) {
     this.config = {
       ...DEFAULT_OFFSET_SMOOTHER_CONFIG,
       ...config,
     };
+
+    // 1未満だと全サンプルが無条件置換になりジャンプ検出が無効化されるため，設定ミスとして落とす
+    // 非整数は「何回目の棄却で再構築するか」が設定名から読み取れなくなるため併せて弾く
+    const { maxConsecutiveRejectedSamples } = this.config;
+    if (
+      !Number.isInteger(maxConsecutiveRejectedSamples) ||
+      maxConsecutiveRejectedSamples < 1
+    ) {
+      throw new Error(
+        `Invalid maxConsecutiveRejectedSamples: ${maxConsecutiveRejectedSamples} (must be an integer >= 1)`,
+      );
+    }
   }
 
   /** serverNowからoffset初期値を設定する */
   public seed(serverNowMs: number, receivedAtMs: number): void {
+    // 実測サンプル取り込み済みの場合は，暫定値で測定結果を汚さない
+    if (this.smoothedOffsetMs !== null && !this.isOffsetProvisional) {
+      return;
+    }
+
     this.smoothedOffsetMs = serverNowMs - receivedAtMs;
+    this.isOffsetProvisional = true;
   }
 
   /** 推定サンプルを取り込み平滑化状態を更新する */
   public applySample(sample: PongSample): void {
+    const shouldRebaseline = this.shouldRebaselineOffset();
+
     // 外れ値サンプルはRTTにも反映しないよう，棄却判定を先に行う
-    if (
-      this.smoothedOffsetMs !== null &&
-      Math.abs(sample.offsetMs - this.smoothedOffsetMs) >
-        this.config.maxAcceptedOffsetJumpMs
-    ) {
+    if (!shouldRebaseline && this.isOutlierSample(sample)) {
+      this.consecutiveRejectedSampleCount += 1;
       return;
     }
 
+    // 採用サンプルでRTTとoffsetを更新し，暫定状態と連続棄却の記録を解除する
     this.smoothedRttMs = this.smoothValue(
       this.smoothedRttMs,
       sample.rttMs,
       this.config.rttAlpha,
     );
 
-    this.smoothedOffsetMs = this.smoothValue(
-      this.smoothedOffsetMs,
-      sample.offsetMs,
-      this.config.offsetAlpha,
-    );
+    this.smoothedOffsetMs = shouldRebaseline
+      ? sample.offsetMs
+      : this.smoothValue(
+          this.smoothedOffsetMs,
+          sample.offsetMs,
+          this.config.offsetAlpha,
+        );
+
+    this.isOffsetProvisional = false;
+    this.consecutiveRejectedSampleCount = 0;
   }
 
   /** 平滑化済みoffsetを返す */
@@ -75,6 +103,29 @@ export class OffsetSmoother {
   public reset(): void {
     this.smoothedOffsetMs = null;
     this.smoothedRttMs = null;
+    this.isOffsetProvisional = false;
+    this.consecutiveRejectedSampleCount = 0;
+  }
+
+  // 暫定offsetのままの場合と連続棄却が上限に達した場合は，実測値でベースラインを組み直す
+  private shouldRebaselineOffset(): boolean {
+    return (
+      this.isOffsetProvisional ||
+      this.consecutiveRejectedSampleCount >=
+        this.config.maxConsecutiveRejectedSamples
+    );
+  }
+
+  // 平滑化済みoffsetからの跳躍が許容量を超えるサンプルかを判定する
+  private isOutlierSample(sample: PongSample): boolean {
+    if (this.smoothedOffsetMs === null) {
+      return false;
+    }
+
+    return (
+      Math.abs(sample.offsetMs - this.smoothedOffsetMs) >
+      this.config.maxAcceptedOffsetJumpMs
+    );
   }
 
   private smoothValue(
