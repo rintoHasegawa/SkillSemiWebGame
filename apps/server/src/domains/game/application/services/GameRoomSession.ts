@@ -8,7 +8,11 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import type { domain, GameResultPayload, PlaceBombPayload } from "@repo/shared";
+import {
+  domain,
+  type GameResultPayload,
+  type PlaceBombPayload,
+} from "@repo/shared";
 import type {
   ActiveBombRegistration,
   ActiveBombSnapshot,
@@ -18,6 +22,9 @@ import { GameLoop, type GameLoopCallbacks } from "../../loop/GameLoop";
 import { Player } from "../../entities/player/Player.js";
 import { MapStore } from "../../entities/map/MapStore";
 import { BombStateStore } from "../../entities/bomb/BombStateStore";
+import {
+  BOMB_COOLDOWN_TOLERANCE_MS,
+} from "../../entities/bomb/bombCooldownGuard";
 import { createSpawnedPlayer } from "../../entities/player/playerSpawn.js";
 import {
   isValidPosition,
@@ -58,23 +65,41 @@ export class GameRoomSession {
     this.mapStore = new MapStore(this.getMapSize());
     this.bombStateStore = new BombStateStore();
 
-    playerIds.forEach((playerId) => {
-      // player_selectモードの希望チームIDがあればそれを使い，なければバランス割り当てする
-      const preferredTeamId = teamPreferences?.[playerId] ?? null;
-      const assignedTeamId = preferredTeamId !== null
-        ? preferredTeamId
-        : TeamAssignmentService.getBalancedTeamId(this.players);
-
-      // 算出したチームIDを指定してプレイヤーを生成する
+    // 生成順が走査順に依存しないよう，希望チーム確定分を先に積んでから均等割り当てする
+    const createdPlayers = new Map<string, Player>();
+    const createPlayerWithTeam = (playerId: string, teamId: number): void => {
       const playerName = playerNamesById[playerId] ?? playerId;
-      const player = createSpawnedPlayer(
+      createdPlayers.set(
         playerId,
-        playerName,
-        assignedTeamId,
-        this.getMapSize(),
+        createSpawnedPlayer(playerId, playerName, teamId, this.getMapSize()),
       );
+    };
 
-      this.players.set(playerId, player);
+    // 第1パス: player_selectモードの希望チームIDを持つプレイヤーを先に確定させる
+    const balancedTargetIds: string[] = [];
+    playerIds.forEach((playerId) => {
+      const preferredTeamId = teamPreferences?.[playerId] ?? null;
+      if (preferredTeamId !== null) {
+        createPlayerWithTeam(playerId, preferredTeamId);
+        return;
+      }
+      balancedTargetIds.push(playerId);
+    });
+
+    // 第2パス: 希望なしのプレイヤーを希望者込みの人数で均等割り当てする
+    balancedTargetIds.forEach((playerId) => {
+      createPlayerWithTeam(
+        playerId,
+        TeamAssignmentService.getBalancedTeamId(createdPlayers),
+      );
+    });
+
+    // 登録順は参加順（playerIdsの並び）を維持する
+    playerIds.forEach((playerId) => {
+      const player = createdPlayers.get(playerId);
+      if (player) {
+        this.players.set(playerId, player);
+      }
     });
   }
 
@@ -218,6 +243,45 @@ export class GameRoomSession {
     return this.bombStateStore.shouldBroadcastBombHitReport(dedupeKey, nowMs);
   }
 
+  /**
+   * 爆弾設置要求が開始済みかつクールダウンを満たすか判定し，受理時は直近受理時刻を更新する
+   * クールダウンはクライアントと同じ共有ロジックでサーバー経過時間から解決する
+   */
+  public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+    // 移動と同じ基準で開始カウントダウン中の設置を拒否する
+    // 0 も有効なエポック時刻のため未設定判定は undefined のみで行う
+    if (this.startTime !== undefined && nowMs < this.startTime) {
+      return false;
+    }
+
+    // 開始時刻未設定時は経過 0 として通常クールダウンで判定する
+    const elapsedMs = this.resolveElapsedMs(nowMs);
+    // フィーバー境界付近でクライアントが先に短縮判定しても弾かないよう許容誤差ぶん先読みする
+    const cooldownMs = domain.game.bomb.resolveBombCooldownMs(
+      elapsedMs + BOMB_COOLDOWN_TOLERANCE_MS,
+    );
+    return this.bombStateStore.shouldAcceptBombPlacement(
+      playerId,
+      nowMs,
+      cooldownMs,
+    );
+  }
+
+  // 開始時刻未設定時は経過 0 とみなしてゲーム開始からの経過時間を返す
+  private resolveElapsedMs(nowMs: number): number {
+    return this.startTime === undefined ? 0 : nowMs - this.startTime;
+  }
+
+  /**
+   * サーバー経過時間を基準に爆発予定時刻を解決する
+   * クライアント申告の爆発予定時刻は信頼せず，導火線時間をサーバー側で加算する
+   * 開始待機中は経過を 0 に丸め，ゲームループの経過時間軸と揃える
+   */
+  public resolveBombExplodeAtElapsedMs(nowMs: number): number {
+    const elapsedMs = Math.max(0, this.resolveElapsedMs(nowMs));
+    return elapsedMs + config.GAME_CONFIG.BOMB_FUSE_MS;
+  }
+
   public issueServerBombId(): string {
     return this.bombStateStore.issueServerBombId();
   }
@@ -243,6 +307,24 @@ export class GameRoomSession {
     this.bombStateStore.registerBombOwner(
       registration.bombId,
       registration.ownerPlayerId,
+    );
+  }
+
+  /**
+   * 被弾報告が爆弾設置者と同チーム（設置者本人・味方）からのものか判定する
+   * 同チーム判定は shared の checkBombHit と同じ規則（未確定 teamId は同チーム扱いしない）
+   * 設置者が引けない爆弾は判定できないため同チーム扱いしない
+   */
+  public isSameTeamBombHitReport(
+    reporterPlayerId: string,
+    bombId: string,
+  ): boolean {
+    const ownerPlayerId = this.bombStateStore.getBombOwnerPlayerId(bombId);
+    if (!ownerPlayerId) return false;
+    const ownerTeamId = this.getPlayerTeamId(ownerPlayerId);
+    const reporterTeamId = this.getPlayerTeamId(reporterPlayerId);
+    return (
+      ownerTeamId === reporterTeamId && !config.isUnknownTeamId(ownerTeamId)
     );
   }
 

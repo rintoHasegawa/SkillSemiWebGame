@@ -82,9 +82,38 @@ export class GameSessionLifecycleService {
     );
   }
 
+  /** 被弾報告が爆弾設置者と同チームからのものか判定する，セッション未開始時は false を返す */
+  public isSameTeamBombHitReport(
+    reporterPlayerId: string,
+    bombId: string,
+  ): boolean {
+    return (
+      this.sessionRef.current?.isSameTeamBombHitReport(
+        reporterPlayerId,
+        bombId,
+      ) ?? false
+    );
+  }
+
+  /** 爆弾設置要求がクールダウンを満たすか判定する，セッション未開始時は false を返す */
+  public shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+    return (
+      this.sessionRef.current?.shouldAcceptBombPlacement(playerId, nowMs) ??
+      false
+    );
+  }
+
   /** サーバー採番の爆弾IDを返す，セッション未開始時は undefined を返す */
   public issueServerBombId(): string | undefined {
     return this.sessionRef.current?.issueServerBombId();
+  }
+
+  /** 爆発予定時刻をサーバー経過時間から解決する，セッション未開始時は導火線時間を返す */
+  public resolveBombExplodeAtElapsedMs(nowMs: number): number {
+    return (
+      this.sessionRef.current?.resolveBombExplodeAtElapsedMs(nowMs) ??
+      config.GAME_CONFIG.BOMB_FUSE_MS
+    );
   }
 
   /** 指定プレイヤーのチームIDを返す，未参加時は UNKNOWN_TEAM_ID を返す */

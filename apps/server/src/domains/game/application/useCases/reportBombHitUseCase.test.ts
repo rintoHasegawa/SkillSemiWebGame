@@ -8,12 +8,18 @@ import { describe, expect, it, vi } from "vitest";
 
 import { reportBombHitUseCase } from "./reportBombHitUseCase";
 
-/** 重複排除結果を固定した検証ポートスタブを生成する */
-const createValidationStub = (shouldBroadcast: boolean) => {
+/** 重複排除結果と同チーム判定結果を固定した検証ポートスタブを生成する */
+const createValidationStub = (
+  shouldBroadcast: boolean,
+  isSameTeam: boolean = false,
+) => {
   return {
     shouldBroadcastBombHitReport: vi.fn<
       (dedupeKey: string, nowMs: number) => boolean
     >(() => shouldBroadcast),
+    isSameTeamBombHitReport: vi.fn<
+      (reporterPlayerId: string, bombId: string) => boolean
+    >(() => isSameTeam),
   };
 };
 
@@ -64,6 +70,38 @@ describe("reportBombHitUseCase", () => {
 
   it("重複排除で配信不可の場合は被弾通知を配信しないこと", () => {
     const validation = createValidationStub(false);
+    const stats = createStatsStub();
+    const output = createOutputStub();
+
+    reportBombHitUseCase({
+      roomId: "room-1",
+      validation,
+      stats,
+      input,
+      output,
+    });
+
+    expect(output.publishPlayerHitToOthersInRoom).not.toHaveBeenCalled();
+  });
+
+  it("報告者が爆弾設置者と同チームの場合はスタッツを更新しないこと", () => {
+    const validation = createValidationStub(true, true);
+    const stats = createStatsStub();
+    const output = createOutputStub();
+
+    reportBombHitUseCase({
+      roomId: "room-1",
+      validation,
+      stats,
+      input,
+      output,
+    });
+
+    expect(stats.recordBombHitForOwner).not.toHaveBeenCalled();
+  });
+
+  it("報告者が爆弾設置者と同チームの場合は被弾通知を配信しないこと", () => {
+    const validation = createValidationStub(true, true);
     const stats = createStatsStub();
     const output = createOutputStub();
 

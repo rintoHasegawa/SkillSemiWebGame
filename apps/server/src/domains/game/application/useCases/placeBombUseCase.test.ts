@@ -6,35 +6,52 @@
 import type { BombPlacedAckPayload, BombPlacedPayload } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { config } from "@server/config";
 import {
   gameUseCaseLogEvents,
   logResults,
   logScopes,
 } from "@server/logging/index";
-import type { ActiveBombRegistration } from "../ports/gameUseCasePorts";
+import type {
+  ActiveBombRegistration,
+  GameFieldConfig,
+} from "../ports/gameUseCasePorts";
+import { GameRoomSession } from "../services/GameRoomSession";
 import { placeBombUseCase } from "./placeBombUseCase";
 
 type BombStoreStubParams = {
   shouldBroadcast: boolean;
+  /** クールダウン未経過で受理できない状況を再現する場合はfalseを指定する */
+  shouldAccept?: boolean;
   bombId?: string;
   /** セッション未開始で採番できない状況を再現する場合はfalseを指定する */
   canIssueBombId?: boolean;
   ownerTeamId?: number;
+  /** サーバー経過時間から解決される爆発予定時刻 */
+  serverExplodeAtElapsedMs?: number;
 };
 
 /** 重複排除結果と採番結果を固定した BombPlacementPort スタブを生成する */
 const createBombStoreStub = ({
   shouldBroadcast,
+  shouldAccept = true,
   bombId = "bomb-1",
   canIssueBombId = true,
   ownerTeamId = 2,
+  serverExplodeAtElapsedMs = 9_000,
 }: BombStoreStubParams) => {
   return {
     shouldBroadcastBombPlaced: vi.fn<
       (dedupeKey: string, nowMs: number) => boolean
     >(() => shouldBroadcast),
+    shouldAcceptBombPlacement: vi.fn<
+      (playerId: string, nowMs: number) => boolean
+    >(() => shouldAccept),
     issueServerBombId: vi.fn<() => string | undefined>(() =>
       canIssueBombId ? bombId : undefined,
+    ),
+    resolveBombExplodeAtElapsedMs: vi.fn<(nowMs: number) => number>(
+      () => serverExplodeAtElapsedMs,
     ),
     registerActiveBomb: vi.fn<(registration: ActiveBombRegistration) => void>(),
     getPlayerTeamId: vi.fn<(playerId: string) => number>(() => ownerTeamId),
@@ -127,6 +144,184 @@ describe("placeBombUseCase", () => {
     );
   });
 
+  it("クールダウン判定をプレイヤーIDと現在時刻で行うこと", () => {
+    const bombStore = createBombStoreStub({ shouldBroadcast: true });
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
+
+    expect(bombStore.shouldAcceptBombPlacement).toHaveBeenCalledWith(
+      "socket-1",
+      1_000,
+    );
+  });
+
+  it("重複排除で配信不可の場合はクールダウン判定を行わないこと", () => {
+    const bombStore = createBombStoreStub({ shouldBroadcast: false });
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
+
+    expect(bombStore.shouldAcceptBombPlacement).not.toHaveBeenCalled();
+  });
+
+  it("クールダウン未経過の場合は爆弾IDを採番しないこと", () => {
+    const bombStore = createBombStoreStub({
+      shouldBroadcast: true,
+      shouldAccept: false,
+    });
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
+
+    expect(bombStore.issueServerBombId).not.toHaveBeenCalled();
+  });
+
+  it("クールダウン未経過の場合は爆弾を登録しないこと", () => {
+    const bombStore = createBombStoreStub({
+      shouldBroadcast: true,
+      shouldAccept: false,
+    });
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
+
+    expect(bombStore.registerActiveBomb).not.toHaveBeenCalled();
+  });
+
+  it("クールダウン未経過の場合は他プレイヤーへ配信しないこと", () => {
+    const bombStore = createBombStoreStub({
+      shouldBroadcast: true,
+      shouldAccept: false,
+    });
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
+
+    expect(output.publishBombPlacedToOthersInRoom).not.toHaveBeenCalled();
+  });
+
+  it("クールダウン未経過の場合はACKを返さないこと", () => {
+    const bombStore = createBombStoreStub({
+      shouldBroadcast: true,
+      shouldAccept: false,
+    });
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
+
+    expect(output.publishBombPlacedAckToSocket).not.toHaveBeenCalled();
+  });
+
+  it("クールダウン未経過の場合はクールダウン拒否として記録すること", () => {
+    const bombStore = createBombStoreStub({
+      shouldBroadcast: true,
+      shouldAccept: false,
+    });
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.PLACE_BOMB,
+      result: logResults.REJECTED_COOLDOWN,
+      socketId: "socket-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("同一プレイヤーがリクエストIDを変えてクールダウン未経過に連投しても2件目は配信しないこと", () => {
+    // 実セッションを爆弾ストアとして用い，重複排除をすり抜ける連投を再現する
+    const fieldConfig: GameFieldConfig = {
+      fieldSizePreset: "SMALL",
+      gridCols: 6,
+      gridRows: 6,
+    };
+    const session = new GameRoomSession(
+      "room-1",
+      ["socket-1", "socket-2"],
+      {},
+      fieldConfig,
+    );
+    const output = createOutputStub();
+
+    placeBombUseCase({ roomId: "room-1", bombStore: session, input, output });
+    placeBombUseCase({
+      roomId: "room-1",
+      bombStore: session,
+      input: {
+        ...input,
+        payload: { ...input.payload, requestId: "req-2" },
+        nowMs: 1_100,
+      },
+      output,
+    });
+
+    expect(output.publishBombPlacedToOthersInRoom).toHaveBeenCalledTimes(1);
+  });
+
+  it("開始待機中の爆弾設置は他プレイヤーへ配信しないこと", () => {
+    // 実セッションを爆弾ストアとして用い，カウントダウン中の設置要求を再現する
+    const fieldConfig: GameFieldConfig = {
+      fieldSizePreset: "SMALL",
+      gridCols: 6,
+      gridRows: 6,
+    };
+    const session = new GameRoomSession(
+      "room-1",
+      ["socket-1", "socket-2"],
+      {},
+      fieldConfig,
+    );
+    // 待機時間を差し引いて開始時刻がエポック0になるよう現在時刻を固定する
+    const nowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
+    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
+    nowSpy.mockReturnValue(-1);
+    const output = createOutputStub();
+
+    placeBombUseCase({
+      roomId: "room-1",
+      bombStore: session,
+      input: { ...input, nowMs: -1 },
+      output,
+    });
+
+    expect(output.publishBombPlacedToOthersInRoom).not.toHaveBeenCalled();
+    session.dispose();
+  });
+
+  it("開始待機中の爆弾設置はアクティブ爆弾へ登録しないこと", () => {
+    const fieldConfig: GameFieldConfig = {
+      fieldSizePreset: "SMALL",
+      gridCols: 6,
+      gridRows: 6,
+    };
+    const session = new GameRoomSession(
+      "room-1",
+      ["socket-1", "socket-2"],
+      {},
+      fieldConfig,
+    );
+    const nowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
+    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
+    nowSpy.mockReturnValue(-1);
+    const output = createOutputStub();
+
+    placeBombUseCase({
+      roomId: "room-1",
+      bombStore: session,
+      input: { ...input, nowMs: -1 },
+      output,
+    });
+
+    expect(session.getActiveBombSnapshots()).toEqual([]);
+    session.dispose();
+  });
+
   it("配信可の場合は採番IDと設置座標で爆弾を登録すること", () => {
     const bombStore = createBombStoreStub({ shouldBroadcast: true });
     const output = createOutputStub();
@@ -138,7 +333,7 @@ describe("placeBombUseCase", () => {
       ownerPlayerId: "socket-1",
       x: 3.5,
       y: 4.5,
-      explodeAtElapsedMs: 12_000,
+      explodeAtElapsedMs: 9_000,
     });
   });
 
@@ -156,7 +351,7 @@ describe("placeBombUseCase", () => {
         ownerTeamId: 2,
         x: 3.5,
         y: 4.5,
-        explodeAtElapsedMs: 12_000,
+        explodeAtElapsedMs: 9_000,
       },
     );
   });
@@ -266,6 +461,71 @@ describe("placeBombUseCase", () => {
     placeBombUseCase({ roomId: "room-1", bombStore, input, output });
 
     expect(logSpy).not.toHaveBeenCalled();
+  });
+
+  it("クライアントが送った即時起爆の爆発予定時刻を配信しないこと", () => {
+    // 開始時刻を0に固定し，nowMs をそのままサーバー経過時間として扱う
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    const fieldConfig: GameFieldConfig = {
+      fieldSizePreset: "SMALL",
+      gridCols: 6,
+      gridRows: 6,
+    };
+    const session = new GameRoomSession("room-1", ["socket-1"], {}, fieldConfig);
+    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
+    const output = createOutputStub();
+
+    placeBombUseCase({
+      roomId: "room-1",
+      bombStore: session,
+      input: {
+        ...input,
+        payload: { ...input.payload, explodeAtElapsedMs: 0 },
+        nowMs: 5_000,
+      },
+      output,
+    });
+
+    expect(output.publishBombPlacedToOthersInRoom).toHaveBeenCalledWith(
+      "room-1",
+      "socket-1",
+      expect.objectContaining({
+        explodeAtElapsedMs: 5_000 + config.GAME_CONFIG.BOMB_FUSE_MS,
+      }),
+    );
+    session.dispose();
+  });
+
+  it("クライアントが送った即時起爆の爆発予定時刻を爆弾登録に使わないこと", () => {
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    const fieldConfig: GameFieldConfig = {
+      fieldSizePreset: "SMALL",
+      gridCols: 6,
+      gridRows: 6,
+    };
+    const session = new GameRoomSession("room-1", ["socket-1"], {}, fieldConfig);
+    session.start(50, { onTick: vi.fn(), onGameEnd: vi.fn() });
+    const output = createOutputStub();
+
+    placeBombUseCase({
+      roomId: "room-1",
+      bombStore: session,
+      input: {
+        ...input,
+        payload: { ...input.payload, explodeAtElapsedMs: 0 },
+        nowMs: 5_000,
+      },
+      output,
+    });
+
+    expect(session.getActiveBombSnapshots()[0]?.explodeAtElapsedMs).toBe(
+      5_000 + config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+    session.dispose();
   });
 
   it("チームID未解決の場合はownerTeamIdに-1を配信すること", () => {

@@ -92,6 +92,28 @@ describe("GameRoomSession", () => {
     ).toEqual([0, 1, 2]);
   });
 
+  it("チーム希望者が走査順の後方にいても全体が均等割り当てになること", () => {
+    const playerIds = Array.from(
+      { length: 8 },
+      (_, index) => `socket-${index + 1}`,
+    );
+    const teamPreferences: Record<string, number | null> = Object.fromEntries(
+      playerIds.map((playerId) => [playerId, null]),
+    );
+    teamPreferences["socket-8"] = 0;
+
+    const session = createSession(playerIds, {}, teamPreferences);
+
+    const teamPopulations = Array.from(
+      { length: config.GAME_CONFIG.TEAM_COUNT },
+      (_, teamId) =>
+        session.getPlayers().filter((player) => player.teamId === teamId)
+          .length,
+    );
+
+    expect(teamPopulations).toEqual([2, 2, 2, 2]);
+  });
+
   it("未参加プレイヤーのチームIDは-1を返すこと", () => {
     const session = createSession();
 
@@ -276,11 +298,181 @@ describe("GameRoomSession", () => {
     expect(session.shouldBroadcastBombPlaced("socket-1:req-1", 0)).toBe(true);
   });
 
+  it("開始待機中の爆弾設置は受理しないこと", () => {
+    const session = createSession();
+    // 待機時間を差し引いて開始時刻がエポック0になるよう現在時刻を固定する
+    const nowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
+    session.start(50, createCallbacksStub());
+    nowSpy.mockReturnValue(-1);
+
+    expect(session.shouldAcceptBombPlacement("socket-1", -1)).toBe(false);
+    session.dispose();
+  });
+
+  it("開始時刻ちょうどに達した爆弾設置は受理すること", () => {
+    const session = createSession();
+    const nowSpy = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(-config.GAME_CONFIG.GAME_START_DELAY_MS);
+    session.start(50, createCallbacksStub());
+    nowSpy.mockReturnValue(0);
+
+    expect(session.shouldAcceptBombPlacement("socket-1", 0)).toBe(true);
+    session.dispose();
+  });
+
+  it("通常クールダウン未経過の爆弾設置は受理しないこと", () => {
+    const session = createSession();
+    session.shouldAcceptBombPlacement("socket-1", 1_000);
+
+    expect(session.shouldAcceptBombPlacement("socket-1", 1_100)).toBe(false);
+  });
+
+  it("通常クールダウン経過後の爆弾設置は受理すること", () => {
+    const session = createSession();
+    session.shouldAcceptBombPlacement("socket-1", 1_000);
+
+    expect(
+      session.shouldAcceptBombPlacement(
+        "socket-1",
+        1_000 + config.GAME_CONFIG.BOMB_NORMAL_COOLDOWN_MS,
+      ),
+    ).toBe(true);
+  });
+
+  it("フィーバー時はフィーバークールダウン経過で爆弾設置を受理すること", () => {
+    const session = createSession();
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    session.start(50, createCallbacksStub());
+    const feverElapsedMs =
+      (config.GAME_CONFIG.GAME_DURATION_SEC
+        - config.GAME_CONFIG.BOMB_FEVER_START_REMAINING_SEC)
+        * 1_000
+      + 1_000;
+    session.shouldAcceptBombPlacement("socket-1", feverElapsedMs);
+
+    expect(
+      session.shouldAcceptBombPlacement(
+        "socket-1",
+        feverElapsedMs + config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS,
+      ),
+    ).toBe(true);
+    session.dispose();
+  });
+
+  it("通常時はフィーバークールダウン経過でも爆弾設置を受理しないこと", () => {
+    const session = createSession();
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    session.start(50, createCallbacksStub());
+    session.shouldAcceptBombPlacement("socket-1", 10_000);
+
+    expect(
+      session.shouldAcceptBombPlacement(
+        "socket-1",
+        10_000 + config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS,
+      ),
+    ).toBe(false);
+    session.dispose();
+  });
+
+  it("開始前の爆発予定時刻は経過0として導火線時間を返すこと", () => {
+    const session = createSession();
+
+    expect(session.resolveBombExplodeAtElapsedMs(5_000)).toBe(
+      config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+  });
+
+  it("開始後の爆発予定時刻はサーバー経過時間に導火線時間を加えること", () => {
+    const session = createSession();
+    vi.spyOn(Date, "now").mockReturnValue(
+      -config.GAME_CONFIG.GAME_START_DELAY_MS,
+    );
+    session.start(50, createCallbacksStub());
+
+    expect(session.resolveBombExplodeAtElapsedMs(5_000)).toBe(
+      5_000 + config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+    session.dispose();
+  });
+
+  it("開始待機中の爆発予定時刻は経過0として導火線時間を返すこと", () => {
+    const session = createSession();
+    vi.spyOn(Date, "now").mockReturnValue(0);
+    session.start(50, createCallbacksStub());
+
+    expect(session.resolveBombExplodeAtElapsedMs(0)).toBe(
+      config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+    session.dispose();
+  });
+
   it("同一キーの被弾報告は2回目を配信不可とすること", () => {
     const session = createSession();
     session.shouldBroadcastBombHitReport("socket-1:bomb-1", 0);
 
     expect(session.shouldBroadcastBombHitReport("socket-1:bomb-1", 0)).toBe(
+      false,
+    );
+  });
+
+  it("自分が設置した爆弾への被弾報告を同チーム報告と判定すること", () => {
+    const session = createSession(["socket-1"], {}, { "socket-1": 0 });
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-1",
+      x: 1,
+      y: 1,
+      explodeAtElapsedMs: 500,
+    });
+
+    expect(session.isSameTeamBombHitReport("socket-1", "bomb-1")).toBe(true);
+  });
+
+  it("味方が設置した爆弾への被弾報告を同チーム報告と判定すること", () => {
+    const session = createSession(
+      ["socket-1", "socket-2"],
+      {},
+      { "socket-1": 0, "socket-2": 0 },
+    );
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-1",
+      x: 1,
+      y: 1,
+      explodeAtElapsedMs: 500,
+    });
+
+    expect(session.isSameTeamBombHitReport("socket-2", "bomb-1")).toBe(true);
+  });
+
+  it("敵が設置した爆弾への被弾報告は同チーム報告と判定しないこと", () => {
+    const session = createSession(
+      ["socket-1", "socket-2"],
+      {},
+      { "socket-1": 0, "socket-2": 1 },
+    );
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-1",
+      x: 1,
+      y: 1,
+      explodeAtElapsedMs: 500,
+    });
+
+    expect(session.isSameTeamBombHitReport("socket-2", "bomb-1")).toBe(false);
+  });
+
+  it("設置者不明の爆弾への被弾報告は同チーム報告と判定しないこと", () => {
+    const session = createSession(["socket-1"], {}, { "socket-1": 0 });
+
+    expect(session.isSameTeamBombHitReport("socket-1", "bomb-unknown")).toBe(
       false,
     );
   });

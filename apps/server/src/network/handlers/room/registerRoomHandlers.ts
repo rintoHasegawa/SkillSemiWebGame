@@ -10,6 +10,7 @@ import type {
   LobbySettingsUpdateEventRoomUseCasePort,
   SelectTeamEventRoomUseCasePort,
 } from "@server/network/types/connectionPorts";
+import { toSocketRoomName } from "@server/network/adapters/socketEmitters";
 import { createSocketRegistrationContext } from "@server/network/handlers/registration";
 import {
   isJoinRoomPayload,
@@ -65,7 +66,8 @@ const createJoinRoomOrchestratorDeps = (
     runtimeRegistry,
     output: roomOutputAdapter,
     joinRoom: async (roomId) => {
-      await socket.join(roomId);
+      // ルーム配信先（createEmitToRoom）と同じ変換で Socket.IO ルーム名を解決する
+      await socket.join(toSocketRoomName(roomId));
     },
   };
 };

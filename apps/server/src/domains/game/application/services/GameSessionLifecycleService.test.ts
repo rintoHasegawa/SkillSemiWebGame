@@ -39,7 +39,16 @@ const createSessionStub = () => {
     shouldBroadcastBombHitReport: vi.fn<
       (dedupeKey: string, nowMs: number) => boolean
     >(() => true),
+    isSameTeamBombHitReport: vi.fn<
+      (reporterPlayerId: string, bombId: string) => boolean
+    >(() => true),
+    shouldAcceptBombPlacement: vi.fn<
+      (playerId: string, nowMs: number) => boolean
+    >(() => true),
     issueServerBombId: vi.fn<() => string>(() => "bomb-1"),
+    resolveBombExplodeAtElapsedMs: vi.fn<(nowMs: number) => number>(
+      () => 6_000,
+    ),
     getPlayerTeamId: vi.fn<(playerId: string) => number>(() => 3),
     registerActiveBomb: vi.fn<
       (registration: ActiveBombRegistration) => void
@@ -123,10 +132,42 @@ describe("GameSessionLifecycleService", () => {
     expect(service.shouldBroadcastBombPlaced("key", 0)).toBe(false);
   });
 
+  it("セッション未開始の爆弾設置受理判定はfalseを返すこと", () => {
+    const { service } = createContext(false);
+
+    expect(service.shouldAcceptBombPlacement("socket-1", 0)).toBe(false);
+  });
+
+  it("セッション開始後の爆弾設置受理判定はセッションへ委譲すること", () => {
+    const { service, session } = createContext(true);
+
+    expect(service.shouldAcceptBombPlacement("socket-1", 1_000)).toBe(true);
+    expect(session.shouldAcceptBombPlacement).toHaveBeenCalledWith(
+      "socket-1",
+      1_000,
+    );
+  });
+
   it("セッション未開始の被弾報告判定はfalseを返すこと", () => {
     const { service } = createContext(false);
 
     expect(service.shouldBroadcastBombHitReport("key", 0)).toBe(false);
+  });
+
+  it("セッション未開始の同チーム被弾報告判定はfalseを返すこと", () => {
+    const { service } = createContext(false);
+
+    expect(service.isSameTeamBombHitReport("socket-1", "bomb-1")).toBe(false);
+  });
+
+  it("セッション開始済みの同チーム被弾報告判定をセッションへ委譲すること", () => {
+    const { session, service } = createContext(true);
+
+    expect(service.isSameTeamBombHitReport("socket-1", "bomb-1")).toBe(true);
+    expect(session.isSameTeamBombHitReport).toHaveBeenCalledWith(
+      "socket-1",
+      "bomb-1",
+    );
   });
 
   it("セッション未開始の爆弾ID採番はundefinedを返すこと", () => {
@@ -145,6 +186,21 @@ describe("GameSessionLifecycleService", () => {
     const { service } = createContext(true);
 
     expect(service.issueServerBombId()).toBe("bomb-1");
+  });
+
+  it("セッション未開始の爆発予定時刻解決は導火線時間を返すこと", () => {
+    const { service } = createContext(false);
+
+    expect(service.resolveBombExplodeAtElapsedMs(5_000)).toBe(
+      config.GAME_CONFIG.BOMB_FUSE_MS,
+    );
+  });
+
+  it("セッション開始済みの爆発予定時刻解決はセッション値を返すこと", () => {
+    const { service, session } = createContext(true);
+
+    expect(service.resolveBombExplodeAtElapsedMs(5_000)).toBe(6_000);
+    expect(session.resolveBombExplodeAtElapsedMs).toHaveBeenCalledWith(5_000);
   });
 
   it("セッション未開始のチームID取得は-1を返すこと", () => {

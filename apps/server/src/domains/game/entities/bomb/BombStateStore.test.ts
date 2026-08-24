@@ -76,6 +76,52 @@ describe("BombStateStore.shouldBroadcastBombPlaced", () => {
   });
 });
 
+describe("BombStateStore.shouldAcceptBombPlacement", () => {
+  it("初回の設置要求はtrueを返すこと", () => {
+    const store = new BombStateStore();
+
+    expect(store.shouldAcceptBombPlacement("player-1", 1_000, 4_000)).toBe(
+      true,
+    );
+  });
+
+  it("クールダウン未経過の再設置はfalseを返すこと", () => {
+    const store = new BombStateStore();
+    store.shouldAcceptBombPlacement("player-1", 1_000, 4_000);
+
+    expect(store.shouldAcceptBombPlacement("player-1", 1_100, 4_000)).toBe(
+      false,
+    );
+  });
+
+  it("クールダウン経過後の再設置はtrueを返すこと", () => {
+    const store = new BombStateStore();
+    store.shouldAcceptBombPlacement("player-1", 1_000, 4_000);
+
+    expect(store.shouldAcceptBombPlacement("player-1", 5_000, 4_000)).toBe(
+      true,
+    );
+  });
+
+  it("別プレイヤーのクールダウンは独立して判定すること", () => {
+    const store = new BombStateStore();
+    store.shouldAcceptBombPlacement("player-1", 1_000, 4_000);
+
+    expect(store.shouldAcceptBombPlacement("player-2", 1_100, 4_000)).toBe(
+      true,
+    );
+  });
+
+  it("重複排除テーブルとは独立して判定すること", () => {
+    const store = new BombStateStore();
+    store.shouldBroadcastBombPlaced("key-1", 1_000);
+
+    expect(store.shouldAcceptBombPlacement("player-1", 1_000, 4_000)).toBe(
+      true,
+    );
+  });
+});
+
 describe("BombStateStore.shouldBroadcastBombHitReport", () => {
   it("初回のキーはtrueを返すこと", () => {
     const store = new BombStateStore();

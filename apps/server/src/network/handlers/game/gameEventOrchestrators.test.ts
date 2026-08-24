@@ -28,6 +28,8 @@ import {
 } from "./gameEventOrchestrators";
 
 const FIXED_NOW_MS = 1_700_000_000_000;
+// サーバー経過時間から解決される爆発予定時刻（申告値と区別するため別値にする）
+const SERVER_EXPLODE_AT_ELAPSED_MS = 6_000;
 
 /** オーナー1名が在室するテスト用のルーム状態を生成する */
 const createRoom = (): domain.room.Room => {
@@ -40,12 +42,14 @@ const createRoom = (): domain.room.Room => {
 type GameManagerStubParams = {
   shouldBroadcastBombPlaced?: boolean;
   shouldBroadcastBombHitReport?: boolean;
+  isSameTeamBombHitReport?: boolean;
 };
 
 /** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
 const createGameManagerStub = ({
   shouldBroadcastBombPlaced = true,
   shouldBroadcastBombHitReport = true,
+  isSameTeamBombHitReport = false,
 }: GameManagerStubParams = {}) => {
   return {
     startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
@@ -60,9 +64,15 @@ const createGameManagerStub = ({
     shouldBroadcastBombPlaced: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombPlaced"]
     >(() => shouldBroadcastBombPlaced),
+    shouldAcceptBombPlacement: vi.fn<
+      RoomScopedGamePort["shouldAcceptBombPlacement"]
+    >(() => true),
     issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
       () => "bomb-1",
     ),
+    resolveBombExplodeAtElapsedMs: vi.fn<
+      RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
+    >(() => SERVER_EXPLODE_AT_ELAPSED_MS),
     registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
     getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 2),
     getActiveBombSnapshots: vi.fn<
@@ -71,6 +81,9 @@ const createGameManagerStub = ({
     shouldBroadcastBombHitReport: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombHitReport"]
     >(() => shouldBroadcastBombHitReport),
+    isSameTeamBombHitReport: vi.fn<
+      RoomScopedGamePort["isSameTeamBombHitReport"]
+    >(() => isSameTeamBombHitReport),
     recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
     removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
     replaceDisconnectedPlayerWithBot: vi.fn<
@@ -362,7 +375,13 @@ describe("handlePlaceBombEvent", () => {
     expect(deps.output.publishBombPlacedToOthersInRoom).toHaveBeenCalledWith(
       "room-1",
       "socket-1",
-      { bombId: "bomb-1", ownerTeamId: 2, x: 3, y: 4, explodeAtElapsedMs: 5_000 },
+      {
+        bombId: "bomb-1",
+        ownerTeamId: 2,
+        x: 3,
+        y: 4,
+        explodeAtElapsedMs: SERVER_EXPLODE_AT_ELAPSED_MS,
+      },
     );
   });
 
@@ -471,6 +490,28 @@ describe("handleBombHitReportEvent", () => {
       "8:socket-1|6:bomb-1",
       FIXED_NOW_MS,
     );
+  });
+
+  it("同チームの爆弾への被弾報告はスタッツへ記録しないこと", () => {
+    const gameManager = createGameManagerStub({
+      isSameTeamBombHitReport: true,
+    });
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(gameManager.recordBombHitForOwner).not.toHaveBeenCalled();
+  });
+
+  it("同チームの爆弾への被弾報告は配信しないこと", () => {
+    const gameManager = createGameManagerStub({
+      isSameTeamBombHitReport: true,
+    });
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(deps.output.publishPlayerHitToOthersInRoom).not.toHaveBeenCalled();
   });
 
   it("重複報告の場合は配信しないこと", () => {

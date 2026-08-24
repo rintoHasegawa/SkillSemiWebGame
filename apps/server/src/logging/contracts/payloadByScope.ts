@@ -152,7 +152,9 @@ type GameUseCaseGameEndLogPayload = {
 /** GameUseCaseのPLACE_BOMBログ契約 */
 type GameUseCasePlaceBombLogPayload = {
   event: typeof gameUseCaseLogEvents.PLACE_BOMB;
-  result: typeof logResults.IGNORED_SESSION_NOT_STARTED;
+  result:
+    | typeof logResults.IGNORED_SESSION_NOT_STARTED
+    | typeof logResults.REJECTED_COOLDOWN;
   socketId: string;
   roomId: string;
 };

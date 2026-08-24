@@ -75,9 +75,15 @@ const createGameManagerStub = (startTime?: number) => {
     shouldBroadcastBombPlaced: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombPlaced"]
     >(() => true),
+    shouldAcceptBombPlacement: vi.fn<
+      RoomScopedGamePort["shouldAcceptBombPlacement"]
+    >(() => true),
     issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
       () => "bomb-1",
     ),
+    resolveBombExplodeAtElapsedMs: vi.fn<
+      RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
+    >(() => 1_000),
     registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
     getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 0),
     getActiveBombSnapshots: vi.fn<
@@ -86,6 +92,9 @@ const createGameManagerStub = (startTime?: number) => {
     shouldBroadcastBombHitReport: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombHitReport"]
     >(() => true),
+    isSameTeamBombHitReport: vi.fn<
+      RoomScopedGamePort["isSameTeamBombHitReport"]
+    >(() => false),
     recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
     removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
     replaceDisconnectedPlayerWithBot: vi.fn<

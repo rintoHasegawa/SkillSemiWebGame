@@ -10,7 +10,6 @@ export type BotState = {
   targetRow: number;
   lastBombPlacedAtMs: number;
   bombSeq: number;
-  stunUntilMs: number;
 };
 
 /** 移動先のグリッド座標 */

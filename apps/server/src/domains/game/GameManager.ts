@@ -98,9 +98,27 @@ export class GameManager {
     return this.lifecycleService.shouldBroadcastBombHitReport(dedupeKey, nowMs);
   }
 
+  // 被弾報告が爆弾設置者と同チーム（設置者本人・味方）からのものか判定する
+  isSameTeamBombHitReport(reporterPlayerId: string, bombId: string): boolean {
+    return this.lifecycleService.isSameTeamBombHitReport(
+      reporterPlayerId,
+      bombId,
+    );
+  }
+
+  // 爆弾設置要求がクールダウンを満たすか判定し，受理時は直近受理時刻を更新する
+  shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean {
+    return this.lifecycleService.shouldAcceptBombPlacement(playerId, nowMs);
+  }
+
   // サーバー採番の爆弾IDを生成する（セッション未開始時は undefined）
   issueServerBombId(): string | undefined {
     return this.lifecycleService.issueServerBombId();
+  }
+
+  /** 爆発予定時刻をサーバー経過時間から解決する */
+  resolveBombExplodeAtElapsedMs(nowMs: number): number {
+    return this.lifecycleService.resolveBombExplodeAtElapsedMs(nowMs);
   }
 
   /** 指定プレイヤーのチームIDを返す */

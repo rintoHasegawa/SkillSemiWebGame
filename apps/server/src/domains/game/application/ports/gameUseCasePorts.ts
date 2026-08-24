@@ -144,8 +144,12 @@ export type StartGameOutputPort = Pick<
 /** 爆弾設置ユースケースが利用する爆弾状態入力ポート */
 export interface BombPlacementPort {
   shouldBroadcastBombPlaced(dedupeKey: string, nowMs: number): boolean;
+  /** プレイヤーごとのクールダウンを満たすか判定し，受理時は直近受理時刻を更新する */
+  shouldAcceptBombPlacement(playerId: string, nowMs: number): boolean;
   /** サーバー採番の爆弾IDを返す，セッション未開始時は undefined を返す */
   issueServerBombId(): string | undefined;
+  /** サーバー経過時間を基準に爆発予定時刻を解決する */
+  resolveBombExplodeAtElapsedMs(nowMs: number): number;
   registerActiveBomb(registration: ActiveBombRegistration): void;
   getPlayerTeamId(playerId: string): number;
 }
@@ -174,9 +178,10 @@ export interface ActiveBombQueryPort {
   getActiveBombSnapshots(): ActiveBombSnapshot[];
 }
 
-/** 被弾報告ユースケースが利用する重複排除入力ポート */
+/** 被弾報告ユースケースが利用する重複排除・同チーム判定入力ポート */
 export interface BombHitReportValidationPort {
   shouldBroadcastBombHitReport(dedupeKey: string, nowMs: number): boolean;
+  isSameTeamBombHitReport(reporterPlayerId: string, bombId: string): boolean;
 }
 
 /** 被弾時に爆弾所有者のスタッツを更新するポート */

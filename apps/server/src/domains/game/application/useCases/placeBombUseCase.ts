@@ -38,6 +38,17 @@ export const placeBombUseCase = ({
     return;
   }
 
+  // クライアント側クールダウンをすり抜けた連投はサーバー側で拒否する（requestId 差し替え対策）
+  if (!bombStore.shouldAcceptBombPlacement(input.socketId, input.nowMs)) {
+    logEvent(logScopes.GAME_USE_CASE, {
+      event: gameUseCaseLogEvents.PLACE_BOMB,
+      result: logResults.REJECTED_COOLDOWN,
+      socketId: input.socketId,
+      roomId,
+    });
+    return;
+  }
+
   // ゲーム終了直後に届いた設置要求は採番できないため，記録して無視する
   const bombId = bombStore.issueServerBombId();
   if (!bombId) {
@@ -52,19 +63,24 @@ export const placeBombUseCase = ({
 
   const ownerTeamId = bombStore.getPlayerTeamId(input.socketId);
 
+  // 爆発予定時刻はクライアント申告値を採用せずサーバー経過時間から決める
+  const explodeAtElapsedMs = bombStore.resolveBombExplodeAtElapsedMs(
+    input.nowMs,
+  );
+
   bombStore.registerActiveBomb({
     bombId,
     ownerPlayerId: input.socketId,
     x: input.payload.x,
     y: input.payload.y,
-    explodeAtElapsedMs: input.payload.explodeAtElapsedMs,
+    explodeAtElapsedMs,
   });
 
   output.publishBombPlacedToOthersInRoom(
     roomId,
     input.socketId,
     createBombPlacedPayload({
-      payload: input.payload,
+      payload: { ...input.payload, explodeAtElapsedMs },
       bombId,
       ownerTeamId,
     })

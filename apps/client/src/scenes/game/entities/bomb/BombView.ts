@@ -68,7 +68,13 @@ export class BombView {
     }
 
     if (!BombView.bombTexturePromise) {
-      BombView.bombTexturePromise = Assets.load<Texture>(imageUrl);
+      BombView.bombTexturePromise = Assets.load<Texture>(imageUrl).catch(
+        (error: unknown) => {
+          // 失敗した Promise を残すと再ロードできなくなるためキャッシュを破棄する
+          BombView.bombTexturePromise = null;
+          throw error;
+        },
+      );
     }
 
     const loadedTexture = await BombView.bombTexturePromise;

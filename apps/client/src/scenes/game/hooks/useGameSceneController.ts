@@ -34,6 +34,7 @@ type SceneControllerState = {
   miniMapTeamIds: number[];
   localBombHitCount: number;
   localPlayerPosition: { x: number; y: number } | null;
+  isFeverTime: boolean;
 };
 
 type SceneControllerAction =
@@ -50,6 +51,7 @@ const createInitialSceneControllerState = (): SceneControllerState => {
     miniMapTeamIds: createDefaultMiniMapTeamIds(),
     localBombHitCount: 0,
     localPlayerPosition: null,
+    isFeverTime: false,
   };
 };
 
@@ -67,6 +69,7 @@ const sceneControllerReducer = (
         isInputEnabled: hud.isInputEnabled,
         teamPaintRates: hud.teamPaintRates,
         localBombHitCount: hud.localBombHitCount,
+        isFeverTime: hud.isFeverTime,
       };
     }
     case "syncMiniMap": {
@@ -135,6 +138,7 @@ export const useGameSceneController = (myId: string | null) => {
     miniMapTeamIds: state.miniMapTeamIds,
     localBombHitCount: state.localBombHitCount,
     localPlayerPosition: state.localPlayerPosition,
+    isFeverTime: state.isFeverTime,
     handleInput,
     handlePlaceBomb,
   };

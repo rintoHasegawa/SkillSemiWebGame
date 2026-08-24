@@ -7,12 +7,18 @@ import { describe, expect, it, vi } from "vitest";
 
 import { shouldPublishPlayerHitFromBombHit } from "./reportBombHitValidation";
 
-/** 重複排除結果を固定した検証ポートスタブを生成する */
-const createValidationStub = (shouldBroadcast: boolean) => {
+/** 重複排除結果と同チーム判定結果を固定した検証ポートスタブを生成する */
+const createValidationStub = (
+  shouldBroadcast: boolean,
+  isSameTeam: boolean = false,
+) => {
   return {
     shouldBroadcastBombHitReport: vi.fn<
       (dedupeKey: string, nowMs: number) => boolean
     >(() => shouldBroadcast),
+    isSameTeamBombHitReport: vi.fn<
+      (reporterPlayerId: string, bombId: string) => boolean
+    >(() => isSameTeam),
   };
 };
 
@@ -44,6 +50,31 @@ describe("shouldPublishPlayerHitFromBombHit", () => {
     const validation = createValidationStub(false);
 
     expect(shouldPublishPlayerHitFromBombHit(validation, input)).toBe(false);
+  });
+
+  it("同チーム判定に報告者IDと爆弾IDを渡すこと", () => {
+    const validation = createValidationStub(true);
+
+    shouldPublishPlayerHitFromBombHit(validation, input);
+
+    expect(validation.isSameTeamBombHitReport).toHaveBeenCalledWith(
+      "socket-1",
+      "bomb-9",
+    );
+  });
+
+  it("報告者が爆弾設置者と同チームの場合はfalseを返すこと", () => {
+    const validation = createValidationStub(true, true);
+
+    expect(shouldPublishPlayerHitFromBombHit(validation, input)).toBe(false);
+  });
+
+  it("報告者が爆弾設置者と同チームの場合は重複排除を消費しないこと", () => {
+    const validation = createValidationStub(true, true);
+
+    shouldPublishPlayerHitFromBombHit(validation, input);
+
+    expect(validation.shouldBroadcastBombHitReport).not.toHaveBeenCalled();
   });
 
   it("nowMsが0でもそのまま重複排除へ渡すこと", () => {

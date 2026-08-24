@@ -60,9 +60,10 @@ export class RespawnManager {
     const timerId = setTimeout(() => {
       this.respawnTimersByPlayerId.delete(playerId);
 
+      // 座標復帰は行わない（ローカルは CombatLifecycleFacade が初期位置へ戻し，
+      // リモートのリスポーン先はサーバの UPDATE_PLAYERS に従う）
       const player = this.players[playerId];
       if (player) {
-        player.respawnToInitialPosition();
         player.setRespawnEffectVisible(false);
       }
 

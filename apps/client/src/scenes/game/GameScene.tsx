@@ -22,6 +22,7 @@ export function GameScene({ myId }: GameSceneProps) {
     miniMapTeamIds,
     localBombHitCount,
     localPlayerPosition,
+    isFeverTime,
     handleInput,
     handlePlaceBomb,
   } = useGameSceneController(myId);
@@ -35,6 +36,7 @@ export function GameScene({ myId }: GameSceneProps) {
       miniMapTeamIds={miniMapTeamIds}
       localBombHitCount={localBombHitCount}
       localPlayerPosition={localPlayerPosition}
+      isFeverTime={isFeverTime}
       pixiContainerRef={pixiContainerRef}
       onJoystickInput={handleInput}
       onPlaceBomb={handlePlaceBomb}

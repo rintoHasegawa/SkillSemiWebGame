@@ -105,3 +105,48 @@ describe("PlayerModel.resetToInitialPosition", () => {
     });
   });
 });
+
+describe("PlayerModel.updateRemoteLerp", () => {
+  const { PLAYER_LERP_SMOOTHNESS, FRAME_DELTA_MAX_MS } = config.GAME_CONFIG;
+
+  it("画面内相当の deltaTime では係数 LERP_SMOOTHNESS×dt で補間すること", () => {
+    const model = createModelAt(0, 0);
+    model.setRemoteTarget({ x: 1, y: 1 });
+    const deltaTime = FRAME_DELTA_MAX_MS / 1000;
+
+    model.updateRemoteLerp(deltaTime);
+
+    const expected = PLAYER_LERP_SMOOTHNESS * deltaTime;
+    expect(model.getPosition().x).toBeCloseTo(expected, 10);
+    expect(model.getPosition().y).toBeCloseTo(expected, 10);
+  });
+
+  it("画面外間引き相当の大きな deltaTime を繰り返しても発散せず目標へ収束すること", () => {
+    const model = createModelAt(0, 0);
+    model.setRemoteTarget({ x: 1, y: 1 });
+    // 30fps × 間引き 6 フレームぶん（LERP_SMOOTHNESS×dt = 3.6 > 2 で不安定になる領域）
+    const offscreenDeltaTime = (1 / 30) * 6;
+
+    for (let i = 0; i < 30; i += 1) {
+      model.updateRemoteLerp(offscreenDeltaTime);
+    }
+
+    const position = model.getPosition();
+    expect(Number.isFinite(position.x)).toBe(true);
+    expect(Number.isFinite(position.y)).toBe(true);
+    expect(position.x).toBeCloseTo(1, 6);
+    expect(position.y).toBeCloseTo(1, 6);
+  });
+
+  it("目標を行き過ぎて目標から遠ざからないこと", () => {
+    const model = createModelAt(0, 0);
+    model.setRemoteTarget({ x: 1, y: 0 });
+    const offscreenDeltaTime = (FRAME_DELTA_MAX_MS / 1000) * 6;
+
+    model.updateRemoteLerp(offscreenDeltaTime);
+
+    const { x } = model.getPosition();
+    expect(x).toBeGreaterThanOrEqual(0);
+    expect(x).toBeLessThanOrEqual(1);
+  });
+});

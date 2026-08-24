@@ -15,6 +15,9 @@ const MAX_GRID_ROWS = 54;
 // 仕様上の爆発予定時刻の上限（制限時間180秒 + 信管1000ms．SPEC_03）
 const MAX_EXPLODE_AT_ELAPSED_MS = 181000;
 
+// プロトコル内部IDの防御的な最大長（クライアント採番は十進連番で数文字）
+const MAX_REQUEST_ID_LENGTH = 64;
+
 /** テスト用の正常な爆弾設置ペイロードを生成する */
 const createPayload = (overrides: Record<string, unknown> = {}): unknown => {
   return {
@@ -90,6 +93,28 @@ describe("isPlaceBombPayload", () => {
 
   it("requestIdが数値の場合はfalseを返すこと", () => {
     expect(isPlaceBombPayload(createPayload({ requestId: 1 }))).toBe(false);
+  });
+
+  it("requestIdが上限64文字の場合はtrueを返すこと", () => {
+    expect(
+      isPlaceBombPayload(
+        createPayload({ requestId: "a".repeat(MAX_REQUEST_ID_LENGTH) }),
+      ),
+    ).toBe(true);
+  });
+
+  it("requestIdが上限超過の65文字の場合はfalseを返すこと", () => {
+    expect(
+      isPlaceBombPayload(
+        createPayload({ requestId: "a".repeat(MAX_REQUEST_ID_LENGTH + 1) }),
+      ),
+    ).toBe(false);
+  });
+
+  it("requestIdが1MB相当の巨大文字列の場合はfalseを返すこと", () => {
+    expect(
+      isPlaceBombPayload(createPayload({ requestId: "a".repeat(1_000_000) })),
+    ).toBe(false);
   });
 
   it("xが文字列の場合はfalseを返すこと", () => {

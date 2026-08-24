@@ -30,6 +30,8 @@ export class BotTurnOrchestrator {
     hitStunMs: config.GAME_CONFIG.PLAYER_HIT_STUN_MS,
   });
   private readonly respawnAtMsByBotId = new Map<BotPlayerId, number>();
+  // 硬直はBot状態の生成前にも適用されうるため状態とは別に保持する
+  private readonly stunUntilMsByBotId = new Map<BotPlayerId, number>();
 
   constructor(mapSize: MapGridSize) {
     this.mapSize = mapSize;
@@ -49,7 +51,6 @@ export class BotTurnOrchestrator {
       targetRow: currentCell.row,
       lastBombPlacedAtMs: Number.NEGATIVE_INFINITY,
       bombSeq: 0,
-      stunUntilMs: Number.NEGATIVE_INFINITY,
     });
 
     // リスポーン時刻に達していたら初期位置へ座標をリセットする
@@ -76,7 +77,7 @@ export class BotTurnOrchestrator {
     }
 
     // 硬直中は状態を更新せず現在座標を維持する
-    if (this.hitStunPolicy.isStunned(nowMs, currentState.stunUntilMs)) {
+    if (this.hitStunPolicy.isStunned(nowMs, this.getStunUntilMs(botPlayerId))) {
       return {
         nextX: player.x,
         nextY: player.y,
@@ -122,7 +123,6 @@ export class BotTurnOrchestrator {
       targetRow: nextTarget.row,
       bombSeq: bombDecision.nextBombSeq,
       lastBombPlacedAtMs: bombDecision.nextLastBombPlacedAtMs,
-      stunUntilMs: currentState.stunUntilMs,
     });
 
     return {
@@ -134,15 +134,13 @@ export class BotTurnOrchestrator {
 
   /** 指定Botへ被弾硬直を適用する */
   public applyHitStun(botPlayerId: BotPlayerId, nowMs: number): void {
-    this.stateStore.update(botPlayerId, (state) => {
-      return {
-        ...state,
-        stunUntilMs: this.hitStunPolicy.calculateNextStunUntilMs(
-          state.stunUntilMs,
-          nowMs,
-        ),
-      };
-    });
+    this.stunUntilMsByBotId.set(
+      botPlayerId,
+      this.hitStunPolicy.calculateNextStunUntilMs(
+        this.getStunUntilMs(botPlayerId),
+        nowMs,
+      ),
+    );
   }
 
   /** 指定Botへリスポーン用硬直と位置リセットタイマーを適用する */
@@ -150,10 +148,10 @@ export class BotTurnOrchestrator {
     const respawnStunMs = config.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS;
     const respawnAtMs = nowMs + respawnStunMs;
     this.respawnAtMsByBotId.set(botPlayerId, respawnAtMs);
-    this.stateStore.update(botPlayerId, (state) => ({
-      ...state,
-      stunUntilMs: Math.max(state.stunUntilMs, respawnAtMs),
-    }));
+    this.stunUntilMsByBotId.set(
+      botPlayerId,
+      Math.max(this.getStunUntilMs(botPlayerId), respawnAtMs),
+    );
   }
 
   /** warmUp時に初期目標を外部から上書きする */
@@ -168,6 +166,12 @@ export class BotTurnOrchestrator {
   public clear(): void {
     this.stateStore.clear();
     this.respawnAtMsByBotId.clear();
+    this.stunUntilMsByBotId.clear();
+  }
+
+  /** 指定Botの硬直終了時刻を返し，未適用なら硬直なしとして扱う */
+  private getStunUntilMs(botPlayerId: BotPlayerId): number {
+    return this.stunUntilMsByBotId.get(botPlayerId) ?? Number.NEGATIVE_INFINITY;
   }
 
   /** グリッド座標をマップ範囲内のセル添字へ変換する */

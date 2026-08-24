@@ -531,4 +531,29 @@ describe("handleJoinRoomEvent", () => {
       deps.output.publishRoomUpdateToRoom.mock.invocationCallOrder[0] ?? 0;
     expect(joinOrder).toBeLessThan(publishOrder);
   });
+
+  it("参加成功時は前後空白を除去したルームIDへソケットを参加させること", async () => {
+    const deps = createJoinDeps({ status: "joined" });
+
+    await handleJoinRoomEvent(deps, {
+      roomId: "  room-1  ",
+      playerName: "太郎",
+    });
+
+    expect(deps.joinRoom).toHaveBeenCalledWith("room-1");
+  });
+
+  it("参加成功時は前後空白を除去したルームIDへ更新後ルームを配信すること", async () => {
+    const deps = createJoinDeps({ status: "joined" });
+
+    await handleJoinRoomEvent(deps, {
+      roomId: "  room-1  ",
+      playerName: "太郎",
+    });
+
+    expect(deps.output.publishRoomUpdateToRoom).toHaveBeenCalledWith(
+      "room-1",
+      deps.room,
+    );
+  });
 });
