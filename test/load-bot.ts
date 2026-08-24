@@ -48,11 +48,18 @@ type CurrentPlayerPayload =
 
 // game-start で受信するゲーム開始情報
 type GameStartPayload = {
-  startTime: number;
-  serverNow: number;
+  // 送信時点のサーバーのゲーム経過ms（カウントダウン中は負）
+  serverElapsedMs: number;
   fieldSizePreset: string;
   gridCols: number;
   gridRows: number;
+};
+
+// pong で受信する時刻同期レスポンス
+type PongPayload = {
+  clientTime: number;
+  serverReceivedElapsedMs: number;
+  serverSentElapsedMs: number;
 };
 
 // bomb-placed で受信する他プレイヤーの爆弾情報
@@ -164,7 +171,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   let moveTimer: NodeJS.Timeout | null = null;
   let pingTimer: NodeJS.Timeout | null = null;
   let bombCheckTimer: NodeJS.Timeout | null = null;
-  // startTime まで待つカウントダウンタイマー
+  // ゲームプレイ開始まで待つカウントダウンタイマー
   let gameplayStartTimer: NodeJS.Timeout | null = null;
 
   // フィールドサイズ（game-start で上書きされる）
@@ -189,11 +196,8 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   // 被弾カウント（5回でリスポーン）
   let hitCount = 0;
 
-  // サーバーとのクロックオフセット補正（serverNow - Date.now()）
-  let clockOffsetMs = 0;
-
-  // ゲーム開始時刻（サーバー時計基準，ms）
-  let gameStartTimeMs: number | null = null;
+  // クライアント単調時計からサーバーのゲーム経過msへの変換差分，未同期時は null
+  let clockOffsetMs: number | null = null;
 
   // 被弾スタン状態
   let stunUntilMs = 0;
@@ -210,11 +214,19 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   // ハリケーン状態
   const hurricanes = new Map<string, HurricaneStatePayload>();
 
-  const getServerNow = (): number => Date.now() + clockOffsetMs;
+  // 壁時計はステップするため，ゲーム時間には単調時計のみを使う
+  const monotonicNowMs = (): number => performance.now();
+
+  // サーバー基準の符号付きゲーム経過ms，カウントダウン中は負，未同期時は null
+  const getSignedElapsedMs = (): number | null => {
+    if (clockOffsetMs === null) return null;
+    return monotonicNowMs() + clockOffsetMs;
+  };
 
   const getElapsedMs = (): number | null => {
-    if (gameStartTimeMs === null) return null;
-    return Math.max(0, getServerNow() - gameStartTimeMs);
+    const signedElapsedMs = getSignedElapsedMs();
+    if (signedElapsedMs === null) return null;
+    return Math.max(0, signedElapsedMs);
   };
 
   const isStunned = (): boolean => Date.now() < stunUntilMs;
@@ -381,11 +393,11 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     // 5秒ごとに ping を送ってクロックオフセットを更新
     pingTimer = setInterval(() => {
       if (!gameEnded) {
-        socket.emit("ping", Date.now());
+        socket.emit("ping", monotonicNowMs());
       }
     }, 5000);
     // 初回 ping を即時送信
-    socket.emit("ping", Date.now());
+    socket.emit("ping", monotonicNowMs());
   };
 
   const startBombCheckTimer = () => {
@@ -428,25 +440,27 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     startPingTimer();
   });
 
-  // クロックオフセット補正
-  socket.on("pong", (payload: { clientTime: number; serverTime: number }) => {
-    const rtt = Date.now() - payload.clientTime;
-    clockOffsetMs = payload.serverTime + rtt / 2 - Date.now();
+  // クロックオフセット補正（サーバー滞留時間を除いたRTTで片道遅延を推定する）
+  socket.on("pong", (payload: PongPayload) => {
+    const receivedAtMs = monotonicNowMs();
+    const serverProcessingMs =
+      payload.serverSentElapsedMs - payload.serverReceivedElapsedMs;
+    const rttMs = receivedAtMs - payload.clientTime - serverProcessingMs;
+    if (rttMs < 0) return;
+
+    clockOffsetMs = payload.serverSentElapsedMs - (receivedAtMs - rttMs / 2);
   });
 
   socket.on("game-start", (payload?: GameStartPayload) => {
     counters.gameStarts += 1;
 
     if (payload) {
-      // サーバー時計基準でクロックオフセットを補正
-      if (typeof payload.serverNow === "number") {
-        clockOffsetMs = payload.serverNow - Date.now();
-      }
+      // PONG未着でもカウントダウンを開始できるよう暫定offsetを置く（片道遅延ぶん過小）
       if (
-        typeof payload.startTime === "number" &&
-        Number.isFinite(payload.startTime)
+        typeof payload.serverElapsedMs === "number" &&
+        Number.isFinite(payload.serverElapsedMs)
       ) {
-        gameStartTimeMs = payload.startTime;
+        clockOffsetMs = payload.serverElapsedMs - monotonicNowMs();
       }
       // 実際のフィールドサイズを反映
       if (
@@ -459,8 +473,9 @@ function createBot(index: number, counters: Stats, url: string): Bot {
         posX = Math.min(posX, fieldMaxX - BOT_RADIUS);
         posY = Math.min(posY, fieldMaxY - BOT_RADIUS);
       }
-    } else if (gameStartTimeMs === null) {
-      gameStartTimeMs = getServerNow();
+    } else if (clockOffsetMs === null) {
+      // ペイロード無しの場合は即時プレイ開始とみなす
+      clockOffsetMs = -monotonicNowMs();
     }
 
     if (!readySent) {
@@ -468,8 +483,8 @@ function createBot(index: number, counters: Stats, url: string): Bot {
       readySent = true;
     }
 
-    // startTime まで待ってからゲームプレイを開始（移動・爆弾）
-    const delayMs = Math.max(0, (gameStartTimeMs ?? getServerNow()) - getServerNow());
+    // 経過が0になるまで待ってからゲームプレイを開始（移動・爆弾）
+    const delayMs = Math.max(0, -(getSignedElapsedMs() ?? 0));
     gameplayStartTimer = setTimeout(() => {
       gameStarted = true;
       startMoveTimer();
