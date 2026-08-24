@@ -14,7 +14,6 @@ const GAME_CONFIG = {
 
 const NETWORK_CONFIG = {
   DEV_SERVER_PORT: 3000,
-  CORS_ORIGIN: "*",
   CORS_METHODS: ["GET", "POST"],
 } as const;
 

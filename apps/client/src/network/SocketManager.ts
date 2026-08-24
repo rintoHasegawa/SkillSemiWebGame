@@ -24,7 +24,6 @@ export class SocketManager {
 
     this.socket = io(serverUrl, {
       transports: [...config.NETWORK_CONFIG.SOCKET_TRANSPORTS],
-      withCredentials: true
     });
 
     this.common = createCommonHandler(this.socket);

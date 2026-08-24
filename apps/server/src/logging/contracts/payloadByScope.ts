@@ -3,7 +3,7 @@
  * スコープごとのログペイロード型契約を提供する
  */
 import { contracts as protocol, type FieldSizePreset } from "@repo/shared";
-import { gameDomainLogEvents, gameUseCaseLogEvents, roomDomainLogEvents, roomUseCaseLogEvents } from "../constants/eventNames";
+import { gameDomainLogEvents, gameUseCaseLogEvents, networkLogEvents, roomDomainLogEvents, roomUseCaseLogEvents } from "../constants/eventNames";
 import { logResults } from "../constants/results";
 import { logScopes } from "../constants/scopes";
 
@@ -92,6 +92,14 @@ type NetworkSelectTeamLogPayload = {
   socketId: string;
 };
 
+/** NetworkのCORSオリジン拒否ログ契約 */
+type NetworkCorsOriginLogPayload = {
+  event: typeof networkLogEvents.CORS_ORIGIN_CHECK;
+  result: typeof logResults.REJECTED_ORIGIN;
+  /** 拒否した接続元オリジン */
+  origin: string;
+};
+
 /** Networkスコープのログ契約ユニオン */
 type NetworkLogPayload =
   | NetworkConnectLogPayload
@@ -102,7 +110,8 @@ type NetworkLogPayload =
   | NetworkPlaceBombLogPayload
   | NetworkBombHitReportLogPayload
   | NetworkLobbySettingsUpdateLogPayload
-  | NetworkSelectTeamLogPayload;
+  | NetworkSelectTeamLogPayload
+  | NetworkCorsOriginLogPayload;
 
 /** GameUseCaseのPINGログ契約 */
 type GameUseCasePingLogPayload = {

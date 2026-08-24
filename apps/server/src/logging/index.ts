@@ -15,4 +15,5 @@ export {
   roomUseCaseLogEvents,
   gameDomainLogEvents,
   roomDomainLogEvents,
+  networkLogEvents,
 } from "./constants/eventNames";

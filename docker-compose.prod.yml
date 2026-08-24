@@ -9,3 +9,6 @@ services:
       - "3001:3000"
     environment:
       - NODE_ENV=production
+      # Socket.IO の接続を許可するクライアントの配信元オリジン（カンマ区切り）
+      # 既定値はローカルでの本番確認用．デプロイ先では実際の配信元 URL に置き換える（docs/02_ENV/ENV_09_環境変数設定.md 参照）
+      - CORS_ORIGIN=http://localhost:5173

@@ -43,3 +43,8 @@ export const roomDomainLogEvents = {
   OWNER_TRANSFER: "OWNER_TRANSFER",
   LOBBY_SETTINGS_UPDATE: protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
 } as const;
+
+/** Networkスコープ固有ログで利用するイベント名定数 */
+export const networkLogEvents = {
+  CORS_ORIGIN_CHECK: "CORS_ORIGIN_CHECK",
+} as const;
