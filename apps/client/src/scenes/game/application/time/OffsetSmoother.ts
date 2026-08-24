@@ -35,6 +35,18 @@ export class OffsetSmoother {
       ...DEFAULT_OFFSET_SMOOTHER_CONFIG,
       ...config,
     };
+
+    // 1未満だと全サンプルが無条件置換になりジャンプ検出が無効化されるため，設定ミスとして落とす
+    // 非整数は「何回目の棄却で再構築するか」が設定名から読み取れなくなるため併せて弾く
+    const { maxConsecutiveRejectedSamples } = this.config;
+    if (
+      !Number.isInteger(maxConsecutiveRejectedSamples) ||
+      maxConsecutiveRejectedSamples < 1
+    ) {
+      throw new Error(
+        `Invalid maxConsecutiveRejectedSamples: ${maxConsecutiveRejectedSamples} (must be an integer >= 1)`,
+      );
+    }
   }
 
   /** serverNowからoffset初期値を設定する */

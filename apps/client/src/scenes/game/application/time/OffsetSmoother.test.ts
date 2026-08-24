@@ -225,6 +225,30 @@ describe("OffsetSmoother", () => {
     expect(smoother.getClockOffsetMs()).toBe(9000);
   });
 
+  it("連続棄却の許容回数が0の場合は生成時に落とすこと", () => {
+    expect(() => new OffsetSmoother({ maxConsecutiveRejectedSamples: 0 })).toThrow(
+      /maxConsecutiveRejectedSamples/,
+    );
+  });
+
+  it("連続棄却の許容回数が負値の場合は生成時に落とすこと", () => {
+    expect(
+      () => new OffsetSmoother({ maxConsecutiveRejectedSamples: -1 }),
+    ).toThrow(/maxConsecutiveRejectedSamples/);
+  });
+
+  it("連続棄却の許容回数が非整数の場合は生成時に落とすこと", () => {
+    expect(
+      () => new OffsetSmoother({ maxConsecutiveRejectedSamples: 2.5 }),
+    ).toThrow(/maxConsecutiveRejectedSamples/);
+  });
+
+  it("連続棄却の許容回数が1の場合は生成できること", () => {
+    expect(
+      () => new OffsetSmoother({ maxConsecutiveRejectedSamples: 1 }),
+    ).not.toThrow();
+  });
+
   it("resetでoffsetを未設定に戻すこと", () => {
     const smoother = new OffsetSmoother();
 
