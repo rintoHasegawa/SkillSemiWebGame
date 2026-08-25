@@ -109,6 +109,7 @@ const createOutputStubs = () => {
       publishRoomUpdateToRoom: vi.fn<
         (roomId: string, room: domain.room.Room) => void
       >(),
+      closeRoomChannel: vi.fn<(roomId: string) => void>(),
     },
   };
 };

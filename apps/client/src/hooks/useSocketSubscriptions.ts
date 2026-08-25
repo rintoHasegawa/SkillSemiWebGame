@@ -3,7 +3,7 @@
  * アプリ共通で必要なソケット購読を登録するフック
  * 接続，ルーム更新，ゲーム開始の購読と解除を一元化する
  */
-import { useEffect } from "react";
+import { useEffect, type RefObject } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import {
   applyRuntimeMapSizeFromGameStart,
@@ -11,12 +11,22 @@ import {
 } from "@client/config";
 import { domain } from "@repo/shared";
 import type { GameResultPayload, GameStartPayload } from "@repo/shared";
+import {
+  shouldAcceptGameStart,
+  shouldAcceptRoomUpdate,
+  type RoomMembership,
+} from "./application/roomEventGuards";
 import type { AppFlowAction } from "./types/appFlowState";
 
 type UseSocketSubscriptionsParams = {
   completeJoinRequest: () => void;
   dispatchAppFlow: (action: AppFlowAction) => void;
   scenePhase: domain.app.ScenePhaseType;
+  /**
+   * 自分の所属ルーム状態への参照
+   * 購読を張り直さずに最新値を読むため ref で受け取る
+   */
+  membershipRef: RefObject<RoomMembership>;
 };
 
 type AppSocketHandlers = {
@@ -71,6 +81,7 @@ export const useSocketSubscriptions = ({
   completeJoinRequest,
   dispatchAppFlow,
   scenePhase,
+  membershipRef,
 }: UseSocketSubscriptionsParams): void => {
   useEffect(() => {
     const handlers: AppSocketHandlers = {
@@ -79,6 +90,20 @@ export const useSocketSubscriptions = ({
       },
 
       handleRoomUpdate: (updatedRoom: domain.room.Room) => {
+        // 所属外ルームの更新で参加フローやマップ設定を書き換えないよう副作用の前に弾く
+        const membership = membershipRef.current;
+        if (!shouldAcceptRoomUpdate({ membership, updatedRoom })) {
+          console.error(
+            "[useSocketSubscriptions] 所属外ルームの ROOM_UPDATE を無視した",
+            {
+              currentRoomId: membership.currentRoomId,
+              myId: membership.myId,
+              receivedRoomId: updatedRoom.roomId,
+            },
+          );
+          return;
+        }
+
         completeJoinRequest();
         setRuntimeMapSizeByPreset(updatedRoom.fieldSizePreset);
         if (
@@ -92,6 +117,20 @@ export const useSocketSubscriptions = ({
       },
 
       handleGameStart: (payload) => {
+        // 所属外ルームのゲーム開始でマップ設定とシーンが引きずられないよう弾く
+        const membership = membershipRef.current;
+        if (!shouldAcceptGameStart({ membership, payload })) {
+          console.error(
+            "[useSocketSubscriptions] 所属外ルームの GAME_START を無視した",
+            {
+              currentRoomId: membership.currentRoomId,
+              myId: membership.myId,
+              receivedRoomId: payload.roomId,
+            },
+          );
+          return;
+        }
+
         applyRuntimeMapSizeFromGameStart(payload);
         dispatchAppFlow({ type: "setPlaying" });
       },

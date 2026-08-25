@@ -36,6 +36,8 @@ export interface RoomOutputPort {
   publishRoomUpdateToRoom(roomId: domain.room.Room["roomId"], room: domain.room.Room): void;
   publishJoinRejectedToSocket(payload: domain.room.JoinRoomRejectedPayload): void;
   publishSelectTeamRejectedToSocket(teamId: number): void;
+  /** ルーム削除時に配信チャンネルを閉じ，在室ソケットを退出させる */
+  closeRoomChannel(roomId: domain.room.Room["roomId"]): void;
 }
 
 /** ルーム参加ユースケースが利用する参加操作ポート */

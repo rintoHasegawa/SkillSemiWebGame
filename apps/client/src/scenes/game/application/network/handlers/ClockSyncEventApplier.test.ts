@@ -53,6 +53,7 @@ const createGameStartPayload = (
   overrides: Partial<GameStartPayload> = {},
 ): GameStartPayload => {
   return {
+    roomId: "room-1",
     serverElapsedMs: 5000,
     fieldSizePreset: "MEDIUM",
     gridCols: 20,

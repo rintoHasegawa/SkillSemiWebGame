@@ -1,7 +1,7 @@
 /**
  * roomDisconnectUseCase.test
  * ルーム切断ユースケースの現行挙動を固定する characterization test
- * 更新ルーム配信と削除ルームのランタイム破棄を検証する
+ * 更新ルーム配信と削除ルームのランタイム破棄・配信チャンネル閉鎖を検証する
  */
 import { domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -42,6 +42,7 @@ const createOutputStub = () => {
     publishRoomUpdateToRoom: vi.fn<
       (roomId: string, room: domain.room.Room) => void
     >(),
+    closeRoomChannel: vi.fn<(roomId: string) => void>(),
   };
 };
 
@@ -140,6 +141,41 @@ describe("roomDisconnectUseCase", () => {
       ["room-a"],
       ["room-b"],
     ]);
+  });
+
+  it("削除ルームごとに配信チャンネルを閉じること", () => {
+    const output = createOutputStub();
+
+    roomDisconnectUseCase({
+      roomManager: createRoomManagerStub({
+        updatedRooms: [],
+        deletedRoomIds: ["room-a", "room-b"],
+      }),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      socketId: "socket-9",
+      output,
+    });
+
+    expect(output.closeRoomChannel.mock.calls).toEqual([
+      ["room-a"],
+      ["room-b"],
+    ]);
+  });
+
+  it("削除ルームがない場合は配信チャンネルを閉じないこと", () => {
+    const output = createOutputStub();
+
+    roomDisconnectUseCase({
+      roomManager: createRoomManagerStub({
+        updatedRooms: [createRoomWithOwner("room-a")],
+        deletedRoomIds: [],
+      }),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      socketId: "socket-9",
+      output,
+    });
+
+    expect(output.closeRoomChannel).not.toHaveBeenCalled();
   });
 
   it("削除ルームのみの場合はルーム更新を配信しないこと", () => {

@@ -49,7 +49,10 @@ export type GameEventOrchestratorDeps = {
   runtimeRegistry: GameEventRuntimeUseCasePort;
   output: GameOutputAdapter;
   /** ルーム状態の変化をROOM_UPDATEで配信するための出力 */
-  roomOutput: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
+  roomOutput: Pick<
+    RoomOutputPort,
+    "publishRoomUpdateToRoom" | "closeRoomChannel"
+  >;
 };
 
 /** PINGイベントを調停してPONG返却ユースケースを実行する */

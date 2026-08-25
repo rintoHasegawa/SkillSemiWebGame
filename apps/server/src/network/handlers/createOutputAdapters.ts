@@ -44,7 +44,7 @@ type CreateSocketOutputAdaptersParams = {
 /** 切断処理で利用するゲームとルームの出力アダプタ集合 */
 type DisconnectOutputAdapters = {
   game: GameDisconnectOutputAdapter;
-  room: Pick<RoomOutputAdapter, "publishRoomUpdateToRoom">;
+  room: Pick<RoomOutputAdapter, "publishRoomUpdateToRoom" | "closeRoomChannel">;
 };
 
 /**
@@ -61,7 +61,7 @@ export const createSocketOutputAdapters = ({
 
   return {
     game: createGameOutputAdapter(common, deps, realtimeRoomSyncState),
-    room: createRoomOutputAdapter(common),
+    room: createRoomOutputAdapter(common, io),
   };
 };
 

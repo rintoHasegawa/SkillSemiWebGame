@@ -124,6 +124,8 @@ export type RemovePlayerPayload = PlayerData["id"];
 
 /** game-start イベントで送受信するゲーム開始情報 */
 export type GameStartPayload = {
+  /** 対象ルームID（自分の所属ルーム照合用） */
+  roomId: string;
   /**
    * ペイロード送信時点のゲーム経過ms（クライアント側クロック同期用）
    * ゲームプレイ開始前のカウントダウン中は負値になる

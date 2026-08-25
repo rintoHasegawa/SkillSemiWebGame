@@ -30,7 +30,10 @@ type StartGameCoordinatorParams = {
   requestedFieldSizePreset?: FieldSizePreset;
 } & StartGameCoordinatorDeps & {
   output: StartGameOutputPort;
-  roomOutput: Pick<RoomOutputPort, "publishRoomUpdateToRoom">;
+  roomOutput: Pick<
+    RoomOutputPort,
+    "publishRoomUpdateToRoom" | "closeRoomChannel"
+  >;
 };
 
 // 要求値・ルーム設定・既定値の順に採用し，未知のプリセットは既定へ寄せる
@@ -181,6 +184,8 @@ export const startGameCoordinator = ({
     onGameEnd: () => {
       roomManager.deleteRoom(updatedRoom.roomId);
       runtimeRegistry.cleanupGameManagerForRoom(updatedRoom.roomId);
+      // 削除済みルーム宛の配信が残存ソケットへ届かないようチャンネルを閉じる
+      roomOutput.closeRoomChannel(updatedRoom.roomId);
     },
     output,
   });

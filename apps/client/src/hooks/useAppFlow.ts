@@ -3,7 +3,7 @@
  * アプリ全体の画面遷移と参加フロー状態を管理するフック
  * 参加要求の成功失敗と接続状態を統合してシーンへ渡す
  */
-import { useCallback, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import { domain } from "@repo/shared";
 import { config } from "@client/config";
@@ -12,6 +12,7 @@ import {
   appFlowReducer,
   initialAppFlowData,
 } from "./application/appFlowReducer";
+import type { RoomMembership } from "./application/roomEventGuards";
 import { useSocketSubscriptions } from "./useSocketSubscriptions";
 
 /** アプリフロー管理フックの公開状態と操作を表す型 */
@@ -79,6 +80,11 @@ export const useAppFlow = (): AppFlowState => {
   );
   const [joinState, dispatchJoin] = useReducer(joinReducer, initialJoinState);
   const joinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 購読を張り直さずに最新の所属状態を参照できるよう ref へ同期する
+  const membershipRef = useRef<RoomMembership>({
+    currentRoomId: null,
+    myId: null,
+  });
   const joinRejectedHandlerRef = useRef<
     ((payload: domain.room.JoinRoomRejectedPayload) => void) | null
   >(null);
@@ -205,10 +211,18 @@ export const useAppFlow = (): AppFlowState => {
     [completeJoinRequest],
   );
 
+  useEffect(() => {
+    membershipRef.current = {
+      currentRoomId: appFlow.room?.roomId ?? null,
+      myId: appFlow.myId,
+    };
+  }, [appFlow.myId, appFlow.room?.roomId]);
+
   useSocketSubscriptions({
     completeJoinRequest,
     dispatchAppFlow,
     scenePhase: appFlow.scenePhase,
+    membershipRef,
   });
 
   return {
