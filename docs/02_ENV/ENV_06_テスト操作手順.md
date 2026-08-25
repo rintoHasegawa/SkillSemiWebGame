@@ -109,6 +109,16 @@ pnpm start -- --dev
 - 指定時間経過後に自動終了する
 - 途中終了する場合はプロセスを終了する
 
+## 型チェック (Type Check)
+
+Bot は `@repo/shared` のペイロード型を参照するため，プロトコルを変更した際の追随漏れは型チェックで検出できる．ルートで以下を実行する．
+
+```bash
+pnpm typecheck
+```
+
+※ Bot 単体で確認する場合は `/workspace/test` で `pnpm typecheck` を実行する．ただし `packages/shared/dist` の型定義を参照するため，事前に `pnpm shared:build` が必要である．コマンドの詳細は [ENV_04_開発コマンド](ENV_04_開発コマンド.md) を参照．
+
 ## 注意事項 (Notes)
 
 ### 本番サーバへの負荷
@@ -118,7 +128,8 @@ pnpm start -- --dev
 
 ### 依存関係
 
-- test配下は独立した依存関係を持つため，別途 `pnpm install` が必要になる
+- `test` は pnpm workspace のメンバーである（`pnpm-workspace.yaml` の `packages` に含まれる）ため，ルートで `pnpm install` を実行すれば負荷テスト用の依存関係も導入される
+- 負荷テスト専用の依存（`socket.io-client` / `ts-node`）は `test/package.json` に閉じており，client/server 側には持ち込まれない
 
 ### 計測の限界
 

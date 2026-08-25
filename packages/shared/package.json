@@ -20,6 +20,7 @@
     "build": "tsup src/index.ts src/config/gameConfig.ts --format cjs,esm && tsc -p tsconfig.build.json",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "keywords": [],
