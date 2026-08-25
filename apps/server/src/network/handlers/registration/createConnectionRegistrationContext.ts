@@ -36,6 +36,8 @@ export const createConnectionRegistrationContext = (
     socket,
     roomManager: params.roomManager,
     runtimeRegistry: params.runtimeRegistry,
+    identityRegistry: params.identityRegistry,
+    sessionReservations: params.sessionReservations,
   };
 
   return {
@@ -48,6 +50,7 @@ export const createConnectionRegistrationContext = (
         runtimeRegistry: deps.runtimeRegistry,
       },
       realtimeRoomSyncState,
+      identityRegistry: deps.identityRegistry,
     }),
   };
 };
