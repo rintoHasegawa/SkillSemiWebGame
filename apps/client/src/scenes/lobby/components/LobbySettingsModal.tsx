@@ -5,7 +5,7 @@
 import type { FieldSizePreset } from "@repo/shared";
 import { config } from "@client/config";
 import { OVERLAY_BUTTON_STYLE } from "@client/scenes/shared/styles/overlayStyles";
-import type { LobbyGameSettings } from "../LobbyScene";
+import type { LobbyGameSettings } from "../application/lobbySettingsSync";
 import {
   LOBBY_SETTINGS_MODAL_BODY_STYLE,
   LOBBY_SETTINGS_MODAL_FIELD_STYLE,
