@@ -9,7 +9,7 @@
  * client/server 間の互換性が壊れる変更（ペイロード形状の変更・イベント廃止等）を
  * 入れたときに数値を 1 つ上げる
  */
-export const PROTOCOL_VERSION = "1";
+export const PROTOCOL_VERSION = "2";
 
 /**
  * バージョン不一致時に接続を拒否する際のエラーメッセージ（クライアントが判別に使う）
