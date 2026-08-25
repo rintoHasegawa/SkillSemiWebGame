@@ -1,3 +1,8 @@
+/**
+ * app
+ * 画面フェーズに応じて表示するシーンを切り替えるルートコンポーネント
+ * 再接続待ち・ルーム未受信といった過渡状態のフォールバック表示もここで扱う
+ */
 import { useEffect, useState } from "react";
 
 import { socketManager } from "./network/SocketManager";
@@ -11,6 +16,7 @@ import { GameScene } from "./scenes/game/GameScene";
 import { ResultScene } from "./scenes/result/ResultScene";
 import { LandscapeOnlyGate } from "./components/LandscapeOnlyGate";
 import { InstallRequiredGate } from "./components/InstallRequiredGate";
+import { ReconnectingNotice } from "./components/ReconnectingNotice";
 
 import { domain } from "@repo/shared";
 
@@ -24,6 +30,7 @@ export default function App() {
     joinErrorMessage,
     connectionNoticeMessage,
     protocolMismatchMessage,
+    isReconnecting,
     isJoining,
     setPlayerName,
     requestJoin,
@@ -50,7 +57,15 @@ export default function App() {
       connectionNoticeMessage !== null || protocolMismatchMessage !== null,
   });
 
-  let scene = <GameScene myId={myId} />;
+  // 再接続中は操作できないゲーム画面を残さず，復帰待ちであることだけを伝える
+  // 復帰後は GameScene が再マウントされ，READY_FOR_GAME からゲーム状態を取り直す
+  let scene = isReconnecting ? (
+    <ReconnectingNotice
+      onBackToTitle={() => returnToTitle({ leaveRoom: true })}
+    />
+  ) : (
+    <GameScene myId={myId} />
+  );
 
   // タイトル画面分岐
   if (scenePhase === domain.app.ScenePhase.TITLE) {

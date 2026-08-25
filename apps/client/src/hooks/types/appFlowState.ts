@@ -4,7 +4,10 @@
  * 画面遷移とルーム同期の契約を集約する
  */
 import { domain } from "@repo/shared";
-import type { GameResultPayload } from "@repo/shared";
+import type { GameResultPayload, ResumeSessionRejectedPayload } from "@repo/shared";
+
+/** タイトルへ戻した理由をユーザーへ伝える通知種別 */
+export type ConnectionNoticeType = "disconnected" | "game_ended";
 
 /** アプリフローの状態データ型 */
 export type AppFlowData = {
@@ -13,8 +16,10 @@ export type AppFlowData = {
   myId: string | null;
   gameResult: GameResultPayload | null;
   playerName: string;
-  /** 予期しない接続断でセッションを破棄したか */
-  isConnectionLost: boolean;
+  /** セッションを破棄してタイトルへ戻した理由（通知不要は null） */
+  connectionNotice: ConnectionNoticeType | null;
+  /** プレイ中の切断から席へ復帰しようとしている最中か */
+  isReconnecting: boolean;
   /** サーバとのプロトコル版が一致せず接続を拒否されたか */
   isProtocolMismatch: boolean;
 };
@@ -30,4 +35,6 @@ export type AppFlowAction =
   | { type: "updateRoom"; room: domain.room.Room }
   | { type: "setPlaying" }
   | { type: "setResult"; result: GameResultPayload }
+  | { type: "sessionResumed"; playerId: string; room: domain.room.Room }
+  | { type: "resumeRejected"; reason: ResumeSessionRejectedPayload["reason"] }
   | { type: "resetToTitle"; clearMyId: boolean };
