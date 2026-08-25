@@ -2,6 +2,7 @@
  * CommonHandler
  * 接続イベントの購読と解除を扱う共通ハンドラを提供する
  * connect イベントをアプリ用の id 通知に変換し，disconnect を切断通知に変換する
+ * ハンドシェイク拒否（connect_error）はプロトコル版不一致の通知へ変換する
  */
 import type { Socket } from "socket.io-client";
 import { contracts as protocol } from "@repo/shared";
@@ -14,7 +15,12 @@ type CommonHandler = {
   offConnect: (callback: (id: string) => void) => void;
   onDisconnect: (callback: () => void) => void;
   offDisconnect: (callback: () => void) => void;
+  onProtocolVersionMismatch: (callback: () => void) => void;
+  offProtocolVersionMismatch: (callback: () => void) => void;
 };
+
+// socket.io の予約イベント名（アプリ契約の SocketEvents には含めない）
+const CONNECT_ERROR_EVENT = "connect_error";
 
 /** 接続イベント向けの共通ハンドラを生成する */
 export const createCommonHandler = (socket: Socket): CommonHandler => {
@@ -26,6 +32,11 @@ export const createCommonHandler = (socket: Socket): CommonHandler => {
   const disconnectListenerMap = new Map<
     () => void,
     (payload: ConnectionLifecyclePayloadOf<typeof protocol.SocketEvents.DISCONNECT>) => void
+  >();
+
+  const protocolMismatchListenerMap = new Map<
+    () => void,
+    (error: Error) => void
   >();
 
   const { onEvent, offEvent } = createClientSocketEventBridge(socket);
@@ -65,6 +76,24 @@ export const createCommonHandler = (socket: Socket): CommonHandler => {
 
       offEvent(protocol.SocketEvents.DISCONNECT, listener);
       disconnectListenerMap.delete(callback);
+    },
+    onProtocolVersionMismatch: (callback: () => void) => {
+      // connect_error は socket.io 予約イベントのため bridge を通さず直接購読する
+      const listener = (error: Error) => {
+        if (error.message !== protocol.PROTOCOL_VERSION_MISMATCH_ERROR) return;
+
+        callback();
+      };
+
+      protocolMismatchListenerMap.set(callback, listener);
+      socket.on(CONNECT_ERROR_EVENT, listener);
+    },
+    offProtocolVersionMismatch: (callback: () => void) => {
+      const listener = protocolMismatchListenerMap.get(callback);
+      if (!listener) return;
+
+      socket.off(CONNECT_ERROR_EVENT, listener);
+      protocolMismatchListenerMap.delete(callback);
     }
   };
 };

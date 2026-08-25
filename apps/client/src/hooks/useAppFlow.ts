@@ -12,7 +12,12 @@ import {
   appFlowReducer,
   initialAppFlowData,
 } from "./application/appFlowReducer";
+import {
+  loadPlayerName,
+  savePlayerName,
+} from "./application/playerNameStorage";
 import type { RoomMembership } from "./application/roomEventGuards";
+import type { AppFlowData } from "./types/appFlowState";
 import { useSocketSubscriptions } from "./useSocketSubscriptions";
 
 /** アプリフロー管理フックの公開状態と操作を表す型 */
@@ -24,6 +29,7 @@ type AppFlowState = {
   playerName: string;
   joinErrorMessage: string | null;
   connectionNoticeMessage: string | null;
+  protocolMismatchMessage: string | null;
   isJoining: boolean;
   setPlayerName: (name: string) => void;
   requestJoin: (payload: domain.room.JoinRoomPayload) => void;
@@ -49,6 +55,14 @@ type JoinFailure = {
 type JoinAction =
   | { type: "start" }
   | { type: "complete"; joinFailure: JoinFailure | null };
+
+// 保存済みのプレイヤー名を初期状態へ反映する（reducer は純粋関数のまま保つ）
+const createInitialAppFlowData = (baseData: AppFlowData): AppFlowData => {
+  return {
+    ...baseData,
+    playerName: loadPlayerName(),
+  };
+};
 
 const initialJoinState: JoinState = {
   isJoining: false,
@@ -78,6 +92,7 @@ export const useAppFlow = (): AppFlowState => {
   const [appFlow, dispatchAppFlow] = useReducer(
     appFlowReducer,
     initialAppFlowData,
+    createInitialAppFlowData,
   );
   const [joinState, dispatchJoin] = useReducer(joinReducer, initialJoinState);
   const joinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -214,6 +229,11 @@ export const useAppFlow = (): AppFlowState => {
     [completeJoinRequest],
   );
 
+  // タイトルでのリロードで名前が失われないよう永続化する
+  useEffect(() => {
+    savePlayerName(appFlow.playerName);
+  }, [appFlow.playerName]);
+
   useEffect(() => {
     membershipRef.current = {
       currentRoomId: appFlow.room?.roomId ?? null,
@@ -237,6 +257,9 @@ export const useAppFlow = (): AppFlowState => {
     joinErrorMessage: getJoinErrorMessage(joinState.joinFailure),
     connectionNoticeMessage: appFlow.isConnectionLost
       ? "接続が切れました，もう一度参加してください"
+      : null,
+    protocolMismatchMessage: appFlow.isProtocolMismatch
+      ? "アプリの更新が必要です，一度アプリを終了してから開き直してください"
       : null,
     isJoining: joinState.isJoining,
     setPlayerName,

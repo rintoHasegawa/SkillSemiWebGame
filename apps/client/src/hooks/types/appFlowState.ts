@@ -15,6 +15,8 @@ export type AppFlowData = {
   playerName: string;
   /** 予期しない接続断でセッションを破棄したか */
   isConnectionLost: boolean;
+  /** サーバとのプロトコル版が一致せず接続を拒否されたか */
+  isProtocolMismatch: boolean;
 };
 
 /** アプリフローを更新するアクション型 */
@@ -22,6 +24,7 @@ export type AppFlowAction =
   | { type: "connectionEstablished"; myId: string }
   | { type: "connectionLost" }
   | { type: "clearConnectionNotice" }
+  | { type: "protocolVersionMismatch" }
   | { type: "setPlayerName"; playerName: string }
   | { type: "setRoomAndLobby"; room: domain.room.Room }
   | { type: "updateRoom"; room: domain.room.Room }

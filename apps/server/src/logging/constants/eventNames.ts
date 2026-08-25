@@ -48,4 +48,5 @@ export const roomDomainLogEvents = {
 /** Networkスコープ固有ログで利用するイベント名定数 */
 export const networkLogEvents = {
   CORS_ORIGIN_CHECK: "CORS_ORIGIN_CHECK",
+  PROTOCOL_VERSION_CHECK: "PROTOCOL_VERSION_CHECK",
 } as const;

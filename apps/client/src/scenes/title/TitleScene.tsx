@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 // ルーム参加時送信ペイロード型
 import { domain } from "@repo/shared";
 
@@ -13,8 +13,25 @@ type Props = {
   joinErrorMessage: string | null;
   // 接続断でタイトルへ戻された場合の通知メッセージ
   connectionNoticeMessage: string | null;
+  // プロトコル版不一致が自動復旧できなかった場合の案内メッセージ
+  protocolMismatchMessage: string | null;
   // 入室リクエスト送信中フラグ
   isJoining: boolean;
+  // 「TAP TO START」後の入力フォームを表示中かどうか
+  // 更新ゲートの判定に使うため状態は app.tsx が保持する
+  isFormOpen: boolean;
+  // 入力フォームの表示を要求するコールバック
+  onOpenForm: () => void;
+};
+
+// 接続断・アプリ更新の通知は同じ体裁で出すためスタイルを共通化する
+const NOTICE_MESSAGE_STYLE: CSSProperties = {
+  color: "#ff6b6b",
+  fontFamily: "monospace",
+  fontWeight: "bold",
+  textAlign: "center",
+  textShadow: "1px 1px 2px black",
+  marginBottom: "20px",
 };
 
 export const TitleScene = ({
@@ -23,11 +40,11 @@ export const TitleScene = ({
   onPlayerNameChange,
   joinErrorMessage,
   connectionNoticeMessage,
+  protocolMismatchMessage,
   isJoining,
+  isFormOpen,
+  onOpenForm,
 }: Props) => {
-  // 🌟 追加：「TAP TO START」が押されてフォームを表示する状態かどうか
-  const [showForm, setShowForm] = useState(false);
-
   // ルームID入力値
   const [roomIdInput, setRoomIdInput] = useState("");
 
@@ -70,31 +87,25 @@ export const TitleScene = ({
           alignItems: "center",
           paddingBottom: "12vh",
           // 🌟 追加：フォーム表示前なら、画面全体をタップ可能なボタンのようにする
-          cursor: showForm ? "default" : "pointer",
+          cursor: isFormOpen ? "default" : "pointer",
         }}
         // 🌟 追加：背景のどこかをタップしたらフォームを表示する
         onPointerDown={() => {
-          if (!showForm) setShowForm(true);
+          if (!isFormOpen) onOpenForm();
         }}
       >
-        {/* 接続断の通知 */}
-        {connectionNoticeMessage && (
-          <div
-            style={{
-              color: "#ff6b6b",
-              fontFamily: "monospace",
-              fontWeight: "bold",
-              textAlign: "center",
-              textShadow: "1px 1px 2px black",
-              marginBottom: "20px",
-            }}
-          >
-            {connectionNoticeMessage}
-          </div>
+        {/* アプリ更新が必要な場合の通知 */}
+        {protocolMismatchMessage && (
+          <div style={NOTICE_MESSAGE_STYLE}>{protocolMismatchMessage}</div>
         )}
 
-        {/* 🌟 条件分岐：showForm が false なら「TAP TO START」、true ならフォームを表示 */}
-        {!showForm ? (
+        {/* 接続断の通知 */}
+        {connectionNoticeMessage && (
+          <div style={NOTICE_MESSAGE_STYLE}>{connectionNoticeMessage}</div>
+        )}
+
+        {/* 🌟 条件分岐：フォーム未展開なら「TAP TO START」、展開後はフォームを表示 */}
+        {!isFormOpen ? (
           <div
             style={{
               color: "white",

@@ -38,6 +38,7 @@ export const logResults = {
   REJECTED_DUPLICATE: "rejected_duplicate",
   REJECTED_INVALID_PAYLOAD: "rejected_invalid_payload",
   REJECTED_ORIGIN: "rejected_origin",
+  REJECTED_PROTOCOL_VERSION: "rejected_protocol_version",
   REJECTED_ROOM_FULL: "rejected_room_full",
   REJECTED_ROOM_PLAYING: "rejected_room_playing",
   REMOVED: "removed",

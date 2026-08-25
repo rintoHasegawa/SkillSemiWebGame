@@ -2,6 +2,7 @@
  * useSocketSubscriptions
  * アプリ共通で必要なソケット購読を登録するフック
  * 接続，ルーム更新，ゲーム開始の購読と解除を一元化する
+ * プロトコル版不一致は自動復旧を試み，解消しない場合のみ画面へ通知する
  */
 import { useEffect, type RefObject } from "react";
 import { socketManager } from "@client/network/SocketManager";
@@ -11,6 +12,7 @@ import {
 } from "@client/config";
 import { domain } from "@repo/shared";
 import type { GameResultPayload, GameStartPayload } from "@repo/shared";
+import { recoverFromProtocolVersionMismatch } from "@client/pwa/appUpdater";
 import {
   shouldAcceptGameStart,
   shouldAcceptRoomUpdate,
@@ -35,22 +37,50 @@ type AppSocketHandlers = {
   handleRoomUpdate: (updatedRoom: domain.room.Room) => void;
   handleGameStart: (payload: GameStartPayload) => void;
   handleGameResult: (payload: GameResultPayload) => void;
+  handleProtocolVersionMismatch: () => void;
 };
 
 const registerConnectionSubscriptions = ({
   handleConnect,
   handleDisconnect,
+  handleProtocolVersionMismatch,
 }: AppSocketHandlers): void => {
   socketManager.common.onConnect(handleConnect);
   socketManager.common.onDisconnect(handleDisconnect);
+  socketManager.common.onProtocolVersionMismatch(handleProtocolVersionMismatch);
 };
 
 const unregisterConnectionSubscriptions = ({
   handleConnect,
   handleDisconnect,
+  handleProtocolVersionMismatch,
 }: AppSocketHandlers): void => {
   socketManager.common.offConnect(handleConnect);
   socketManager.common.offDisconnect(handleDisconnect);
+  socketManager.common.offProtocolVersionMismatch(
+    handleProtocolVersionMismatch,
+  );
+};
+
+// 版ずれの自動復旧を試み，解消しなかった場合のみ画面へ理由を通知する
+const recoverOrNotifyProtocolMismatch = async (
+  dispatchAppFlow: (action: AppFlowAction) => void,
+): Promise<void> => {
+  try {
+    const isRecovering = await recoverFromProtocolVersionMismatch();
+
+    // 更新適用またはリロードが始まっている場合は画面通知を出さない
+    if (isRecovering) {
+      return;
+    }
+  } catch (error) {
+    console.error(
+      "[useSocketSubscriptions] プロトコル版不一致の復旧に失敗した",
+      error,
+    );
+  }
+
+  dispatchAppFlow({ type: "protocolVersionMismatch" });
 };
 
 const registerRoomSubscriptions = ({
@@ -154,6 +184,13 @@ export const useSocketSubscriptions = ({
         dispatchAppFlow({ type: "setResult", result: payload });
         socketManager.socket.disconnect();
         socketManager.socket.connect();
+      },
+
+      handleProtocolVersionMismatch: () => {
+        // 拒否は connect_error として再接続のたびに届くため先に試行を止める
+        socketManager.socket.disconnect();
+
+        void recoverOrNotifyProtocolMismatch(dispatchAppFlow);
       },
     };
 
