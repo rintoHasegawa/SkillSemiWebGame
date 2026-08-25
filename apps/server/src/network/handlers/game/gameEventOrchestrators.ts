@@ -11,6 +11,13 @@ import { movePlayerUseCase } from "@server/domains/game/application/useCases/mov
 import { pingUseCase } from "@server/domains/game/application/useCases/pingUseCase";
 import { placeBombUseCase } from "@server/domains/game/application/useCases/placeBombUseCase";
 import { reportBombHitUseCase } from "@server/domains/game/application/useCases/reportBombHitUseCase";
+import type { BombHitReportDecision } from "@server/domains/game/application/useCases/reportBombHitValidation";
+import { logEvent } from "@server/logging/logger";
+import {
+  gameUseCaseLogEvents,
+  logResults,
+  logScopes,
+} from "@server/logging/index";
 import { runWithRuntimeByPlayerId } from "@server/domains/room/application/services/RoomRuntimeResolver";
 import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { logIgnoredMissingRoom } from "../orchestratorEventLogger";
@@ -146,7 +153,39 @@ export const handlePlaceBombEvent = (
   }
 };
 
-/** BOMB_HIT_REPORTイベントを調停して被弾報告ユースケースを実行する */
+/** 被弾報告の拒否理由に対応するログ結果値 */
+type BombHitReportRejectedLogResult =
+  | typeof logResults.IGNORED_UNKNOWN_BOMB
+  | typeof logResults.IGNORED_EXPIRED_BOMB
+  | typeof logResults.IGNORED_OUT_OF_RANGE
+  | typeof logResults.IGNORED_SAME_TEAM
+  | typeof logResults.IGNORED_DUPLICATE;
+
+// 被弾報告の判定結果をログ結果値へ対応づける（受理は記録対象外）
+const resolveBombHitReportLogResult = (
+  decision: BombHitReportDecision,
+): BombHitReportRejectedLogResult | undefined => {
+  switch (decision.status) {
+    case "accepted":
+      // 高頻度イベントの正常系はログに残さない
+      return undefined;
+    case "unknown_bomb":
+      return logResults.IGNORED_UNKNOWN_BOMB;
+    case "expired":
+      return logResults.IGNORED_EXPIRED_BOMB;
+    case "too_far":
+      return logResults.IGNORED_OUT_OF_RANGE;
+    case "same_team":
+      return logResults.IGNORED_SAME_TEAM;
+    case "duplicate":
+      return logResults.IGNORED_DUPLICATE;
+  }
+};
+
+/**
+ * BOMB_HIT_REPORTイベントを調停して被弾報告ユースケースを実行する
+ * 拒否した報告はサーバーログのみに残し，高頻度イベントのためクライアントへは通知しない
+ */
 export const handleBombHitReportEvent = (
   deps: GameEventOrchestratorDeps,
   payload: BombHitReportPayload,
@@ -156,7 +195,7 @@ export const handleBombHitReportEvent = (
     deps.runtimeRegistry,
     deps.socketId,
     ({ roomId, gameManager }) => {
-      reportBombHitUseCase({
+      const decision = reportBombHitUseCase({
         roomId,
         validation: gameManager,
         stats: gameManager,
@@ -166,6 +205,16 @@ export const handleBombHitReportEvent = (
         },
         output: deps.output,
       });
+
+      const result = resolveBombHitReportLogResult(decision);
+      if (result) {
+        logEvent(logScopes.GAME_USE_CASE, {
+          event: gameUseCaseLogEvents.BOMB_HIT_REPORT,
+          result,
+          socketId: deps.socketId,
+          roomId,
+        });
+      }
     },
   );
   if (!resolved) {

@@ -7,6 +7,7 @@
 import { contracts as protocol, domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { BombHitReportOriginDecision } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type {
   RoomOutputPort,
   RoomPhaseTransitionResult,
@@ -47,6 +48,7 @@ type GameManagerStubParams = {
   shouldBroadcastBombPlaced?: boolean;
   shouldBroadcastBombHitReport?: boolean;
   isSameTeamBombHitReport?: boolean;
+  bombHitReportOrigin?: BombHitReportOriginDecision;
   /** 進行中セッションの符号付きゲーム経過ms（未開始は undefined） */
   signedElapsedMs?: number;
 };
@@ -56,6 +58,7 @@ const createGameManagerStub = ({
   shouldBroadcastBombPlaced = true,
   shouldBroadcastBombHitReport = true,
   isSameTeamBombHitReport = false,
+  bombHitReportOrigin = { status: "valid" },
   signedElapsedMs,
 }: GameManagerStubParams = {}) => {
   return {
@@ -91,6 +94,9 @@ const createGameManagerStub = ({
     isSameTeamBombHitReport: vi.fn<
       RoomScopedGamePort["isSameTeamBombHitReport"]
     >(() => isSameTeamBombHitReport),
+    checkBombHitReportOrigin: vi.fn<
+      RoomScopedGamePort["checkBombHitReportOrigin"]
+    >(() => bombHitReportOrigin),
     recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
     removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
     replaceDisconnectedPlayerWithBot: vi.fn<
@@ -595,6 +601,105 @@ describe("handleBombHitReportEvent", () => {
     handleBombHitReportEvent(deps, { bombId: "bomb-1" });
 
     expect(deps.output.publishPlayerHitToOthersInRoom).not.toHaveBeenCalled();
+  });
+
+  it("実在しない爆弾の報告はignored_unknown_bombを記録すること", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({
+        bombHitReportOrigin: { status: "unknown_bomb" },
+      }),
+    });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.BOMB_HIT_REPORT,
+      result: logResults.IGNORED_UNKNOWN_BOMB,
+      socketId: "socket-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("受理時刻窓を過ぎた報告はignored_expired_bombを記録すること", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({
+        bombHitReportOrigin: { status: "expired" },
+      }),
+    });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.BOMB_HIT_REPORT,
+      result: logResults.IGNORED_EXPIRED_BOMB,
+      socketId: "socket-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("爆風から離れすぎた報告はignored_out_of_rangeを記録すること", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({
+        bombHitReportOrigin: { status: "too_far" },
+      }),
+    });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.BOMB_HIT_REPORT,
+      result: logResults.IGNORED_OUT_OF_RANGE,
+      socketId: "socket-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("同チームの爆弾への被弾報告はignored_same_teamを記録すること", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({ isSameTeamBombHitReport: true }),
+    });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.BOMB_HIT_REPORT,
+      result: logResults.IGNORED_SAME_TEAM,
+      socketId: "socket-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("重複報告はignored_duplicateを記録すること", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub({
+        shouldBroadcastBombHitReport: false,
+      }),
+    });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.GAME_USE_CASE}]`, {
+      event: gameUseCaseLogEvents.BOMB_HIT_REPORT,
+      result: logResults.IGNORED_DUPLICATE,
+      socketId: "socket-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("受理した報告はログを記録しないこと", () => {
+    const deps = createDeps({
+      room: createRoom(),
+      gameManager: createGameManagerStub(),
+    });
+
+    handleBombHitReportEvent(deps, { bombId: "bomb-1" });
+
+    expect(logSpy).not.toHaveBeenCalled();
   });
 
   it("ランタイム未解決時はignored_missing_roomを記録すること", () => {

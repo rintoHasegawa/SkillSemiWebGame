@@ -23,3 +23,15 @@ export type BombHitCheckResult = {
   distanceSquared: number;
   thresholdSquared: number;
 };
+
+/** 被弾報告の距離検証で利用する位置型 */
+export type BombHitReportPoint = {
+  x: number;
+  y: number;
+};
+
+/** 被弾報告の距離検証の入力型 */
+export type BombHitReportRangeInput = {
+  bomb: BombHitReportPoint;
+  reporter: BombHitReportPoint;
+};

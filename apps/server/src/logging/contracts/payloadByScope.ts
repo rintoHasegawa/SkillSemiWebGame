@@ -177,6 +177,19 @@ type GameUseCasePlaceBombLogPayload = {
   roomId: string;
 };
 
+/** GameUseCaseのBOMB_HIT_REPORTログ契約 */
+type GameUseCaseBombHitReportLogPayload = {
+  event: typeof gameUseCaseLogEvents.BOMB_HIT_REPORT;
+  result:
+    | typeof logResults.IGNORED_UNKNOWN_BOMB
+    | typeof logResults.IGNORED_EXPIRED_BOMB
+    | typeof logResults.IGNORED_OUT_OF_RANGE
+    | typeof logResults.IGNORED_SAME_TEAM
+    | typeof logResults.IGNORED_DUPLICATE;
+  socketId: string;
+  roomId: string;
+};
+
 /** GameUseCaseのDISCONNECTログ契約 */
 type GameUseCaseDisconnectLogPayload = {
   event: typeof gameUseCaseLogEvents.DISCONNECT;
@@ -196,6 +209,7 @@ type GameUseCaseLogPayload =
   | GameUseCaseGameStartLogPayload
   | GameUseCaseGameEndLogPayload
   | GameUseCasePlaceBombLogPayload
+  | GameUseCaseBombHitReportLogPayload
   | GameUseCaseDisconnectLogPayload;
 
 /** RoomUseCaseのJOIN_ROOMログ契約 */

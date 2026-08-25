@@ -1,6 +1,7 @@
 /**
  * BombStateStore
  * セッション単位の爆弾重複排除状態と採番状態を管理する
+ * 被弾報告の検証に使う爆弾レコードを爆発後も猶予付きで保持する
  */
 import { config } from "@repo/shared";
 import { issueServerBombId } from "./bombIdentity.js";
@@ -12,11 +13,23 @@ import {
 import { ActiveBombRegistry, type ActiveBomb } from "./ActiveBombRegistry.js";
 
 /**
- * 爆発後も設置者参照を保持する猶予時間（ms）
- * 爆発直後に届く被弾報告のスタッツ加算を取りこぼさないよう，
- * 重複排除の追加TTLと同じ猶予を置いてから解放する
+ * 爆発後も被弾報告の検証に利用する爆弾レコード
+ * 設置者に加えて座標と爆発予定時刻を保持し，実在・時刻窓・距離の検証へ用いる
  */
-const BOMB_OWNER_RETENTION_MS = config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+export type RetainedBombRecord = {
+  ownerPlayerId: string;
+  x: number;
+  y: number;
+  explodeAtElapsedMs: number;
+};
+
+/**
+ * 爆発後も爆弾レコードを保持する猶予時間（ms）
+ * 爆発直後に届く被弾報告の受理とスタッツ加算を取りこぼさないよう，
+ * 被弾報告の受理猶予と同じ時間を置いてから解放する
+ */
+const BOMB_RECORD_RETENTION_MS =
+  config.GAME_CONFIG.BOMB_HIT_REPORT_RETENTION_MS;
 
 /** セッション単位の爆弾重複排除状態と採番状態を保持するストア */
 export class BombStateStore {
@@ -29,19 +42,23 @@ export class BombStateStore {
 
   /**
    * アクティブ爆弾のライフサイクルを追跡するレジストリ
-   * 爆発済み爆弾の回収に合わせて設置者参照の解放も予約する
+   * 爆発済み爆弾の回収に合わせて爆弾レコードの解放も予約する
    */
   public readonly activeBombRegistry = new ActiveBombRegistry({
     onBombsCollected: (explodedBombs, elapsedMs) => {
-      this.releaseCollectedBombOwners(explodedBombs, elapsedMs);
+      this.releaseCollectedBombRecords(explodedBombs, elapsedMs);
     },
   });
 
-  /** 爆弾IDから設置者プレイヤーIDを引くためのマップ（爆発後も猶予付きで保持する） */
-  private bombOwnerMap = new Map<string, string>();
+  /**
+   * 爆弾IDから被弾報告検証用のレコードを引くマップ（爆発後も猶予付きで保持する）
+   * アクティブ爆弾レジストリとは別テーブルとし，爆発済み爆弾がAOI同期の
+   * アクティブ爆弾として配信されないようにする
+   */
+  private retainedBombRecords = new Map<string, RetainedBombRecord>();
 
-  /** 爆弾IDごとの設置者参照の解放予定時刻（セッション経過ms） */
-  private bombOwnerReleaseAtElapsedMs = new Map<string, number>();
+  /** 爆弾IDごとのレコード解放予定時刻（セッション経過ms） */
+  private bombRecordReleaseAtElapsedMs = new Map<string, number>();
 
   /** 爆弾設置イベントを配信すべきか判定し，配信時は重複排除状態を更新する */
   public shouldBroadcastBombPlaced(
@@ -90,21 +107,28 @@ export class BombStateStore {
     return bombId;
   }
 
-  /** 爆弾IDと設置者プレイヤーIDを紐づけて記録する */
-  public registerBombOwner(bombId: string, ownerPlayerId: string): void {
-    this.bombOwnerMap.set(bombId, ownerPlayerId);
+  /** 爆弾IDと被弾報告検証用のレコードを紐づけて記録する */
+  public registerBombRecord(bombId: string, record: RetainedBombRecord): void {
+    this.retainedBombRecords.set(bombId, record);
+  }
+
+  /** 爆弾IDから被弾報告検証用のレコードを取得する */
+  public getRetainedBombRecord(
+    bombId: string,
+  ): RetainedBombRecord | undefined {
+    return this.retainedBombRecords.get(bombId);
   }
 
   /** 爆弾IDから設置者プレイヤーIDを取得する */
   public getBombOwnerPlayerId(bombId: string): string | undefined {
-    return this.bombOwnerMap.get(bombId);
+    return this.retainedBombRecords.get(bombId)?.ownerPlayerId;
   }
 
   /**
-   * 回収した爆弾の設置者参照へ解放を予約し，猶予切れの参照を削除する
-   * 回収と同時に消すと直後に届く被弾報告のスタッツ加算を取りこぼすため猶予を置く
+   * 回収した爆弾のレコードへ解放を予約し，猶予切れのレコードを削除する
+   * 回収と同時に消すと直後に届く被弾報告を取りこぼすため猶予を置く
    */
-  private releaseCollectedBombOwners(
+  private releaseCollectedBombRecords(
     explodedBombs: ActiveBomb[],
     elapsedMs: number,
   ): void {
@@ -113,38 +137,38 @@ export class BombStateStore {
       return;
     }
 
-    this.scheduleBombOwnerRelease(explodedBombs, elapsedMs);
-    this.releaseExpiredBombOwners(elapsedMs);
+    this.scheduleBombRecordRelease(explodedBombs, elapsedMs);
+    this.releaseExpiredBombRecords(elapsedMs);
   }
 
-  // 回収した爆弾の設置者参照へ解放予定時刻を設定する
-  private scheduleBombOwnerRelease(
+  // 回収した爆弾のレコードへ解放予定時刻を設定する
+  private scheduleBombRecordRelease(
     explodedBombs: ActiveBomb[],
     elapsedMs: number,
   ): void {
     explodedBombs.forEach((bomb) => {
-      if (!this.bombOwnerMap.has(bomb.bombId)) {
+      if (!this.retainedBombRecords.has(bomb.bombId)) {
         return;
       }
 
-      this.bombOwnerReleaseAtElapsedMs.set(
+      this.bombRecordReleaseAtElapsedMs.set(
         bomb.bombId,
-        elapsedMs + BOMB_OWNER_RETENTION_MS,
+        elapsedMs + BOMB_RECORD_RETENTION_MS,
       );
     });
   }
 
-  // 解放予定時刻に達した設置者参照を削除する
-  private releaseExpiredBombOwners(elapsedMs: number): void {
-    this.bombOwnerReleaseAtElapsedMs.forEach((releaseAtElapsedMs, bombId) => {
+  // 解放予定時刻に達したレコードを削除する
+  private releaseExpiredBombRecords(elapsedMs: number): void {
+    this.bombRecordReleaseAtElapsedMs.forEach((releaseAtElapsedMs, bombId) => {
       const isWithinRetention =
         Number.isFinite(releaseAtElapsedMs) && releaseAtElapsedMs > elapsedMs;
       if (isWithinRetention) {
         return;
       }
 
-      this.bombOwnerMap.delete(bombId);
-      this.bombOwnerReleaseAtElapsedMs.delete(bombId);
+      this.retainedBombRecords.delete(bombId);
+      this.bombRecordReleaseAtElapsedMs.delete(bombId);
     });
   }
 }

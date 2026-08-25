@@ -1,24 +1,43 @@
 /**
  * BombStateStore.test
- * 爆弾セッション状態ストアの現行挙動を固定する characterization test
- * 重複排除テーブルの独立性・採番の連番・設置者マップの保持を検証する
+ * 爆弾セッション状態ストアの挙動を検証するユニットテスト
+ * 重複排除テーブルの独立性・採番の一意性・爆弾レコードの保持を検証する
  */
 import { config } from "@repo/shared";
 import { describe, expect, it } from "vitest";
 
 import { ActiveBombRegistry } from "./ActiveBombRegistry";
-import { BombStateStore } from "./BombStateStore";
+import { BombStateStore, type RetainedBombRecord } from "./BombStateStore";
 
 const ttlMs
   = config.GAME_CONFIG.BOMB_FUSE_MS + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
 
-/** 爆発後に設置者参照を保持する猶予時間（ms） */
-const ownerRetentionMs = config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+// 被弾報告は受理窓より必ず長いTTLで登録する
+const hitReportTtlMs
+  = config.GAME_CONFIG.BOMB_FUSE_MS
+  + config.GAME_CONFIG.BOMB_HIT_REPORT_RETENTION_MS
+  + config.GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS;
+
+/**
+ * 被弾報告の受理窓の最大長（ms）
+ * 設置と同時刻に報告した場合の窓の終端（設置時刻＋導火線時間＋受理猶予）
+ */
+const hitReportAcceptWindowMs
+  = config.GAME_CONFIG.BOMB_FUSE_MS
+  + config.GAME_CONFIG.BOMB_HIT_REPORT_RETENTION_MS;
+
+/** 爆発後に爆弾レコードを保持する猶予時間（ms） */
+const recordRetentionMs = config.GAME_CONFIG.BOMB_HIT_REPORT_RETENTION_MS;
+
+/** 被弾報告検証用の爆弾レコードを生成する */
+const createBombRecord = (ownerPlayerId: string): RetainedBombRecord => {
+  return { ownerPlayerId, x: 0, y: 0, explodeAtElapsedMs: 0 };
+};
 
 /** 設置者登録済みのアクティブ爆弾を持つストアを生成する */
 const createStoreWithActiveBomb = (explodeAtElapsedMs = 0) => {
   const store = new BombStateStore();
-  store.registerBombOwner("bomb-1", "player-1");
+  store.registerBombRecord("bomb-1", createBombRecord("player-1"));
   store.activeBombRegistry.registerBomb({
     bombId: "bomb-1",
     ownerPlayerId: "player-1",
@@ -140,7 +159,38 @@ describe("BombStateStore.shouldBroadcastBombHitReport", () => {
     const store = new BombStateStore();
     store.shouldBroadcastBombHitReport("key-1", 0);
 
-    expect(store.shouldBroadcastBombHitReport("key-1", ttlMs)).toBe(true);
+    expect(store.shouldBroadcastBombHitReport("key-1", hitReportTtlMs)).toBe(
+      true,
+    );
+  });
+
+  it("設置用TTL経過時点では同一キーでfalseを返すこと", () => {
+    const store = new BombStateStore();
+    store.shouldBroadcastBombHitReport("key-1", 0);
+
+    expect(store.shouldBroadcastBombHitReport("key-1", ttlMs)).toBe(false);
+  });
+
+  it("受理窓の内側で届いた同一キーの再報告をfalseとすること", () => {
+    const store = new BombStateStore();
+    store.shouldBroadcastBombHitReport("key-1", 0);
+
+    expect(
+      store.shouldBroadcastBombHitReport("key-1", hitReportAcceptWindowMs / 2),
+    ).toBe(false);
+  });
+
+  it("受理窓の終端に届いた同一キーの再報告をfalseとすること", () => {
+    const store = new BombStateStore();
+    store.shouldBroadcastBombHitReport("key-1", 0);
+
+    expect(
+      store.shouldBroadcastBombHitReport("key-1", hitReportAcceptWindowMs),
+    ).toBe(false);
+  });
+
+  it("重複排除TTLが受理窓より長いこと", () => {
+    expect(hitReportTtlMs).toBeGreaterThan(hitReportAcceptWindowMs);
   });
 
   it("設置用の重複排除テーブルとは独立していること", () => {
@@ -159,44 +209,49 @@ describe("BombStateStore.shouldBroadcastBombHitReport", () => {
 });
 
 describe("BombStateStore.issueServerBombId", () => {
-  it("初回は爆弾ID1を採番すること", () => {
+  it("初回から推測不能なUUIDを採番すること", () => {
     const store = new BombStateStore();
 
-    expect(store.issueServerBombId()).toBe("1");
+    expect(store.issueServerBombId()).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
   });
 
-  it("呼び出しごとに連番を進めること", () => {
+  it("呼び出しごとに異なる爆弾IDを採番すること", () => {
     const store = new BombStateStore();
 
-    expect([
+    const bombIds = [
       store.issueServerBombId(),
       store.issueServerBombId(),
       store.issueServerBombId(),
-    ]).toEqual(["1", "2", "3"]);
+    ];
+
+    expect(new Set(bombIds).size).toBe(3);
   });
 
-  it("ストアが異なれば採番は1から始まること", () => {
+  it("ストアが異なれば採番結果を共有しないこと", () => {
     const store = new BombStateStore();
-    store.issueServerBombId();
 
-    expect(new BombStateStore().issueServerBombId()).toBe("1");
+    expect(new BombStateStore().issueServerBombId()).not.toBe(
+      store.issueServerBombId(),
+    );
   });
 });
 
-describe("BombStateStore.registerBombOwner", () => {
+describe("BombStateStore.registerBombRecord", () => {
   it("登録した設置者プレイヤーIDを取得できること", () => {
     const store = new BombStateStore();
 
-    store.registerBombOwner("bomb-1", "player-1");
+    store.registerBombRecord("bomb-1", createBombRecord("player-1"));
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
   });
 
   it("同一爆弾IDの再登録では後の設置者で上書きすること", () => {
     const store = new BombStateStore();
-    store.registerBombOwner("bomb-1", "player-1");
+    store.registerBombRecord("bomb-1", createBombRecord("player-1"));
 
-    store.registerBombOwner("bomb-1", "player-2");
+    store.registerBombRecord("bomb-1", createBombRecord("player-2"));
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-2");
   });
@@ -204,14 +259,14 @@ describe("BombStateStore.registerBombOwner", () => {
   it("爆弾IDが空文字でも登録できること", () => {
     const store = new BombStateStore();
 
-    store.registerBombOwner("", "player-1");
+    store.registerBombRecord("", createBombRecord("player-1"));
 
     expect(store.getBombOwnerPlayerId("")).toBe("player-1");
   });
 
   it("アクティブ爆弾の回収後も設置者を保持すること", () => {
     const store = new BombStateStore();
-    store.registerBombOwner("bomb-1", "player-1");
+    store.registerBombRecord("bomb-1", createBombRecord("player-1"));
     store.activeBombRegistry.registerBomb({
       bombId: "bomb-1",
       ownerPlayerId: "player-1",
@@ -228,7 +283,7 @@ describe("BombStateStore.registerBombOwner", () => {
 
   it("アクティブ爆弾レジストリのclear後も設置者を保持すること", () => {
     const store = new BombStateStore();
-    store.registerBombOwner("bomb-1", "player-1");
+    store.registerBombRecord("bomb-1", createBombRecord("player-1"));
 
     store.activeBombRegistry.clear();
 
@@ -249,7 +304,7 @@ describe("BombStateStore.getBombOwnerPlayerId（回収後の猶予解放）", ()
     const store = createStoreWithActiveBomb();
     store.activeBombRegistry.collectExplodedBombs(0);
 
-    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs - 1);
+    store.activeBombRegistry.collectExplodedBombs(recordRetentionMs - 1);
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
   });
@@ -258,7 +313,7 @@ describe("BombStateStore.getBombOwnerPlayerId（回収後の猶予解放）", ()
     const store = createStoreWithActiveBomb();
     store.activeBombRegistry.collectExplodedBombs(0);
 
-    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs);
+    store.activeBombRegistry.collectExplodedBombs(recordRetentionMs);
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBeUndefined();
   });
@@ -267,7 +322,7 @@ describe("BombStateStore.getBombOwnerPlayerId（回収後の猶予解放）", ()
     const store = createStoreWithActiveBomb();
     store.activeBombRegistry.collectExplodedBombs(0);
 
-    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs + 1);
+    store.activeBombRegistry.collectExplodedBombs(recordRetentionMs + 1);
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBeUndefined();
   });
@@ -276,17 +331,17 @@ describe("BombStateStore.getBombOwnerPlayerId（回収後の猶予解放）", ()
     const store = createStoreWithActiveBomb(5_000);
     store.activeBombRegistry.collectExplodedBombs(5_000);
 
-    store.activeBombRegistry.collectExplodedBombs(5_000 + ownerRetentionMs - 1);
+    store.activeBombRegistry.collectExplodedBombs(5_000 + recordRetentionMs - 1);
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
   });
 
   it("回収されていない爆弾の設置者は猶予経過後も保持すること", () => {
     const store = createStoreWithActiveBomb();
-    store.registerBombOwner("bomb-2", "player-2");
+    store.registerBombRecord("bomb-2", createBombRecord("player-2"));
 
     store.activeBombRegistry.collectExplodedBombs(0);
-    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs);
+    store.activeBombRegistry.collectExplodedBombs(recordRetentionMs);
 
     expect(store.getBombOwnerPlayerId("bomb-2")).toBe("player-2");
   });
@@ -303,7 +358,7 @@ describe("BombStateStore.getBombOwnerPlayerId（回収後の猶予解放）", ()
   it("回収が発生しない呼び出しだけでは設置者を解放しないこと", () => {
     const store = createStoreWithActiveBomb(10_000);
 
-    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs + 1);
+    store.activeBombRegistry.collectExplodedBombs(recordRetentionMs + 1);
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-1");
   });
@@ -311,9 +366,9 @@ describe("BombStateStore.getBombOwnerPlayerId（回収後の猶予解放）", ()
   it("解放後に同じ爆弾IDを再登録すれば再び取得できること", () => {
     const store = createStoreWithActiveBomb();
     store.activeBombRegistry.collectExplodedBombs(0);
-    store.activeBombRegistry.collectExplodedBombs(ownerRetentionMs);
+    store.activeBombRegistry.collectExplodedBombs(recordRetentionMs);
 
-    store.registerBombOwner("bomb-1", "player-9");
+    store.registerBombRecord("bomb-1", createBombRecord("player-9"));
 
     expect(store.getBombOwnerPlayerId("bomb-1")).toBe("player-9");
   });
@@ -328,7 +383,7 @@ describe("BombStateStore.getBombOwnerPlayerId", () => {
 
   it("ストアが異なれば設置者を共有しないこと", () => {
     const store = new BombStateStore();
-    store.registerBombOwner("bomb-1", "player-1");
+    store.registerBombRecord("bomb-1", createBombRecord("player-1"));
 
     expect(new BombStateStore().getBombOwnerPlayerId("bomb-1")).toBeUndefined();
   });

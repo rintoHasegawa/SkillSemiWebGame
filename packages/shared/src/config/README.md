@@ -26,6 +26,8 @@
 - `GAME_CONFIG.BOMB_FUSE_MS`: 爆弾設置から爆発までの時間（ms）
 - `GAME_CONFIG.BOMB_COOLDOWN_MS`: 次の爆弾を置けるまでの待機時間（ms）
 - `GAME_CONFIG.BOMB_DEDUP_EXTRA_TTL_MS`: サーバー側の爆弾重複排除で保持時間に加算する猶予（ms）
+- `GAME_CONFIG.BOMB_HIT_REPORT_RETENTION_MS`: 爆発後も被弾報告を受理し爆弾レコードを保持する猶予（ms）
+- `GAME_CONFIG.BOMB_HIT_REPORT_DISTANCE_MARGIN_GRID`: 被弾報告の距離検証で爆風半径とプレイヤー半径へ加算するマージン（グリッド単位）
 - `GAME_CONFIG.TEAM_COUNT`: チーム総数
 - `MAX_FIELD_GRID_SIZE`: 全フィールドサイズ種別中で最大のグリッドサイズ（受信座標の範囲検証に利用）
 - `isFieldSizePreset`: 値が定義済みのフィールドサイズ種別かを判定する関数

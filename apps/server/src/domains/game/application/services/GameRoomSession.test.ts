@@ -20,6 +20,12 @@ const fieldConfig: GameFieldConfig = {
 // 仕様（SPEC_03 プレイヤー半径 0.5 グリッド）に基づく境界値
 const { PLAYER_RADIUS } = config.GAME_CONFIG;
 const { BOMB_FUSE_MS, GAME_START_DELAY_MS } = config.GAME_CONFIG;
+// 仕様（SPEC_03 被弾報告のサーバ権威検証）に基づく受理猶予と距離しきい値
+const { BOMB_HIT_REPORT_RETENTION_MS } = config.GAME_CONFIG;
+const MAX_HIT_REPORT_DISTANCE_GRID =
+  config.GAME_CONFIG.BOMB_RADIUS_GRID
+  + config.GAME_CONFIG.PLAYER_RADIUS
+  + config.GAME_CONFIG.BOMB_HIT_REPORT_DISTANCE_MARGIN_GRID;
 const TICK_RATE_MS = 50;
 const FIXED_WALL_CLOCK_MS = 1_700_000_000_000;
 
@@ -76,6 +82,24 @@ const startSessionAtElapsed = (
   clock.advance(GAME_START_DELAY_MS + elapsedMs);
 
   return clock;
+};
+
+/** 報告者の現在地と同じ座標へ被弾報告検証用の爆弾レコードを登録する */
+const registerBombAtReporter = (
+  session: GameRoomSession,
+  reporterId: string,
+  explodeAtElapsedMs: number,
+): void => {
+  const reporter = session
+    .getPlayers()
+    .find((player) => player.id === reporterId);
+  session.registerActiveBomb({
+    bombId: "bomb-1",
+    ownerPlayerId: "socket-owner",
+    x: reporter?.x ?? 0,
+    y: reporter?.y ?? 0,
+    explodeAtElapsedMs,
+  });
 };
 
 describe("GameRoomSession", () => {
@@ -350,13 +374,18 @@ describe("GameRoomSession", () => {
     session.dispose();
   });
 
-  it("爆弾IDを1から連番で採番すること", () => {
+  it("爆弾IDを推測不能なUUIDで採番すること", () => {
     const session = createSession();
 
-    expect([session.issueServerBombId(), session.issueServerBombId()]).toEqual([
-      "1",
-      "2",
-    ]);
+    expect(session.issueServerBombId()).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it("採番のたびに異なる爆弾IDを返すこと", () => {
+    const session = createSession();
+
+    expect(session.issueServerBombId()).not.toBe(session.issueServerBombId());
   });
 
   it("同一キーの爆弾設置は2回目を配信不可とすること", () => {
@@ -500,6 +529,26 @@ describe("GameRoomSession", () => {
     expect(session.shouldBroadcastBombHitReport("socket-1:bomb-1")).toBe(true);
   });
 
+  it("受理猶予の内側で届いた同一キーの被弾報告を配信不可とすること", () => {
+    const session = createSession();
+    const clock = startSessionAtElapsed(session, 0);
+    session.shouldBroadcastBombHitReport("socket-1:bomb-1");
+    clock.advance(BOMB_HIT_REPORT_RETENTION_MS - 500);
+
+    expect(session.shouldBroadcastBombHitReport("socket-1:bomb-1")).toBe(false);
+    session.dispose();
+  });
+
+  it("受理窓の終端で届いた同一キーの被弾報告を配信不可とすること", () => {
+    const session = createSession();
+    const clock = startSessionAtElapsed(session, 0);
+    session.shouldBroadcastBombHitReport("socket-1:bomb-1");
+    clock.advance(BOMB_FUSE_MS + BOMB_HIT_REPORT_RETENTION_MS);
+
+    expect(session.shouldBroadcastBombHitReport("socket-1:bomb-1")).toBe(false);
+    session.dispose();
+  });
+
   it("自分が設置した爆弾への被弾報告を同チーム報告と判定すること", () => {
     const session = createSession(["socket-1"], {}, { "socket-1": 0 });
     session.registerActiveBomb({
@@ -613,6 +662,190 @@ describe("GameRoomSession", () => {
     session.recordBombHitForOwner("bomb-x");
 
     expect(session.getPlayers()[0]?.bombHitCount).toBe(0);
+  });
+
+  it("設置直後（爆発前）の被弾報告を受理すること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 0);
+    registerBombAtReporter(session, "socket-1", BOMB_FUSE_MS);
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "valid",
+    });
+    session.dispose();
+  });
+
+  it("爆発予定時刻ちょうどの被弾報告を受理すること", () => {
+    const session = createSession();
+    const clock = startSessionAtElapsed(session, 0);
+    registerBombAtReporter(session, "socket-1", BOMB_FUSE_MS);
+    clock.advance(BOMB_FUSE_MS);
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "valid",
+    });
+    session.dispose();
+  });
+
+  it("爆発後でも受理猶予の内側の被弾報告を受理すること", () => {
+    const session = createSession();
+    const clock = startSessionAtElapsed(session, 0);
+    registerBombAtReporter(session, "socket-1", BOMB_FUSE_MS);
+    clock.advance(BOMB_FUSE_MS + BOMB_HIT_REPORT_RETENTION_MS - 1);
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "valid",
+    });
+    session.dispose();
+  });
+
+  it("爆発予定時刻＋受理猶予ちょうどの被弾報告を受理すること", () => {
+    const session = createSession();
+    const clock = startSessionAtElapsed(session, 0);
+    registerBombAtReporter(session, "socket-1", BOMB_FUSE_MS);
+    clock.advance(BOMB_FUSE_MS + BOMB_HIT_REPORT_RETENTION_MS);
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "valid",
+    });
+    session.dispose();
+  });
+
+  it("爆発予定時刻＋受理猶予を1ms超えた被弾報告をexpiredとすること", () => {
+    const session = createSession();
+    const clock = startSessionAtElapsed(session, 0);
+    registerBombAtReporter(session, "socket-1", BOMB_FUSE_MS);
+    clock.advance(BOMB_FUSE_MS + BOMB_HIT_REPORT_RETENTION_MS + 1);
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "expired",
+    });
+    session.dispose();
+  });
+
+  it("未登録の爆弾IDの被弾報告をunknown_bombとすること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 0);
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-unknown")).toEqual(
+      { status: "unknown_bomb" },
+    );
+    session.dispose();
+  });
+
+  it("別セッションで登録された爆弾IDの被弾報告をunknown_bombとすること", () => {
+    const otherSession = createSession();
+    startSessionAtElapsed(otherSession, 0);
+    registerBombAtReporter(otherSession, "socket-1", BOMB_FUSE_MS);
+    const session = createSession();
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "unknown_bomb",
+    });
+    otherSession.dispose();
+    session.dispose();
+  });
+
+  it("距離がしきい値ちょうどの被弾報告を受理すること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 0);
+    session.movePlayer("socket-1", 1, 1);
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-owner",
+      x: 1 + MAX_HIT_REPORT_DISTANCE_GRID,
+      y: 1,
+      explodeAtElapsedMs: BOMB_FUSE_MS,
+    });
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "valid",
+    });
+    session.dispose();
+  });
+
+  it("距離がしきい値を超える被弾報告をtoo_farとすること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 0);
+    session.movePlayer("socket-1", 1, 1);
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-owner",
+      x: 1 + MAX_HIT_REPORT_DISTANCE_GRID + 0.001,
+      y: 1,
+      explodeAtElapsedMs: BOMB_FUSE_MS,
+    });
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "too_far",
+    });
+    session.dispose();
+  });
+
+  it("受理猶予切れと距離超過が重なる場合はexpiredを優先すること", () => {
+    const session = createSession();
+    const clock = startSessionAtElapsed(session, 0);
+    session.movePlayer("socket-1", 1, 1);
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-owner",
+      x: 1 + MAX_HIT_REPORT_DISTANCE_GRID + 1,
+      y: 1,
+      explodeAtElapsedMs: BOMB_FUSE_MS,
+    });
+    clock.advance(BOMB_FUSE_MS + BOMB_HIT_REPORT_RETENTION_MS + 1);
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "expired",
+    });
+    session.dispose();
+  });
+
+  it("セッションに存在しない報告者の被弾報告は距離を問わず受理すること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 0);
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-owner",
+      x: 100,
+      y: 100,
+      explodeAtElapsedMs: BOMB_FUSE_MS,
+    });
+
+    expect(session.checkBombHitReportOrigin("socket-9", "bomb-1")).toEqual({
+      status: "valid",
+    });
+    session.dispose();
+  });
+
+  it("爆弾座標が非有限の場合は距離を判定せず受理すること", () => {
+    const session = createSession();
+    startSessionAtElapsed(session, 0);
+    session.movePlayer("socket-1", 1, 1);
+    session.registerActiveBomb({
+      bombId: "bomb-1",
+      ownerPlayerId: "socket-owner",
+      x: Number.NaN,
+      y: 1,
+      explodeAtElapsedMs: BOMB_FUSE_MS,
+    });
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "valid",
+    });
+    session.dispose();
+  });
+
+  it("爆発予定時刻が非有限の場合は受理時刻窓を判定せず受理すること", () => {
+    const session = createSession();
+    const clock = startSessionAtElapsed(session, 0);
+    registerBombAtReporter(session, "socket-1", Number.NaN);
+    clock.advance(BOMB_FUSE_MS + BOMB_HIT_REPORT_RETENTION_MS + 10_000);
+
+    expect(session.checkBombHitReportOrigin("socket-1", "bomb-1")).toEqual({
+      status: "valid",
+    });
+    session.dispose();
   });
 
   it("破棄時はプレイヤーを全て取り除くこと", () => {

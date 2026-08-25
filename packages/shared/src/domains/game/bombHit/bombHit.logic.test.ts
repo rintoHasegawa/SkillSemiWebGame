@@ -1,13 +1,18 @@
 /**
  * bombHit.logic.test
- * 爆弾とプレイヤーの円当たり判定を検証する
- * 同チーム除外・未確定teamIdの扱い・境界距離・半径0や負値の扱いを検証する
+ * 爆弾とプレイヤーの円当たり判定と被弾報告の距離判定を検証する
+ * 同チーム除外・未確定teamIdの扱い・境界距離・半径0や負値の扱いに加え，
+ * 被弾報告の距離しきい値と非有限座標のフェイルオープンを検証する
  */
 import { describe, expect, it } from "vitest";
 
-import { UNKNOWN_TEAM_ID } from "../../../config/gameConfig";
+import { GAME_CONFIG, UNKNOWN_TEAM_ID } from "../../../config/gameConfig";
 import type { TeamCollisionCircle } from "./bombHit.type";
-import { checkBombHit } from "./bombHit.logic";
+import {
+  BOMB_HIT_REPORT_MAX_DISTANCE_GRID,
+  checkBombHit,
+  isWithinBombHitReportRange,
+} from "./bombHit.logic";
 
 const createBomb = (
   overrides: Partial<TeamCollisionCircle> = {},
@@ -236,5 +241,147 @@ describe("checkBombHit", () => {
 
     expect(result.distanceSquared).toBeNaN();
     expect(result.isHit).toBe(false);
+  });
+});
+
+describe("BOMB_HIT_REPORT_MAX_DISTANCE_GRID", () => {
+  it("爆風半径・プレイヤー半径・検証マージンの和であること", () => {
+    expect(BOMB_HIT_REPORT_MAX_DISTANCE_GRID).toBe(
+      GAME_CONFIG.BOMB_RADIUS_GRID
+        + GAME_CONFIG.PLAYER_RADIUS
+        + GAME_CONFIG.BOMB_HIT_REPORT_DISTANCE_MARGIN_GRID,
+    );
+  });
+
+  it("仕様（SPEC_03）の値どおり5.0グリッドであること", () => {
+    expect(BOMB_HIT_REPORT_MAX_DISTANCE_GRID).toBe(5);
+  });
+});
+
+describe("isWithinBombHitReportRange", () => {
+  it("報告者と爆弾が同座標の場合は受理可能と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 2, y: 2 },
+        reporter: { x: 2, y: 2 },
+      }),
+    ).toBe(true);
+  });
+
+  it("しきい値の内側の距離を受理可能と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: 4, y: 0 },
+      }),
+    ).toBe(true);
+  });
+
+  it("距離がしきい値ちょうどの場合は受理可能と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: BOMB_HIT_REPORT_MAX_DISTANCE_GRID, y: 0 },
+      }),
+    ).toBe(true);
+  });
+
+  it("距離がしきい値をわずかに下回る場合は受理可能と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: BOMB_HIT_REPORT_MAX_DISTANCE_GRID - 0.001, y: 0 },
+      }),
+    ).toBe(true);
+  });
+
+  it("距離がしきい値をわずかに上回る場合は受理不可と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: BOMB_HIT_REPORT_MAX_DISTANCE_GRID + 0.001, y: 0 },
+      }),
+    ).toBe(false);
+  });
+
+  it("しきい値を大きく超えた距離を受理不可と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: 30, y: 30 },
+      }),
+    ).toBe(false);
+  });
+
+  it("斜め方向の距離をユークリッド距離で評価すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: 3, y: 4 },
+      }),
+    ).toBe(true);
+  });
+
+  it("斜め方向でしきい値を超える距離を受理不可と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: 4, y: 4 },
+      }),
+    ).toBe(false);
+  });
+
+  it("負方向の座標差でも距離を同じように評価すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: -BOMB_HIT_REPORT_MAX_DISTANCE_GRID, y: 0 },
+      }),
+    ).toBe(true);
+  });
+
+  it("負方向でしきい値を超える距離を受理不可と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: 0, y: -(BOMB_HIT_REPORT_MAX_DISTANCE_GRID + 0.001) },
+      }),
+    ).toBe(false);
+  });
+
+  it("報告者の座標がNaNの場合は判定不能として受理可能と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: Number.NaN, y: 0 },
+      }),
+    ).toBe(true);
+  });
+
+  it("爆弾の座標がNaNの場合は判定不能として受理可能と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: Number.NaN },
+        reporter: { x: 0, y: 0 },
+      }),
+    ).toBe(true);
+  });
+
+  it("報告者の座標がInfinityの場合は判定不能として受理可能と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: 0, y: 0 },
+        reporter: { x: Number.POSITIVE_INFINITY, y: 0 },
+      }),
+    ).toBe(true);
+  });
+
+  it("爆弾の座標が-Infinityの場合は判定不能として受理可能と判定すること", () => {
+    expect(
+      isWithinBombHitReportRange({
+        bomb: { x: Number.NEGATIVE_INFINITY, y: 0 },
+        reporter: { x: 0, y: 0 },
+      }),
+    ).toBe(true);
   });
 });

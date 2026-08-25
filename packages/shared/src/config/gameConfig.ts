@@ -129,6 +129,8 @@ export const GAME_CONFIG = {
   BOMB_FEVER_COOLDOWN_MS: 2000, // フィーバー時に次の爆弾を置けるまでの待機時間（ms）
   BOMB_FEVER_START_REMAINING_SEC: 60, // フィーバー開始の残り時間しきい値（秒）
   BOMB_DEDUP_EXTRA_TTL_MS: 1000, // 重複排除保持時間の追加分（ms）
+  BOMB_HIT_REPORT_RETENTION_MS: 3000, // 爆発後も被弾報告を受理する猶予（ms）
+  BOMB_HIT_REPORT_DISTANCE_MARGIN_GRID: 3, // 被弾報告の距離検証マージン（グリッド単位）
 
   // ハリケーンイベント設定（クライアント/サーバー契約）
   HURRICANE_ENABLED: true, // ハリケーンイベント有効フラグ
