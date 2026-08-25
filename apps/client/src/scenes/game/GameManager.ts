@@ -85,8 +85,14 @@ export class GameManager {
     return this.sessionFacade.getRemainingTime();
   }
 
+  /** ジョイスティックUIの操作を受け付けてよいかを返す（開始前も true） */
   public isInputEnabled(): boolean {
     return this.runtime.isInputEnabled();
+  }
+
+  /** 爆弾設置を受け付けてよいかを返す（開始前は false） */
+  public isBombEnabled(): boolean {
+    return this.runtime.isBombEnabled();
   }
 
   public placeBomb(): string | null {
@@ -292,6 +298,7 @@ export class GameManager {
         remainingTimeSec: Math.floor(this.sessionFacade.getRemainingTime()),
         startCountdownSec: this.sessionFacade.getStartCountdownSec(),
         isInputEnabled: this.runtime.isInputEnabled(),
+        isBombEnabled: this.runtime.isBombEnabled(),
         teamPaintRates: this.runtime.getPaintRatesByTeam(),
         localBombHitCount: this.localBombHitCount,
         // 表示用に切り捨てた秒ではなく経過時間から実ゲートと同じ判定を導出する

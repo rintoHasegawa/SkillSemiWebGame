@@ -17,6 +17,7 @@ const createHudState = (
     remainingTimeSec: 60,
     startCountdownSec: 0,
     isInputEnabled: true,
+    isBombEnabled: true,
     teamPaintRates: [0, 0, 0, 0],
     localBombHitCount: 0,
     isFeverTime: false,
@@ -77,6 +78,31 @@ describe("GameUiStateSyncService", () => {
     emitIfChanged();
 
     expect(received).toHaveLength(countAfterFirstEmit + 1);
+  });
+
+  it("操作受付可否が同じでも爆弾受付可否が変化した場合は通知すること", () => {
+    const { received, emitIfChanged, setHud } = createSubscribedService(
+      createHudState({ isInputEnabled: true, isBombEnabled: false }),
+    );
+
+    emitIfChanged();
+    const countAfterFirstEmit = received.length;
+    setHud(createHudState({ isInputEnabled: true, isBombEnabled: true }));
+    emitIfChanged();
+
+    expect(received).toHaveLength(countAfterFirstEmit + 1);
+  });
+
+  it("爆弾受付可否の変化を通知内容へ反映すること", () => {
+    const { received, emitIfChanged, setHud } = createSubscribedService(
+      createHudState({ isBombEnabled: false }),
+    );
+
+    emitIfChanged();
+    setHud(createHudState({ isBombEnabled: true }));
+    emitIfChanged();
+
+    expect(received.at(-1)?.isBombEnabled).toBe(true);
   });
 
   it("残り秒数が同じでもフィーバー判定が変化した場合は通知すること", () => {

@@ -27,6 +27,8 @@ type GameLoopOptions = {
   playerRepository: PlayerRepository;
   myId: string;
   getJoystickInput: () => { x: number; y: number };
+  /** 入力をゲーム進行へ反映してよいかを返す関数 */
+  canApplyInput: () => boolean;
   bombManager: BombManager;
   moveSender: MoveSender;
 };
@@ -43,12 +45,21 @@ export class GameLoop {
   private readonly cameraStep: CameraStep;
   private readonly steps: LoopStep[];
 
-  constructor({ app, worldContainer, playerRepository, myId, getJoystickInput, bombManager, moveSender }: GameLoopOptions) {
+  constructor({
+    app,
+    worldContainer,
+    playerRepository,
+    myId,
+    getJoystickInput,
+    canApplyInput,
+    bombManager,
+    moveSender,
+  }: GameLoopOptions) {
     this.app = app;
     this.worldContainer = worldContainer;
     this.playerRepository = playerRepository;
     this.myId = myId;
-    this.inputStep = new InputStep({ getJoystickInput });
+    this.inputStep = new InputStep({ getJoystickInput, canApplyInput });
     this.simulationStep = new SimulationStep({
       moveSender,
     });

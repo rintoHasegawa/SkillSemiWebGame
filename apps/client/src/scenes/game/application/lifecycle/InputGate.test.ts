@@ -1,6 +1,6 @@
 /**
  * InputGate.test
- * 入力受付可否判定の現行挙動を固定する characterization test
+ * 入力の受付可否と反映可否の判定を固定する characterization test
  * ロックの多重取得・二重解放と入力正規化の分岐を検証する
  */
 import { describe, expect, it } from "vitest";
@@ -25,10 +25,11 @@ const createGate = (
 };
 
 describe("InputGate", () => {
-  it("未開始の場合は入力を受け付けないこと", () => {
+  it("未開始でもUI操作は受け付けるが反映はしないこと", () => {
     const { gate } = createGate({ isStarted: false });
 
-    expect(gate.canAcceptInput()).toBe(false);
+    expect(gate.canAcceptInput()).toBe(true);
+    expect(gate.canApplyInput()).toBe(false);
   });
 
   it("開始済みかつプレイ可能時間なら入力を受け付けること", () => {
@@ -43,6 +44,18 @@ describe("InputGate", () => {
     expect(gate.canAcceptInput()).toBe(false);
   });
 
+  it("開始済みかつプレイ可能時間なら入力を反映すること", () => {
+    const { gate } = createGate({ isStarted: true });
+
+    expect(gate.canApplyInput()).toBe(true);
+  });
+
+  it("プレイ可能時間外の場合は開始済みでも入力を反映しないこと", () => {
+    const { gate } = createGate({ isStarted: true, isPlayableTime: false });
+
+    expect(gate.canApplyInput()).toBe(false);
+  });
+
   it("プレイ可能時間判定を省略した場合は常に許可扱いとすること", () => {
     const gate = new InputGate({ isStartedProvider: () => true });
 
@@ -51,6 +64,22 @@ describe("InputGate", () => {
 
   it("ロック取得中は入力を受け付けないこと", () => {
     const { gate } = createGate({ isStarted: true });
+
+    gate.lockInput();
+
+    expect(gate.canAcceptInput()).toBe(false);
+  });
+
+  it("ロック取得中は入力を反映しないこと", () => {
+    const { gate } = createGate({ isStarted: true });
+
+    gate.lockInput();
+
+    expect(gate.canApplyInput()).toBe(false);
+  });
+
+  it("未開始でロック取得中も入力を受け付けないこと", () => {
+    const { gate } = createGate({ isStarted: false });
 
     gate.lockInput();
 
@@ -98,7 +127,7 @@ describe("InputGate", () => {
     expect(gate.canAcceptInput()).toBe(false);
   });
 
-  it("入力受付可能なときはジョイスティック入力をそのまま返すこと", () => {
+  it("入力反映可能なときはジョイスティック入力をそのまま返すこと", () => {
     const { gate } = createGate({ isStarted: true });
 
     expect(gate.sanitizeJoystickInput({ x: 0.5, y: -0.5 })).toEqual({
@@ -107,7 +136,7 @@ describe("InputGate", () => {
     });
   });
 
-  it("入力受付不可のときはジョイスティック入力を0へ丸めること", () => {
+  it("入力反映不可のときはジョイスティック入力を0へ丸めること", () => {
     const { gate } = createGate({ isStarted: false });
 
     expect(gate.sanitizeJoystickInput({ x: 0.5, y: -0.5 })).toEqual({

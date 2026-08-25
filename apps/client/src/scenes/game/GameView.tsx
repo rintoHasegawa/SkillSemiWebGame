@@ -28,6 +28,7 @@ type Props = {
   timeLeft: string;
   startCountdownText: string | null;
   isInputEnabled: boolean;
+  isBombEnabled: boolean;
   teamPaintRates: number[];
   miniMapTeamIds: number[];
   localBombHitCount: number;
@@ -75,6 +76,7 @@ export const GameView = ({
   timeLeft,
   startCountdownText,
   isInputEnabled,
+  isBombEnabled,
   teamPaintRates,
   miniMapTeamIds,
   localBombHitCount,
@@ -123,6 +125,7 @@ export const GameView = ({
       {/* 入力UI レイヤー */}
       <GameInputOverlay
         isInputEnabled={isInputEnabled}
+        isBombEnabled={isBombEnabled}
         isFeverTime={isFeverTime}
         onJoystickInput={onJoystickInput}
         onPlaceBomb={onPlaceBomb}

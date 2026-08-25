@@ -42,6 +42,7 @@ export type SceneControllerState = {
   timeLeft: string;
   startCountdownText: string | null;
   isInputEnabled: boolean;
+  isBombEnabled: boolean;
   teamPaintRates: number[];
   miniMapTeamIds: number[];
   localBombHitCount: number;
@@ -64,6 +65,7 @@ export const createInitialSceneControllerState = (): SceneControllerState => {
     timeLeft: getInitialTimeDisplay(),
     startCountdownText: null,
     isInputEnabled: false,
+    isBombEnabled: false,
     teamPaintRates: DEFAULT_TEAM_PAINT_RATES,
     miniMapTeamIds: createDefaultMiniMapTeamIds(),
     localBombHitCount: 0,
@@ -86,6 +88,7 @@ export const sceneControllerReducer = (
         timeLeft: formatRemainingTime(hud.remainingTimeSec),
         startCountdownText: buildStartCountdownText(hud.startCountdownSec),
         isInputEnabled: hud.isInputEnabled,
+        isBombEnabled: hud.isBombEnabled,
         teamPaintRates: hud.teamPaintRates,
         localBombHitCount: hud.localBombHitCount,
         isFeverTime: hud.isFeverTime,

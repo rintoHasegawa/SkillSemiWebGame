@@ -87,6 +87,7 @@ export const useGameSceneController = (myId: string | null) => {
     timeLeft: state.timeLeft,
     startCountdownText: state.startCountdownText,
     isInputEnabled: state.isInputEnabled,
+    isBombEnabled: state.isBombEnabled,
     teamPaintRates: state.teamPaintRates,
     miniMapTeamIds: state.miniMapTeamIds,
     localBombHitCount: state.localBombHitCount,

@@ -43,9 +43,14 @@ export class GameSessionFacade {
     return this.timer.getElapsedMs();
   }
 
-  /** 現在入力を受け付け可能かを返す */
+  /** UI操作を受け付けてよいかを返す（開始前カウントダウン中も true） */
   public canAcceptInput(): boolean {
     return this.inputGate.canAcceptInput();
+  }
+
+  /** 入力をゲーム進行へ反映してよいかを返す（開始前は false） */
+  public canApplyInput(): boolean {
+    return this.inputGate.canApplyInput();
   }
 
   /** 入力ロックを取得し，解除関数を返す */
@@ -53,7 +58,7 @@ export class GameSessionFacade {
     return this.inputGate.lockInput();
   }
 
-  /** 入力可否に応じてジョイスティック入力を正規化して返す */
+  /** 反映可否に応じてジョイスティック入力を正規化して返す */
   public sanitizeJoystickInput(input: JoystickInput): JoystickInput {
     return this.inputGate.sanitizeJoystickInput(input);
   }
