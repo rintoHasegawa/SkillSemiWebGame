@@ -210,6 +210,21 @@ export class GameRoomSession {
     return true;
   }
 
+  /** Bot制御へ切り替えたプレイヤーを人間操作へ戻す */
+  public demotePlayerFromBotControl(id: string): boolean {
+    if (!this.players.has(id) || !this.gameLoop) {
+      return false;
+    }
+
+    this.gameLoop.releaseBotControl(id);
+    return true;
+  }
+
+  /** 現在のマップ塗り状態を読み取り専用ビューとして返す */
+  public getMapGridColorsView(): readonly number[] {
+    return this.mapStore.getGridColorsView();
+  }
+
   /**
    * クライアントへ配信する符号付きゲーム経過msを返す
    * カウントダウン中は負値になり，壁時計を介さずに時計同期できる

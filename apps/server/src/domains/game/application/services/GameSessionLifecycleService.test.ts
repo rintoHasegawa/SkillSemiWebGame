@@ -33,6 +33,7 @@ const createSessionStub = () => {
     getSignedElapsedMs: vi.fn<() => number>(() => 1_234),
     getPlayers: vi.fn<() => Player[]>(() => [{ id: "socket-1" } as Player]),
     getFieldConfig: vi.fn<() => GameFieldConfig>(() => fieldConfig),
+    getMapGridColorsView: vi.fn<() => readonly number[]>(() => [0, -1]),
     shouldBroadcastBombPlaced: vi.fn<(dedupeKey: string) => boolean>(
       () => true,
     ),
@@ -129,6 +130,18 @@ describe("GameSessionLifecycleService", () => {
     const { service } = createContext(true);
 
     expect(service.getRoomFieldConfig()).toEqual(fieldConfig);
+  });
+
+  it("セッション未開始のマップ塗り状態は空配列を返すこと", () => {
+    const { service } = createContext(false);
+
+    expect(service.getMapGridColorsView()).toEqual([]);
+  });
+
+  it("セッション開始済みのマップ塗り状態をそのまま返すこと", () => {
+    const { service } = createContext(true);
+
+    expect(service.getMapGridColorsView()).toEqual([0, -1]);
   });
 
   it("セッション未開始の爆弾配信判定はfalseを返すこと", () => {

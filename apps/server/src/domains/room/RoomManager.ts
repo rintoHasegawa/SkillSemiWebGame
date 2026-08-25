@@ -11,6 +11,8 @@ import { RoomSettingsService } from "./application/services/RoomSettingsService"
 import { RoomTeamService } from "./application/services/RoomTeamService";
 import type {
   JoinRoomResult,
+  RestorePlayerParams,
+  RestorePlayerResult,
   RoomDisconnectResult,
   RoomPhaseTransitionResult,
   SelectTeamResult,
@@ -38,6 +40,11 @@ export class RoomManager {
   // ルームにプレイヤーを追加する，ルームが未作成なら新規作成する
   public addPlayerToRoom(roomId: string, socketId: string, playerName: string): JoinRoomResult {
     return this.roomJoinService.addPlayerToRoom(roomId, socketId, playerName);
+  }
+
+  // 切断プレイヤーを元のID・チームでルーム名簿へ戻す
+  public restorePlayerToRoom(params: RestorePlayerParams): RestorePlayerResult {
+    return this.roomJoinService.restorePlayerToRoom(params);
   }
 
   // プレイヤーをルームから削除し，更新が発生したルーム配列を返す

@@ -374,6 +374,43 @@ describe("GameRoomSession", () => {
     session.dispose();
   });
 
+  it("未参加プレイヤーのBot制御解除はfalseを返すこと", () => {
+    const session = createSession();
+
+    expect(session.demotePlayerFromBotControl("socket-9")).toBe(false);
+  });
+
+  it("未開始セッションのBot制御解除はfalseを返すこと", () => {
+    const session = createSession();
+
+    expect(session.demotePlayerFromBotControl("socket-1")).toBe(false);
+  });
+
+  it("開始済みセッションのBot制御解除はtrueを返すこと", () => {
+    const session = createSession();
+    session.start(TICK_RATE_MS, createCallbacksStub());
+
+    expect(session.demotePlayerFromBotControl("socket-1")).toBe(true);
+    session.dispose();
+  });
+
+  it("Bot昇格したプレイヤーを解除して人間操作へ戻せること", () => {
+    const session = createSession();
+    session.start(TICK_RATE_MS, createCallbacksStub());
+    session.promotePlayerToBotControl("socket-1");
+
+    expect(session.demotePlayerFromBotControl("socket-1")).toBe(true);
+    session.dispose();
+  });
+
+  it("開始前のマップ塗り状態は全セル未塗装であること", () => {
+    const session = createSession();
+
+    expect(
+      session.getMapGridColorsView().every((teamId) => teamId === -1),
+    ).toBe(true);
+  });
+
   it("爆弾IDを推測不能なUUIDで採番すること", () => {
     const session = createSession();
 
