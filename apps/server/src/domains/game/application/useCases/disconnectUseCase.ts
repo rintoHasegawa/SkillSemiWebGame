@@ -13,13 +13,16 @@ type DisconnectUseCaseParams = {
   output: Pick<GameOutputPort, "publishPlayerRemovedToRoom">;
 };
 
-/** プレイヤー切断時の状態更新と通知を実行する */
+/**
+ * プレイヤー切断時の状態更新と通知を実行する
+ * @returns Bot引き継ぎで在席を維持した場合 true
+ */
 export const disconnectUseCase = ({
   gameManager,
   roomId,
   playerId,
   output,
-}: DisconnectUseCaseParams) => {
+}: DisconnectUseCaseParams): boolean => {
   const replacedWithBot = gameManager.replaceDisconnectedPlayerWithBot(playerId);
 
   if (!replacedWithBot) {
@@ -43,4 +46,6 @@ export const disconnectUseCase = ({
     socketId: playerId,
     replacedWithBot,
   });
+
+  return replacedWithBot;
 };

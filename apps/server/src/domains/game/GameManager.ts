@@ -58,6 +58,16 @@ export class GameManager {
     return this.playerOperationService.replaceDisconnectedPlayerWithBot(id);
   }
 
+  // 復帰プレイヤーのBot制御を解除して人間操作へ戻す
+  demotePlayerFromBotControl(id: string): boolean {
+    return this.playerOperationService.demotePlayerFromBotControl(id);
+  }
+
+  /** 現在のマップ塗り状態を読み取り専用ビューとして返す */
+  getMapGridColorsView(): readonly number[] {
+    return this.lifecycleService.getMapGridColorsView();
+  }
+
   // 指定プレイヤー座標更新処理
   movePlayer(id: string, x: number, y: number) {
     this.playerOperationService.movePlayer(id, x, y);

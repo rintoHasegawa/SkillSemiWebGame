@@ -1,6 +1,6 @@
 /**
  * GamePlayerOperationService
- * ゲームセッション内のプレイヤー移動と離脱操作を管理する
+ * ゲームセッション内のプレイヤー移動と離脱操作，Bot制御の切り替えを管理する
  */
 import { logEvent } from "@server/logging/logger";
 import { gameDomainLogEvents, logResults, logScopes } from "@server/logging/index";
@@ -72,5 +72,19 @@ export class GamePlayerOperationService {
     }
 
     return session.promotePlayerToBotControl(id);
+  }
+
+  public demotePlayerFromBotControl(id: string): boolean {
+    const session = this.sessionRef.current;
+    if (!session || !this.activePlayerIds.has(id)) {
+      logEvent(logScopes.GAME_PLAYER_OPERATION_SERVICE, {
+        event: gameDomainLogEvents.PLAYER_RESUME,
+        result: logResults.IGNORED_PLAYER_NOT_IN_SESSION,
+        socketId: id,
+      });
+      return false;
+    }
+
+    return session.demotePlayerFromBotControl(id);
   }
 }
