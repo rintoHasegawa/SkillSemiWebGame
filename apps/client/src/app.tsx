@@ -19,6 +19,7 @@ export default function App() {
     gameResult,
     playerName,
     joinErrorMessage,
+    connectionNoticeMessage,
     isJoining,
     setPlayerName,
     requestJoin,
@@ -35,6 +36,7 @@ export default function App() {
         playerName={playerName}
         onPlayerNameChange={setPlayerName}
         joinErrorMessage={joinErrorMessage}
+        connectionNoticeMessage={connectionNoticeMessage}
         isJoining={isJoining}
       />
     );

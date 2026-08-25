@@ -13,11 +13,15 @@ export type AppFlowData = {
   myId: string | null;
   gameResult: GameResultPayload | null;
   playerName: string;
+  /** 予期しない接続断でセッションを破棄したか */
+  isConnectionLost: boolean;
 };
 
 /** アプリフローを更新するアクション型 */
 export type AppFlowAction =
-  | { type: "setMyId"; myId: string | null }
+  | { type: "connectionEstablished"; myId: string }
+  | { type: "connectionLost" }
+  | { type: "clearConnectionNotice" }
   | { type: "setPlayerName"; playerName: string }
   | { type: "setRoomAndLobby"; room: domain.room.Room }
   | { type: "updateRoom"; room: domain.room.Room }

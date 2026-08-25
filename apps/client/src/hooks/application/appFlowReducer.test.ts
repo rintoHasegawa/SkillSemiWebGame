@@ -47,36 +47,314 @@ describe("initialAppFlowData", () => {
       myId: null,
       gameResult: null,
       playerName: "",
+      isConnectionLost: false,
     });
   });
 });
 
 describe("appFlowReducer", () => {
-  it("setMyId で myId を更新すること", () => {
+  it("connectionEstablished で myId を更新すること", () => {
     const next = appFlowReducer(createState(), {
-      type: "setMyId",
+      type: "connectionEstablished",
       myId: "socket-1",
     });
 
     expect(next.myId).toBe("socket-1");
   });
 
-  it("setMyId で null を指定した場合は myId を null にすること", () => {
-    const next = appFlowReducer(createState({ myId: "socket-1" }), {
-      type: "setMyId",
-      myId: null,
+  it("connectionEstablished で scenePhase を変更しないこと", () => {
+    const next = appFlowReducer(
+      createState({ scenePhase: domain.app.ScenePhase.LOBBY }),
+      { type: "connectionEstablished", myId: "socket-1" },
+    );
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.LOBBY);
+  });
+
+  it("初回接続の connectionEstablished はプレイ中でもタイトルへ戻さないこと", () => {
+    const next = appFlowReducer(
+      createState({ scenePhase: domain.app.ScenePhase.PLAYING, myId: null }),
+      { type: "connectionEstablished", myId: "socket-1" },
+    );
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.PLAYING);
+  });
+
+  it("初回接続の connectionEstablished はロビーでもタイトルへ戻さないこと", () => {
+    const next = appFlowReducer(
+      createState({ scenePhase: domain.app.ScenePhase.LOBBY, myId: null }),
+      { type: "connectionEstablished", myId: "socket-1" },
+    );
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.LOBBY);
+  });
+
+  it("同じ myId の connectionEstablished はプレイ中のセッションを破棄しないこと", () => {
+    const state = createState({
+      scenePhase: domain.app.ScenePhase.PLAYING,
+      room: createRoom(),
+      myId: "socket-1",
+      playerName: "たろう",
     });
+
+    const next = appFlowReducer(state, {
+      type: "connectionEstablished",
+      myId: "socket-1",
+    });
+
+    expect(next).toEqual(state);
+  });
+
+  it("プレイ中に myId が変わった connectionEstablished でタイトルへ戻すこと", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.TITLE);
+  });
+
+  it("プレイ中に myId が変わった connectionEstablished で isConnectionLost を立てること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect(next.isConnectionLost).toBe(true);
+  });
+
+  it("プレイ中に myId が変わった connectionEstablished で新しい myId を採用すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect(next.myId).toBe("socket-2");
+  });
+
+  it("プレイ中に myId が変わった connectionEstablished で room と gameResult を破棄すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        gameResult: createGameResult(),
+        myId: "socket-1",
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect({ room: next.room, gameResult: next.gameResult }).toEqual({
+      room: null,
+      gameResult: null,
+    });
+  });
+
+  it("プレイ中に myId が変わった connectionEstablished で playerName を保持すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+        playerName: "たろう",
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect(next.playerName).toBe("たろう");
+  });
+
+  it("ロビー中に myId が変わった connectionEstablished でタイトルへ戻すこと", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.LOBBY,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.TITLE);
+  });
+
+  it("リザルト表示中は myId が変わってもタイトルへ戻さないこと", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.RESULT,
+        gameResult: createGameResult(),
+        myId: "socket-1",
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.RESULT);
+  });
+
+  it("リザルト表示中に myId が変わった場合は myId のみ更新すること", () => {
+    const state = createState({
+      scenePhase: domain.app.ScenePhase.RESULT,
+      gameResult: createGameResult(),
+      myId: "socket-1",
+    });
+
+    const next = appFlowReducer(state, {
+      type: "connectionEstablished",
+      myId: "socket-2",
+    });
+
+    expect(next).toEqual({ ...state, myId: "socket-2" });
+  });
+
+  it("タイトル表示中は myId が変わってもタイトルのままであること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.TITLE,
+        myId: "socket-1",
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect(next).toEqual(
+      createState({
+        scenePhase: domain.app.ScenePhase.TITLE,
+        myId: "socket-2",
+      }),
+    );
+  });
+
+  it("プレイ中の connectionLost でタイトルへ戻すこと", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionLost" },
+    );
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.TITLE);
+  });
+
+  it("プレイ中の connectionLost で isConnectionLost を立てること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionLost" },
+    );
+
+    expect(next.isConnectionLost).toBe(true);
+  });
+
+  it("ロビー中の connectionLost でタイトルへ戻すこと", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.LOBBY,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionLost" },
+    );
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.TITLE);
+  });
+
+  it("connectionLost でセッションを破棄しても playerName を保持すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+        playerName: "たろう",
+      }),
+      { type: "connectionLost" },
+    );
+
+    expect(next.playerName).toBe("たろう");
+  });
+
+  it("connectionLost でセッションを破棄したとき myId を消去すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionLost" },
+    );
 
     expect(next.myId).toBeNull();
   });
 
-  it("setMyId で scenePhase を変更しないこと", () => {
+  it("リザルト表示中の connectionLost では同一の状態参照を返すこと", () => {
+    const state = createState({
+      scenePhase: domain.app.ScenePhase.RESULT,
+      gameResult: createGameResult(),
+      myId: "socket-1",
+    });
+
+    const next = appFlowReducer(state, { type: "connectionLost" });
+
+    expect(next).toBe(state);
+  });
+
+  it("タイトル表示中の connectionLost では同一の状態参照を返すこと", () => {
+    const state = createState({
+      scenePhase: domain.app.ScenePhase.TITLE,
+      myId: "socket-1",
+    });
+
+    const next = appFlowReducer(state, { type: "connectionLost" });
+
+    expect(next).toBe(state);
+  });
+
+  it("clearConnectionNotice で isConnectionLost を下ろすこと", () => {
+    const next = appFlowReducer(createState({ isConnectionLost: true }), {
+      type: "clearConnectionNotice",
+    });
+
+    expect(next.isConnectionLost).toBe(false);
+  });
+
+  it("clearConnectionNotice で isConnectionLost 以外を変更しないこと", () => {
+    const state = createState({
+      scenePhase: domain.app.ScenePhase.TITLE,
+      myId: "socket-1",
+      playerName: "たろう",
+      isConnectionLost: true,
+    });
+
+    const next = appFlowReducer(state, { type: "clearConnectionNotice" });
+
+    expect(next).toEqual({ ...state, isConnectionLost: false });
+  });
+
+  it("resetToTitle で isConnectionLost を下ろすこと", () => {
     const next = appFlowReducer(
-      createState({ scenePhase: domain.app.ScenePhase.LOBBY }),
-      { type: "setMyId", myId: "socket-1" },
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+        isConnectionLost: true,
+      }),
+      { type: "resetToTitle", clearMyId: true },
     );
 
-    expect(next.scenePhase).toBe(domain.app.ScenePhase.LOBBY);
+    expect(next.isConnectionLost).toBe(false);
   });
 
   it("setPlayerName で playerName を更新すること", () => {
@@ -253,6 +531,7 @@ describe("appFlowReducer", () => {
       myId: "socket-1",
       gameResult: null,
       playerName: "たろう",
+      isConnectionLost: false,
     });
   });
 
@@ -285,7 +564,10 @@ describe("appFlowReducer", () => {
   it("既知のアクションでは新しいオブジェクトを返すこと", () => {
     const state = createState();
 
-    const next = appFlowReducer(state, { type: "setMyId", myId: "socket-1" });
+    const next = appFlowReducer(state, {
+      type: "connectionEstablished",
+      myId: "socket-1",
+    });
 
     expect(next).not.toBe(state);
   });
@@ -293,7 +575,7 @@ describe("appFlowReducer", () => {
   it("既知のアクションで元の状態を破壊的に変更しないこと", () => {
     const state = createState({ myId: "socket-1" });
 
-    appFlowReducer(state, { type: "setMyId", myId: "socket-2" });
+    appFlowReducer(state, { type: "connectionEstablished", myId: "socket-2" });
 
     expect(state.myId).toBe("socket-1");
   });

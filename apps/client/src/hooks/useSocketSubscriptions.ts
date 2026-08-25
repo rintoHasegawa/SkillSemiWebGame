@@ -31,6 +31,7 @@ type UseSocketSubscriptionsParams = {
 
 type AppSocketHandlers = {
   handleConnect: (id: string) => void;
+  handleDisconnect: () => void;
   handleRoomUpdate: (updatedRoom: domain.room.Room) => void;
   handleGameStart: (payload: GameStartPayload) => void;
   handleGameResult: (payload: GameResultPayload) => void;
@@ -38,14 +39,18 @@ type AppSocketHandlers = {
 
 const registerConnectionSubscriptions = ({
   handleConnect,
+  handleDisconnect,
 }: AppSocketHandlers): void => {
   socketManager.common.onConnect(handleConnect);
+  socketManager.common.onDisconnect(handleDisconnect);
 };
 
 const unregisterConnectionSubscriptions = ({
   handleConnect,
+  handleDisconnect,
 }: AppSocketHandlers): void => {
   socketManager.common.offConnect(handleConnect);
+  socketManager.common.offDisconnect(handleDisconnect);
 };
 
 const registerRoomSubscriptions = ({
@@ -86,7 +91,17 @@ export const useSocketSubscriptions = ({
   useEffect(() => {
     const handlers: AppSocketHandlers = {
       handleConnect: (id: string) => {
-        dispatchAppFlow({ type: "setMyId", myId: id });
+        // socket.id 未確定時は採用しない
+        if (id === "") {
+          return;
+        }
+
+        dispatchAppFlow({ type: "connectionEstablished", myId: id });
+      },
+
+      handleDisconnect: () => {
+        // 意図的な切断かどうかの判定は reducer 側のフェーズ判定に委ねる
+        dispatchAppFlow({ type: "connectionLost" });
       },
 
       handleRoomUpdate: (updatedRoom: domain.room.Room) => {
