@@ -37,7 +37,7 @@ export class BombRuntimeSystem {
       bomb.updateState(elapsedMs);
 
       if (bomb.getDisplayObject().visible) {
-        bomb.render();
+        bomb.render(elapsedMs);
       }
 
       if (previousState !== "exploded" && bomb.getState() === "exploded") {

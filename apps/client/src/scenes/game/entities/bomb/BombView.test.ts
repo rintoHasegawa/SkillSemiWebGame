@@ -1,9 +1,12 @@
 /**
  * BombView のテスト
  * 爆弾テクスチャ共有キャッシュのロード成功時の共有と，失敗時の再ロード可否を検証する
+ * 併せて残り時間リングゲージの描画・非表示の振る舞いを検証する
  */
 import { Assets } from "pixi.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { config } from "@client/config";
 
 vi.mock("pixi.js", () => {
   class FakeContainer {
@@ -24,10 +27,32 @@ vi.mock("pixi.js", () => {
   }
 
   class FakeGraphics extends FakeContainer {
-    public clear(): void {}
-    public circle(): void {}
-    public fill(): void {}
-    public stroke(): void {}
+    // 描画呼び出しの順序を検証できるよう引数付きで記録する
+    public readonly calls: { method: string; args: unknown[] }[] = [];
+
+    public clear(): void {
+      this.calls.push({ method: "clear", args: [] });
+    }
+
+    public circle(...args: unknown[]): void {
+      this.calls.push({ method: "circle", args });
+    }
+
+    public arc(...args: unknown[]): void {
+      this.calls.push({ method: "arc", args });
+    }
+
+    public moveTo(...args: unknown[]): void {
+      this.calls.push({ method: "moveTo", args });
+    }
+
+    public fill(...args: unknown[]): void {
+      this.calls.push({ method: "fill", args });
+    }
+
+    public stroke(...args: unknown[]): void {
+      this.calls.push({ method: "stroke", args });
+    }
   }
 
   class FakeSprite extends FakeContainer {
@@ -110,5 +135,177 @@ describe("BombView のテクスチャキャッシュ", () => {
 
     expect(getBombSprite(retriedView).visible).toBe(true);
     expect(loadMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+type FakeDrawCall = { method: string; args: unknown[] };
+
+// displayObject の子は 爆風円 → ゲージ → フォールバック → スプライト の順で追加される
+const getFuseGaugeGraphic = (
+  view: { displayObject: { children: unknown[] } },
+): { visible: boolean; calls: FakeDrawCall[] } => {
+  const graphic = view.displayObject.children[1];
+  return graphic as { visible: boolean; calls: FakeDrawCall[] };
+};
+
+const findArcCall = (calls: FakeDrawCall[]): FakeDrawCall | undefined => {
+  return calls.find((call) => call.method === "arc");
+};
+
+const GAUGE_RADIUS_PX = config.GAME_CONFIG.BOMB_FUSE_GAUGE_RADIUS_PX;
+const GAUGE_START_ANGLE = -Math.PI / 2;
+
+describe("BombView.renderFuseGauge", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    loadMock.mockReset();
+    loadMock.mockResolvedValue(createTexture("bomb"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("残り比率1のとき12時起点から時計回りに全周の弧を描くこと", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(1, 0xff4b4b);
+
+    expect(findArcCall(getFuseGaugeGraphic(view).calls)?.args).toEqual([
+      0,
+      0,
+      GAUGE_RADIUS_PX,
+      GAUGE_START_ANGLE,
+      GAUGE_START_ANGLE + Math.PI * 2,
+    ]);
+  });
+
+  it("残り比率0.5のとき半周ぶんの弧を描くこと", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(0.5, 0xff4b4b);
+
+    expect(findArcCall(getFuseGaugeGraphic(view).calls)?.args).toEqual([
+      0,
+      0,
+      GAUGE_RADIUS_PX,
+      GAUGE_START_ANGLE,
+      GAUGE_START_ANGLE + Math.PI,
+    ]);
+  });
+
+  it("残り比率0のとき弧を描かないこと", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(0, 0xff4b4b);
+
+    expect(findArcCall(getFuseGaugeGraphic(view).calls)).toBeUndefined();
+  });
+
+  it("残り比率0でも全周のトラックは描くこと", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(0, 0xff4b4b);
+
+    const circleCall = getFuseGaugeGraphic(view).calls.find(
+      (call) => call.method === "circle",
+    );
+    expect(circleCall?.args).toEqual([0, 0, GAUGE_RADIUS_PX]);
+  });
+
+  it("トラックを黒の半透明で描くこと", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+    const { TRACK_COLOR, TRACK_ALPHA } = config.GAME_CONFIG.BOMB_FUSE_GAUGE;
+
+    view.renderFuseGauge(1, 0xff4b4b);
+
+    const trackStroke = getFuseGaugeGraphic(view).calls.find(
+      (call) => call.method === "stroke",
+    );
+    expect(trackStroke?.args[0]).toMatchObject({
+      color: TRACK_COLOR,
+      alpha: TRACK_ALPHA,
+    });
+  });
+
+  it("負の残り比率が渡されても弧を描かないこと", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(-0.5, 0xff4b4b);
+
+    expect(findArcCall(getFuseGaugeGraphic(view).calls)).toBeUndefined();
+  });
+
+  it("残り比率が1を超えても全周までにクランプすること", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(1.5, 0xff4b4b);
+
+    expect(findArcCall(getFuseGaugeGraphic(view).calls)?.args[4]).toBe(
+      GAUGE_START_ANGLE + Math.PI * 2,
+    );
+  });
+
+  it("チーム色の弧を白の縁取りより後に重ねて描くこと", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+    const teamColor = 0x4b4bff;
+    const { OUTLINE_COLOR } = config.GAME_CONFIG.BOMB_FUSE_GAUGE;
+
+    view.renderFuseGauge(1, teamColor);
+
+    const strokeColors = getFuseGaugeGraphic(view)
+      .calls.filter((call) => call.method === "stroke")
+      .map((call) => (call.args[0] as { color: number }).color);
+    expect(strokeColors.slice(-2)).toEqual([OUTLINE_COLOR, teamColor]);
+  });
+
+  it("描画するとゲージが表示状態になること", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(1, 0xff4b4b);
+
+    expect(getFuseGaugeGraphic(view).visible).toBe(true);
+  });
+
+  it("生成直後はゲージが非表示であること", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    expect(getFuseGaugeGraphic(view).visible).toBe(false);
+  });
+});
+
+describe("BombView.hideFuseGauge", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    loadMock.mockReset();
+    loadMock.mockResolvedValue(createTexture("bomb"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("ゲージを非表示にすること", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(1, 0xff4b4b);
+    view.hideFuseGauge();
+
+    expect(getFuseGaugeGraphic(view).visible).toBe(false);
+  });
+
+  it("非表示にするとき描画内容を消去すること", async () => {
+    const { BombView } = await import("./BombView");
+    const view = new BombView();
+
+    view.renderFuseGauge(1, 0xff4b4b);
+    view.hideFuseGauge();
+
+    expect(getFuseGaugeGraphic(view).calls.at(-1)?.method).toBe("clear");
   });
 });

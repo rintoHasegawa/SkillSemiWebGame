@@ -3,6 +3,8 @@
  * 爆弾の状態遷移と時間管理を担うモデル
  * 設置中 → 爆発中 → 終了 のライフサイクルを管理する
  */
+import { config } from "@client/config";
+
 /** 爆弾の状態を表す型 */
 export type BombState = "armed" | "exploded" | "finished";
 
@@ -75,5 +77,15 @@ export class BombModel {
 
   public getExplodeAtElapsedMs(): number {
     return this.explodeAtElapsedMs;
+  }
+
+  /** 導火線ゲージの残り比率（0〜1）を返す（armed 以外は 0 とする） */
+  public getFuseRemainingRatio(elapsedMs: number): number {
+    if (this.state !== "armed") return 0;
+
+    const { BOMB_FUSE_MS } = config.GAME_CONFIG;
+    const remainingRatio = (this.explodeAtElapsedMs - elapsedMs) / BOMB_FUSE_MS;
+
+    return Math.min(1, Math.max(0, remainingRatio));
   }
 }

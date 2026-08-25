@@ -1,12 +1,16 @@
 /**
  * BombView
  * 爆弾の描画責務を担うビュー
- * 設置中の見た目と爆風円の表示を管理する
+ * 設置中の見た目と爆風円，爆発までの残り時間リングゲージの表示を管理する
  */
 import { Container, Graphics } from "pixi.js";
 import { Assets, Sprite, Texture } from "pixi.js";
 import { config } from "@client/config";
 import type { BombState } from "./BombModel";
+
+// リングゲージは12時方向を起点に時計回りで減っていく
+const FUSE_GAUGE_START_ANGLE = -Math.PI / 2;
+const FULL_TURN_ANGLE = Math.PI * 2;
 
 /** 爆弾の描画表現を管理するビュー */
 export class BombView {
@@ -17,6 +21,7 @@ export class BombView {
   private bombSprite: Sprite;
   private bombFallbackGraphic: Graphics;
   private explosionGraphic: Graphics;
+  private fuseGaugeGraphic: Graphics;
   private lastRenderedState: BombState | null = null;
   private lastRenderedRadiusGrid: number | null = null;
   private lastRenderedColor: number | null = null;
@@ -32,8 +37,12 @@ export class BombView {
     this.bombFallbackGraphic = new Graphics();
     this.bombFallbackGraphic.visible = false;
     this.explosionGraphic = new Graphics();
+    this.fuseGaugeGraphic = new Graphics();
+    this.fuseGaugeGraphic.visible = false;
 
+    // 爆風円より上，爆弾スプライトより下の重なりになるよう追加順を保つ
     this.displayObject.addChild(this.explosionGraphic);
+    this.displayObject.addChild(this.fuseGaugeGraphic);
     this.displayObject.addChild(this.bombFallbackGraphic);
     this.displayObject.addChild(this.bombSprite);
 
@@ -135,6 +144,64 @@ export class BombView {
       this.explosionGraphic.fill({ color, alpha: 0.35 });
       this.explosionGraphic.stroke({ color, width: 3 });
     }
+  }
+
+  /** 残り時間リングゲージを描画する（armed 中のみ呼ぶ） */
+  public renderFuseGauge(remainingRatio: number, color: number): void {
+    const { BOMB_FUSE_GAUGE, BOMB_FUSE_GAUGE_RADIUS_PX } = config.GAME_CONFIG;
+    const clampedRatio = Math.min(1, Math.max(0, remainingRatio));
+
+    this.fuseGaugeGraphic.visible = true;
+    this.fuseGaugeGraphic.clear();
+
+    // 残り量を読み取れるよう全周のトラックを下敷きにする
+    this.fuseGaugeGraphic.circle(0, 0, BOMB_FUSE_GAUGE_RADIUS_PX);
+    this.fuseGaugeGraphic.stroke({
+      color: BOMB_FUSE_GAUGE.TRACK_COLOR,
+      width: BOMB_FUSE_GAUGE.THICKNESS_PX,
+      alpha: BOMB_FUSE_GAUGE.TRACK_ALPHA,
+    });
+
+    if (clampedRatio <= 0) return;
+
+    // 起点から残り比率ぶんの弧を描く
+    const endAngle = FUSE_GAUGE_START_ANGLE + clampedRatio * FULL_TURN_ANGLE;
+    const outlineWidth =
+      BOMB_FUSE_GAUGE.THICKNESS_PX + BOMB_FUSE_GAUGE.OUTLINE_WIDTH_PX * 2;
+
+    // 太い白弧の上に細いチーム色弧を重ねて縁取りを表現する
+    this.strokeFuseArc(FUSE_GAUGE_START_ANGLE, endAngle, {
+      color: BOMB_FUSE_GAUGE.OUTLINE_COLOR,
+      width: outlineWidth,
+    });
+    this.strokeFuseArc(FUSE_GAUGE_START_ANGLE, endAngle, {
+      color,
+      width: BOMB_FUSE_GAUGE.THICKNESS_PX,
+    });
+  }
+
+  /** 残り時間リングゲージを非表示にする */
+  public hideFuseGauge(): void {
+    if (!this.fuseGaugeGraphic.visible) return;
+
+    this.fuseGaugeGraphic.visible = false;
+    this.fuseGaugeGraphic.clear();
+  }
+
+  // 直前のパス終端から弦が引かれないよう弧の始点へ移動してからストロークする
+  private strokeFuseArc(
+    startAngle: number,
+    endAngle: number,
+    style: { color: number; width: number },
+  ): void {
+    const radiusPx = config.GAME_CONFIG.BOMB_FUSE_GAUGE_RADIUS_PX;
+
+    this.fuseGaugeGraphic.moveTo(
+      Math.cos(startAngle) * radiusPx,
+      Math.sin(startAngle) * radiusPx,
+    );
+    this.fuseGaugeGraphic.arc(0, 0, radiusPx, startAngle, endAngle);
+    this.fuseGaugeGraphic.stroke({ ...style, alpha: 1 });
   }
 
   public destroy(): void {
