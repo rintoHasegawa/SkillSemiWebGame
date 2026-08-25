@@ -33,6 +33,12 @@
   - `LOAD_TEST_SERVER_URL`: 本番接続先URL
   - `LOAD_TEST_DEV_SERVER_URL`: 開発接続先URL
 
+#### CORS の扱い (CORS Handling)
+
+負荷テスト Bot は Node.js から接続するため Origin ヘッダを送信しない．
+サーバは Origin ヘッダを持たない接続を非ブラウザクライアントとみなして本番環境でも許可するため，
+`CORS_ORIGIN` の設定内容にかかわらず負荷テストは実行できる（[ENV_09_環境変数設定](ENV_09_環境変数設定.md) 参照）．
+
 ## 実行手順 (Execution Steps)
 
 ### 初回準備

@@ -64,8 +64,8 @@
 
 - `GAME_CONFIG.MAX_PLAYERS_PER_ROOM`: 1ルームに参加できる最大人数
 - `NETWORK_CONFIG.DEV_SERVER_PORT`: サーバー起動時の待受ポート（環境変数未指定時）
-- `NETWORK_CONFIG.CORS_ORIGIN`: CORS で許可するオリジン
 - `NETWORK_CONFIG.CORS_METHODS`: CORS で許可するHTTPメソッド
+- CORS の許可オリジンは config 定数ではなく環境変数 `CORS_ORIGIN` から解決する（[apps/server/src/network/bootstrap/corsPolicy.ts](../../../../apps/server/src/network/bootstrap/corsPolicy.ts)）。詳細は [ENV_09_環境変数設定](../../../../docs/02_ENV/ENV_09_環境変数設定.md) を参照
 
 ## 追加・変更ルール
 

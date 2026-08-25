@@ -4,7 +4,11 @@
  */
 import { contracts as protocol } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
-import { logResults, logScopes } from "@server/logging/index";
+import {
+  logResults,
+  logScopes,
+  networkLogEvents,
+} from "@server/logging/index";
 
 /** CONNECTイベントの受信ログを記録する */
 export const logConnected = (socketId: string): void => {
@@ -21,5 +25,14 @@ export const logDisconnected = (socketId: string): void => {
     event: protocol.SocketEvents.DISCONNECT,
     result: logResults.DISCONNECTED,
     socketId,
+  });
+};
+
+/** CORS許可外オリジンからの接続拒否ログを記録する */
+export const logOriginRejected = (origin: string): void => {
+  logEvent(logScopes.NETWORK, {
+    event: networkLogEvents.CORS_ORIGIN_CHECK,
+    result: logResults.REJECTED_ORIGIN,
+    origin,
   });
 };

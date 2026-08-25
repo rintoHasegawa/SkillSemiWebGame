@@ -100,9 +100,16 @@ docker run --rm -v $(pwd):/app -w /app node:26-slim \
          - "127.0.0.1:3000:3000"
        environment:
          - NODE_ENV=production
+         - CORS_ORIGIN=http://<サーバIP>:8803
    ```
 
    ※ ポイント: ports を "127.0.0.1:3000:3000" にすることで，localhost からのみアクセス可能となり外部に直接公開されない
+
+   ※ `CORS_ORIGIN` には**ブラウザがアクセスする URL（Nginx の公開オリジン）**を指定する．本構成ではフロントエンドと Socket.IO を同一の 8803 番ポートで公開しているため，値は `VITE_PROD_SERVER_URL` と同じになる．`<サーバIP>` は実際の IP またはドメインに置き換えること
+
+   ※ **`CORS_ORIGIN` が未設定のままだとサーバは起動時にエラーで停止する**（設定漏れを検知するための意図的な挙動である）．書式の詳細は [ENV_09_環境変数設定](ENV_09_環境変数設定.md) を参照
+
+   ※ HTTPS 化した場合は `https://yourdomain.example.com:8803` のように，実際にブラウザからアクセスするスキーム・ホスト・ポートに合わせて更新すること
 
 2. コンテナをビルド・起動する
 
@@ -368,6 +375,14 @@ sudo certbot renew --dry-run
   ```
 
 - Nginx のプロキシ設定で WebSocket ヘッダーが正しいか確認する
+
+- CORS で拒否されていないか確認する
+
+  ```bash
+  docker compose -f docker-compose.prod.yml logs | grep rejected_origin
+  ```
+
+  `rejected_origin` が記録されている場合は，`docker-compose.prod.yml` の `CORS_ORIGIN` の値がブラウザのアクセス URL（`http://<サーバIP>:8803`）と一致していない．値を修正してコンテナを再起動する
 
 ### ポート 8803 にアクセスできない (Cannot Access Port 8803)
 

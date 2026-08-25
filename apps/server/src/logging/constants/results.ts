@@ -32,6 +32,7 @@ export const logResults = {
   REJECTED: "rejected",
   REJECTED_COOLDOWN: "rejected_cooldown",
   REJECTED_DUPLICATE: "rejected_duplicate",
+  REJECTED_ORIGIN: "rejected_origin",
   REJECTED_ROOM_FULL: "rejected_room_full",
   REJECTED_ROOM_PLAYING: "rejected_room_playing",
   REMOVED: "removed",

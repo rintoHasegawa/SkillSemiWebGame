@@ -6,6 +6,7 @@ import type { Server as HttpServer } from "http";
 import { RoomManager } from "@server/domains/room/RoomManager";
 import { RoomGameRuntimeRegistry } from "@server/domains/room/application/services/RoomGameRuntimeRegistry";
 import { SocketManager } from "@server/network/SocketManager";
+import type { CorsPolicy } from "./corsPolicy";
 import { createIo } from "./createIo";
 
 /** 起動時に構築する実行コンテキスト */
@@ -13,11 +14,12 @@ type ServerRuntime = {
   socketManager: SocketManager;
 };
 
-/** HTTPサーバーから実行コンテキストを構築する */
+/** HTTPサーバーとCORS設定から実行コンテキストを構築する */
 export const createServerRuntime = (
   httpServer: HttpServer,
+  corsPolicy: CorsPolicy,
 ): ServerRuntime => {
-  const io = createIo(httpServer);
+  const io = createIo(httpServer, corsPolicy);
   const roomManager = new RoomManager();
   const runtimeRegistry = new RoomGameRuntimeRegistry(roomManager);
   const socketManager = new SocketManager(io, roomManager, runtimeRegistry);

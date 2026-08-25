@@ -146,6 +146,14 @@ https://xxxx-xxxx.ngrok-free.app/?allowBrowser=1
   バックエンド (Port 3000) への WebSocket 通信が必要な場合，ゲーム開始時に接続エラーとなる可能性がある．
   - 対策: UIレイアウトや描画負荷の確認を主目的として使用する．
 
+### CORS の扱い (CORS in Development)
+
+開発時（`NODE_ENV` が production 以外）は，サーバがすべてのオリジンからの接続を許可する．
+そのため ngrok の URL（起動のたびにサブドメインが変わる）でアクセスしても CORS の設定変更は不要である．
+
+本番相当の設定（`NODE_ENV=production`）で実機確認を行う場合のみ，環境変数 `CORS_ORIGIN` にアクセス元のオリジンを指定する必要がある．
+詳細は [ENV_09_環境変数設定](ENV_09_環境変数設定.md) を参照する．
+
 ### エラー対応 (Error Handling)
 
 #### "ERR_NGROK_3200" (Tunnel already open)

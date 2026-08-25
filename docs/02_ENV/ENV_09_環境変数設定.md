@@ -44,3 +44,31 @@ VITE_PROD_SERVER_URL=http://localhost:3000
 - 用途: 実行環境の識別
 - 値: production（本番）/ development（開発）
 - 設定箇所: docker-compose.prod.yml の environment セクション
+- 注意事項: リポジトリルートの `Dockerfile` が `ENV NODE_ENV=production` を焼き込んでいるため，Docker イメージから起動した場合は常に本番モードとなる．ローカルで `docker compose -f docker-compose.prod.yml` を使う場合も後述の CORS_ORIGIN の設定が必要である
+
+#### CORS_ORIGIN
+
+- 用途: Socket.IO サーバが接続を許可するブラウザのオリジン（クライアントの配信元 URL）を指定する
+- 参照箇所: apps/server/src/network/bootstrap/corsPolicy.ts で解決し，同 createIo.ts の CORS 判定に使用する
+- 設定箇所: Render では server サービスの Environment，研究室サーバでは docker-compose.prod.yml の environment セクション
+  - リポジトリの `docker-compose.prod.yml` にはローカルでの本番確認用の既定値 `http://localhost:5173` を記載している．デプロイ先では実際の配信元オリジンに置き換えること
+- 書式: 許可するオリジンをカンマ区切りで列挙する．スキーム（http / https）とホスト，既定以外のポートまでを含めた**オリジン**を指定し，パスは含めない
+
+  ```text
+  CORS_ORIGIN=https://pixel-paint-war-client.onrender.com
+  ```
+
+  複数のオリジンを許可する場合の例を以下に示す．
+
+  ```text
+  CORS_ORIGIN=https://pixel-paint-war-client.onrender.com,http://192.168.0.10:8803
+  ```
+
+- 正規化: 各要素は前後の空白除去・末尾スラッシュ除去・小文字化を行ったうえで比較する．`https://example.com/` と `https://example.com` は同一として扱う
+- 未設定時の挙動:
+  - `NODE_ENV=production` の場合: **サーバは起動時にエラーを投げて停止する**．設定漏れを無言で見逃さないための意図的な挙動である
+  - `NODE_ENV` が production 以外（開発時）の場合: すべてのオリジンを許可する（従来どおりの開発体験を維持する）
+- 注意事項:
+  - 指定するのは**クライアントを配信しているオリジン**であり，サーバ自身の URL ではない．VITE_PROD_SERVER_URL と取り違えないこと
+  - Origin ヘッダを持たない接続（負荷テスト Bot・curl 等の非ブラウザクライアント）は本番でも許可する．ブラウザは必ず Origin を送るため，第三者ページからの接続がこの許可を悪用することはできない
+  - 許可外のオリジンからの接続は拒否され，サーバログに `[Network]` スコープの `rejected_origin` として記録される．接続できない場合はまずこのログを確認する
