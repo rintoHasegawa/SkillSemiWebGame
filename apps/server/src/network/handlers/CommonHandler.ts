@@ -9,6 +9,7 @@ import {
   createEmitToRoomExceptSocket,
   createEmitToSocket,
   createEmitToSocketById,
+  type ResolveTargetSocketId,
 } from "@server/network/adapters/socketEmitters";
 
 /** 到達保証を重視する送信関数群 */
@@ -25,17 +26,21 @@ export type CommonHandlerContext = {
   reliable: ReliableEmitters;
 };
 
-/** 送信先別のエミッタをまとめた共通コンテキストを生成する */
+/**
+ * 送信先別のエミッタをまとめた共通コンテキストを生成する
+ * プレイヤーID宛の送信先解決は復帰対応のため呼び出し側から受け取る
+ */
 export const createCommonHandlerContext = (
   io: Server,
-  socket: Socket
+  socket: Socket,
+  resolveTargetSocketId: ResolveTargetSocketId,
 ): CommonHandlerContext => {
   const reliable: ReliableEmitters = {
     emitToAll: createEmitToAll(io),
     emitToRoom: createEmitToRoom(io),
-    emitToRoomExceptSocket: createEmitToRoomExceptSocket(io),
+    emitToRoomExceptSocket: createEmitToRoomExceptSocket(io, resolveTargetSocketId),
     emitToSocket: createEmitToSocket(socket),
-    emitToSocketById: createEmitToSocketById(io),
+    emitToSocketById: createEmitToSocketById(io, resolveTargetSocketId),
   };
 
   return {

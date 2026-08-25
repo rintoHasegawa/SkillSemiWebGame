@@ -16,6 +16,12 @@ import {
   isStartGamePayload,
 } from "@server/network/validation/socketPayloadValidators";
 import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
+import {
+  createCurrentPlayerIdResolver,
+  type CurrentPlayerIdResolver,
+  type PlayerIdentityRegistry,
+  type SessionReservationRegistry,
+} from "@server/network/identity";
 import { createSocketRegistrationContext } from "@server/network/handlers/registration";
 import type { GameOutputAdapter } from "./createGameOutputAdapter";
 import {
@@ -73,22 +79,26 @@ export type RegisterGameHandlersParams = {
     RoomOutputPort,
     "publishRoomUpdateToRoom" | "closeRoomChannel"
   >;
+  identityRegistry: PlayerIdentityRegistry;
+  sessionReservations: Pick<SessionReservationRegistry, "releaseByRoomId">;
 };
 
 /** ゲームイベント調停で利用する依存束を生成する */
-const createGameOrchestratorDeps = ({
-  socket,
-  roomManager,
-  runtimeRegistry,
-  gameOutputAdapter,
-  roomOutputAdapter,
-}: RegisterGameHandlersParams): GameEventOrchestratorDeps => {
+const createGameOrchestratorDeps = (
+  params: RegisterGameHandlersParams,
+  resolvePlayerId: CurrentPlayerIdResolver,
+): GameEventOrchestratorDeps => {
+  const { roomManager, runtimeRegistry, gameOutputAdapter, roomOutputAdapter } = params;
+
   return {
-    socketId: socket.id,
+    get socketId() {
+      return resolvePlayerId();
+    },
     roomManager,
     runtimeRegistry,
     output: gameOutputAdapter,
     roomOutput: roomOutputAdapter,
+    sessionReservations: params.sessionReservations,
   };
 };
 
@@ -171,9 +181,15 @@ const createReadyForGameEventDefinition = (
 
 /** ゲームイベントの購読とユースケース呼び出しを設定する */
 export const registerGameHandlers = (params: RegisterGameHandlersParams) => {
-  const orchestratorDeps = createGameOrchestratorDeps(params);
+  // ハンドラ登録は接続時の一度きりなので，プレイヤーIDは固定値にせず都度解決する
+  const resolvePlayerId = createCurrentPlayerIdResolver(
+    params.identityRegistry,
+    params.socket,
+  );
+  const orchestratorDeps = createGameOrchestratorDeps(params, resolvePlayerId);
   const { onEvent, guardOnEvent } = createSocketRegistrationContext(
     params.socket,
+    resolvePlayerId,
   );
 
   // 検証が必要なイベントを宣言的に登録する

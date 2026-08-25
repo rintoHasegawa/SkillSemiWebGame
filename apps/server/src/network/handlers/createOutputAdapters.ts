@@ -4,6 +4,7 @@
  */
 import type { Server, Socket } from "socket.io";
 import type { RealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
+import type { PlayerIdentityRegistry } from "@server/network/identity";
 import { createCommonHandlerContext } from "./CommonHandler";
 import {
   createGameDisconnectOutputAdapter,
@@ -39,6 +40,8 @@ type CreateSocketOutputAdaptersParams = {
   deps: GameOutputAdapterDeps;
   /** 接続間で共有するサーバー単位の同期状態ストア */
   realtimeRoomSyncState: RealtimeRoomSyncStateStore;
+  /** プレイヤーID宛の送信先ソケットを解決するためのレジストリ */
+  identityRegistry: Pick<PlayerIdentityRegistry, "getSocketId">;
 };
 
 /** 切断処理で利用するゲームとルームの出力アダプタ集合 */
@@ -56,8 +59,11 @@ export const createSocketOutputAdapters = ({
   socket,
   deps,
   realtimeRoomSyncState,
+  identityRegistry,
 }: CreateSocketOutputAdaptersParams): SocketOutputAdapters => {
-  const common = createCommonHandlerContext(io, socket);
+  const common = createCommonHandlerContext(io, socket, (playerId) =>
+    identityRegistry.getSocketId(playerId),
+  );
 
   return {
     game: createGameOutputAdapter(common, deps, realtimeRoomSyncState),

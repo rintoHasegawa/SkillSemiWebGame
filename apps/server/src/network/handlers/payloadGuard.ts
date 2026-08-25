@@ -5,6 +5,7 @@
 import { contracts as protocol } from "@repo/shared";
 import { logEvent } from "@server/logging/logger";
 import { logResults, logScopes } from "@server/logging/index";
+import type { CurrentPlayerIdResolver } from "@server/network/identity";
 
 type PayloadValidator<TPayload> = (value: unknown) => value is TPayload;
 type EventBoundPayloadGuard<TPayload> = (payload: unknown) => payload is TPayload;
@@ -45,8 +46,14 @@ type PayloadGuardEventName = keyof typeof invalidPayloadLogByEvent;
 
 /**
  * 受信ペイロードを検証し，不正時は共通ログを記録するガード関数を生成する
+ * ログに残すIDは復帰で付け替わるため，解決関数も受け取れるようにしている
  */
-export const createPayloadGuard = (socketId: string) => {
+export const createPayloadGuard = (
+  socketId: string | CurrentPlayerIdResolver,
+) => {
+  const resolveSocketId = (): string =>
+    typeof socketId === "string" ? socketId : socketId();
+
   const isValidPayload = <TPayload, TEvent extends PayloadGuardEventName>(
     event: TEvent,
     payload: unknown,
@@ -59,7 +66,7 @@ export const createPayloadGuard = (socketId: string) => {
     const logContract = invalidPayloadLogByEvent[event];
     logEvent(logScopes.NETWORK, {
       ...logContract,
-      socketId,
+      socketId: resolveSocketId(),
     });
 
     return false;

@@ -5,6 +5,10 @@
 import { Server } from "socket.io";
 import { contracts as protocol } from "@repo/shared";
 import { domain } from "@repo/shared";
+import type {
+  ResumeSessionRejectedPayload,
+  SessionResumedPayload,
+} from "@repo/shared";
 import type { RoomOutputPort } from "@server/domains/room/application/ports/roomUseCasePorts";
 import {
   createCloseRoomChannel,
@@ -37,6 +41,16 @@ export const createRoomOutputAdapter = (
       reliable.emitToSocket(protocol.SocketEvents.SELECT_TEAM_REJECTED, {
         preferredTeamId: teamId,
         reason: "team_full" as const,
+      });
+    },
+    publishSessionResumedToSocket: (payload: SessionResumedPayload) => {
+      reliable.emitToSocket(protocol.SocketEvents.SESSION_RESUMED, payload);
+    },
+    publishResumeSessionRejectedToSocket: (
+      reason: ResumeSessionRejectedPayload["reason"],
+    ) => {
+      reliable.emitToSocket(protocol.SocketEvents.RESUME_SESSION_REJECTED, {
+        reason,
       });
     },
     closeRoomChannel: (roomId: RoomId) => {

@@ -102,6 +102,12 @@ const createGameManagerStub = ({
     replaceDisconnectedPlayerWithBot: vi.fn<
       RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
     >(() => false),
+    demotePlayerFromBotControl: vi.fn<
+      RoomScopedGamePort["demotePlayerFromBotControl"]
+    >(() => true),
+    getMapGridColorsView: vi.fn<
+      RoomScopedGamePort["getMapGridColorsView"]
+    >(() => []),
   } satisfies RoomScopedGamePort;
 };
 
@@ -128,6 +134,9 @@ const createOutputStub = () => {
     publishGameStartToRoom: vi.fn<GameOutputAdapter["publishGameStartToRoom"]>(),
     publishCurrentPlayersToSocket: vi.fn<
       GameOutputAdapter["publishCurrentPlayersToSocket"]
+    >(),
+    publishMapCellsToSocket: vi.fn<
+      GameOutputAdapter["publishMapCellsToSocket"]
     >(),
     publishGameStartToSocket: vi.fn<
       GameOutputAdapter["publishGameStartToSocket"]
@@ -216,6 +225,9 @@ const createDeps = ({
     },
     output: createOutputStub(),
     roomOutput: createRoomOutputStub(),
+    sessionReservations: {
+      releaseByRoomId: vi.fn<(roomId: string) => void>(),
+    },
   };
 };
 

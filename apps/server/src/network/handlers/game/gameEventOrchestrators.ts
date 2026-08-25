@@ -26,6 +26,7 @@ import type {
   GameEventRoomUseCasePort,
   GameEventRuntimeUseCasePort,
 } from "@server/network/types/connectionPorts";
+import type { SessionReservationRegistry } from "@server/network/identity";
 
 /** START_GAMEイベントの入力ペイロード型 */
 export type StartGamePayload = StartGameRequestPayload;
@@ -44,6 +45,10 @@ export type BombHitReportEventPayload = Parameters<typeof handleBombHitReportEve
 
 /** ゲームイベント調停で利用する依存集合 */
 export type GameEventOrchestratorDeps = {
+  /**
+   * ゲームセッション上の識別子
+   * 復帰済みソケットでは実ソケットIDと異なるため，参照のたびに解決される
+   */
   socketId: string;
   roomManager: GameEventRoomUseCasePort;
   runtimeRegistry: GameEventRuntimeUseCasePort;
@@ -53,6 +58,8 @@ export type GameEventOrchestratorDeps = {
     RoomOutputPort,
     "publishRoomUpdateToRoom" | "closeRoomChannel"
   >;
+  /** 試合終了時に復帰予約を解放するためのレジストリ */
+  sessionReservations: Pick<SessionReservationRegistry, "releaseByRoomId">;
 };
 
 /** PINGイベントを調停してPONG返却ユースケースを実行する */
@@ -92,6 +99,7 @@ export const handleStartGameEvent = (
     runtimeRegistry: deps.runtimeRegistry,
     output: deps.output,
     roomOutput: deps.roomOutput,
+    sessionReservations: deps.sessionReservations,
   });
 };
 

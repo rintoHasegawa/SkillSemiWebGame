@@ -30,6 +30,9 @@ const createIoStub = () => {
 /** 被害者のソケットIDと同じ文字列をクライアントが roomId として指定した想定値 */
 const VICTIM_SOCKET_ID = "victim-socket-id";
 
+/** 復帰していないプレイヤー（付け替え無し）を表す送信先解決関数 */
+const resolveNoRebind = (): string | undefined => undefined;
+
 describe("createEmitToRoom", () => {
   it("ルーム配信先の Socket.IO ルーム名をソケットID個別ルームと衝突しない名前にすること", () => {
     const { io, to } = createIoStub();
@@ -54,7 +57,7 @@ describe("createEmitToRoom", () => {
       protocol.SocketEvents.ROOM_UPDATE,
       room,
     );
-    createEmitToRoomExceptSocket(exceptStub.io)(
+    createEmitToRoomExceptSocket(exceptStub.io, resolveNoRebind)(
       "room-1",
       "socket-1",
       protocol.SocketEvents.ROOM_UPDATE,
@@ -70,7 +73,7 @@ describe("createEmitToSocketById", () => {
   it("ソケットIDの個別ルームへそのまま配信すること", () => {
     const { io, to } = createIoStub();
 
-    createEmitToSocketById(io)(
+    createEmitToSocketById(io, resolveNoRebind)(
       VICTIM_SOCKET_ID,
       protocol.SocketEvents.ROOM_UPDATE,
       createRoom(),
