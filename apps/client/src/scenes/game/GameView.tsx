@@ -5,6 +5,10 @@
  */
 import { GameInputOverlay } from "./input/GameInputOverlay";
 import {
+  GameSceneInitStatus,
+  type GameSceneInitStatusType,
+} from "./hooks/application/sceneControllerReducer";
+import {
   GAME_VIEW_HP_GAUGE_STYLE,
   GAME_VIEW_FEVER_TEXT_STYLE,
   GAME_VIEW_HURRICANE_WARNING_STYLE,
@@ -15,6 +19,7 @@ import {
 } from "./styles/GameView.styles";
 import { config } from "@client/config";
 import { buildRespawnHeartGauge } from "./input/presentation/GameUiPresenter";
+import { GameInitErrorOverlay } from "./presentation/GameInitErrorOverlay";
 import { TopRightHud } from "./presentation/TopRightHud";
 import { shouldShowFeverBanner } from "./presentation/shouldShowFeverBanner";
 
@@ -28,6 +33,7 @@ type Props = {
   localBombHitCount: number;
   localPlayerPosition: { x: number; y: number } | null;
   isFeverTime: boolean;
+  initStatus: GameSceneInitStatusType;
   pixiContainerRef: React.RefObject<HTMLDivElement | null>;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
@@ -74,6 +80,7 @@ export const GameView = ({
   localBombHitCount,
   localPlayerPosition,
   isFeverTime,
+  initStatus,
   pixiContainerRef,
   onJoystickInput,
   onPlaceBomb,
@@ -120,6 +127,9 @@ export const GameView = ({
         onJoystickInput={onJoystickInput}
         onPlaceBomb={onPlaceBomb}
       />
+
+      {/* 初期化失敗時のエラー表示 */}
+      {initStatus === GameSceneInitStatus.FAILED && <GameInitErrorOverlay />}
     </div>
   );
 };
