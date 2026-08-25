@@ -17,8 +17,11 @@ import {
   savePlayerName,
 } from "./application/playerNameStorage";
 import type { RoomMembership } from "./application/roomEventGuards";
-import type { AppFlowData } from "./types/appFlowState";
-import { useSocketSubscriptions } from "./useSocketSubscriptions";
+import type { AppFlowData, ConnectionNoticeType } from "./types/appFlowState";
+import {
+  useSocketSubscriptions,
+  type ReconnectStatus,
+} from "./useSocketSubscriptions";
 
 /** アプリフロー管理フックの公開状態と操作を表す型 */
 type AppFlowState = {
@@ -30,6 +33,8 @@ type AppFlowState = {
   joinErrorMessage: string | null;
   connectionNoticeMessage: string | null;
   protocolMismatchMessage: string | null;
+  /** プレイ中の切断から席へ復帰しようとしている最中か */
+  isReconnecting: boolean;
   isJoining: boolean;
   setPlayerName: (name: string) => void;
   requestJoin: (payload: domain.room.JoinRoomPayload) => void;
@@ -62,6 +67,21 @@ const createInitialAppFlowData = (baseData: AppFlowData): AppFlowData => {
     ...baseData,
     playerName: loadPlayerName(),
   };
+};
+
+// タイトルへ戻した理由に応じた通知文言を返す
+const getConnectionNoticeMessage = (
+  connectionNotice: ConnectionNoticeType | null,
+): string | null => {
+  if (connectionNotice === "disconnected") {
+    return "接続が切れました，もう一度参加してください";
+  }
+
+  if (connectionNotice === "game_ended") {
+    return "試合は終了しました";
+  }
+
+  return null;
 };
 
 const initialJoinState: JoinState = {
@@ -100,6 +120,11 @@ export const useAppFlow = (): AppFlowState => {
   const membershipRef = useRef<RoomMembership>({
     currentRoomId: null,
     myId: null,
+  });
+  // connect の同期発火でも最新の復帰状態を読めるよう ref へ同期する
+  const reconnectRef = useRef<ReconnectStatus>({
+    scenePhase: domain.app.ScenePhase.TITLE,
+    isReconnecting: false,
   });
   const joinRejectedHandlerRef = useRef<
     ((payload: domain.room.JoinRoomRejectedPayload) => void) | null
@@ -223,8 +248,8 @@ export const useAppFlow = (): AppFlowState => {
         return;
       }
 
-      socketManager.socket.disconnect();
-      socketManager.socket.connect();
+      // 切断せずに明示退室し，サーバ側の席と復帰予約を解放する
+      socketManager.lobby.leaveRoom();
     },
     [completeJoinRequest],
   );
@@ -241,11 +266,19 @@ export const useAppFlow = (): AppFlowState => {
     };
   }, [appFlow.myId, appFlow.room?.roomId]);
 
+  useEffect(() => {
+    reconnectRef.current = {
+      scenePhase: appFlow.scenePhase,
+      isReconnecting: appFlow.isReconnecting,
+    };
+  }, [appFlow.isReconnecting, appFlow.scenePhase]);
+
   useSocketSubscriptions({
     completeJoinRequest,
     dispatchAppFlow,
     scenePhase: appFlow.scenePhase,
     membershipRef,
+    reconnectRef,
   });
 
   return {
@@ -255,12 +288,13 @@ export const useAppFlow = (): AppFlowState => {
     gameResult: appFlow.gameResult,
     playerName: appFlow.playerName,
     joinErrorMessage: getJoinErrorMessage(joinState.joinFailure),
-    connectionNoticeMessage: appFlow.isConnectionLost
-      ? "接続が切れました，もう一度参加してください"
-      : null,
+    connectionNoticeMessage: getConnectionNoticeMessage(
+      appFlow.connectionNotice,
+    ),
     protocolMismatchMessage: appFlow.isProtocolMismatch
       ? "アプリの更新が必要です，一度アプリを終了してから開き直してください"
       : null,
+    isReconnecting: appFlow.isReconnecting,
     isJoining: joinState.isJoining,
     setPlayerName,
     requestJoin,

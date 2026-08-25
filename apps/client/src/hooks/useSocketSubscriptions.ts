@@ -3,6 +3,7 @@
  * アプリ共通で必要なソケット購読を登録するフック
  * 接続，ルーム更新，ゲーム開始の購読と解除を一元化する
  * プロトコル版不一致は自動復旧を試み，解消しない場合のみ画面へ通知する
+ * プレイ中の再接続では席への復帰を要求し，結果をアプリフローへ反映する
  */
 import { useEffect, type RefObject } from "react";
 import { socketManager } from "@client/network/SocketManager";
@@ -11,7 +12,12 @@ import {
   setRuntimeMapSizeByPreset,
 } from "@client/config";
 import { domain } from "@repo/shared";
-import type { GameResultPayload, GameStartPayload } from "@repo/shared";
+import type {
+  GameResultPayload,
+  GameStartPayload,
+  ResumeSessionRejectedPayload,
+  SessionResumedPayload,
+} from "@repo/shared";
 import { recoverFromProtocolVersionMismatch } from "@client/pwa/appUpdater";
 import {
   shouldAcceptGameStart,
@@ -19,6 +25,13 @@ import {
   type RoomMembership,
 } from "./application/roomEventGuards";
 import type { AppFlowAction } from "./types/appFlowState";
+
+/** 再接続要求の判定に用いる最新の画面・復帰状態 */
+export type ReconnectStatus = {
+  scenePhase: domain.app.ScenePhaseType;
+  /** プレイ中の切断から席への復帰を待っている最中か */
+  isReconnecting: boolean;
+};
 
 type UseSocketSubscriptionsParams = {
   completeJoinRequest: () => void;
@@ -29,6 +42,11 @@ type UseSocketSubscriptionsParams = {
    * 購読を張り直さずに最新値を読むため ref で受け取る
    */
   membershipRef: RefObject<RoomMembership>;
+  /**
+   * 再接続状態への参照
+   * connect は購読登録時に同期発火しうるため，クロージャではなく ref で最新値を読む
+   */
+  reconnectRef: RefObject<ReconnectStatus>;
 };
 
 type AppSocketHandlers = {
@@ -37,6 +55,8 @@ type AppSocketHandlers = {
   handleRoomUpdate: (updatedRoom: domain.room.Room) => void;
   handleGameStart: (payload: GameStartPayload) => void;
   handleGameResult: (payload: GameResultPayload) => void;
+  handleSessionResumed: (payload: SessionResumedPayload) => void;
+  handleResumeSessionRejected: (payload: ResumeSessionRejectedPayload) => void;
   handleProtocolVersionMismatch: () => void;
 };
 
@@ -85,14 +105,22 @@ const recoverOrNotifyProtocolMismatch = async (
 
 const registerRoomSubscriptions = ({
   handleRoomUpdate,
+  handleSessionResumed,
+  handleResumeSessionRejected,
 }: AppSocketHandlers): void => {
   socketManager.lobby.onRoomUpdate(handleRoomUpdate);
+  socketManager.lobby.onSessionResumed(handleSessionResumed);
+  socketManager.lobby.onResumeSessionRejected(handleResumeSessionRejected);
 };
 
 const unregisterRoomSubscriptions = ({
   handleRoomUpdate,
+  handleSessionResumed,
+  handleResumeSessionRejected,
 }: AppSocketHandlers): void => {
   socketManager.lobby.offRoomUpdate(handleRoomUpdate);
+  socketManager.lobby.offSessionResumed(handleSessionResumed);
+  socketManager.lobby.offResumeSessionRejected(handleResumeSessionRejected);
 };
 
 const registerGameSubscriptions = ({
@@ -117,6 +145,7 @@ export const useSocketSubscriptions = ({
   dispatchAppFlow,
   scenePhase,
   membershipRef,
+  reconnectRef,
 }: UseSocketSubscriptionsParams): void => {
   useEffect(() => {
     const handlers: AppSocketHandlers = {
@@ -127,6 +156,18 @@ export const useSocketSubscriptions = ({
         }
 
         dispatchAppFlow({ type: "connectionEstablished", myId: id });
+
+        // 購読登録時の同期発火でも誤判定しないよう ref から最新状態を読む
+        const reconnectStatus = reconnectRef.current;
+        if (
+          reconnectStatus.scenePhase !== domain.app.ScenePhase.PLAYING ||
+          !reconnectStatus.isReconnecting
+        ) {
+          return;
+        }
+
+        // プレイ中の切断からの再接続では，予約済みの席へ戻ることを要求する
+        socketManager.lobby.resumeSession();
       },
 
       handleDisconnect: () => {
@@ -182,8 +223,20 @@ export const useSocketSubscriptions = ({
 
       handleGameResult: (payload: GameResultPayload) => {
         dispatchAppFlow({ type: "setResult", result: payload });
-        socketManager.socket.disconnect();
-        socketManager.socket.connect();
+        // 試合終了後は席と復帰予約を残さないよう明示的に退室する（切断はしない）
+        socketManager.lobby.leaveRoom();
+      },
+
+      handleSessionResumed: (payload: SessionResumedPayload) => {
+        dispatchAppFlow({
+          type: "sessionResumed",
+          playerId: payload.playerId,
+          room: payload.room,
+        });
+      },
+
+      handleResumeSessionRejected: (payload: ResumeSessionRejectedPayload) => {
+        dispatchAppFlow({ type: "resumeRejected", reason: payload.reason });
       },
 
       handleProtocolVersionMismatch: () => {
