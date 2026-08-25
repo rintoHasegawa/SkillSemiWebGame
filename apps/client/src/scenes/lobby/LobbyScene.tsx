@@ -1,3 +1,8 @@
+/**
+ * LobbyScene
+ * ロビー画面の表示とホスト設定の同期を管理するコンテナコンポーネント
+ * 参加者一覧の並び替えとゲーム開始要求の送信を担当する
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { domain } from "@repo/shared";
 import type { StartGameRequestPayload } from "@repo/shared";
@@ -98,16 +103,14 @@ const TeamSelectField = ({ id, disabled, value, onChange, teamFullMessage }: Tea
 );
 
 type Props = {
-  room: domain.room.Room | null;
+  room: domain.room.Room;
   myId: string | null;
   onStart: (payload: StartGameRequestPayload) => void;
   onBackToTitle: () => void;
 };
 
+/** ロビー画面を描画するコンポーネント（roomは受信済みを前提とする） */
 export const LobbyScene = ({ room, myId, onStart, onBackToTitle }: Props) => {
-  if (!room)
-    return <div style={{ color: "white", padding: 40 }}>読み込み中...</div>;
-
   const isMeOwner = room.ownerId === myId;
 
   // 目標人数の下限・上限・選択肢はsharedの共有ロジックで算出する（サーバ検証と式を揃える）
