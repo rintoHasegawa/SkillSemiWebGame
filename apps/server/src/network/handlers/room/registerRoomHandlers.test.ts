@@ -3,9 +3,11 @@
  * ルーム受信ハンドラ登録の仕様を検証するテスト
  * JOIN_ROOM で参加する Socket.IO ルーム名がクライアント指定値（他ソケットIDを含む）
  * と分離され，ルーム配信先と一致することを固定する
+ * 受け入れ条件を満たさない入力（SPEC_02）については，参加処理を行わず
+ * 拒否理由 invalid をソケットへ通知することを検証する
  */
 import type { Server, Socket } from "socket.io";
-import { contracts as protocol } from "@repo/shared";
+import { contracts as protocol, domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { JoinRoomResult } from "@server/domains/room/application/ports/roomUseCasePorts";
@@ -130,5 +132,72 @@ describe("registerRoomHandlers", () => {
 
     expect(join).toHaveBeenCalledTimes(1);
     expect(to).toHaveBeenCalledWith(join.mock.calls[0][0]);
+  });
+
+  it("受け入れ条件を満たさない JOIN_ROOM では参加処理を行わないこと", async () => {
+    const { socket, listeners } = createSocketStub("socket-1");
+    const roomManager = createRoomManagerStub({
+      status: "joined",
+      room: createRoom(),
+    });
+    registerRoomHandlers(
+      socket,
+      roomManager,
+      { ensureGameManagerForRoom: vi.fn() },
+      createOutputStub(),
+    );
+
+    listeners.get(protocol.SocketEvents.JOIN_ROOM)?.({
+      roomId: "room-1",
+      playerName: "ta\nro",
+    });
+    await flushMicrotasks();
+
+    expect(roomManager.addPlayerToRoom).not.toHaveBeenCalled();
+  });
+
+  it("受け入れ条件を満たさない JOIN_ROOM では拒否理由 invalid を通知すること", async () => {
+    const { socket, listeners } = createSocketStub("socket-1");
+    const output = createOutputStub();
+    registerRoomHandlers(
+      socket,
+      createRoomManagerStub({ status: "joined", room: createRoom() }),
+      { ensureGameManagerForRoom: vi.fn() },
+      output,
+    );
+
+    listeners.get(protocol.SocketEvents.JOIN_ROOM)?.({
+      roomId: "room-1",
+      playerName: "ta\nro",
+    });
+    await flushMicrotasks();
+
+    expect(output.publishJoinRejectedToSocket).toHaveBeenCalledWith({
+      roomId: "",
+      reason: "invalid",
+    });
+  });
+
+  it("最大長を超える roomId の JOIN_ROOM では受信値をそのまま返さないこと", async () => {
+    const { socket, listeners } = createSocketStub("socket-1");
+    const output = createOutputStub();
+    const tooLongRoomId = "a".repeat(domain.room.ROOM_ID_MAX_LENGTH + 1);
+    registerRoomHandlers(
+      socket,
+      createRoomManagerStub({ status: "joined", room: createRoom() }),
+      { ensureGameManagerForRoom: vi.fn() },
+      output,
+    );
+
+    listeners.get(protocol.SocketEvents.JOIN_ROOM)?.({
+      roomId: tooLongRoomId,
+      playerName: "taro",
+    });
+    await flushMicrotasks();
+
+    expect(output.publishJoinRejectedToSocket).toHaveBeenCalledWith({
+      roomId: "",
+      reason: "invalid",
+    });
   });
 });

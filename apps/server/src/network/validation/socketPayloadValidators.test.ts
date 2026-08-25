@@ -3,7 +3,10 @@
  * 受信ペイロード型ガード群の仕様適合を検証するテスト
  * 正常系と非オブジェクト・配列・型不一致・境界値の失敗分岐を検証する
  * チームIDの有効範囲は SPEC_03（チームID 0〜3）を基準とする
+ * JOIN_ROOM の入力条件は SPEC_02「入力の受け入れ条件」（trim 後に非空・
+ * UTF-16 で 32 コードユニット以内・制御文字や不可視の書式文字を禁止）を基準とする
  */
+import { domain } from "@repo/shared";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -594,5 +597,90 @@ describe("isJoinRoomPayload", () => {
     });
 
     expect(isJoinRoomPayload(arrayPayload)).toBe(false);
+  });
+  it("roomIdが最大長ちょうどの場合はtrueを返すこと", () => {
+    expect(
+      isJoinRoomPayload({
+        roomId: "a".repeat(domain.room.ROOM_ID_MAX_LENGTH),
+        playerName: "taro",
+      }),
+    ).toBe(true);
+  });
+
+  it("roomIdが最大長を1文字超える場合はfalseを返すこと", () => {
+    expect(
+      isJoinRoomPayload({
+        roomId: "a".repeat(domain.room.ROOM_ID_MAX_LENGTH + 1),
+        playerName: "taro",
+      }),
+    ).toBe(false);
+  });
+
+  it("playerNameが最大長ちょうどの場合はtrueを返すこと", () => {
+    expect(
+      isJoinRoomPayload({
+        roomId: "room-1",
+        playerName: "a".repeat(domain.room.PLAYER_NAME_MAX_LENGTH),
+      }),
+    ).toBe(true);
+  });
+
+  it("playerNameが最大長を1文字超える場合はfalseを返すこと", () => {
+    expect(
+      isJoinRoomPayload({
+        roomId: "room-1",
+        playerName: "a".repeat(domain.room.PLAYER_NAME_MAX_LENGTH + 1),
+      }),
+    ).toBe(false);
+  });
+
+  it("roomIdとplayerNameが日本語の場合はtrueを返すこと", () => {
+    expect(
+      isJoinRoomPayload({ roomId: "部屋１", playerName: "たろう" }),
+    ).toBe(true);
+  });
+
+  it("roomIdが改行を含む場合はfalseを返すこと", () => {
+    expect(isJoinRoomPayload({ roomId: "room\n1", playerName: "taro" })).toBe(
+      false,
+    );
+  });
+
+  it("playerNameが改行を含む場合はfalseを返すこと", () => {
+    expect(isJoinRoomPayload({ roomId: "room-1", playerName: "ta\nro" })).toBe(
+      false,
+    );
+  });
+
+  it("roomIdが前後に空白を含む場合はtrueを返すこと", () => {
+    expect(isJoinRoomPayload({ roomId: " room-1 ", playerName: "taro" })).toBe(
+      true,
+    );
+  });
+
+  it("roomIdが数値の場合はfalseを返すこと", () => {
+    expect(isJoinRoomPayload({ roomId: 1, playerName: "taro" })).toBe(false);
+  });
+
+  it("roomIdがnullの場合はfalseを返すこと", () => {
+    expect(isJoinRoomPayload({ roomId: null, playerName: "taro" })).toBe(false);
+  });
+
+  it("roomIdが配列の場合はfalseを返すこと", () => {
+    expect(isJoinRoomPayload({ roomId: ["room-1"], playerName: "taro" })).toBe(
+      false,
+    );
+  });
+
+  it("playerNameがnullの場合はfalseを返すこと", () => {
+    expect(isJoinRoomPayload({ roomId: "room-1", playerName: null })).toBe(
+      false,
+    );
+  });
+
+  it("playerNameが配列の場合はfalseを返すこと", () => {
+    expect(isJoinRoomPayload({ roomId: "room-1", playerName: ["taro"] })).toBe(
+      false,
+    );
   });
 });

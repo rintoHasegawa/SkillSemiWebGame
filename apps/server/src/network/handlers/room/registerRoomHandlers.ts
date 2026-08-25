@@ -4,6 +4,8 @@
  */
 import { Socket } from "socket.io";
 import { contracts as protocol } from "@repo/shared";
+import { logEvent } from "@server/logging/logger";
+import { logResults, logScopes, roomUseCaseLogEvents } from "@server/logging/index";
 import type {
   JoinRoomEventRoomUseCasePort,
   JoinRoomEventRuntimeUseCasePort,
@@ -107,6 +109,22 @@ const createJoinRoomEventDefinition = (
     validator: isJoinRoomPayload,
     orchestrate: async (payload) => {
       await handleJoinRoomEvent(deps, payload);
+    },
+    onInvalid: () => {
+      // 受信した未検証の値をそのまま返さない（巨大文字列のエコーバックを避ける）ため
+      // roomId は空文字とする
+      deps.output.publishJoinRejectedToSocket({
+        roomId: "",
+        reason: "invalid",
+      });
+
+      // payloadGuard の ignored_invalid_payload は「処理せず破棄した」記録であり，
+      // 本ログは「クライアントへ拒否を通知した」記録として役割が異なる
+      logEvent(logScopes.NETWORK, {
+        event: roomUseCaseLogEvents.JOIN_ROOM,
+        result: logResults.REJECTED_INVALID_PAYLOAD,
+        socketId: deps.socketId,
+      });
     },
   };
 };

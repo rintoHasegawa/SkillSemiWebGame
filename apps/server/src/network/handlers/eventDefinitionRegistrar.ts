@@ -13,6 +13,8 @@ export type GuardedEventDefinition<TEvent extends string, TPayload> = {
   event: TEvent;
   validator: (value: unknown) => value is TPayload;
   orchestrate: BivariantPayloadHandler<TPayload>;
+  /** 検証失敗時の追加処理（クライアントへの拒否通知など．省略時は破棄のみ） */
+  onInvalid?: (payload: unknown) => void;
 };
 
 /** 自前検証イベント定義 */
@@ -46,6 +48,8 @@ export const registerGuardedEvent = <TEvent extends string, TPayload>(
   const guard = createGuard(definition.event, definition.validator);
   subscribe(definition.event, (payload) => {
     if (!guard(payload)) {
+      // 破棄の記録は guard 側が担うため，ここでは定義固有の後処理のみ行う
+      definition.onInvalid?.(payload);
       return;
     }
 

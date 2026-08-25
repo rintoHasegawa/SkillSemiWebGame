@@ -118,6 +118,7 @@ export const TitleScene = ({
             >
               <input
                 placeholder="プレイヤー名を入力"
+                maxLength={domain.room.PLAYER_NAME_MAX_LENGTH}
                 value={playerName}
                 onChange={(e) => onPlayerNameChange(e.target.value)}
                 style={{
@@ -134,6 +135,7 @@ export const TitleScene = ({
               />
               <input
                 placeholder="ルームIDを入力"
+                maxLength={domain.room.ROOM_ID_MAX_LENGTH}
                 value={roomIdInput}
                 onChange={(e) => setRoomIdInput(e.target.value)}
                 style={{

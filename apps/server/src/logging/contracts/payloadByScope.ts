@@ -28,6 +28,7 @@ type NetworkJoinRoomLogPayload = {
     | typeof logResults.REJECTED_ROOM_FULL
     | typeof logResults.REJECTED_DUPLICATE
     | typeof logResults.REJECTED_ROOM_PLAYING
+    | typeof logResults.REJECTED_INVALID_PAYLOAD
     | typeof logResults.IGNORED_INVALID_PAYLOAD
     | typeof logResults.IGNORED_MISSING_ROOM;
   socketId: string;
