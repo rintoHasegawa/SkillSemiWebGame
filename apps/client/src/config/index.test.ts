@@ -110,3 +110,22 @@ describe("applyRuntimeMapSizeFromGameStart", () => {
     expect(config.GAME_CONFIG.GRID_ROWS).toBe(defaultGridSize.rows);
   });
 });
+
+describe("GAME_CONFIG.BOMB_FUSE_GAUGE_RADIUS_PX", () => {
+  it("爆弾スプライトの外側の半径になること", () => {
+    expect(config.GAME_CONFIG.BOMB_FUSE_GAUGE_RADIUS_PX).toBeGreaterThan(
+      config.GAME_CONFIG.BOMB_RENDER_RADIUS_PX,
+    );
+  });
+
+  it("縁取りを含めても隣接マスへはみ出さない半径であること", () => {
+    const { BOMB_FUSE_GAUGE, BOMB_FUSE_GAUGE_RADIUS_PX, GRID_CELL_SIZE }
+      = config.GAME_CONFIG;
+    const outerEdgePx =
+      BOMB_FUSE_GAUGE_RADIUS_PX
+      + BOMB_FUSE_GAUGE.THICKNESS_PX / 2
+      + BOMB_FUSE_GAUGE.OUTLINE_WIDTH_PX;
+
+    expect(outerEdgePx).toBeLessThanOrEqual(GRID_CELL_SIZE / 2);
+  });
+});

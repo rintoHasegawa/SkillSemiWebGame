@@ -88,6 +88,16 @@ const CLIENT_GAME_CONFIG = {
 
   TEAM_COLORS: ["#FF4B4B", "#4B4BFF", "#4BFF4B", "#FFD700"],
 
+  // 爆発までの残り時間リングゲージ（爆弾スプライト外周からの余白と線の見た目）
+  BOMB_FUSE_GAUGE: {
+    RADIUS_MARGIN_PX: 7,
+    THICKNESS_PX: 4,
+    OUTLINE_WIDTH_PX: 1,
+    TRACK_COLOR: 0x000000,
+    TRACK_ALPHA: 0.45,
+    OUTLINE_COLOR: 0xffffff,
+  },
+
   MAP_BG_COLOR: 0x111111,
   MAP_GRID_COLOR: 0x333333,
   MAP_BORDER_COLOR: 0xff4444,
@@ -131,6 +141,9 @@ const GAME_CONFIG = {
   },
   get BOMB_RENDER_RADIUS_PX(): number {
     return this.GRID_CELL_SIZE * 0.2 * sharedBombRenderScale;
+  },
+  get BOMB_FUSE_GAUGE_RADIUS_PX(): number {
+    return this.BOMB_RENDER_RADIUS_PX + this.BOMB_FUSE_GAUGE.RADIUS_MARGIN_PX;
   },
   get PLAYER_RESPAWN_EFFECT_SIZE_PX(): number {
     return this.PLAYER_RADIUS_PX * 2 * this.PLAYER_RESPAWN_EFFECT_SCALE;

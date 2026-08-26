@@ -53,6 +53,14 @@
 - `GAME_CONFIG.MAP_WIDTH_PX` (getter): マップ横幅（`GRID_COLS * GRID_CELL_SIZE`）
 - `GAME_CONFIG.MAP_HEIGHT_PX` (getter): マップ縦幅（`GRID_ROWS * GRID_CELL_SIZE`）
 - `GAME_CONFIG.PLAYER_RADIUS_PX` (getter): プレイヤー半径の描画サイズ（px）
+- `GAME_CONFIG.BOMB_FUSE_GAUGE`: 爆弾の導火線リングゲージの描画パラメータ群
+  - `RADIUS_MARGIN_PX`: 爆弾スプライト半径に加算するリング半径の余白（px）
+  - `THICKNESS_PX`: リング本体の太さ（px）
+  - `OUTLINE_WIDTH_PX`: リング本体に付ける白縁取りの片側幅（px）
+  - `TRACK_COLOR`: 全周トラックの色（Pixi用16進数）
+  - `TRACK_ALPHA`: 全周トラックの不透明度
+  - `OUTLINE_COLOR`: 縁取りの色（Pixi用16進数）
+- `GAME_CONFIG.BOMB_FUSE_GAUGE_RADIUS_PX` (getter): 導火線リングゲージの半径（`BOMB_RENDER_RADIUS_PX + BOMB_FUSE_GAUGE.RADIUS_MARGIN_PX`）
 - `NETWORK_CONFIG.DEV_SERVER_HOST`: 開発環境の接続先ホスト
 - `NETWORK_CONFIG.DEV_SERVER_PORT`: 開発環境の接続先ポート
 - `NETWORK_CONFIG.DEV_SERVER_URL` (getter): 開発環境の接続先URL（host + port）

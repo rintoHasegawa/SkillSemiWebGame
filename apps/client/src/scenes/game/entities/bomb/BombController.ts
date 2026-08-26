@@ -3,6 +3,7 @@
  * 爆弾のModelとViewの橋渡しを担うコントローラー
  * 時間更新ごとの状態遷移と描画同期を統合する
  */
+import { config } from "@client/config";
 import { BombModel } from "./BombModel";
 import { BombView } from "./BombView";
 import type { BombState } from "./BombModel";
@@ -27,7 +28,11 @@ export class BombController {
 
     const pos = this.model.getPosition();
     this.view.syncPosition(pos.x, pos.y);
-    this.view.renderState(this.model.getState(), this.model.getExplosionRadiusGrid(), this.model.getColor());
+
+    // 生成直後は armed のため設置時点（残り全周）のゲージを初期表示する
+    const placedAtElapsedMs =
+      explodeAtElapsedMs - config.GAME_CONFIG.BOMB_FUSE_MS;
+    this.render(placedAtElapsedMs);
   }
 
   public getDisplayObject() {
@@ -39,9 +44,23 @@ export class BombController {
     this.model.update(elapsedMs);
   }
 
-  /** 現在状態を描画へ同期する */
-  public render(): void {
-    this.view.renderState(this.model.getState(), this.model.getExplosionRadiusGrid(), this.model.getColor());
+  /** 現在状態と導火線ゲージを描画へ同期する */
+  public render(elapsedMs: number): void {
+    const state = this.model.getState();
+    const color = this.model.getColor();
+
+    this.view.renderState(state, this.model.getExplosionRadiusGrid(), color);
+
+    // ゲージは armed 中のみ表示する
+    if (state !== "armed") {
+      this.view.hideFuseGauge();
+      return;
+    }
+
+    this.view.renderFuseGauge(
+      this.model.getFuseRemainingRatio(elapsedMs),
+      color,
+    );
   }
 
   public getState(): BombState {
