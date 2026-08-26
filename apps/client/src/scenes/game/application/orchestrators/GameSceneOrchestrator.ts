@@ -68,6 +68,8 @@ export type CreateGameLoopOptions = {
   playerRepository: PlayerRepository;
   myId: string;
   getJoystickInput: () => { x: number; y: number };
+  /** 入力をゲーム進行へ反映してよいかを返す関数 */
+  canApplyInput: () => boolean;
   bombManager: BombManager;
   moveSender: MoveSender;
 };
@@ -89,6 +91,8 @@ export type GameSceneOrchestratorOptions = {
   appearanceResolver: AppearanceResolver;
   getElapsedMs: () => number;
   getJoystickInput: () => { x: number; y: number };
+  /** 入力をゲーム進行へ反映してよいかを返す関数 */
+  canApplyInput: () => boolean;
   moveSender: MoveSender;
   eventPorts: GameSceneEventPorts;
   onPongReceived: (payload: PongPayload) => void;
@@ -114,6 +118,7 @@ export class GameSceneOrchestrator {
   private readonly appearanceResolver: AppearanceResolver;
   private readonly getElapsedMs: () => number;
   private readonly getJoystickInput: () => { x: number; y: number };
+  private readonly canApplyInput: () => boolean;
   private readonly moveSender: MoveSender;
   private readonly eventPorts: GameSceneEventPorts;
   private readonly onPongReceived: (payload: PongPayload) => void;
@@ -135,6 +140,7 @@ export class GameSceneOrchestrator {
     appearanceResolver,
     getElapsedMs,
     getJoystickInput,
+    canApplyInput,
     moveSender,
     eventPorts,
     onPongReceived,
@@ -149,6 +155,7 @@ export class GameSceneOrchestrator {
     this.appearanceResolver = appearanceResolver;
     this.getElapsedMs = getElapsedMs;
     this.getJoystickInput = getJoystickInput;
+    this.canApplyInput = canApplyInput;
     this.moveSender = moveSender;
     this.eventPorts = eventPorts;
     this.onPongReceived = onPongReceived;
@@ -225,6 +232,7 @@ export class GameSceneOrchestrator {
       playerRepository: this.playerRepository,
       myId: this.myId,
       getJoystickInput: this.getJoystickInput,
+      canApplyInput: this.canApplyInput,
       bombManager,
       moveSender: this.moveSender,
     });

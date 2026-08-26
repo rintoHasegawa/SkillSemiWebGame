@@ -127,6 +127,7 @@ export class GameSceneRuntime {
       appearanceResolver: this.appearanceResolver,
       getElapsedMs: this.getElapsedMs,
       getJoystickInput: () => this.joystickInput,
+      canApplyInput: () => this.sessionFacade.canApplyInput(),
       moveSender: this.moveSender,
       eventPorts: this.eventPorts,
       onPongReceived: this.onPongReceived,
@@ -167,12 +168,19 @@ export class GameSceneRuntime {
     this.tickerHandler = tick;
   }
 
+  /** ジョイスティックUIの操作を受け付けてよいかを返す（開始前も true） */
   public isInputEnabled(): boolean {
     return this.sessionFacade.canAcceptInput();
   }
 
+  /** 爆弾設置を受け付けてよいかを返す（開始前は false） */
+  public isBombEnabled(): boolean {
+    return this.sessionFacade.canApplyInput();
+  }
+
+  /** 生の入力をそのまま保持し，移動への反映可否はループ側で判定する */
   public setJoystickInput(x: number, y: number): void {
-    this.joystickInput = this.sessionFacade.sanitizeJoystickInput({ x, y });
+    this.joystickInput = { x, y };
   }
 
   public clearJoystickInput(): void {
@@ -180,7 +188,7 @@ export class GameSceneRuntime {
   }
 
   public placeBomb(): string | null {
-    if (!this.sessionFacade.canAcceptInput()) return null;
+    if (!this.sessionFacade.canApplyInput()) return null;
     if (!this.bombManager) return null;
     const placed = this.bombManager.placeBomb();
     if (!placed) return null;
@@ -198,6 +206,8 @@ export class GameSceneRuntime {
   }
 
   public tick(ticker: Ticker): void {
+    // 入力ロック中や残り時間切れでは保持中の入力を破棄する
+    // 開始前カウントダウン中は保持し，開始と同時にその方向へ動き出せるようにする
     if (!this.sessionFacade.canAcceptInput()) {
       this.clearJoystickInput();
     }

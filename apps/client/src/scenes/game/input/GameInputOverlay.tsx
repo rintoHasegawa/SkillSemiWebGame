@@ -12,7 +12,10 @@ import { useCallback } from "react";
 
 /** 入力UIレイヤーの入力プロパティ */
 type GameInputOverlayProps = {
+  /** ジョイスティックUIの操作受付可否 */
   isInputEnabled: boolean;
+  /** 爆弾設置の受付可否（開始前カウントダウン中は false） */
+  isBombEnabled: boolean;
   isFeverTime: boolean;
   onJoystickInput: (x: number, y: number) => void;
   onPlaceBomb: () => boolean;
@@ -21,6 +24,7 @@ type GameInputOverlayProps = {
 /** 入力UIレイヤーを描画する */
 export const GameInputOverlay = ({
   isInputEnabled,
+  isBombEnabled,
   isFeverTime,
   onJoystickInput,
   onPlaceBomb,
@@ -32,7 +36,7 @@ export const GameInputOverlay = ({
   const layerStyle = buildGameInputOverlayLayerStyle();
 
   const handlePressBomb = useCallback(() => {
-    if (!isInputEnabled || !cooldownState.isReady) {
+    if (!isBombEnabled || !cooldownState.isReady) {
       return;
     }
 
@@ -42,7 +46,7 @@ export const GameInputOverlay = ({
     }
 
     markTriggered();
-  }, [cooldownState.isReady, isInputEnabled, markTriggered, onPlaceBomb]);
+  }, [cooldownState.isReady, isBombEnabled, markTriggered, onPlaceBomb]);
 
   return (
     <div style={layerStyle}>
@@ -53,7 +57,7 @@ export const GameInputOverlay = ({
       <BombButton
         onPress={handlePressBomb}
         cooldownProgress={cooldownState.progress}
-        isReady={isInputEnabled && cooldownState.isReady}
+        isReady={isBombEnabled && cooldownState.isReady}
         isFeverTime={isFeverTime}
         remainingSecText={cooldownState.remainingSecText}
       />

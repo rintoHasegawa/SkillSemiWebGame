@@ -14,7 +14,10 @@ const UI_STATE_SECOND_MS = 1000;
 export type GameHudState = {
   remainingTimeSec: number;
   startCountdownSec: number;
+  /** ジョイスティックUIの操作受付可否 */
   isInputEnabled: boolean;
+  /** 爆弾設置の受付可否（開始前カウントダウン中は false） */
+  isBombEnabled: boolean;
   teamPaintRates: number[];
   localBombHitCount: number;
   isFeverTime: boolean;
@@ -122,6 +125,7 @@ export class GameUiStateSyncService {
     return a.remainingTimeSec === b.remainingTimeSec
       && a.startCountdownSec === b.startCountdownSec
       && a.isInputEnabled === b.isInputEnabled
+      && a.isBombEnabled === b.isBombEnabled
       && a.localBombHitCount === b.localBombHitCount
       && a.isFeverTime === b.isFeverTime
       && isSamePaintRates(a.teamPaintRates, b.teamPaintRates);

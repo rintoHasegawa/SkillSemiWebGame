@@ -26,6 +26,8 @@ export type GameSceneRuntimeWiringOptions = {
   appearanceResolver: AppearanceResolver;
   getElapsedMs: () => number;
   getJoystickInput: () => { x: number; y: number };
+  /** 入力をゲーム進行へ反映してよいかを返す関数 */
+  canApplyInput: () => boolean;
   moveSender: MoveSender;
   eventPorts: GameSceneEventPorts;
   onPongReceived: (payload: PongPayload) => void;
@@ -52,6 +54,7 @@ export class GameSceneRuntimeWiring {
       appearanceResolver: this.options.appearanceResolver,
       getElapsedMs: this.options.getElapsedMs,
       getJoystickInput: this.options.getJoystickInput,
+      canApplyInput: this.options.canApplyInput,
       moveSender: this.options.moveSender,
       eventPorts: this.options.eventPorts,
       onPongReceived: this.options.onPongReceived,

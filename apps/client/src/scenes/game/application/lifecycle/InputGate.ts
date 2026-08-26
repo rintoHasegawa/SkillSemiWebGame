@@ -1,7 +1,7 @@
 /**
  * InputGate
  * ゲーム入力の受付可否と入力ロック状態を管理する
- * 開始状態とロック状態を組み合わせて入力可否を判定する
+ * UI操作の受付可否と，入力をゲーム進行へ反映してよいかを分けて判定する
  */
 
 /** ジョイスティック入力の座標を表す型 */
@@ -29,13 +29,23 @@ export class InputGate {
     this.isPlayableTimeProvider = isPlayableTimeProvider ?? (() => true);
   }
 
-  /** 現在入力を受け付け可能かを返す */
+  /**
+   * UI操作を受け付けてよいかを返す（受付ゲート）
+   * 開始前カウントダウン中もジョイスティックを操作できるよう，
+   * 開始状態は条件に含めない
+   * 移動・爆弾へ反映してよいかの判定には canApplyInput を使う
+   */
   public canAcceptInput(): boolean {
-    return (
-      this.inputLockCount === 0 &&
-      this.isStartedProvider() &&
-      this.isPlayableTimeProvider()
-    );
+    return this.inputLockCount === 0 && this.isPlayableTimeProvider();
+  }
+
+  /**
+   * 入力をゲーム進行へ反映してよいかを返す（反映ゲート）
+   * canAcceptInput の条件に加えてゲームタイマー開始後であることを要求し，
+   * 移動・爆弾設置はこの判定が true のときだけ反映する
+   */
+  public canApplyInput(): boolean {
+    return this.canAcceptInput() && this.isStartedProvider();
   }
 
   /** 入力ロックを取得し，解除関数を返す */
@@ -55,9 +65,9 @@ export class InputGate {
     };
   }
 
-  /** 入力可否に応じてジョイスティック入力を正規化して返す */
+  /** 反映可否に応じてジョイスティック入力を正規化して返す */
   public sanitizeJoystickInput(input: JoystickInput): JoystickInput {
-    if (!this.canAcceptInput()) {
+    if (!this.canApplyInput()) {
       return { x: 0, y: 0 };
     }
 

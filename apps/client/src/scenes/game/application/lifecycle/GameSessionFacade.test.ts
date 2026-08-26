@@ -47,16 +47,18 @@ describe("GameSessionFacade", () => {
     expect(facade.getElapsedMs()).toBe(0);
   });
 
-  it("時計未同期では入力を受け付けないこと", () => {
+  it("時計未同期ではUI操作を受け付けるが反映はしないこと", () => {
     const { facade } = createFacade(null);
 
-    expect(facade.canAcceptInput()).toBe(false);
+    expect(facade.canAcceptInput()).toBe(true);
+    expect(facade.canApplyInput()).toBe(false);
   });
 
-  it("カウントダウン中は入力を受け付けないこと", () => {
+  it("カウントダウン中はUI操作を受け付けるが反映はしないこと", () => {
     const { facade } = createFacade(-1);
 
-    expect(facade.canAcceptInput()).toBe(false);
+    expect(facade.canAcceptInput()).toBe(true);
+    expect(facade.canApplyInput()).toBe(false);
   });
 
   it("ゲーム開始後は入力を受け付けること", () => {
@@ -65,14 +67,42 @@ describe("GameSessionFacade", () => {
     expect(facade.canAcceptInput()).toBe(true);
   });
 
+  it("経過msが0の時点から入力を反映すること", () => {
+    const { facade } = createFacade(0);
+
+    expect(facade.canApplyInput()).toBe(true);
+  });
+
   it("制限時間を過ぎたら入力を受け付けないこと", () => {
     const { facade } = createFacade(GAME_DURATION_SEC * 1000);
 
     expect(facade.canAcceptInput()).toBe(false);
   });
 
+  it("制限時間を過ぎたら入力を反映しないこと", () => {
+    const { facade } = createFacade(GAME_DURATION_SEC * 1000);
+
+    expect(facade.canApplyInput()).toBe(false);
+  });
+
   it("入力ロック中は入力を受け付けないこと", () => {
     const { facade } = createFacade(1000);
+
+    facade.lockInput();
+
+    expect(facade.canAcceptInput()).toBe(false);
+  });
+
+  it("入力ロック中は入力を反映しないこと", () => {
+    const { facade } = createFacade(1000);
+
+    facade.lockInput();
+
+    expect(facade.canApplyInput()).toBe(false);
+  });
+
+  it("カウントダウン中の入力ロックではUI操作も受け付けないこと", () => {
+    const { facade } = createFacade(-1000);
 
     facade.lockInput();
 
@@ -88,7 +118,7 @@ describe("GameSessionFacade", () => {
     expect(facade.canAcceptInput()).toBe(true);
   });
 
-  it("入力を受け付けない間はジョイスティック入力を0へ丸めること", () => {
+  it("入力を反映しない間はジョイスティック入力を0へ丸めること", () => {
     const { facade } = createFacade(-1000);
 
     expect(facade.sanitizeJoystickInput({ x: 1, y: -1 })).toEqual({
@@ -97,7 +127,7 @@ describe("GameSessionFacade", () => {
     });
   });
 
-  it("入力を受け付ける間はジョイスティック入力をそのまま返すこと", () => {
+  it("入力を反映する間はジョイスティック入力をそのまま返すこと", () => {
     const { facade } = createFacade(1000);
 
     expect(facade.sanitizeJoystickInput({ x: 1, y: -1 })).toEqual({
@@ -106,11 +136,11 @@ describe("GameSessionFacade", () => {
     });
   });
 
-  it("カウントダウンから開始へ遷移すると入力可否が切り替わること", () => {
+  it("カウントダウンから開始へ遷移すると入力反映可否が切り替わること", () => {
     const { facade, state } = createFacade(-500);
     state.signedElapsedMs = 10;
 
-    expect(facade.canAcceptInput()).toBe(true);
+    expect(facade.canApplyInput()).toBe(true);
   });
 
   it("resetで入力ロックを解除すること", () => {
@@ -125,6 +155,6 @@ describe("GameSessionFacade", () => {
   it("providerを省略した場合は時計未同期として扱うこと", () => {
     const facade = new GameSessionFacade();
 
-    expect(facade.canAcceptInput()).toBe(false);
+    expect(facade.canApplyInput()).toBe(false);
   });
 });

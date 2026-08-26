@@ -26,6 +26,8 @@ export const JoystickInputPresenter = ({
     reset,
   } = useJoystickController({ onInput, maxDist });
 
+  // 操作受付が無効化されたときのみ入力を破棄する
+  // 開始前カウントダウン中は有効のままなので保持中の入力は消えない
   useEffect(() => {
     if (isEnabled) {
       return;

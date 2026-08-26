@@ -17,14 +17,18 @@ import {
   type SceneControllerState,
 } from "./sceneControllerReducer";
 
-const createHudState = (): GameHudState => {
+const createHudState = (
+  overrides: Partial<GameHudState> = {},
+): GameHudState => {
   return {
     remainingTimeSec: 95,
     startCountdownSec: 0,
     isInputEnabled: true,
+    isBombEnabled: true,
     teamPaintRates: [0.4, 0.3, 0.2, 0.1],
     localBombHitCount: 2,
     isFeverTime: true,
+    ...overrides,
   };
 };
 
@@ -48,6 +52,12 @@ describe("createInitialSceneControllerState", () => {
     const state = createInitialSceneControllerState();
 
     expect(state.initStatus).toBe(GameSceneInitStatus.PENDING);
+  });
+
+  it("初期状態では爆弾の受付が無効であること", () => {
+    const state = createInitialSceneControllerState();
+
+    expect(state.isBombEnabled).toBe(false);
   });
 });
 
@@ -95,6 +105,32 @@ describe("sceneControllerReducer", () => {
     });
 
     expect(next.initStatus).toBe(GameSceneInitStatus.FAILED);
+  });
+
+  it("syncHud でカウントダウン中もジョイスティック操作を有効にすること", () => {
+    const next = sceneControllerReducer(createInitialSceneControllerState(), {
+      type: "syncHud",
+      payload: createHudState({
+        startCountdownSec: 3,
+        isInputEnabled: true,
+        isBombEnabled: false,
+      }),
+    });
+
+    expect(next.isInputEnabled).toBe(true);
+  });
+
+  it("syncHud でカウントダウン中の爆弾操作を無効にすること", () => {
+    const next = sceneControllerReducer(createInitialSceneControllerState(), {
+      type: "syncHud",
+      payload: createHudState({
+        startCountdownSec: 3,
+        isInputEnabled: true,
+        isBombEnabled: false,
+      }),
+    });
+
+    expect(next.isBombEnabled).toBe(false);
   });
 
   it("syncMiniMap が初期化ステータスを変更しないこと", () => {
