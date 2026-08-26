@@ -14,6 +14,7 @@ export const initialAppFlowData: AppFlowData = {
   gameResult: null,
   playerName: "",
   isConnectionLost: false,
+  isProtocolMismatch: false,
 };
 
 // サーバ上のセッションに依存しているフェーズかどうかを判定する
@@ -35,6 +36,8 @@ const createConnectionLostState = (state: AppFlowData): AppFlowData => {
     gameResult: null,
     playerName: state.playerName,
     isConnectionLost: true,
+    // 版ずれの通知は接続断とは別要因のため引き継ぐ
+    isProtocolMismatch: state.isProtocolMismatch,
   };
 };
 
@@ -68,6 +71,13 @@ export const appFlowReducer = (
     return {
       ...state,
       isConnectionLost: false,
+    };
+  }
+
+  if (action.type === "protocolVersionMismatch") {
+    return {
+      ...state,
+      isProtocolMismatch: true,
     };
   }
 
@@ -120,6 +130,8 @@ export const appFlowReducer = (
       playerName: state.playerName,
       // 明示的なタイトル復帰では接続断の通知を消す
       isConnectionLost: false,
+      // 版ずれは再入室しても解消しないため playerName と同様に保持する
+      isProtocolMismatch: state.isProtocolMismatch,
     };
   }
 

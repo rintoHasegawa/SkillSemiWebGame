@@ -1,4 +1,5 @@
 import { io, Socket } from "socket.io-client";
+import { contracts as protocol } from "@repo/shared";
 import { config } from "@client/config";
 import { createCommonHandler, type CommonHandler } from "./handlers/CommonHandler";
 import { createTitleHandler, type TitleHandler } from "./handlers/TitleHandler";
@@ -24,6 +25,8 @@ export class SocketManager {
 
     this.socket = io(serverUrl, {
       transports: [...config.NETWORK_CONFIG.SOCKET_TRANSPORTS],
+      // 版ずれのクライアントをサーバ側のハンドシェイクで検出させる
+      auth: { protocolVersion: protocol.PROTOCOL_VERSION },
     });
 
     this.common = createCommonHandler(this.socket);

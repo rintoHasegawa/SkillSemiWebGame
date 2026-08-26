@@ -12,7 +12,11 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       VitePWA({
-        registerType: 'autoUpdate',
+        // autoUpdate は活性化直後に無条件リロードするため，
+        // 適用タイミングをアプリ側で制御できる prompt を使う
+        registerType: 'prompt',
+        // 登録処理は src/pwa/appUpdater.ts で明示的に行う
+        injectRegister: false,
         workbox: {
           // SPAとして index.html へフォールバックさせる
           navigateFallback: 'index.html',

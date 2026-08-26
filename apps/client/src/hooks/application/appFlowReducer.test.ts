@@ -49,6 +49,7 @@ describe("initialAppFlowData", () => {
       gameResult: null,
       playerName: "",
       isConnectionLost: false,
+      isProtocolMismatch: false,
     });
   });
 });
@@ -358,6 +359,94 @@ describe("appFlowReducer", () => {
     expect(next.isConnectionLost).toBe(false);
   });
 
+  it("protocolVersionMismatch で isProtocolMismatch を立てること", () => {
+    const next = appFlowReducer(createState(), {
+      type: "protocolVersionMismatch",
+    });
+
+    expect(next.isProtocolMismatch).toBe(true);
+  });
+
+  it("protocolVersionMismatch で playerName を保持すること", () => {
+    const next = appFlowReducer(createState({ playerName: "たろう" }), {
+      type: "protocolVersionMismatch",
+    });
+
+    expect(next.playerName).toBe("たろう");
+  });
+
+  it("protocolVersionMismatch で isProtocolMismatch 以外を変更しないこと", () => {
+    const state = createState({
+      scenePhase: domain.app.ScenePhase.TITLE,
+      myId: "socket-1",
+      playerName: "たろう",
+      isConnectionLost: true,
+    });
+
+    const next = appFlowReducer(state, { type: "protocolVersionMismatch" });
+
+    expect(next).toEqual({ ...state, isProtocolMismatch: true });
+  });
+
+  it("protocolVersionMismatch を繰り返してもフラグが立ったままであること", () => {
+    const first = appFlowReducer(createState(), {
+      type: "protocolVersionMismatch",
+    });
+    const second = appFlowReducer(first, { type: "protocolVersionMismatch" });
+
+    expect(second.isProtocolMismatch).toBe(true);
+  });
+
+  it("resetToTitle で isProtocolMismatch を保持すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.RESULT,
+        gameResult: createGameResult(),
+        isProtocolMismatch: true,
+      }),
+      { type: "resetToTitle", clearMyId: true },
+    );
+
+    expect(next.isProtocolMismatch).toBe(true);
+  });
+
+  it("clearConnectionNotice で isProtocolMismatch を下ろさないこと", () => {
+    const next = appFlowReducer(
+      createState({ isConnectionLost: true, isProtocolMismatch: true }),
+      { type: "clearConnectionNotice" },
+    );
+
+    expect(next.isProtocolMismatch).toBe(true);
+  });
+
+  it("connectionLost でセッションを破棄しても isProtocolMismatch を保持すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+        isProtocolMismatch: true,
+      }),
+      { type: "connectionLost" },
+    );
+
+    expect(next.isProtocolMismatch).toBe(true);
+  });
+
+  it("myId が変わった connectionEstablished でも isProtocolMismatch を保持すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.LOBBY,
+        room: createRoom(),
+        myId: "socket-1",
+        isProtocolMismatch: true,
+      }),
+      { type: "connectionEstablished", myId: "socket-2" },
+    );
+
+    expect(next.isProtocolMismatch).toBe(true);
+  });
+
   it("setPlayerName で playerName を更新すること", () => {
     const next = appFlowReducer(createState(), {
       type: "setPlayerName",
@@ -533,6 +622,7 @@ describe("appFlowReducer", () => {
       gameResult: null,
       playerName: "たろう",
       isConnectionLost: false,
+      isProtocolMismatch: false,
     });
   });
 
@@ -655,6 +745,7 @@ describe("appFlowReducer", () => {
       { type: "connectionEstablished", myId: "socket-2" },
       { type: "connectionLost" },
       { type: "clearConnectionNotice" },
+      { type: "protocolVersionMismatch" },
       { type: "setPlayerName", playerName: "たろう" },
       { type: "setRoomAndLobby", room: createRoom("room-2") },
       { type: "updateRoom", room: createRoom("room-3") },

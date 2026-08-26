@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
+
 import { socketManager } from "./network/SocketManager";
 import { useAppFlow } from "./hooks/useAppFlow";
+import { useAppUpdateGate } from "./hooks/useAppUpdateGate";
 
 // 画面遷移先シーンコンポーネント群
 import { TitleScene } from "./scenes/title/TitleScene";
@@ -20,11 +23,32 @@ export default function App() {
     playerName,
     joinErrorMessage,
     connectionNoticeMessage,
+    protocolMismatchMessage,
     isJoining,
     setPlayerName,
     requestJoin,
     returnToTitle,
   } = useAppFlow();
+
+  // 更新ゲートから参照するため，タイトルのフォーム表示状態をここで保持する
+  const [isTitleFormOpen, setIsTitleFormOpen] = useState(false);
+
+  // タイトル以外へ遷移したら，戻った時に再び「TAP TO START」から始まるよう戻す
+  useEffect(() => {
+    if (scenePhase === domain.app.ScenePhase.TITLE) {
+      return;
+    }
+
+    setIsTitleFormOpen(false);
+  }, [scenePhase]);
+
+  useAppUpdateGate({
+    scenePhase,
+    isTitleFormOpen,
+    // 通知が消えて状況が分からなくなることを防ぐため，表示中はリロードしない
+    hasConnectionNotice:
+      connectionNoticeMessage !== null || protocolMismatchMessage !== null,
+  });
 
   let scene = <GameScene myId={myId} />;
 
@@ -37,7 +61,10 @@ export default function App() {
         onPlayerNameChange={setPlayerName}
         joinErrorMessage={joinErrorMessage}
         connectionNoticeMessage={connectionNoticeMessage}
+        protocolMismatchMessage={protocolMismatchMessage}
         isJoining={isJoining}
+        isFormOpen={isTitleFormOpen}
+        onOpenForm={() => setIsTitleFormOpen(true)}
       />
     );
   }

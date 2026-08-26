@@ -3,7 +3,7 @@
  * 実際のプレイヤーと同等の通信・ゲームプレイをシミュレートする負荷テスト用ボット
  */
 import { io } from "socket.io-client";
-import { config as sharedConfig } from "@repo/shared";
+import { config as sharedConfig, contracts as protocol } from "@repo/shared";
 import type {
   BombHitReportPayload,
   BombPlacedAckPayload,
@@ -132,6 +132,8 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     path: SOCKET_PATH,
     reconnection: false,
     timeout: 10_000,
+    // サーバのハンドシェイク照合を通すためプロトコル版を送る
+    auth: { protocolVersion: protocol.PROTOCOL_VERSION },
   });
 
   let moveTimer: NodeJS.Timeout | null = null;

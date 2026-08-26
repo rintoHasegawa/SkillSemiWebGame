@@ -7,6 +7,12 @@
 /** ソケットイベント名定数を再公開する */
 export { SocketEvents } from "./socketEvents";
 
+/** プロトコル契約バージョンと不一致エラーメッセージを再公開する */
+export {
+  PROTOCOL_VERSION,
+  PROTOCOL_VERSION_MISMATCH_ERROR,
+} from "./protocolVersion";
+
 /** 爆弾同期識別子の生成ユーティリティを再公開する */
 export { createBombIdFromPayload } from "./bombIdentity";
 

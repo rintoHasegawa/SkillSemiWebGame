@@ -101,6 +101,17 @@ type NetworkCorsOriginLogPayload = {
   origin: string;
 };
 
+/** Networkのプロトコル版不一致ログ契約 */
+type NetworkProtocolVersionLogPayload = {
+  event: typeof networkLogEvents.PROTOCOL_VERSION_CHECK;
+  result: typeof logResults.REJECTED_PROTOCOL_VERSION;
+  socketId: string;
+  /** サーバが期待するプロトコル版 */
+  expectedProtocolVersion: string;
+  /** クライアントがハンドシェイクで送ってきた値（未送信・非文字列は "unknown"） */
+  receivedProtocolVersion: string;
+};
+
 /** Networkスコープのログ契約ユニオン */
 type NetworkLogPayload =
   | NetworkConnectLogPayload
@@ -112,7 +123,8 @@ type NetworkLogPayload =
   | NetworkBombHitReportLogPayload
   | NetworkLobbySettingsUpdateLogPayload
   | NetworkSelectTeamLogPayload
-  | NetworkCorsOriginLogPayload;
+  | NetworkCorsOriginLogPayload
+  | NetworkProtocolVersionLogPayload;
 
 /** GameUseCaseのPINGログ契約 */
 type GameUseCasePingLogPayload = {
