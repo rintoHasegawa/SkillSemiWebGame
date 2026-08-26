@@ -61,6 +61,12 @@ const createGameManagerStub = (replacedWithBot: boolean) => {
     replaceDisconnectedPlayerWithBot: vi.fn<
       RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
     >(() => replacedWithBot),
+    demotePlayerFromBotControl: vi.fn<
+      RoomScopedGamePort["demotePlayerFromBotControl"]
+    >(() => true),
+    getMapGridColorsView: vi.fn<
+      RoomScopedGamePort["getMapGridColorsView"]
+    >(() => []),
   } satisfies RoomScopedGamePort;
 };
 

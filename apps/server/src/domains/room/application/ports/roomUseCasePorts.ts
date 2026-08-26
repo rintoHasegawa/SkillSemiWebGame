@@ -4,6 +4,10 @@
  */
 import { domain } from "@repo/shared";
 import type {
+  ResumeSessionRejectedPayload,
+  SessionResumedPayload,
+} from "@repo/shared";
+import type {
   ActiveBombQueryPort,
   BombHitReportValidationPort,
   BombHitStatsPort,
@@ -11,6 +15,7 @@ import type {
   DisconnectPlayerPort,
   MovePlayerPort,
   ReadyForGamePort,
+  ResumePlayerPort,
   StartGamePort,
 } from "@server/domains/game/application/ports/gameUseCasePorts";
 
@@ -23,7 +28,8 @@ export type RoomScopedGamePort =
   & ActiveBombQueryPort
   & BombHitReportValidationPort
   & BombHitStatsPort
-  & DisconnectPlayerPort;
+  & DisconnectPlayerPort
+  & ResumePlayerPort;
 
 /** ルーム参加処理の実行結果 */
 export type JoinRoomResult = {
@@ -36,6 +42,12 @@ export interface RoomOutputPort {
   publishRoomUpdateToRoom(roomId: domain.room.Room["roomId"], room: domain.room.Room): void;
   publishJoinRejectedToSocket(payload: domain.room.JoinRoomRejectedPayload): void;
   publishSelectTeamRejectedToSocket(teamId: number): void;
+  /** 試合復帰の受理をソケットへ通知する */
+  publishSessionResumedToSocket(payload: SessionResumedPayload): void;
+  /** 試合復帰の拒否理由をソケットへ通知する */
+  publishResumeSessionRejectedToSocket(
+    reason: ResumeSessionRejectedPayload["reason"],
+  ): void;
   /** ルーム削除時に配信チャンネルを閉じ，在室ソケットを退出させる */
   closeRoomChannel(roomId: domain.room.Room["roomId"]): void;
 }
@@ -43,6 +55,25 @@ export interface RoomOutputPort {
 /** ルーム参加ユースケースが利用する参加操作ポート */
 export interface JoinRoomPort {
   addPlayerToRoom(roomId: string, socketId: string, playerName: string): JoinRoomResult;
+}
+
+/** 復席させるプレイヤーの在籍情報 */
+export type RestorePlayerParams = {
+  roomId: string;
+  playerId: string;
+  playerName: string;
+  /** 復席時に戻すチームID（UNKNOWN_TEAM_ID の場合は希望チーム未設定として扱う） */
+  teamId: number;
+};
+
+/** 復席処理の実行結果 */
+export type RestorePlayerResult =
+  | { status: "restored"; room: domain.room.Room }
+  | { status: "not_found" };
+
+/** 試合復帰ユースケースが利用する復席操作ポート */
+export interface RestorePlayerToRoomPort {
+  restorePlayerToRoom(params: RestorePlayerParams): RestorePlayerResult;
 }
 
 /** ルーム切断ユースケースが利用する退出操作ポート */

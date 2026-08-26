@@ -22,7 +22,10 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
-import type { StartGameCoordinatorDeps } from "./coordinatorDeps";
+import type {
+  ReleaseRoomSessionReservationPort,
+  StartGameCoordinatorDeps,
+} from "./coordinatorDeps";
 
 type StartGameCoordinatorParams = {
   ownerId: string;
@@ -34,6 +37,8 @@ type StartGameCoordinatorParams = {
     RoomOutputPort,
     "publishRoomUpdateToRoom" | "closeRoomChannel"
   >;
+  /** 試合終了時に復帰予約を解放するためのレジストリ */
+  sessionReservations: ReleaseRoomSessionReservationPort;
 };
 
 // 要求値・ルーム設定・既定値の順に採用し，未知のプリセットは既定へ寄せる
@@ -56,6 +61,7 @@ export const startGameCoordinator = ({
   runtimeRegistry,
   output,
   roomOutput,
+  sessionReservations,
 }: StartGameCoordinatorParams) => {
   // ルーム状態の変化は既存のROOM_UPDATE経路でルーム全員へ配信する
   const publishRoomUpdate = (targetRoom: domain.room.Room) => {
@@ -182,6 +188,8 @@ export const startGameCoordinator = ({
     gameSession: gameManager,
     bombStore: gameManager,
     onGameEnd: () => {
+      // 予約の寿命はセッションの寿命と一致させ，終了後の復帰要求は受け付けない
+      sessionReservations.releaseByRoomId(updatedRoom.roomId);
       roomManager.deleteRoom(updatedRoom.roomId);
       runtimeRegistry.cleanupGameManagerForRoom(updatedRoom.roomId);
       // 削除済みルーム宛の配信が残存ソケットへ届かないようチャンネルを閉じる

@@ -3,12 +3,17 @@
  * ルーム受信イベント調停の仕様を検証するテスト
  * ロビー設定更新の差分スキップと非適用ログ・チーム選択の全status分岐・
  * 参加結果ごとのログを検証する
+ * 試合復帰（RESUME_SESSION）の全status分岐と明示退室（LEAVE_ROOM）の後始末も対象とする
  */
 import { domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   JoinRoomResult,
+  RestorePlayerParams,
+  RestorePlayerResult,
+  RoomDisconnectResult,
+  RoomScopedGamePort,
   SelectTeamResult,
 } from "@server/domains/room/application/ports/roomUseCasePorts";
 import {
@@ -21,13 +26,20 @@ import type {
   SelectTeamEventRoomUseCasePort,
 } from "@server/network/types/connectionPorts";
 import {
+  PlayerIdentityRegistry,
+  SessionReservationRegistry,
+} from "@server/network/identity";
+import { createRoomScopedGamePortStub } from "@server/testing/gamePortFixtures";
+import {
   createRoom as createRoomFixture,
   createRoomMember,
 } from "@server/testing/roomFixtures";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 import {
   handleJoinRoomEvent,
+  handleLeaveRoomEvent,
   handleLobbySettingsUpdateEvent,
+  handleResumeSessionEvent,
   handleSelectTeamEvent,
 } from "./roomEventOrchestrators";
 
@@ -63,6 +75,12 @@ const createOutputStub = () => {
     >(),
     publishSelectTeamRejectedToSocket: vi.fn<
       RoomOutputAdapter["publishSelectTeamRejectedToSocket"]
+    >(),
+    publishSessionResumedToSocket: vi.fn<
+      RoomOutputAdapter["publishSessionResumedToSocket"]
+    >(),
+    publishResumeSessionRejectedToSocket: vi.fn<
+      RoomOutputAdapter["publishResumeSessionRejectedToSocket"]
     >(),
     closeRoomChannel: vi.fn<RoomOutputAdapter["closeRoomChannel"]>(),
   } satisfies RoomOutputAdapter;
@@ -556,5 +574,328 @@ describe("handleJoinRoomEvent", () => {
       "room-1",
       deps.room,
     );
+  });
+});
+
+type ResumeDepsParams = {
+  /** 予約に登録するトークン（未指定なら予約しない） */
+  reservedToken?: string;
+  /** ゲームランタイムを解決できない状況を再現するか */
+  missingGameManager?: boolean;
+  restoreResult?: RestorePlayerResult;
+};
+
+/** 復帰調停の依存集合スタブを生成する（レジストリは実装をそのまま使う） */
+const createResumeSessionDeps = ({
+  reservedToken,
+  missingGameManager = false,
+  restoreResult,
+}: ResumeDepsParams = {}) => {
+  const restoredRoom = createRoomFixture({
+    players: [createRoomMember({ id: "player-1", name: "太郎" })],
+  });
+  const sessionReservations = new SessionReservationRegistry();
+  if (reservedToken) {
+    sessionReservations.reserve(reservedToken, {
+      playerId: "player-1",
+      roomId: "room-1",
+      playerName: "太郎",
+      teamId: 1,
+    });
+  }
+
+  return {
+    socketId: "socket-2",
+    roomManager: {
+      restorePlayerToRoom: vi.fn<
+        (params: RestorePlayerParams) => RestorePlayerResult
+      >(() => restoreResult ?? { status: "restored", room: restoredRoom }),
+    },
+    runtimeRegistry: {
+      getGameManagerByRoomId: vi.fn<
+        (roomId: string) => RoomScopedGamePort | undefined
+      >(() =>
+        missingGameManager ? undefined : createRoomScopedGamePortStub(),
+      ),
+    },
+    sessionReservations,
+    identityRegistry: new PlayerIdentityRegistry(),
+    output: createOutputStub(),
+    joinRoomChannel: vi.fn<(roomId: string) => Promise<void>>(() =>
+      Promise.resolve(),
+    ),
+    restoredRoom,
+  };
+};
+
+describe("handleResumeSessionEvent", () => {
+  it("復帰できた場合は復帰受理をソケットへ通知すること", async () => {
+    const deps = createResumeSessionDeps({ reservedToken: "token-1" });
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(deps.output.publishSessionResumedToSocket).toHaveBeenCalledWith({
+      playerId: "player-1",
+      room: deps.restoredRoom,
+    });
+  });
+
+  it("復帰できた場合は拒否通知を送らないこと", async () => {
+    const deps = createResumeSessionDeps({ reservedToken: "token-1" });
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(
+      deps.output.publishResumeSessionRejectedToSocket,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("予約が無い場合は理由 expired で拒否を通知すること", async () => {
+    const deps = createResumeSessionDeps();
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(
+      deps.output.publishResumeSessionRejectedToSocket,
+    ).toHaveBeenCalledWith("expired");
+  });
+
+  it("トークン未提示の場合は理由 expired で拒否を通知すること", async () => {
+    const deps = createResumeSessionDeps({ reservedToken: "token-1" });
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: undefined });
+
+    expect(
+      deps.output.publishResumeSessionRejectedToSocket,
+    ).toHaveBeenCalledWith("expired");
+  });
+
+  it("予約が無い場合は復帰受理を通知しないこと", async () => {
+    const deps = createResumeSessionDeps();
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(deps.output.publishSessionResumedToSocket).not.toHaveBeenCalled();
+  });
+
+  it("ゲームランタイムを解決できない場合は理由 game_ended で拒否を通知すること", async () => {
+    const deps = createResumeSessionDeps({
+      reservedToken: "token-1",
+      missingGameManager: true,
+    });
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(
+      deps.output.publishResumeSessionRejectedToSocket,
+    ).toHaveBeenCalledWith("game_ended");
+  });
+
+  it("ルームが消滅している場合は理由 game_ended で拒否を通知すること", async () => {
+    const deps = createResumeSessionDeps({
+      reservedToken: "token-1",
+      restoreResult: { status: "not_found" },
+    });
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(
+      deps.output.publishResumeSessionRejectedToSocket,
+    ).toHaveBeenCalledWith("game_ended");
+  });
+
+  it("復帰できた場合は emitted を記録すること", async () => {
+    const deps = createResumeSessionDeps({ reservedToken: "token-1" });
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: roomUseCaseLogEvents.RESUME_SESSION,
+      result: logResults.EMITTED,
+      socketId: "socket-2",
+    });
+  });
+
+  it("予約が無い場合は rejected_session_expired を記録すること", async () => {
+    const deps = createResumeSessionDeps();
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: roomUseCaseLogEvents.RESUME_SESSION,
+      result: logResults.REJECTED_SESSION_EXPIRED,
+      socketId: "socket-2",
+    });
+  });
+
+  it("ゲームランタイムを解決できない場合は rejected_game_ended を記録すること", async () => {
+    const deps = createResumeSessionDeps({
+      reservedToken: "token-1",
+      missingGameManager: true,
+    });
+
+    await handleResumeSessionEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.NETWORK}]`, {
+      event: roomUseCaseLogEvents.RESUME_SESSION,
+      result: logResults.REJECTED_GAME_ENDED,
+      socketId: "socket-2",
+    });
+  });
+});
+
+type LeaveDepsParams = {
+  /** 退室要求元が所属しているルーム（未指定なら所属なし） */
+  room?: domain.room.Room;
+  /** 予約に登録するトークン（未指定なら予約しない） */
+  reservedToken?: string;
+};
+
+/** 明示退室調停の依存集合スタブを生成する（レジストリは実装をそのまま使う） */
+const createLeaveRoomDeps = ({ room, reservedToken }: LeaveDepsParams = {}) => {
+  const sessionReservations = new SessionReservationRegistry();
+  if (reservedToken) {
+    sessionReservations.reserve(reservedToken, {
+      playerId: "player-1",
+      roomId: "room-1",
+      playerName: "太郎",
+      teamId: 1,
+    });
+  }
+
+  const identityRegistry = new PlayerIdentityRegistry();
+  identityRegistry.bind("socket-2", "player-1");
+
+  return {
+    playerId: "player-1",
+    socketId: "socket-2",
+    roomManager: {
+      getRoomByPlayerId: vi.fn<
+        (playerId: string) => domain.room.Room | undefined
+      >(() => room),
+      removePlayer: vi.fn<(socketId: string) => RoomDisconnectResult>(() => ({
+        updatedRooms: room ? [room] : [],
+        deletedRoomIds: [],
+      })),
+    },
+    runtimeRegistry: {
+      cleanupGameManagerForRoom: vi.fn<(roomId: string) => void>(),
+      // 明示退室ではBot置換を行わないことを検証するため参照ポートも渡す
+      getGameManagerByPlayerId: vi.fn<
+        (playerId: string) => RoomScopedGamePort | undefined
+      >(() => createRoomScopedGamePortStub()),
+    },
+    sessionReservations,
+    identityRegistry,
+    output: createOutputStub(),
+    leaveRoomChannel: vi.fn<(roomId: string) => Promise<void>>(() =>
+      Promise.resolve(),
+    ),
+  };
+};
+
+describe("handleLeaveRoomEvent", () => {
+  it("ルーム名簿から退出させること", async () => {
+    const deps = createLeaveRoomDeps({ room: createRoom() });
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(deps.roomManager.removePlayer).toHaveBeenCalledWith("player-1");
+  });
+
+  it("退室後のルーム状態を全員へ配信すること", async () => {
+    const room = createRoom();
+    const deps = createLeaveRoomDeps({ room });
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(deps.output.publishRoomUpdateToRoom).toHaveBeenCalledWith(
+      "room-1",
+      room,
+    );
+  });
+
+  it("明示退室ではBot置換を行わないこと", async () => {
+    const deps = createLeaveRoomDeps({ room: createRoom() });
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(deps.runtimeRegistry.getGameManagerByPlayerId).not.toHaveBeenCalled();
+  });
+
+  it("ルーム配信チャンネルから退出させること", async () => {
+    const deps = createLeaveRoomDeps({ room: createRoom() });
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(deps.leaveRoomChannel).toHaveBeenCalledWith("room-1");
+  });
+
+  it("復帰予約を破棄すること", async () => {
+    const deps = createLeaveRoomDeps({
+      room: createRoom(),
+      reservedToken: "token-1",
+    });
+
+    await handleLeaveRoomEvent({ ...deps, sessionToken: "token-1" });
+
+    expect(deps.sessionReservations.consume("token-1")).toBeUndefined();
+  });
+
+  it("識別子の対応を解放すること", async () => {
+    const deps = createLeaveRoomDeps({ room: createRoom() });
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(deps.identityRegistry.resolvePlayerId("socket-2")).toBe("socket-2");
+  });
+
+  it("トークン未提示でも識別子の対応を解放すること", async () => {
+    const deps = createLeaveRoomDeps({ room: createRoom() });
+
+    await handleLeaveRoomEvent({ ...deps, sessionToken: undefined });
+
+    expect(deps.identityRegistry.getSocketId("player-1")).toBeUndefined();
+  });
+
+  it("所属ルームを引けない場合は配信チャンネルからの退出を行わないこと", async () => {
+    const deps = createLeaveRoomDeps();
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(deps.leaveRoomChannel).not.toHaveBeenCalled();
+  });
+
+  it("所属ルームを引けない場合は ignored_missing_room を記録すること", async () => {
+    const deps = createLeaveRoomDeps();
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.ROOM_USE_CASE}]`, {
+      event: roomUseCaseLogEvents.LEAVE_ROOM,
+      result: logResults.IGNORED_MISSING_ROOM,
+      socketId: "player-1",
+    });
+  });
+
+  it("退室が完了した場合は processed を記録すること", async () => {
+    const deps = createLeaveRoomDeps({ room: createRoom() });
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(logSpy).toHaveBeenCalledWith(`[${logScopes.ROOM_USE_CASE}]`, {
+      event: roomUseCaseLogEvents.LEAVE_ROOM,
+      result: logResults.PROCESSED,
+      socketId: "player-1",
+      roomId: "room-1",
+    });
+  });
+
+  it("所属ルームを引けない場合でも識別子の対応を解放すること", async () => {
+    const deps = createLeaveRoomDeps();
+
+    await handleLeaveRoomEvent(deps);
+
+    expect(deps.identityRegistry.resolvePlayerId("socket-2")).toBe("socket-2");
   });
 });

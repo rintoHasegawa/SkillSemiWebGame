@@ -12,7 +12,12 @@ import { resolveCoordinatorRuntime } from "./runtimeCoordinatorSupport";
 type ReadyForGameCoordinatorParams = {
   socketId: string;
 } & ReadyForGameCoordinatorDeps & {
-  output: Pick<GameOutputPort, "publishCurrentPlayersToSocket" | "publishGameStartToSocket">;
+  output: Pick<
+    GameOutputPort,
+    | "publishCurrentPlayersToSocket"
+    | "publishGameStartToSocket"
+    | "publishMapCellsToSocket"
+  >;
 };
 
 /** READY_FOR_GAME受信時に所属ルームを解決し，準備状態ユースケースを実行する */

@@ -2,8 +2,9 @@
  * RoomJoinService.test
  * ルーム参加サービスの現行挙動を固定する characterization test
  * status ユニオン（joined/duplicate/full/playing）の全分岐を検証する
+ * 切断プレイヤーの復席（restored/not_found）についても仕様を検証する
  */
-import { domain } from "@repo/shared";
+import { config as sharedConfig, domain } from "@repo/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -194,5 +195,221 @@ describe("RoomJoinService", () => {
     const result = service.addPlayerToRoom("room-1", "socket-1", "太郎");
 
     expect(result.status).toBe("full");
+  });
+});
+
+describe("RoomJoinService.restorePlayerToRoom", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** 復席要求の既定値を部分上書きして生成する */
+  const createRestoreParams = (
+    overrides: Partial<Parameters<RoomJoinService["restorePlayerToRoom"]>[0]> = {},
+  ) => {
+    return {
+      roomId: "room-1",
+      playerId: "player-1",
+      playerName: "太郎",
+      teamId: 1,
+      ...overrides,
+    };
+  };
+
+  it("ルームが存在しない場合はnot_foundを返すこと", () => {
+    const service = new RoomJoinService(new Map());
+
+    const result = service.restorePlayerToRoom(createRestoreParams());
+
+    expect(result.status).toBe("not_found");
+  });
+
+  it("ルームが存在する場合はrestoredを返すこと", () => {
+    const room = createRoom();
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    const result = service.restorePlayerToRoom(createRestoreParams());
+
+    expect(result.status).toBe("restored");
+  });
+
+  it("復席したプレイヤーを名簿へ追加すること", () => {
+    const room = createRoom();
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams());
+
+    expect(room.players.map((player) => player.id)).toEqual(["player-1"]);
+  });
+
+  it("復席時は切断前の名前を保つこと", () => {
+    const room = createRoom();
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams({ playerName: "花子" }));
+
+    expect(room.players[0]?.name).toBe("花子");
+  });
+
+  it("復席時は切断前のチームIDを希望チームとして戻すこと", () => {
+    const room = createRoom();
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams({ teamId: 2 }));
+
+    expect(room.players[0]?.preferredTeamId).toBe(2);
+  });
+
+  it("チームID 0 の復席でも希望チームを 0 として戻すこと", () => {
+    const room = createRoom();
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams({ teamId: 0 }));
+
+    expect(room.players[0]?.preferredTeamId).toBe(0);
+  });
+
+  it("チームID未確定の復席では希望チームをnullにすること", () => {
+    const room = createRoom();
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(
+      createRestoreParams({ teamId: sharedConfig.UNKNOWN_TEAM_ID }),
+    );
+
+    expect(room.players[0]?.preferredTeamId).toBeNull();
+  });
+
+  it("復席したプレイヤーは準備完了状態にしないこと", () => {
+    const room = createRoom();
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams());
+
+    expect(room.players[0]?.isReady).toBe(false);
+  });
+
+  it("復席してもオーナー権を奪い返さないこと", () => {
+    const room = createRoom({
+      ownerId: "socket-2",
+      players: [createRoomMember({ id: "socket-2", isOwner: true })],
+    });
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams());
+
+    expect(room.players.find((player) => player.id === "player-1")?.isOwner).toBe(
+      false,
+    );
+  });
+
+  it("復席しても移譲済みのオーナーIDを書き換えないこと", () => {
+    const room = createRoom({
+      ownerId: "socket-2",
+      players: [createRoomMember({ id: "socket-2", isOwner: true })],
+    });
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams());
+
+    expect(room.ownerId).toBe("socket-2");
+  });
+
+  it("既に在籍している場合は名簿を重複させないこと", () => {
+    const room = createRoom({
+      players: [createRoomMember({ id: "player-1" })],
+    });
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams());
+
+    expect(room.players).toHaveLength(1);
+  });
+
+  it("既に在籍している場合もrestoredを返すこと", () => {
+    const room = createRoom({
+      players: [createRoomMember({ id: "player-1" })],
+    });
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    const result = service.restorePlayerToRoom(createRestoreParams());
+
+    expect(result.status).toBe("restored");
+  });
+
+  it("二重復席では既存の名簿情報を書き換えないこと", () => {
+    const room = createRoom({
+      players: [
+        createRoomMember({ id: "player-1", name: "元の名前", isOwner: true }),
+      ],
+    });
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    service.restorePlayerToRoom(createRestoreParams({ playerName: "別名" }));
+
+    expect(room.players[0]).toEqual(
+      createRoomMember({ id: "player-1", name: "元の名前", isOwner: true }),
+    );
+  });
+
+  it("進行中のルームでも復席できること", () => {
+    const room = createRoom({ status: domain.room.RoomPhase.PLAYING });
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    const result = service.restorePlayerToRoom(createRestoreParams());
+
+    expect(result.status).toBe("restored");
+  });
+
+  it("定員に達したルームでも復席できること", () => {
+    const room = createRoom({
+      maxPlayers: 2,
+      players: [
+        createRoomMember({ id: "socket-1" }),
+        createRoomMember({ id: "socket-2" }),
+      ],
+    });
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    const result = service.restorePlayerToRoom(createRestoreParams());
+
+    expect(result.status).toBe("restored");
+  });
+
+  it("復席結果として対象ルームの参照を返すこと", () => {
+    const room = createRoom();
+    const service = new RoomJoinService(new Map([["room-1", room]]));
+
+    const result = service.restorePlayerToRoom(createRestoreParams());
+
+    expect(result.status === "restored" ? result.room : null).toBe(room);
+  });
+
+  it("別ルームの名簿には影響しないこと", () => {
+    const room1 = createRoom({ roomId: "room-1" });
+    const room2 = createRoom({ roomId: "room-2" });
+    const service = new RoomJoinService(
+      new Map([
+        ["room-1", room1],
+        ["room-2", room2],
+      ]),
+    );
+
+    service.restorePlayerToRoom(createRestoreParams());
+
+    expect(room2.players).toHaveLength(0);
+  });
+
+  it("ルームが存在しない場合は名簿を作らないこと", () => {
+    const rooms = new Map<string, domain.room.Room>();
+    const service = new RoomJoinService(rooms);
+
+    service.restorePlayerToRoom(createRestoreParams());
+
+    expect(rooms.size).toBe(0);
   });
 });

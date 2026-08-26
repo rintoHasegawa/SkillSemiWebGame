@@ -23,6 +23,8 @@ export const roomUseCaseLogEvents = {
   ROOM_UPDATE: protocol.SocketEvents.ROOM_UPDATE,
   SELECT_TEAM: protocol.SocketEvents.SELECT_TEAM,
   LOBBY_SETTINGS_UPDATE: protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
+  LEAVE_ROOM: protocol.SocketEvents.LEAVE_ROOM,
+  RESUME_SESSION: protocol.SocketEvents.RESUME_SESSION,
 } as const;
 
 /** Gameドメインサービスとループログで利用するイベント名定数 */
@@ -31,6 +33,7 @@ export const gameDomainLogEvents = {
   SESSION_START: "SESSION_START",
   PLAYER_MOVE: "PLAYER_MOVE",
   PLAYER_REMOVE: "PLAYER_REMOVE",
+  PLAYER_RESUME: "PLAYER_RESUME",
   GAME_LOOP: "GAME_LOOP",
   PERF_STATS: "PERF_STATS",
 } as const;
@@ -42,6 +45,7 @@ export const roomDomainLogEvents = {
   PLAYER_LEAVE: "PLAYER_LEAVE",
   ROOM_DELETE: "ROOM_DELETE",
   OWNER_TRANSFER: "OWNER_TRANSFER",
+  PLAYER_RESTORE: "PLAYER_RESTORE",
   LOBBY_SETTINGS_UPDATE: protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
 } as const;
 

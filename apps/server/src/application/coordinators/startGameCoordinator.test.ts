@@ -3,6 +3,7 @@
  * START_GAME調停の仕様適合を検証するテスト
  * ルーム未検出・状態遷移失敗の分岐，フィールド設定解決とBot補充，終了時の後始末（配信チャンネル閉鎖を含む）を検証する
  * ランタイム未解決時はwaitingへロールバックしROOM_UPDATEで通知する（Issue #291）
+ * 試合終了時は当該ルームの復帰予約を解放する（予約の寿命＝ゲームセッションの寿命）
  */
 import { domain } from "@repo/shared";
 import type { FieldSizePreset } from "@repo/shared";
@@ -102,6 +103,12 @@ const createGameManagerStub = (signedElapsedMs?: number) => {
     replaceDisconnectedPlayerWithBot: vi.fn<
       RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
     >(() => false),
+    demotePlayerFromBotControl: vi.fn<
+      RoomScopedGamePort["demotePlayerFromBotControl"]
+    >(() => true),
+    getMapGridColorsView: vi.fn<
+      RoomScopedGamePort["getMapGridColorsView"]
+    >(() => []),
   } satisfies RoomScopedGamePort;
 };
 
@@ -166,6 +173,9 @@ const createDeps = ({
         RoomOutputPort["publishRoomUpdateToRoom"]
       >(),
       closeRoomChannel: vi.fn<RoomOutputPort["closeRoomChannel"]>(),
+    },
+    sessionReservations: {
+      releaseByRoomId: vi.fn<(roomId: string) => void>(),
     },
   };
 };
@@ -708,6 +718,9 @@ describe("startGameCoordinator", () => {
         publishRoomUpdateToRoom: vi.fn(),
         closeRoomChannel: vi.fn(),
       },
+      sessionReservations: {
+        releaseByRoomId: vi.fn(),
+      },
     });
 
     expect(roomManager.getRoomById("room-1")?.status).toBe(
@@ -837,5 +850,54 @@ describe("startGameCoordinator", () => {
     });
 
     expect(deps.roomOutput.closeRoomChannel).not.toHaveBeenCalled();
+  });
+
+  it("セッション終了時に対象ルームの復帰予約を解放すること", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    const callbacks = gameManager.startRoomSession.mock.calls[0]?.[3];
+    callbacks?.onGameEnd({ rankings: [] });
+
+    expect(deps.sessionReservations.releaseByRoomId.mock.calls).toEqual([
+      ["room-1"],
+    ]);
+  });
+
+  it("セッション終了前は復帰予約を解放しないこと", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    expect(deps.sessionReservations.releaseByRoomId).not.toHaveBeenCalled();
+  });
+
+  it("復帰予約の解放はルーム削除より前に行うこと", () => {
+    const gameManager = createGameManagerStub();
+    const deps = createDeps({ room: createRoom(), gameManager });
+
+    startGameCoordinator({
+      ownerId: "socket-1",
+      ...deps,
+      output: createOutputStub(),
+    });
+
+    const callbacks = gameManager.startRoomSession.mock.calls[0]?.[3];
+    callbacks?.onGameEnd({ rankings: [] });
+
+    expect(
+      deps.sessionReservations.releaseByRoomId.mock.invocationCallOrder[0],
+    ).toBeLessThan(deps.roomManager.deleteRoom.mock.invocationCallOrder[0]);
   });
 });

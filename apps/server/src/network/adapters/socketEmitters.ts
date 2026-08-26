@@ -32,6 +32,12 @@ type EmitToSocketById = {
 
 type CloseRoomChannel = (roomId: string) => void;
 
+/**
+ * プレイヤーID宛の送信先ソケットIDを解決する関数型
+ * 試合復帰でプレイヤーIDとソケットIDがずれた場合に，現在のソケットへ送るために使う
+ */
+export type ResolveTargetSocketId = (playerId: string) => string | undefined;
+
 type EmitToAll = {
   <TEvent extends SocketEventName>(event: TEvent): void;
   <TEvent extends SocketEventName>(event: TEvent, payload: ServerToClientPayloadOf<TEvent>): void;
@@ -73,11 +79,18 @@ export const createEmitToRoom = (io: Server): EmitToRoom => {
 };
 
 /** ルーム送信時に特定ソケットを除外する送信関数を生成する */
-export const createEmitToRoomExceptSocket = (io: Server): EmitToRoomExceptSocket => {
+export const createEmitToRoomExceptSocket = (
+  io: Server,
+  resolveTargetSocketId: ResolveTargetSocketId,
+): EmitToRoomExceptSocket => {
   return (roomId: string, excludedSocketId: string, event: SocketEventName, payload?: unknown) => {
+    // 復帰済みプレイヤーも除外できるよう，現在のソケットIDへ解決してから除外する
+    // 解決できない場合は未復帰とみなし，受け取った値をそのままソケットIDとして扱う
+    const excludedTargetId =
+      resolveTargetSocketId(excludedSocketId) ?? excludedSocketId;
     emitWithOptionalPayload(
       (eventName, body) =>
-        io.to(toSocketRoomName(roomId)).except(excludedSocketId).emit(eventName, body),
+        io.to(toSocketRoomName(roomId)).except(excludedTargetId).emit(eventName, body),
       event,
       payload
     );
@@ -91,10 +104,16 @@ export const createEmitToSocket = (socket: Socket): EmitToSocket => {
   };
 };
 
-/** 任意ソケットID向けの送信関数を生成する */
-export const createEmitToSocketById = (io: Server): EmitToSocketById => {
+/** 任意ソケットID（プレイヤーID）向けの送信関数を生成する */
+export const createEmitToSocketById = (
+  io: Server,
+  resolveTargetSocketId: ResolveTargetSocketId,
+): EmitToSocketById => {
   return (socketId: string, event: SocketEventName, payload?: unknown) => {
-    emitWithOptionalPayload((eventName, body) => io.to(socketId).emit(eventName, body), event, payload);
+    // 復帰後はプレイヤーIDと現在のソケットIDが異なるため解決してから送る
+    // 解決できない場合は未復帰とみなし，受け取った値をそのままソケットIDとして扱う
+    const targetSocketId = resolveTargetSocketId(socketId) ?? socketId;
+    emitWithOptionalPayload((eventName, body) => io.to(targetSocketId).emit(eventName, body), event, payload);
   };
 };
 

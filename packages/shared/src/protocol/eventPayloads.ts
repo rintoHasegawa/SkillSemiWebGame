@@ -11,10 +11,12 @@ export type { PingPayload, PongPayload } from "./payloads/commonPayloads";
 export type {
   JoinRoomPayload,
   LobbySettingsUpdatePayload,
+  ResumeSessionRejectedPayload,
   RoomJoinRejectedPayload,
   RoomUpdatePayload,
   SelectTeamPayload,
   SelectTeamRejectedPayload,
+  SessionResumedPayload,
   TeamAssignmentMode,
 } from "./payloads/lobbyPayloads";
 

@@ -12,6 +12,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { JoinRoomResult } from "@server/domains/room/application/ports/roomUseCasePorts";
 import { createEmitToRoom } from "@server/network/adapters/socketEmitters";
+import {
+  PlayerIdentityRegistry,
+  SessionReservationRegistry,
+} from "@server/network/identity";
 import { createRoom, createRoomMember } from "@server/testing/roomFixtures";
 import type { RoomOutputAdapter } from "./createRoomOutputAdapter";
 import { registerRoomHandlers } from "./registerRoomHandlers";
@@ -25,6 +29,11 @@ const createSocketStub = (socketId: string) => {
   const join = vi.fn<(roomId: string) => Promise<undefined>>(
     async () => undefined,
   );
+  // 明示退室で配信チャンネルから抜けることを検証できるよう引数付きで型付けする
+  const leave = vi.fn<(roomId: string) => Promise<undefined>>(
+    async () => undefined,
+  );
+  const disconnect = vi.fn();
   const socket = {
     id: socketId,
     on: (event: string, listener: EventListener) => {
@@ -34,9 +43,11 @@ const createSocketStub = (socketId: string) => {
     off: vi.fn(),
     emit: vi.fn(),
     join,
+    leave,
+    disconnect,
   } as unknown as Socket;
 
-  return { socket, join, listeners };
+  return { socket, join, leave, disconnect, listeners };
 };
 
 /** 送信内容を記録するルーム出力アダプタースタブを生成する */
@@ -51,17 +62,51 @@ const createOutputStub = () => {
     publishSelectTeamRejectedToSocket: vi.fn<
       RoomOutputAdapter["publishSelectTeamRejectedToSocket"]
     >(),
+    publishSessionResumedToSocket: vi.fn<
+      RoomOutputAdapter["publishSessionResumedToSocket"]
+    >(),
+    publishResumeSessionRejectedToSocket: vi.fn<
+      RoomOutputAdapter["publishResumeSessionRejectedToSocket"]
+    >(),
     closeRoomChannel: vi.fn<RoomOutputAdapter["closeRoomChannel"]>(),
   } satisfies RoomOutputAdapter;
 };
 
 /** 参加成功を返すルーム管理スタブを生成する */
-const createRoomManagerStub = (joinResult: JoinRoomResult) => {
+const createRoomManagerStub = (
+  joinResult: JoinRoomResult,
+  joinedRoom?: domain.room.Room,
+) => {
   return {
     addPlayerToRoom: vi.fn(() => joinResult),
     getRoomByOwnerId: vi.fn(() => undefined),
     updateLobbySettings: vi.fn(() => undefined),
     selectTeam: vi.fn(() => ({ status: "not_found" as const })),
+    restorePlayerToRoom: vi.fn(() => ({ status: "not_found" as const })),
+    removePlayer: vi.fn(() => ({
+      updatedRooms: joinedRoom ? [joinedRoom] : [],
+      deletedRoomIds: [],
+    })),
+    getRoomByPlayerId: vi.fn<() => domain.room.Room | undefined>(
+      () => joinedRoom,
+    ),
+  };
+};
+
+/** ルームハンドラが利用するランタイム管理スタブを生成する */
+const createRuntimeRegistryStub = () => {
+  return {
+    ensureGameManagerForRoom: vi.fn<(roomId: string) => void>(),
+    getGameManagerByRoomId: vi.fn(() => undefined),
+    cleanupGameManagerForRoom: vi.fn<(roomId: string) => void>(),
+  };
+};
+
+/** 識別子・復帰予約のレジストリスタブを生成する */
+const createIdentityStubs = () => {
+  return {
+    identityRegistry: new PlayerIdentityRegistry(),
+    sessionReservations: new SessionReservationRegistry(),
   };
 };
 
@@ -89,12 +134,13 @@ describe("registerRoomHandlers", () => {
       ownerId: "attacker-socket-id",
       players: [createRoomMember({ id: "attacker-socket-id", isOwner: true })],
     });
-    registerRoomHandlers(
+    registerRoomHandlers({
       socket,
-      createRoomManagerStub({ status: "joined", room: joinedRoom }),
-      { ensureGameManagerForRoom: vi.fn() },
-      createOutputStub(),
-    );
+      roomManager: createRoomManagerStub({ status: "joined", room: joinedRoom }),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      roomOutputAdapter: createOutputStub(),
+      ...createIdentityStubs(),
+    });
 
     listeners.get(protocol.SocketEvents.JOIN_ROOM)?.({
       roomId: VICTIM_SOCKET_ID,
@@ -111,12 +157,13 @@ describe("registerRoomHandlers", () => {
     const joinedRoom = createRoom({
       players: [createRoomMember({ id: "socket-1", isOwner: true })],
     });
-    registerRoomHandlers(
+    registerRoomHandlers({
       socket,
-      createRoomManagerStub({ status: "joined", room: joinedRoom }),
-      { ensureGameManagerForRoom: vi.fn() },
-      createOutputStub(),
-    );
+      roomManager: createRoomManagerStub({ status: "joined", room: joinedRoom }),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      roomOutputAdapter: createOutputStub(),
+      ...createIdentityStubs(),
+    });
 
     listeners.get(protocol.SocketEvents.JOIN_ROOM)?.({
       roomId: "room-1",
@@ -141,12 +188,13 @@ describe("registerRoomHandlers", () => {
       status: "joined",
       room: createRoom(),
     });
-    registerRoomHandlers(
+    registerRoomHandlers({
       socket,
       roomManager,
-      { ensureGameManagerForRoom: vi.fn() },
-      createOutputStub(),
-    );
+      runtimeRegistry: createRuntimeRegistryStub(),
+      roomOutputAdapter: createOutputStub(),
+      ...createIdentityStubs(),
+    });
 
     listeners.get(protocol.SocketEvents.JOIN_ROOM)?.({
       roomId: "room-1",
@@ -160,12 +208,13 @@ describe("registerRoomHandlers", () => {
   it("受け入れ条件を満たさない JOIN_ROOM では拒否理由 invalid を通知すること", async () => {
     const { socket, listeners } = createSocketStub("socket-1");
     const output = createOutputStub();
-    registerRoomHandlers(
+    registerRoomHandlers({
       socket,
-      createRoomManagerStub({ status: "joined", room: createRoom() }),
-      { ensureGameManagerForRoom: vi.fn() },
-      output,
-    );
+      roomManager: createRoomManagerStub({ status: "joined", room: createRoom() }),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      roomOutputAdapter: output,
+      ...createIdentityStubs(),
+    });
 
     listeners.get(protocol.SocketEvents.JOIN_ROOM)?.({
       roomId: "room-1",
@@ -183,12 +232,13 @@ describe("registerRoomHandlers", () => {
     const { socket, listeners } = createSocketStub("socket-1");
     const output = createOutputStub();
     const tooLongRoomId = "a".repeat(domain.room.ROOM_ID_MAX_LENGTH + 1);
-    registerRoomHandlers(
+    registerRoomHandlers({
       socket,
-      createRoomManagerStub({ status: "joined", room: createRoom() }),
-      { ensureGameManagerForRoom: vi.fn() },
-      output,
-    );
+      roomManager: createRoomManagerStub({ status: "joined", room: createRoom() }),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      roomOutputAdapter: output,
+      ...createIdentityStubs(),
+    });
 
     listeners.get(protocol.SocketEvents.JOIN_ROOM)?.({
       roomId: tooLongRoomId,
@@ -200,5 +250,78 @@ describe("registerRoomHandlers", () => {
       roomId: "",
       reason: "invalid",
     });
+  });
+  it("LEAVE_ROOM 受信ではソケットを切断しないこと", async () => {
+    const { socket, disconnect, listeners } = createSocketStub("socket-1");
+    const joinedRoom = createRoom({
+      players: [createRoomMember({ id: "socket-1", isOwner: true })],
+    });
+    registerRoomHandlers({
+      socket,
+      roomManager: createRoomManagerStub(
+        { status: "joined", room: joinedRoom },
+        joinedRoom,
+      ),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      roomOutputAdapter: createOutputStub(),
+      ...createIdentityStubs(),
+    });
+
+    listeners.get(protocol.SocketEvents.LEAVE_ROOM)?.(undefined);
+    await flushMicrotasks();
+
+    expect(disconnect).not.toHaveBeenCalled();
+  });
+
+  it("LEAVE_ROOM 受信ではルーム配信先と同じ Socket.IO ルーム名から退出させること", async () => {
+    const { socket, leave, listeners } = createSocketStub("socket-1");
+    const joinedRoom = createRoom({
+      players: [createRoomMember({ id: "socket-1", isOwner: true })],
+    });
+    registerRoomHandlers({
+      socket,
+      roomManager: createRoomManagerStub(
+        { status: "joined", room: joinedRoom },
+        joinedRoom,
+      ),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      roomOutputAdapter: createOutputStub(),
+      ...createIdentityStubs(),
+    });
+
+    listeners.get(protocol.SocketEvents.LEAVE_ROOM)?.(undefined);
+    await flushMicrotasks();
+
+    const to = vi.fn(() => ({ emit: vi.fn() }));
+    createEmitToRoom({ to } as unknown as Server)(
+      joinedRoom.roomId,
+      protocol.SocketEvents.ROOM_UPDATE,
+      joinedRoom,
+    );
+
+    expect(leave).toHaveBeenCalledTimes(1);
+    expect(to).toHaveBeenCalledWith(leave.mock.calls[0][0]);
+  });
+
+  it("トークン未提示の RESUME_SESSION では理由 expired で拒否を通知すること", async () => {
+    const { socket, listeners } = createSocketStub("socket-1");
+    const output = createOutputStub();
+    registerRoomHandlers({
+      socket,
+      roomManager: createRoomManagerStub({
+        status: "joined",
+        room: createRoom(),
+      }),
+      runtimeRegistry: createRuntimeRegistryStub(),
+      roomOutputAdapter: output,
+      ...createIdentityStubs(),
+    });
+
+    listeners.get(protocol.SocketEvents.RESUME_SESSION)?.(undefined);
+    await flushMicrotasks();
+
+    expect(output.publishResumeSessionRejectedToSocket).toHaveBeenCalledWith(
+      "expired",
+    );
   });
 });

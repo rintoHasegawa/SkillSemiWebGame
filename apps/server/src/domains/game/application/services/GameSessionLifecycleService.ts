@@ -67,6 +67,11 @@ export class GameSessionLifecycleService {
     return this.sessionRef.current?.getFieldConfig();
   }
 
+  /** 現在のマップ塗り状態を返す，セッション未開始時は空配列を返す */
+  public getMapGridColorsView(): readonly number[] {
+    return this.sessionRef.current?.getMapGridColorsView() ?? [];
+  }
+
   public shouldBroadcastBombPlaced(dedupeKey: string): boolean {
     return (
       this.sessionRef.current?.shouldBroadcastBombPlaced(dedupeKey) ?? false

@@ -70,6 +70,12 @@ const createGameManagerStub = ({
     replaceDisconnectedPlayerWithBot: vi.fn<
       RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
     >(() => false),
+    demotePlayerFromBotControl: vi.fn<
+      RoomScopedGamePort["demotePlayerFromBotControl"]
+    >(() => true),
+    getMapGridColorsView: vi.fn<
+      RoomScopedGamePort["getMapGridColorsView"]
+    >(() => []),
   } satisfies RoomScopedGamePort;
 };
 
@@ -82,6 +88,9 @@ const createOutputStub = () => {
       (players: CurrentPlayersPayload) => void
     >(),
     publishGameStartToSocket: vi.fn<(payload: GameStartPayload) => void>(),
+    publishMapCellsToSocket: vi.fn<
+      (cellUpdates: domain.game.gridMap.CellUpdate[]) => void
+    >(),
   };
 };
 

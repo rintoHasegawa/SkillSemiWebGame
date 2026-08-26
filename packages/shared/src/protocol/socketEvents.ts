@@ -20,6 +20,10 @@ export const SocketEvents = {
   START_GAME: "start-game",
   GAME_START: "game-start",
   READY_FOR_GAME: "ready-for-game",
+  LEAVE_ROOM: "leave-room",
+  RESUME_SESSION: "resume-session",
+  SESSION_RESUMED: "session-resumed",
+  RESUME_SESSION_REJECTED: "resume-session-rejected",
 
   // ゲームプレイ関連イベント名
   // ※ 同じイベント名を指す別名キーは作らず，1イベント1キーで定義する

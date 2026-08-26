@@ -50,10 +50,22 @@ export interface StartGamePort extends GameElapsedTimePort {
   getRoomFieldConfig(): GameFieldConfig | undefined;
 }
 
+/** 途中合流ソケットへマップ全体を配信するための塗り状態参照入力ポート */
+export interface MapSnapshotPort {
+  /** 現在のマップ塗り状態（セル毎のteamId）を読み取り専用ビューで返す */
+  getMapGridColorsView(): readonly number[];
+}
+
 /** 準備完了ユースケースが利用するゲーム状態参照入力ポート */
-export interface ReadyForGamePort extends GameElapsedTimePort {
+export interface ReadyForGamePort extends GameElapsedTimePort, MapSnapshotPort {
   getRoomPlayers(): domain.game.player.PlayerData[];
   getRoomFieldConfig(): GameFieldConfig | undefined;
+}
+
+/** 復帰ユースケースが利用するBot制御解除入力ポート */
+export interface ResumePlayerPort {
+  /** Bot制御へ切り替えたプレイヤーを人間操作へ戻す */
+  demotePlayerFromBotControl(id: string): boolean;
 }
 
 /** 移動入力ユースケースが利用するプレイヤー操作入力ポート */
@@ -97,6 +109,10 @@ export interface GameOutputPort {
     payload: GameStartPayload,
   ): void;
   publishCurrentPlayersToSocket(players: CurrentPlayersPayload): void;
+  /** 途中合流ソケットへマップ全体の塗り状態を配信する */
+  publishMapCellsToSocket(
+    cellUpdates: domain.game.gridMap.CellUpdate[],
+  ): void;
   publishGameStartToSocket(payload: GameStartPayload): void;
   publishPlayerRemovedToRoom(
     roomId: domain.room.Room["roomId"],

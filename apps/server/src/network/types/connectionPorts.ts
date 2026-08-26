@@ -7,6 +7,10 @@ import type {
   DisconnectCoordinatorDeps,
 } from "@server/application/coordinators/coordinatorDeps";
 import type {
+  PlayerIdentityRegistry,
+  SessionReservationRegistry,
+} from "@server/network/identity";
+import type {
   ApplyFieldSizePresetPort,
   CleanupGameRuntimePort,
   DeleteRoomPort,
@@ -18,6 +22,7 @@ import type {
   FindRoomByIdPort,
   FindRoomByPlayerPort,
   JoinRoomPort,
+  RestorePlayerToRoomPort,
   RoomPhaseTransitionPort,
   SelectTeamPort,
   UpdateLobbySettingsPort,
@@ -65,10 +70,28 @@ export type JoinRoomEventRuntimeUseCasePort = Pick<
 /** チーム選択イベント調停で利用するルーム依存ポート */
 export type SelectTeamEventRoomUseCasePort = SelectTeamPort;
 
+/** 試合復帰イベント調停で利用するルーム依存ポート */
+export type ResumeSessionEventRoomUseCasePort = RestorePlayerToRoomPort;
+
+/** 試合復帰イベント調停で利用するランタイム依存ポート */
+export type ResumeSessionEventRuntimeUseCasePort = Pick<
+  ConnectionRuntimePort,
+  "getGameManagerByRoomId"
+>;
+
+/** 明示退室イベント調停で利用するルーム依存ポート */
+export type LeaveRoomEventRoomUseCasePort =
+  & DisconnectRoomPort
+  & FindRoomByPlayerPort;
+
+/** 明示退室イベント調停で利用するランタイム依存ポート */
+export type LeaveRoomEventRuntimeUseCasePort = CleanupGameRuntimePort;
+
 /** ソケット接続全体で利用するルーム管理ポート集合 */
 export type SocketConnectionRoomPort =
   & ConnectionRoomPort
   & DisconnectRoomPort
+  & RestorePlayerToRoomPort
   & FindRoomByIdPort
   & DeleteRoomPort
   & UpdateLobbySettingsPort
@@ -89,4 +112,8 @@ export type SocketConnectionManagerBundle = DisconnectCoordinatorDeps & {
 /** 接続ハンドラ登録関数が受け取る入力パラメータ */
 export type RegisterConnectionHandlersParams = SocketConnectionManagerBundle & {
   io: Server;
+  /** ソケットIDとプレイヤーIDの対応（サーバー単位で共有する） */
+  identityRegistry: PlayerIdentityRegistry;
+  /** 復帰用のセッション予約（サーバー単位で共有する） */
+  sessionReservations: SessionReservationRegistry;
 };

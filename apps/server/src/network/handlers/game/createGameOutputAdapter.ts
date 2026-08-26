@@ -165,6 +165,13 @@ export const createGameOutputAdapter = (
     publishCurrentPlayersToSocket: (players: CurrentPlayersPayload) => {
       reliable.emitToSocket(protocol.SocketEvents.CURRENT_PLAYERS, players);
     },
+    publishMapCellsToSocket: (
+      cellUpdates: domainNs.game.gridMap.CellUpdate[],
+    ) => {
+      // 途中合流ソケットにも差分配信と同じ形式で届ける
+      const grouped = domainNs.game.gridMap.groupCellUpdates(cellUpdates);
+      reliable.emitToSocket(protocol.SocketEvents.UPDATE_MAP_CELLS, grouped);
+    },
     publishGameStartToSocket: (payload: GameStartPayload) => {
       reliable.emitToSocket(protocol.SocketEvents.GAME_START, payload);
     },

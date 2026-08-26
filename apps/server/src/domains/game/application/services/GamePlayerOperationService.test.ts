@@ -2,6 +2,7 @@
  * GamePlayerOperationService.test
  * プレイヤー操作サービスの現行挙動を固定する characterization test
  * セッション未開始・非参加者の無視分岐と空室時のセッション破棄を検証する
+ * 試合復帰時のBot制御解除についても同じ無視分岐を検証する
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,6 +14,7 @@ type SessionStubParams = {
   removed?: boolean;
   remainingPlayers?: Player[];
   promoted?: boolean;
+  demoted?: boolean;
 };
 
 /** セッション操作結果を固定した GameRoomSession スタブを生成する */
@@ -20,6 +22,7 @@ const createSessionStub = ({
   removed = true,
   remainingPlayers = [],
   promoted = true,
+  demoted = true,
 }: SessionStubParams = {}) => {
   return {
     movePlayer: vi.fn<(id: string, x: number, y: number) => void>(),
@@ -27,6 +30,7 @@ const createSessionStub = ({
     getPlayers: vi.fn<() => Player[]>(() => remainingPlayers),
     dispose: vi.fn<() => void>(),
     promotePlayerToBotControl: vi.fn<(id: string) => boolean>(() => promoted),
+    demotePlayerFromBotControl: vi.fn<(id: string) => boolean>(() => demoted),
   };
 };
 
@@ -233,6 +237,45 @@ describe("GamePlayerOperationService", () => {
     const { activeIds, service } = createContext({ promoted: true });
 
     service.replaceDisconnectedPlayerWithBot("socket-1");
+
+    expect(activeIds.has("socket-1")).toBe(true);
+  });
+  it("セッション未開始のBot制御解除はfalseを返すこと", () => {
+    const { service } = createContext({ hasSession: false });
+
+    expect(service.demotePlayerFromBotControl("socket-1")).toBe(false);
+  });
+
+  it("セッション未参加プレイヤーのBot制御解除はfalseを返すこと", () => {
+    const { service } = createContext({ activePlayerIds: [] });
+
+    expect(service.demotePlayerFromBotControl("socket-1")).toBe(false);
+  });
+
+  it("セッション未参加プレイヤーのBot制御解除はセッションへ委譲しないこと", () => {
+    const { session, service } = createContext({ activePlayerIds: [] });
+
+    service.demotePlayerFromBotControl("socket-1");
+
+    expect(session.demotePlayerFromBotControl).not.toHaveBeenCalled();
+  });
+
+  it("Bot制御解除成功時はtrueを返すこと", () => {
+    const { service } = createContext({ demoted: true });
+
+    expect(service.demotePlayerFromBotControl("socket-1")).toBe(true);
+  });
+
+  it("セッションが解除を拒否した場合はfalseを返すこと", () => {
+    const { service } = createContext({ demoted: false });
+
+    expect(service.demotePlayerFromBotControl("socket-1")).toBe(false);
+  });
+
+  it("Bot制御解除では参加者一覧を変更しないこと", () => {
+    const { activeIds, service } = createContext({ demoted: true });
+
+    service.demotePlayerFromBotControl("socket-1");
 
     expect(activeIds.has("socket-1")).toBe(true);
   });

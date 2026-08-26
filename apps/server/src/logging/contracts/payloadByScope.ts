@@ -112,6 +112,16 @@ type NetworkProtocolVersionLogPayload = {
   receivedProtocolVersion: string;
 };
 
+/** NetworkのRESUME_SESSION通知ログ契約 */
+type NetworkResumeSessionLogPayload = {
+  event: typeof roomUseCaseLogEvents.RESUME_SESSION;
+  result:
+    | typeof logResults.EMITTED
+    | typeof logResults.REJECTED_SESSION_EXPIRED
+    | typeof logResults.REJECTED_GAME_ENDED;
+  socketId: string;
+};
+
 /** Networkスコープのログ契約ユニオン */
 type NetworkLogPayload =
   | NetworkConnectLogPayload
@@ -124,7 +134,8 @@ type NetworkLogPayload =
   | NetworkLobbySettingsUpdateLogPayload
   | NetworkSelectTeamLogPayload
   | NetworkCorsOriginLogPayload
-  | NetworkProtocolVersionLogPayload;
+  | NetworkProtocolVersionLogPayload
+  | NetworkResumeSessionLogPayload;
 
 /** GameUseCaseのPINGログ契約 */
 type GameUseCasePingLogPayload = {
@@ -250,11 +261,37 @@ type RoomUseCaseRoomUpdateLogPayload = {
   roomId: string;
 };
 
+/** RoomUseCaseのLEAVE_ROOMログ契約 */
+type RoomUseCaseLeaveRoomLogPayload = {
+  event: typeof roomUseCaseLogEvents.LEAVE_ROOM;
+  result:
+    | typeof logResults.PROCESSED
+    | typeof logResults.IGNORED_MISSING_ROOM;
+  socketId: string;
+  roomId?: string;
+};
+
+/** RoomUseCaseのRESUME_SESSIONログ契約 */
+type RoomUseCaseResumeSessionLogPayload = {
+  event: typeof roomUseCaseLogEvents.RESUME_SESSION;
+  result:
+    | typeof logResults.RESUMED
+    | typeof logResults.REJECTED_SESSION_EXPIRED
+    | typeof logResults.REJECTED_GAME_ENDED;
+  socketId: string;
+  /** 復帰先ルーム（予約が引けた場合のみ） */
+  roomId?: string;
+  /** 復帰対象のプレイヤーID（予約が引けた場合のみ） */
+  playerId?: string;
+};
+
 /** RoomUseCaseスコープのログ契約ユニオン */
 type RoomUseCaseLogPayload =
   | RoomUseCaseJoinRoomLogPayload
   | RoomUseCaseDisconnectLogPayload
-  | RoomUseCaseRoomUpdateLogPayload;
+  | RoomUseCaseRoomUpdateLogPayload
+  | RoomUseCaseLeaveRoomLogPayload
+  | RoomUseCaseResumeSessionLogPayload;
 
 /** GamePlayerOperationServiceのPLAYER_MOVEログ契約 */
 type GamePlayerOperationServiceMoveLogPayload = {
@@ -273,10 +310,18 @@ type GamePlayerOperationServiceRemoveLogPayload = {
   roomId?: string;
 };
 
+/** GamePlayerOperationServiceのPLAYER_RESUMEログ契約 */
+type GamePlayerOperationServiceResumeLogPayload = {
+  event: typeof gameDomainLogEvents.PLAYER_RESUME;
+  result: typeof logResults.IGNORED_PLAYER_NOT_IN_SESSION;
+  socketId: string;
+};
+
 /** GamePlayerOperationServiceスコープのログ契約ユニオン */
 type GamePlayerOperationServiceLogPayload =
   | GamePlayerOperationServiceMoveLogPayload
-  | GamePlayerOperationServiceRemoveLogPayload;
+  | GamePlayerOperationServiceRemoveLogPayload
+  | GamePlayerOperationServiceResumeLogPayload;
 
 /** GameLoopのライフサイクルログ契約 */
 type GameLoopLifecycleLogPayload = {
@@ -352,10 +397,22 @@ type RoomJoinServicePlayerJoinLogPayload = {
   socketId: string;
 };
 
+/** RoomJoinServiceのPLAYER_RESTOREログ契約 */
+type RoomJoinServicePlayerRestoreLogPayload = {
+  event: typeof roomDomainLogEvents.PLAYER_RESTORE;
+  result:
+    | typeof logResults.RESTORED
+    | typeof logResults.IGNORED_DUPLICATE
+    | typeof logResults.IGNORED_ROOM_NOT_FOUND;
+  roomId: string;
+  socketId: string;
+};
+
 /** RoomJoinServiceスコープのログ契約ユニオン */
 type RoomJoinServiceLogPayload =
   | RoomJoinServiceRoomCreateLogPayload
-  | RoomJoinServicePlayerJoinLogPayload;
+  | RoomJoinServicePlayerJoinLogPayload
+  | RoomJoinServicePlayerRestoreLogPayload;
 
 /** RoomExitServiceのPLAYER_LEAVEログ契約 */
 type RoomExitServicePlayerLeaveLogPayload = {
