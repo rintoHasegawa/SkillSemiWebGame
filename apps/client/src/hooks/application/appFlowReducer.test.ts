@@ -2,6 +2,7 @@
  * appFlowReducer.test
  * アプリフロー状態遷移の現行挙動を固定する characterization test
  * 各アクションの更新範囲と未知アクション時の同一性を検証する
+ * ロビー表示中は room が必ず存在するという画面遷移仕様の不変条件も検証する
  */
 import { describe, expect, it } from "vitest";
 
@@ -578,5 +579,103 @@ describe("appFlowReducer", () => {
     appFlowReducer(state, { type: "connectionEstablished", myId: "socket-2" });
 
     expect(state.myId).toBe("socket-1");
+  });
+
+  it("ロビー中の connectionLost で room を破棄すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.LOBBY,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "connectionLost" },
+    );
+
+    expect(next.room).toBeNull();
+  });
+
+  it("ロビー中の resetToTitle で room を破棄すること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.LOBBY,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      { type: "resetToTitle", clearMyId: true },
+    );
+
+    expect(next.room).toBeNull();
+  });
+
+  it("setRoomAndLobby でロビーへ遷移したとき room が設定済みであること", () => {
+    const next = appFlowReducer(createState(), {
+      type: "setRoomAndLobby",
+      room: createRoom(),
+    });
+
+    expect(next.scenePhase).toBe(domain.app.ScenePhase.LOBBY);
+    expect(next.room).not.toBeNull();
+  });
+
+  it("ロビー中の updateRoom 後も room が設定済みのままであること", () => {
+    const next = appFlowReducer(
+      createState({
+        scenePhase: domain.app.ScenePhase.LOBBY,
+        room: createRoom("room-1"),
+      }),
+      { type: "updateRoom", room: createRoom("room-2") },
+    );
+
+    expect(next.room).not.toBeNull();
+  });
+
+  it("どのアクションを適用してもロビー表示中に room が null にならないこと", () => {
+    // 画面遷移仕様（SPEC_01）上，ロビー表示はルーム受信後にのみ成立する
+    const states: AppFlowData[] = [
+      createState(),
+      createState({ scenePhase: domain.app.ScenePhase.TITLE, myId: "socket-1" }),
+      createState({
+        scenePhase: domain.app.ScenePhase.LOBBY,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      createState({
+        scenePhase: domain.app.ScenePhase.PLAYING,
+        room: createRoom(),
+        myId: "socket-1",
+      }),
+      createState({
+        scenePhase: domain.app.ScenePhase.RESULT,
+        gameResult: createGameResult(),
+        myId: "socket-1",
+      }),
+    ];
+    const actions: AppFlowAction[] = [
+      { type: "connectionEstablished", myId: "socket-1" },
+      { type: "connectionEstablished", myId: "socket-2" },
+      { type: "connectionLost" },
+      { type: "clearConnectionNotice" },
+      { type: "setPlayerName", playerName: "たろう" },
+      { type: "setRoomAndLobby", room: createRoom("room-2") },
+      { type: "updateRoom", room: createRoom("room-3") },
+      { type: "setPlaying" },
+      { type: "setResult", result: createGameResult() },
+      { type: "resetToTitle", clearMyId: false },
+      { type: "resetToTitle", clearMyId: true },
+    ];
+
+    // ロビーでありながら room を持たない結果状態を洗い出す
+    const violations = states.flatMap((state) =>
+      actions
+        .map((action) => ({ action, next: appFlowReducer(state, action) }))
+        .filter(
+          ({ next }) =>
+            next.scenePhase === domain.app.ScenePhase.LOBBY &&
+            next.room === null,
+        )
+        .map(({ action }) => action.type),
+    );
+
+    expect(violations).toEqual([]);
   });
 });

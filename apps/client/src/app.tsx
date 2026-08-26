@@ -43,8 +43,10 @@ export default function App() {
   }
 
   // ロビー画面分岐
+  // room未受信時はここでフォールバックを描画し，LobbyScene側のHookを
+  // 条件分岐に巻き込まないようにする
   if (scenePhase === domain.app.ScenePhase.LOBBY) {
-    scene = (
+    scene = room ? (
       <LobbyScene
         room={room}
         myId={myId}
@@ -53,6 +55,8 @@ export default function App() {
         }
         onBackToTitle={() => returnToTitle({ leaveRoom: true })}
       />
+    ) : (
+      <div style={{ color: "white", padding: 40 }}>読み込み中...</div>
     );
   }
 
