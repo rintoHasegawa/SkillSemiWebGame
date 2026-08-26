@@ -164,17 +164,20 @@ export class BombView {
 
     if (clampedRatio <= 0) return;
 
-    // 起点から残り比率ぶんの弧を描く
-    const endAngle = FUSE_GAUGE_START_ANGLE + clampedRatio * FULL_TURN_ANGLE;
+    // 消費ぶんを起点から時計回りに詰めることで，残弧の始端が時計回りに進む見え方にする
+    // （終端を起点側へ戻すと，弧が反時計回りに減るように見えてしまう）
+    const startAngle =
+      FUSE_GAUGE_START_ANGLE + (1 - clampedRatio) * FULL_TURN_ANGLE;
+    const endAngle = FUSE_GAUGE_START_ANGLE + FULL_TURN_ANGLE;
     const outlineWidth =
       BOMB_FUSE_GAUGE.THICKNESS_PX + BOMB_FUSE_GAUGE.OUTLINE_WIDTH_PX * 2;
 
     // 太い白弧の上に細いチーム色弧を重ねて縁取りを表現する
-    this.strokeFuseArc(FUSE_GAUGE_START_ANGLE, endAngle, {
+    this.strokeFuseArc(startAngle, endAngle, {
       color: BOMB_FUSE_GAUGE.OUTLINE_COLOR,
       width: outlineWidth,
     });
-    this.strokeFuseArc(FUSE_GAUGE_START_ANGLE, endAngle, {
+    this.strokeFuseArc(startAngle, endAngle, {
       color,
       width: BOMB_FUSE_GAUGE.THICKNESS_PX,
     });

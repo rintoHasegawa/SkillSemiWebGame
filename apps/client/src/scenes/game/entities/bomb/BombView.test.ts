@@ -178,19 +178,37 @@ describe("BombView.renderFuseGauge", () => {
     ]);
   });
 
-  it("残り比率0.5のとき半周ぶんの弧を描くこと", async () => {
+  it("残り比率0.5のとき消費ぶんを時計回りに詰めた半周の弧を描くこと", async () => {
     const { BombView } = await import("./BombView");
     const view = new BombView();
 
     view.renderFuseGauge(0.5, 0xff4b4b);
 
+    // 残弧の始端が起点から時計回りへ半周進み，終端は起点（一周後）に固定される
     expect(findArcCall(getFuseGaugeGraphic(view).calls)?.args).toEqual([
       0,
       0,
       GAUGE_RADIUS_PX,
-      GAUGE_START_ANGLE,
       GAUGE_START_ANGLE + Math.PI,
+      GAUGE_START_ANGLE + Math.PI * 2,
     ]);
+  });
+
+  it("残り比率が減るほど弧の始端が時計回りに進むこと", async () => {
+    const { BombView } = await import("./BombView");
+    // fake Graphics は呼び出しを累積するため，比率ごとにビューを分ける
+    const earlierView = new BombView();
+    const laterView = new BombView();
+
+    earlierView.renderFuseGauge(0.75, 0xff4b4b);
+    const earlierStartAngle = findArcCall(getFuseGaugeGraphic(earlierView).calls)
+      ?.args[3] as number;
+
+    laterView.renderFuseGauge(0.25, 0xff4b4b);
+    const laterStartAngle = findArcCall(getFuseGaugeGraphic(laterView).calls)
+      ?.args[3] as number;
+
+    expect(laterStartAngle).toBeGreaterThan(earlierStartAngle);
   });
 
   it("残り比率0のとき弧を描かないこと", async () => {
