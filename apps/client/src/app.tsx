@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { socketManager } from "./network/SocketManager";
 import { useAppFlow } from "./hooks/useAppFlow";
 import { useAppUpdateGate } from "./hooks/useAppUpdateGate";
+import { useChunkLoadRecovery } from "./hooks/useChunkLoadRecovery";
 
 // 画面遷移先シーンコンポーネント群
 import { TitleScene } from "./scenes/title/TitleScene";
@@ -48,6 +49,9 @@ export default function App() {
 
     setIsTitleFormOpen(false);
   }, [scenePhase]);
+
+  // 再デプロイでチャンクが 404 になったページを自動復旧する（更新ゲートとは独立）
+  useChunkLoadRecovery();
 
   useAppUpdateGate({
     scenePhase,

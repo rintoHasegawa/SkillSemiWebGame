@@ -5,6 +5,8 @@
  */
 import { registerSW } from "virtual:pwa-register";
 import {
+  CHUNK_RECOVERY_RELOAD_SESSION_KEY,
+  hasRecoveredFromChunkErrorInSession,
   hasRecoveredFromProtocolMismatchInSession,
   markSession,
   PROTOCOL_RECOVERY_RELOAD_SESSION_KEY,
@@ -98,6 +100,25 @@ export const applyPendingUpdate = (): boolean => {
   return true;
 };
 
+// 壊れたページの事後復旧を開始する（更新チェック → 待機中の版の適用 → 素のリロード）
+// 復旧種別ごとにセッションキーを分け，片方の復旧がもう片方の 1 回分を消費しないようにする
+const startRecovery = async (sessionKey: string): Promise<boolean> => {
+  // リロードを 1 セッション 1 回に制限するため，復旧の開始時点で記録する
+  markSession(sessionKey);
+
+  await requestUpdateCheck();
+
+  if (applyPendingUpdate()) {
+    return true;
+  }
+
+  // 新しい版が待機状態にならない場合（Service Worker の管理外ページでは既に
+  // 活性化済みで skipWaiting 経路が空振りする）も，素のリロードで新しい成果物を
+  // 取り直す．新しい版が無いときも取得済みバンドルの再読込で解消する可能性に賭ける
+  window.location.reload();
+  return true;
+};
+
 /**
  * プロトコル版不一致からの自動復旧を試みる
  * 復旧動作（更新適用またはリロード）を開始した場合に true を返す
@@ -108,15 +129,22 @@ export const recoverFromProtocolVersionMismatch = async (): Promise<boolean> => 
     return false;
   }
 
-  markSession(PROTOCOL_RECOVERY_RELOAD_SESSION_KEY);
+  return await startRecovery(PROTOCOL_RECOVERY_RELOAD_SESSION_KEY);
+};
 
-  await requestUpdateCheck();
-
-  if (applyPendingUpdate()) {
-    return true;
+/**
+ * 遅延チャンクの取得失敗（再デプロイによる 404）からの自動復旧を試みる
+ * 復旧動作（更新適用またはリロード）を開始した場合に true を返す
+ *
+ * #368 の「安全なタイミングまで更新を適用しない」ゲートを通さないが，
+ * ゲートが抑えるのは能動的な更新適用であり，こちらは既に壊れたページの
+ * 事後復旧であるため，プロトコル版不一致の復旧と同じ位置づけとする
+ */
+export const recoverFromChunkLoadFailure = async (): Promise<boolean> => {
+  if (hasRecoveredFromChunkErrorInSession()) {
+    // 既に一度試して解消しなかったため，呼び出し側でエラー表示へフォールバックする
+    return false;
   }
 
-  // 新しい版が見つからない場合も，取得済みバンドルの再読込で解消する可能性に賭ける
-  window.location.reload();
-  return true;
+  return await startRecovery(CHUNK_RECOVERY_RELOAD_SESSION_KEY);
 };
