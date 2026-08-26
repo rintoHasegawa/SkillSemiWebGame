@@ -3,10 +3,14 @@
  * 更新適用のリロードを 1 セッション 1 回に制限する記録の仕様を検証する
  * 未マーク→マーク→マーク済み判定と，sessionStorage が使えない環境での
  * フォールバック（Issue #368 受け入れ条件）を対象とする
+ * あわせて遅延チャンク取得失敗の復旧キーが他の記録と独立であること
+ * （Issue #375 受け入れ条件）を検証する
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CHUNK_RECOVERY_RELOAD_SESSION_KEY,
+  hasRecoveredFromChunkErrorInSession,
   hasRecoveredFromProtocolMismatchInSession,
   hasReloadedForUpdateInSession,
   hasSessionMark,
@@ -141,6 +145,38 @@ describe("hasRecoveredFromProtocolMismatchInSession", () => {
 
     expect(hasRecoveredFromProtocolMismatchInSession()).toBe(false);
   });
+
+  it("チャンク取得失敗の復旧記録では true にならないこと", () => {
+    // チャンク復旧が版不一致復旧の 1 回分を消費してはならない
+    markSession(CHUNK_RECOVERY_RELOAD_SESSION_KEY);
+
+    expect(hasRecoveredFromProtocolMismatchInSession()).toBe(false);
+  });
+});
+
+describe("hasRecoveredFromChunkErrorInSession", () => {
+  it("復旧の試行前は false を返すこと", () => {
+    expect(hasRecoveredFromChunkErrorInSession()).toBe(false);
+  });
+
+  it("復旧の試行を記録すると true を返すこと", () => {
+    markSession(CHUNK_RECOVERY_RELOAD_SESSION_KEY);
+
+    expect(hasRecoveredFromChunkErrorInSession()).toBe(true);
+  });
+
+  it("版不一致の復旧記録では true にならないこと", () => {
+    // 版不一致復旧がチャンク復旧の 1 回分を消費してはならない
+    markSession(PROTOCOL_RECOVERY_RELOAD_SESSION_KEY);
+
+    expect(hasRecoveredFromChunkErrorInSession()).toBe(false);
+  });
+
+  it("更新適用のリロード記録では true にならないこと", () => {
+    markSession(UPDATE_RELOAD_SESSION_KEY);
+
+    expect(hasRecoveredFromChunkErrorInSession()).toBe(false);
+  });
 });
 
 describe("セッションキー", () => {
@@ -148,5 +184,15 @@ describe("セッションキー", () => {
     expect(UPDATE_RELOAD_SESSION_KEY).not.toBe(
       PROTOCOL_RECOVERY_RELOAD_SESSION_KEY,
     );
+  });
+
+  it("更新適用・版不一致復旧・チャンク復旧で互いに異なるキーを用いること", () => {
+    const keys = [
+      UPDATE_RELOAD_SESSION_KEY,
+      PROTOCOL_RECOVERY_RELOAD_SESSION_KEY,
+      CHUNK_RECOVERY_RELOAD_SESSION_KEY,
+    ];
+
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });

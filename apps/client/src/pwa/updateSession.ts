@@ -11,6 +11,13 @@ export const UPDATE_RELOAD_SESSION_KEY = "ppw:app-update-reloaded";
 export const PROTOCOL_RECOVERY_RELOAD_SESSION_KEY =
   "ppw:protocol-recovery-reloaded";
 
+/**
+ * 遅延チャンクの取得失敗からの復旧リロードを実施したことを記録するキー
+ * プロトコル版不一致の復旧とはキーを分け，片方の復旧がもう片方の 1 回分を
+ * 消費しないようにする
+ */
+export const CHUNK_RECOVERY_RELOAD_SESSION_KEY = "ppw:chunk-recovery-reloaded";
+
 /** 指定キーがこのセッションで記録済みかを判定する（参照できない環境では false） */
 export const hasSessionMark = (key: string): boolean => {
   try {
@@ -38,4 +45,9 @@ export const hasReloadedForUpdateInSession = (): boolean => {
 /** このセッションでプロトコル版不一致の復旧を試行済みかを判定する */
 export const hasRecoveredFromProtocolMismatchInSession = (): boolean => {
   return hasSessionMark(PROTOCOL_RECOVERY_RELOAD_SESSION_KEY);
+};
+
+/** このセッションで遅延チャンク取得失敗の復旧を試行済みかを判定する */
+export const hasRecoveredFromChunkErrorInSession = (): boolean => {
+  return hasSessionMark(CHUNK_RECOVERY_RELOAD_SESSION_KEY);
 };
