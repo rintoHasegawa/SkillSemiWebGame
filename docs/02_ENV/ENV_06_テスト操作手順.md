@@ -55,11 +55,15 @@
    pnpm install
    ```
 
+   ※ `test/package.json` の `postinstall` により，`.env.local` が無い場合のみ `.env.local.example` がコピーされて `.env.local` が生成される．既存の `.env.local` は上書きされない（`.env.local` は gitignore 済み）．
+
 ### 実行
 
 ```bash
 pnpm start
 ```
+
+※ `pnpm start` は `node --env-file=.env.local --loader ts-node/esm load-bot.ts` を実行する．`.env.local` が存在しないと Node の起動時点で失敗するため，初回準備の `pnpm install` を先に済ませておくこと．
 
 開発環境に接続する場合:
 
