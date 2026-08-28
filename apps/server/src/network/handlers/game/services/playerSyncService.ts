@@ -11,13 +11,17 @@ import type {
   RoomPlayerPositionCache,
 } from "@server/network/adapters/realtimeRoomSyncState";
 import type { ReliableEmitters } from "../../CommonHandler";
-import { isTargetInAoiWindow, resolveViewerAoiWindow, type AoiWindow } from "../aoi/aoiVisibility";
+import { isTargetInAoiWindow, type AoiWindow } from "../aoi/aoiVisibility";
 import {
   getActiveBombSnapshotsInRoom,
   type RuntimeResolverDeps,
 } from "../runtime/gameRuntimeResolvers";
 import type { BombSyncService } from "./bombSyncService";
-import { forEachRoomViewer } from "./roomViewerSyncContext";
+import {
+  forEachRoomViewer,
+  refreshViewerAoiWindow,
+  type UpdateViewerAoiCellCache,
+} from "./roomViewerSyncContext";
 
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
@@ -36,24 +40,13 @@ export type CreatePlayerSyncServiceDeps = {
   runtimeDeps: RuntimeResolverDeps;
   realtimeRoomSyncState: RealtimeRoomSyncStateStore;
   bombSyncService: Pick<BombSyncService, "syncVisibleBombsByViewer">;
-  updateViewerAoiCellCache: (
-    roomId: RoomId,
-    viewerId: SocketId,
-    viewer: domain.game.player.PlayerData,
-  ) => void;
+  updateViewerAoiCellCache: UpdateViewerAoiCellCache;
 };
 
 /** プレイヤー差分同期サービスを生成する */
 export const createPlayerSyncService = (
   deps: CreatePlayerSyncServiceDeps,
 ): PlayerSyncService => {
-  const isInViewerAoi = (
-    target: { x: number; y: number },
-    aoiWindow: AoiWindow,
-  ): boolean => {
-    return isTargetInAoiWindow(target, aoiWindow);
-  };
-
   const syncVisiblePlayersByViewer = (
     roomId: RoomId,
     viewerId: SocketId,
@@ -123,7 +116,7 @@ export const createPlayerSyncService = (
         return options.includeSelf;
       }
 
-      return isInViewerAoi(player, aoiWindow);
+      return isTargetInAoiWindow(player, aoiWindow);
     });
   };
 
@@ -145,8 +138,12 @@ export const createPlayerSyncService = (
             activeBombs,
           );
 
-          deps.updateViewerAoiCellCache(roomId, viewerId, viewer);
-          const aoiWindow = resolveViewerAoiWindow(viewer);
+          const aoiWindow = refreshViewerAoiWindow({
+            updateViewerAoiCellCache: deps.updateViewerAoiCellCache,
+            roomId,
+            viewerId,
+            viewer,
+          });
 
           const visibleSnapshotPlayers = buildVisibleSnapshotPlayers(
             roomPlayers,
@@ -168,7 +165,7 @@ export const createPlayerSyncService = (
               return false;
             }
 
-            return isInViewerAoi(player, aoiWindow);
+            return isTargetInAoiWindow(player, aoiWindow);
           });
 
           const viewerPositionCache = deps.realtimeRoomSyncState.getPlayerPositionCache(

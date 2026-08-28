@@ -9,15 +9,15 @@ import type { ActiveBombSnapshot } from "@server/domains/game/application/ports/
 import { isBotPlayerId } from "@server/domains/game/application/services/bot/index.js";
 import type { RealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import type { ReliableEmitters } from "../../CommonHandler";
-import {
-  isTargetInAoiWindow,
-  resolveViewerAoiWindow,
-  type AoiWindow,
-} from "../aoi/aoiVisibility";
+import { isTargetInAoiWindow } from "../aoi/aoiVisibility";
 import {
   type RuntimeResolverDeps,
 } from "../runtime/gameRuntimeResolvers";
-import { forEachRoomViewer } from "./roomViewerSyncContext";
+import {
+  forEachRoomViewer,
+  refreshViewerAoiWindow,
+  type UpdateViewerAoiCellCache,
+} from "./roomViewerSyncContext";
 
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
@@ -42,28 +42,21 @@ export type CreateBombSyncServiceDeps = {
   reliable: ReliableEmitters;
   runtimeDeps: RuntimeResolverDeps;
   realtimeRoomSyncState: RealtimeRoomSyncStateStore;
-  updateViewerAoiCellCache: (
-    roomId: RoomId,
-    viewerId: SocketId,
-    viewer: domain.game.player.PlayerData,
-  ) => void;
+  updateViewerAoiCellCache: UpdateViewerAoiCellCache;
 };
 
 /** 爆弾のAOI同期サービスを生成する */
 export const createBombSyncService = (
   deps: CreateBombSyncServiceDeps,
 ): BombSyncService => {
-  const isInViewerAoi = (
-    target: { x: number; y: number },
-    aoiWindow: AoiWindow,
-  ): boolean => {
-    return isTargetInAoiWindow(target, aoiWindow);
-  };
-
   return {
     syncVisibleBombsByViewer: (roomId, viewerId, viewer, bombs) => {
-      deps.updateViewerAoiCellCache(roomId, viewerId, viewer);
-      const aoiWindow = resolveViewerAoiWindow(viewer);
+      const aoiWindow = refreshViewerAoiWindow({
+        updateViewerAoiCellCache: deps.updateViewerAoiCellCache,
+        roomId,
+        viewerId,
+        viewer,
+      });
       const previousVisibleBombIds = deps.realtimeRoomSyncState.getVisibleBombIdsSnapshot(
         roomId,
         viewerId,
@@ -71,7 +64,7 @@ export const createBombSyncService = (
       const nextVisibleBombIds = new Set<string>();
 
       bombs.forEach((bomb) => {
-        if (!isInViewerAoi(bomb, aoiWindow)) {
+        if (!isTargetInAoiWindow(bomb, aoiWindow)) {
           return;
         }
 
@@ -109,17 +102,25 @@ export const createBombSyncService = (
         runtimeDeps: deps.runtimeDeps,
         roomId,
         run: ({ viewerId, viewer }) => {
-        if (viewerId === excludedSocketId && !isBotPlayerId(excludedSocketId)) {
-          return;
-        }
+          if (viewerId === excludedSocketId && !isBotPlayerId(excludedSocketId)) {
+            return;
+          }
 
-        deps.updateViewerAoiCellCache(roomId, viewerId, viewer);
-        const aoiWindow = resolveViewerAoiWindow(viewer);
-        if (!isInViewerAoi(payload, aoiWindow)) {
-          return;
-        }
+          const aoiWindow = refreshViewerAoiWindow({
+            updateViewerAoiCellCache: deps.updateViewerAoiCellCache,
+            roomId,
+            viewerId,
+            viewer,
+          });
+          if (!isTargetInAoiWindow(payload, aoiWindow)) {
+            return;
+          }
 
-        deps.reliable.emitToSocketById(viewerId, protocol.SocketEvents.BOMB_PLACED, payload);
+          deps.reliable.emitToSocketById(
+            viewerId,
+            protocol.SocketEvents.BOMB_PLACED,
+            payload,
+          );
         },
       });
     },
