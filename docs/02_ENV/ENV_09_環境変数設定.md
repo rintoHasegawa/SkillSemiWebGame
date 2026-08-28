@@ -46,6 +46,16 @@ VITE_PROD_SERVER_URL=http://localhost:3000
 - 設定箇所: docker-compose.prod.yml の environment セクション
 - 注意事項: リポジトリルートの `Dockerfile` が `ENV NODE_ENV=production` を焼き込んでいるため，Docker イメージから起動した場合は常に本番モードとなる．ローカルで `docker compose -f docker-compose.prod.yml` を使う場合も後述の CORS_ORIGIN の設定が必要である
 
+#### PORT
+
+- 用途: サーバ（HTTP / Socket.IO）が待ち受けるポート番号
+- 参照箇所: apps/server/src/index.ts の PORT（`httpServer.listen` に渡す）
+- 設定箇所: リポジトリルートの `Dockerfile` が `ENV PORT=3000` を焼き込んでいる
+- 未設定時の挙動: apps/server/src/config/index.ts の `NETWORK_CONFIG.DEV_SERVER_PORT`（3000）を使用する
+- 注意事項:
+  - `Dockerfile` は同じ 3000 番を `EXPOSE` しているため，Docker イメージから起動した場合の待受ポートは 3000 である
+  - `docker-compose.prod.yml` はコンテナの 3000 番をホストの 3001 番へ公開する．ホスト側の公開ポートを変えたい場合は PORT ではなく ports のマッピングを変更する
+
 #### CORS_ORIGIN
 
 - 用途: Socket.IO サーバが接続を許可するブラウザのオリジン（クライアントの配信元 URL）を指定する
