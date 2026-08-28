@@ -3,36 +3,11 @@
  * ゲーム向けソケット操作の現行挙動を固定する characterization test
  * 購読・購読解除・送信がどのイベント名へ結線されるかを検証する
  */
-import type { Socket } from "socket.io-client";
 import { describe, expect, it } from "vitest";
 import type { BombHitReportPayload, PlaceBombPayload } from "@repo/shared";
 
 import { createGameHandler, type GameHandler } from "./GameHandler";
-
-/** 呼び出し記録付きのソケットスタブを生成する */
-const createSocketStub = () => {
-  const onCalls: { event: string; callback: unknown }[] = [];
-  const onceCalls: { event: string; callback: unknown }[] = [];
-  const offCalls: { event: string; callback: unknown }[] = [];
-  const emitCalls: { event: string; args: unknown[] }[] = [];
-
-  const socket = {
-    on: (event: string, callback: unknown) => {
-      onCalls.push({ event, callback });
-    },
-    once: (event: string, callback: unknown) => {
-      onceCalls.push({ event, callback });
-    },
-    off: (event: string, callback: unknown) => {
-      offCalls.push({ event, callback });
-    },
-    emit: (event: string, ...args: unknown[]) => {
-      emitCalls.push({ event, args });
-    },
-  } as unknown as Socket;
-
-  return { socket, onCalls, onceCalls, offCalls, emitCalls };
-};
+import { createSocketStub } from "./socketTestStub";
 
 // 全購読APIで共用できるよう，引数を取らないコールバックを使う
 type SubscriptionCallback = () => void;

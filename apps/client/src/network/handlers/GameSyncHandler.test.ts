@@ -3,32 +3,10 @@
  * 時刻同期ソケット操作の現行挙動を固定する characterization test
  * PING送信イベント名とPONG購読解除の委譲を検証する
  */
-import type { Socket } from "socket.io-client";
 import { describe, expect, it } from "vitest";
 
 import { createGameSyncHandler } from "./GameSyncHandler";
-
-/** 呼び出し記録付きのソケットスタブを生成する */
-const createSocketStub = () => {
-  const onCalls: { event: string; callback: unknown }[] = [];
-  const offCalls: { event: string; callback: unknown }[] = [];
-  const emitCalls: { event: string; args: unknown[] }[] = [];
-
-  const socket = {
-    on: (event: string, callback: unknown) => {
-      onCalls.push({ event, callback });
-    },
-    once: () => undefined,
-    off: (event: string, callback: unknown) => {
-      offCalls.push({ event, callback });
-    },
-    emit: (event: string, ...args: unknown[]) => {
-      emitCalls.push({ event, args });
-    },
-  } as unknown as Socket;
-
-  return { socket, onCalls, offCalls, emitCalls };
-};
+import { createSocketStub } from "./socketTestStub";
 
 describe("createGameSyncHandler", () => {
   it("PONG購読をpongイベントへ登録すること", () => {
