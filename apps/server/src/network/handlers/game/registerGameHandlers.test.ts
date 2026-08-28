@@ -16,7 +16,7 @@ import type {
   GameEventRoomUseCasePort,
   GameEventRuntimeUseCasePort,
 } from "@server/network/types/connectionPorts";
-import type { GameOutputAdapter } from "./createGameOutputAdapter";
+import { createGameOutputAdapterStub } from "@server/testing/gameOutputFixtures";
 import {
   handleBombHitReportEvent,
   handleMoveEvent,
@@ -66,52 +66,6 @@ const createSocketStub = (socketId: string) => {
   } as unknown as Socket;
 
   return { socket, emit, listeners };
-};
-
-/** 送信内容を記録するゲーム出力アダプタースタブを生成する */
-const createGameOutputStub = () => {
-  return {
-    publishPongToSocket: vi.fn<GameOutputAdapter["publishPongToSocket"]>(),
-    publishUpdatePlayersToRoom: vi.fn<
-      GameOutputAdapter["publishUpdatePlayersToRoom"]
-    >(),
-    publishMapCellUpdatesToRoom: vi.fn<
-      GameOutputAdapter["publishMapCellUpdatesToRoom"]
-    >(),
-    publishCurrentHurricanesToRoom: vi.fn<
-      GameOutputAdapter["publishCurrentHurricanesToRoom"]
-    >(),
-    publishUpdateHurricanesToRoom: vi.fn<
-      GameOutputAdapter["publishUpdateHurricanesToRoom"]
-    >(),
-    publishGameEndToRoom: vi.fn<GameOutputAdapter["publishGameEndToRoom"]>(),
-    publishGameResultToRoom: vi.fn<
-      GameOutputAdapter["publishGameResultToRoom"]
-    >(),
-    publishGameStartToRoom: vi.fn<GameOutputAdapter["publishGameStartToRoom"]>(),
-    publishCurrentPlayersToSocket: vi.fn<
-      GameOutputAdapter["publishCurrentPlayersToSocket"]
-    >(),
-    publishMapCellsToSocket: vi.fn<
-      GameOutputAdapter["publishMapCellsToSocket"]
-    >(),
-    publishGameStartToSocket: vi.fn<
-      GameOutputAdapter["publishGameStartToSocket"]
-    >(),
-    publishBombPlacedToOthersInRoom: vi.fn<
-      GameOutputAdapter["publishBombPlacedToOthersInRoom"]
-    >(),
-    publishBombPlacedAckToSocket: vi.fn<
-      GameOutputAdapter["publishBombPlacedAckToSocket"]
-    >(),
-    publishPlayerHitToOthersInRoom: vi.fn<
-      GameOutputAdapter["publishPlayerHitToOthersInRoom"]
-    >(),
-    publishPlayerHitToRoom: vi.fn<GameOutputAdapter["publishPlayerHitToRoom"]>(),
-    publishHurricaneHitToRoom: vi.fn<
-      GameOutputAdapter["publishHurricaneHitToRoom"]
-    >(),
-  } satisfies GameOutputAdapter;
 };
 
 /** ルーム状態配信を記録する出力スタブを生成する */
@@ -164,7 +118,7 @@ const setupHandlers = (socketId: string = "socket-1") => {
   const { socket, emit, listeners } = createSocketStub(socketId);
   const roomManager = createRoomManagerStub();
   const runtimeRegistry = createRuntimeRegistryStub();
-  const gameOutputAdapter = createGameOutputStub();
+  const gameOutputAdapter = createGameOutputAdapterStub();
   const roomOutputAdapter = createRoomOutputStub();
   const identityRegistry = new PlayerIdentityRegistry();
   const sessionReservations = {

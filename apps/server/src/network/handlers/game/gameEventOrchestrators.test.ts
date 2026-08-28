@@ -18,12 +18,15 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
+import {
+  createGameOutputAdapterStub,
+  type GameOutputAdapterStub,
+} from "@server/testing/gameOutputFixtures";
 import { createRoomScopedGamePortStub } from "@server/testing/gamePortFixtures";
 import {
   createRoom as createRoomFixture,
   createRoomMember,
 } from "@server/testing/roomFixtures";
-import type { GameOutputAdapter } from "./createGameOutputAdapter";
 import {
   handleBombHitReportEvent,
   handleMoveEvent,
@@ -85,52 +88,6 @@ const createGameManagerStub = ({
   });
 };
 
-/** 送信内容を記録するゲーム出力アダプタースタブを生成する */
-const createOutputStub = () => {
-  return {
-    publishPongToSocket: vi.fn<GameOutputAdapter["publishPongToSocket"]>(),
-    publishUpdatePlayersToRoom: vi.fn<
-      GameOutputAdapter["publishUpdatePlayersToRoom"]
-    >(),
-    publishMapCellUpdatesToRoom: vi.fn<
-      GameOutputAdapter["publishMapCellUpdatesToRoom"]
-    >(),
-    publishCurrentHurricanesToRoom: vi.fn<
-      GameOutputAdapter["publishCurrentHurricanesToRoom"]
-    >(),
-    publishUpdateHurricanesToRoom: vi.fn<
-      GameOutputAdapter["publishUpdateHurricanesToRoom"]
-    >(),
-    publishGameEndToRoom: vi.fn<GameOutputAdapter["publishGameEndToRoom"]>(),
-    publishGameResultToRoom: vi.fn<
-      GameOutputAdapter["publishGameResultToRoom"]
-    >(),
-    publishGameStartToRoom: vi.fn<GameOutputAdapter["publishGameStartToRoom"]>(),
-    publishCurrentPlayersToSocket: vi.fn<
-      GameOutputAdapter["publishCurrentPlayersToSocket"]
-    >(),
-    publishMapCellsToSocket: vi.fn<
-      GameOutputAdapter["publishMapCellsToSocket"]
-    >(),
-    publishGameStartToSocket: vi.fn<
-      GameOutputAdapter["publishGameStartToSocket"]
-    >(),
-    publishBombPlacedToOthersInRoom: vi.fn<
-      GameOutputAdapter["publishBombPlacedToOthersInRoom"]
-    >(),
-    publishBombPlacedAckToSocket: vi.fn<
-      GameOutputAdapter["publishBombPlacedAckToSocket"]
-    >(),
-    publishPlayerHitToOthersInRoom: vi.fn<
-      GameOutputAdapter["publishPlayerHitToOthersInRoom"]
-    >(),
-    publishPlayerHitToRoom: vi.fn<GameOutputAdapter["publishPlayerHitToRoom"]>(),
-    publishHurricaneHitToRoom: vi.fn<
-      GameOutputAdapter["publishHurricaneHitToRoom"]
-    >(),
-  } satisfies GameOutputAdapter;
-};
-
 /** ルーム状態配信を記録する出力スタブを生成する */
 const createRoomOutputStub = () => {
   return {
@@ -151,7 +108,7 @@ const createDeps = ({
   room,
   gameManager,
 }: DepsParams): GameEventOrchestratorDeps & {
-  output: ReturnType<typeof createOutputStub>;
+  output: GameOutputAdapterStub;
   roomOutput: ReturnType<typeof createRoomOutputStub>;
 } => {
   const transition: RoomPhaseTransitionResult = room
@@ -197,7 +154,7 @@ const createDeps = ({
       >(() => gameManager),
       cleanupGameManagerForRoom: vi.fn<(roomId: string) => void>(),
     },
-    output: createOutputStub(),
+    output: createGameOutputAdapterStub(),
     roomOutput: createRoomOutputStub(),
     sessionReservations: {
       releaseByRoomId: vi.fn<(roomId: string) => void>(),
