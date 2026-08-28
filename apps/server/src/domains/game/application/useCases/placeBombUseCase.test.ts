@@ -118,6 +118,75 @@ const startSessionAtElapsed = (
   return clock;
 };
 
+/** 拒否シナリオで副作用の有無を確認する対象スタブ */
+type PlaceBombSpyDeps = {
+  bombStore: ReturnType<typeof createBombStoreStub>;
+  output: ReturnType<typeof createOutputStub>;
+};
+
+/** 拒否シナリオで発生してはならない副作用（説明と対象スタブ） */
+const rejectedEffects = {
+  issueBombId: {
+    description: "爆弾IDを採番しないこと",
+    resolveSpy: (deps: PlaceBombSpyDeps) => deps.bombStore.issueServerBombId,
+  },
+  registerBomb: {
+    description: "爆弾を登録しないこと",
+    resolveSpy: (deps: PlaceBombSpyDeps) => deps.bombStore.registerActiveBomb,
+  },
+  publishToOthers: {
+    description: "他プレイヤーへ配信しないこと",
+    resolveSpy: (deps: PlaceBombSpyDeps) =>
+      deps.output.publishBombPlacedToOthersInRoom,
+  },
+  publishAck: {
+    description: "ACKを返さないこと",
+    resolveSpy: (deps: PlaceBombSpyDeps) =>
+      deps.output.publishBombPlacedAckToSocket,
+  },
+} as const;
+
+type RejectedEffectKey = keyof typeof rejectedEffects;
+
+/**
+ * 設置が拒否されるシナリオと，そのとき発生してはならない副作用の組み合わせ
+ * ※ 「爆弾IDを採番できない」シナリオは採番の実行自体が前提であるため，
+ *   issueBombId は検証対象に含めない（このシナリオのみ 3 件）
+ */
+const rejectedScenarios: {
+  description: string;
+  storeParams: BombStoreStubParams;
+  effectKeys: RejectedEffectKey[];
+}[] = [
+  {
+    description: "重複排除で配信不可の場合は",
+    storeParams: { shouldBroadcast: false },
+    effectKeys: ["issueBombId", "registerBomb", "publishToOthers", "publishAck"],
+  },
+  {
+    description: "クールダウン未経過の場合は",
+    storeParams: { shouldBroadcast: true, shouldAccept: false },
+    effectKeys: ["issueBombId", "registerBomb", "publishToOthers", "publishAck"],
+  },
+  {
+    description: "爆弾IDを採番できない場合は",
+    storeParams: { shouldBroadcast: true, canIssueBombId: false },
+    effectKeys: ["registerBomb", "publishToOthers", "publishAck"],
+  },
+];
+
+/** シナリオ×副作用を展開したテストケース一覧（テスト名・スタブ設定・副作用キー） */
+const rejectedEffectCases: [string, BombStoreStubParams, RejectedEffectKey][] =
+  rejectedScenarios.flatMap((scenario) =>
+    scenario.effectKeys.map(
+      (effectKey): [string, BombStoreStubParams, RejectedEffectKey] => [
+        `${scenario.description}${rejectedEffects[effectKey].description}`,
+        scenario.storeParams,
+        effectKey,
+      ],
+    ),
+  );
+
 let logSpy: ReturnType<typeof vi.spyOn>;
 
 describe("placeBombUseCase", () => {
@@ -129,40 +198,15 @@ describe("placeBombUseCase", () => {
     vi.restoreAllMocks();
   });
 
-  it("重複排除で配信不可の場合は爆弾IDを採番しないこと", () => {
-    const bombStore = createBombStoreStub({ shouldBroadcast: false });
+  it.each(rejectedEffectCases)("%s", (_title, storeParams, effectKey) => {
+    const bombStore = createBombStoreStub(storeParams);
     const output = createOutputStub();
 
     placeBombUseCase({ roomId: "room-1", bombStore, input, output });
 
-    expect(bombStore.issueServerBombId).not.toHaveBeenCalled();
-  });
-
-  it("重複排除で配信不可の場合は爆弾を登録しないこと", () => {
-    const bombStore = createBombStoreStub({ shouldBroadcast: false });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(bombStore.registerActiveBomb).not.toHaveBeenCalled();
-  });
-
-  it("重複排除で配信不可の場合は他プレイヤーへ配信しないこと", () => {
-    const bombStore = createBombStoreStub({ shouldBroadcast: false });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(output.publishBombPlacedToOthersInRoom).not.toHaveBeenCalled();
-  });
-
-  it("重複排除で配信不可の場合はACKを返さないこと", () => {
-    const bombStore = createBombStoreStub({ shouldBroadcast: false });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(output.publishBombPlacedAckToSocket).not.toHaveBeenCalled();
+    expect(
+      rejectedEffects[effectKey].resolveSpy({ bombStore, output }),
+    ).not.toHaveBeenCalled();
   });
 
   it("重複排除キーをソケットIDとリクエストIDから生成すること", () => {
@@ -194,54 +238,6 @@ describe("placeBombUseCase", () => {
     placeBombUseCase({ roomId: "room-1", bombStore, input, output });
 
     expect(bombStore.shouldAcceptBombPlacement).not.toHaveBeenCalled();
-  });
-
-  it("クールダウン未経過の場合は爆弾IDを採番しないこと", () => {
-    const bombStore = createBombStoreStub({
-      shouldBroadcast: true,
-      shouldAccept: false,
-    });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(bombStore.issueServerBombId).not.toHaveBeenCalled();
-  });
-
-  it("クールダウン未経過の場合は爆弾を登録しないこと", () => {
-    const bombStore = createBombStoreStub({
-      shouldBroadcast: true,
-      shouldAccept: false,
-    });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(bombStore.registerActiveBomb).not.toHaveBeenCalled();
-  });
-
-  it("クールダウン未経過の場合は他プレイヤーへ配信しないこと", () => {
-    const bombStore = createBombStoreStub({
-      shouldBroadcast: true,
-      shouldAccept: false,
-    });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(output.publishBombPlacedToOthersInRoom).not.toHaveBeenCalled();
-  });
-
-  it("クールダウン未経過の場合はACKを返さないこと", () => {
-    const bombStore = createBombStoreStub({
-      shouldBroadcast: true,
-      shouldAccept: false,
-    });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(output.publishBombPlacedAckToSocket).not.toHaveBeenCalled();
   });
 
   it("クールダウン未経過の場合はクールダウン拒否として記録すること", () => {
@@ -391,42 +387,6 @@ describe("placeBombUseCase", () => {
       "socket-1",
       { requestId: "req-1", bombId: "bomb-1" },
     );
-  });
-
-  it("爆弾IDを採番できない場合は爆弾を登録しないこと", () => {
-    const bombStore = createBombStoreStub({
-      shouldBroadcast: true,
-      canIssueBombId: false,
-    });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(bombStore.registerActiveBomb).not.toHaveBeenCalled();
-  });
-
-  it("爆弾IDを採番できない場合は他プレイヤーへ配信しないこと", () => {
-    const bombStore = createBombStoreStub({
-      shouldBroadcast: true,
-      canIssueBombId: false,
-    });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(output.publishBombPlacedToOthersInRoom).not.toHaveBeenCalled();
-  });
-
-  it("爆弾IDを採番できない場合はACKを返さないこと", () => {
-    const bombStore = createBombStoreStub({
-      shouldBroadcast: true,
-      canIssueBombId: false,
-    });
-    const output = createOutputStub();
-
-    placeBombUseCase({ roomId: "room-1", bombStore, input, output });
-
-    expect(output.publishBombPlacedAckToSocket).not.toHaveBeenCalled();
   });
 
   it("爆弾IDを採番できない場合はチームIDを解決しないこと", () => {
