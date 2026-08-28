@@ -16,7 +16,7 @@
 
 #### VITE_PROD_SERVER_URL
 
-- 用途: 本番環境でクライアントが接続するサーバの URL
+- 用途: 本番環境でクライアントが接続するサーバーの URL
 - 参照箇所: apps/client/src/config/index.ts の PROD_SERVER_URL
 - 設定タイミング: Vite ビルド時に静的ファイルへ埋め込まれる
 - 注意事項:
@@ -35,7 +35,7 @@ VITE_PROD_SERVER_URL=http://localhost:3000
 
 ※ .env.development は .gitignore に含めること
 
-## サーバ環境変数 (Server Environment Variables)
+## サーバー環境変数 (Server Environment Variables)
 
 ### 変数一覧 (Variable List)
 
@@ -48,7 +48,7 @@ VITE_PROD_SERVER_URL=http://localhost:3000
 
 #### PORT
 
-- 用途: サーバ（HTTP / Socket.IO）が待ち受けるポート番号
+- 用途: サーバー（HTTP / Socket.IO）が待ち受けるポート番号
 - 参照箇所: apps/server/src/index.ts の PORT（`httpServer.listen` に渡す）
 - 設定箇所: リポジトリルートの `Dockerfile` が `ENV PORT=3000` を焼き込んでいる
 - 未設定時の挙動: apps/server/src/config/index.ts の `NETWORK_CONFIG.DEV_SERVER_PORT`（3000）を使用する
@@ -58,7 +58,7 @@ VITE_PROD_SERVER_URL=http://localhost:3000
 
 #### CORS_ORIGIN
 
-- 用途: Socket.IO サーバが接続を許可するブラウザのオリジン（クライアントの配信元 URL）を指定する
+- 用途: Socket.IO サーバーが接続を許可するブラウザのオリジン（クライアントの配信元 URL）を指定する
 - 参照箇所: apps/server/src/network/bootstrap/corsPolicy.ts で解決し，同 createIo.ts の CORS 判定に使用する
 - 設定箇所: Render では server サービスの Environment，研究室サーバでは docker-compose.prod.yml の environment セクション
   - リポジトリの `docker-compose.prod.yml` にはローカルでの本番確認用の既定値 `http://localhost:5173` を記載している．デプロイ先では実際の配信元オリジンに置き換えること
@@ -76,9 +76,9 @@ VITE_PROD_SERVER_URL=http://localhost:3000
 
 - 正規化: 各要素は前後の空白除去・末尾スラッシュ除去・小文字化を行ったうえで比較する．`https://example.com/` と `https://example.com` は同一として扱う
 - 未設定時の挙動:
-  - `NODE_ENV=production` の場合: **サーバは起動時にエラーを投げて停止する**．設定漏れを無言で見逃さないための意図的な挙動である
+  - `NODE_ENV=production` の場合: **サーバーは起動時にエラーを投げて停止する**．設定漏れを無言で見逃さないための意図的な挙動である
   - `NODE_ENV` が production 以外（開発時）の場合: すべてのオリジンを許可する（従来どおりの開発体験を維持する）
 - 注意事項:
-  - 指定するのは**クライアントを配信しているオリジン**であり，サーバ自身の URL ではない．VITE_PROD_SERVER_URL と取り違えないこと
+  - 指定するのは**クライアントを配信しているオリジン**であり，サーバー自身の URL ではない．VITE_PROD_SERVER_URL と取り違えないこと
   - Origin ヘッダを持たない接続（負荷テスト Bot・curl 等の非ブラウザクライアント）は本番でも許可する．ブラウザは必ず Origin を送るため，第三者ページからの接続がこの許可を悪用することはできない
-  - 許可外のオリジンからの接続は拒否され，サーバログに `[Network]` スコープの `rejected_origin` として記録される．接続できない場合はまずこのログを確認する
+  - 許可外のオリジンからの接続は拒否され，サーバーログに `[Network]` スコープの `rejected_origin` として記録される．接続できない場合はまずこのログを確認する

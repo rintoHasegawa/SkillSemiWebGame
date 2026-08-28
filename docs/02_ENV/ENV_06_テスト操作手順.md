@@ -36,7 +36,7 @@
 #### CORS の扱い (CORS Handling)
 
 負荷テスト Bot は Node.js から接続するため Origin ヘッダを送信しない．
-サーバは Origin ヘッダを持たない接続を非ブラウザクライアントとみなして本番環境でも許可するため，
+サーバーは Origin ヘッダを持たない接続を非ブラウザクライアントとみなして本番環境でも許可するため，
 `CORS_ORIGIN` の設定内容にかかわらず負荷テストは実行できる（[ENV_09_環境変数設定](ENV_09_環境変数設定.md) 参照）．
 
 ## 実行手順 (Execution Steps)
@@ -81,8 +81,8 @@ pnpm start -- --dev
 
 #### 接続設定
 
-- `URL`: 本番サーバURL（環境変数 `LOAD_TEST_SERVER_URL` で上書き可能，既定: `http://localhost:3000`）
-- `DEV_URL`: 開発サーバURL（環境変数 `LOAD_TEST_DEV_SERVER_URL` で上書き可能，既定: `http://localhost:3000`）
+- `URL`: 本番サーバーURL（環境変数 `LOAD_TEST_SERVER_URL` で上書き可能，既定: `http://localhost:3000`）
+- `DEV_URL`: 開発サーバーURL（環境変数 `LOAD_TEST_DEV_SERVER_URL` で上書き可能，既定: `http://localhost:3000`）
 - `SOCKET_PATH`: Socket.IOのパス（shared の NETWORK_CONFIG から取得）
 - `SOCKET_TRANSPORTS`: Socket.IOのトランスポート（`["websocket", "polling"]`）
 
@@ -131,7 +131,7 @@ pnpm typecheck
 
 ## 注意事項 (Notes)
 
-### 本番サーバへの負荷
+### 本番サーバーへの負荷
 
 - 負荷テストは低負荷から段階的に実施すること
 - 必要に応じて管理者へ事前連絡を行うこと

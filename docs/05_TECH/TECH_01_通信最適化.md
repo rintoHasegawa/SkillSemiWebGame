@@ -126,7 +126,7 @@
 ### ハリケーン同期の生存集合 (Hurricane Active-Set Sync)
 
 - tick データの`HurricaneSyncData.activeHurricaneIds`で生存ハリケーンIDを毎ティック送信層へ渡す
-- サーバのルームスナップショットは「生存集合に無いものを削除 → 差分を反映」でサーバ現存集合のミラーを維持する（消滅したハリケーンが全量同期`CURRENT_HURRICANES`に混入しない）
+- サーバーのルームスナップショットは「生存集合に無いものを削除 → 差分を反映」でサーバー現存集合のミラーを維持する（消滅したハリケーンが全量同期`CURRENT_HURRICANES`に混入しない）
 - 差分空・生存 0・スナップショット空のティックは受信者走査ごとスキップする（ハリケーン未出現中のコストをゼロに保つ）
 - 可視 0 件でも全量側は空配列の`CURRENT_HURRICANES`を送る（「何も見えない」ことの状態確定．差分側の「変化がなければ送らない」とは意図的な非対称）
 - スナップショット破棄（`clearRoomSnapshot`）は`realtimeRoomSyncState.resetRoom`と必ず対で呼ぶ（ゲーム開始・終了時）
@@ -162,7 +162,7 @@
 
 ### 集約と検証 (Aggregation & Validation)
 
-- `groupCellUpdates`は同一セルの重複更新をセル単位の後勝ちで集約する（各セルが 1 回しか現れないため，受信側の適用順に依存せず最終状態がサーバと一致する）
+- `groupCellUpdates`は同一セルの重複更新をセル単位の後勝ちで集約する（各セルが 1 回しか現れないため，受信側の適用順に依存せず最終状態がサーバーと一致する）
 - `ungroupCellUpdates`は teamId キーを値域（未塗装 -1 とチーム 0〜3）で検証し，範囲外のエントリを読み飛ばす
 
 ## クライアント側の送信最適化 (Client-Side Send Optimization)

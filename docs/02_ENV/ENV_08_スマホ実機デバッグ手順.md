@@ -148,7 +148,7 @@ https://xxxx-xxxx.ngrok-free.app/?allowBrowser=1
 
 ### CORS の扱い (CORS in Development)
 
-開発時（`NODE_ENV` が production 以外）は，サーバがすべてのオリジンからの接続を許可する．
+開発時（`NODE_ENV` が production 以外）は，サーバーがすべてのオリジンからの接続を許可する．
 そのため ngrok の URL（起動のたびにサブドメインが変わる）でアクセスしても CORS の設定変更は不要である．
 
 本番相当の設定（`NODE_ENV=production`）で実機確認を行う場合のみ，環境変数 `CORS_ORIGIN` にアクセス元のオリジンを指定する必要がある．
