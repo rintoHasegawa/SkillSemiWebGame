@@ -4,39 +4,16 @@
  * 可視集合の変化判定・全量／差分イベントの切り替え・スナップショット管理を検証する
  * 生存集合から外れたハリケーンの同期解除と同期不要時のスキップも検証する
  */
-import { contracts as protocol, type domain } from "@repo/shared";
+import { contracts as protocol } from "@repo/shared";
 import type { HurricaneStatePayload } from "@repo/shared";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import type { RoomScopedGamePort } from "@server/domains/room/application/ports/roomUseCasePorts";
-import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
-import type { ReliableEmitters } from "../../CommonHandler";
-import type { RuntimeResolverDeps } from "../runtime/gameRuntimeResolvers";
 import { createPlayerData } from "@server/testing/playerFixtures";
+import {
+  createSyncServiceEnv,
+  type SyncServiceEnvParams,
+} from "@server/testing/syncServiceFixtures";
 import { createHurricaneSyncService } from "./hurricaneSyncService";
-
-type EmitCall = {
-  socketId: string;
-  event: string;
-  payload: unknown;
-};
-
-/** 送信内容を記録するエミッタスタブを生成する */
-const createReliableStub = () => {
-  const calls: EmitCall[] = [];
-  const noop = () => {};
-  const reliable = {
-    emitToAll: noop,
-    emitToRoom: noop,
-    emitToRoomExceptSocket: noop,
-    emitToSocket: noop,
-    emitToSocketById: (socketId: string, event: string, payload: unknown) => {
-      calls.push({ socketId, event, payload });
-    },
-  } as unknown as ReliableEmitters;
-
-  return { reliable, calls };
-};
 
 /** テスト用のハリケーン状態を生成する */
 const createHurricane = (
@@ -52,54 +29,18 @@ const createHurricane = (
   };
 };
 
-/** ルーム参加者とランタイムプレイヤーを固定した依存スタブを生成する */
-const createRuntimeDeps = (
-  memberIds: string[],
-  players: domain.game.player.PlayerData[],
-): RuntimeResolverDeps => {
-  const gameManager = {
-    getRoomPlayers: () => players,
-    getActiveBombSnapshots: () => [],
-  } as unknown as RoomScopedGamePort;
-
-  return {
-    roomManager: {
-      getRoomById: () => ({
-        roomId: "room-1",
-        ownerId: memberIds[0] ?? "socket-1",
-        players: memberIds.map((id) => ({
-          id,
-          name: `name-${id}`,
-          isOwner: false,
-          isReady: false,
-          preferredTeamId: null,
-        })),
-        status: "playing" as const,
-        maxPlayers: 8,
-        fieldSizePreset: "MEDIUM" as const,
-        teamAssignmentMode: "random" as const,
-      }),
-    },
-    runtimeRegistry: {
-      getGameManagerByRoomId: () => gameManager,
-    },
-  };
-};
-
 /** テスト対象サービスと周辺スタブをまとめて生成する */
-const setupService = (params: {
-  memberIds?: string[];
-  players?: domain.game.player.PlayerData[];
-} = {}) => {
-  const { reliable, calls } = createReliableStub();
-  const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
-  const updateViewerAoiCellCache = vi.fn();
+const setupService = (params: SyncServiceEnvParams = {}) => {
+  const {
+    reliable,
+    calls,
+    realtimeRoomSyncState,
+    updateViewerAoiCellCache,
+    runtimeDeps,
+  } = createSyncServiceEnv(params);
   const service = createHurricaneSyncService({
     reliable,
-    runtimeDeps: createRuntimeDeps(
-      params.memberIds ?? ["socket-1"],
-      params.players ?? [createPlayerData("socket-1")],
-    ),
+    runtimeDeps,
     realtimeRoomSyncState,
     updateViewerAoiCellCache,
   });
