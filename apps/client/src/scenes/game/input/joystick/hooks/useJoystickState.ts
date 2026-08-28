@@ -14,7 +14,7 @@ import type {
   UseJoystickStateReturn,
 } from "../common";
 
-const getClientPoint = (e: JoystickPointerEvent): Point | null => {
+const getClientPoint = (e: JoystickPointerEvent): Point => {
   return { x: e.clientX, y: e.clientY };
 };
 
@@ -132,9 +132,6 @@ export const useJoystickState = ({
     }
 
     const point = getClientPoint(e);
-    if (!point) {
-      return;
-    }
     if (point.x > window.innerWidth / 2) {
       return;
     }
@@ -161,9 +158,6 @@ export const useJoystickState = ({
       }
 
       const point = getClientPoint(e);
-      if (!point) {
-        return null;
-      }
 
       const computed = computeJoystick(center, point, radius);
       const allowPendingEndCancellation =
