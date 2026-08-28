@@ -16,7 +16,7 @@ import { GameMapController } from "@client/scenes/game/entities/map/GameMapContr
 import { PlayerRepository } from "@client/scenes/game/entities/player/PlayerRepository";
 import { GameNetworkEventReceiver } from "./network/receivers/GameNetworkEventReceiver";
 import { GameNetworkStateApplier } from "./network/handlers/GameNetworkStateApplier";
-import type { WorldViewport } from "@client/scenes/game/application/culling/worldViewport";
+import type { WorldViewport } from "./culling/worldViewport";
 
 const ENABLE_DEBUG_LOG = import.meta.env.DEV;
 
