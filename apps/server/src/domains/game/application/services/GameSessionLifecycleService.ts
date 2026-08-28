@@ -3,6 +3,7 @@
  * ゲームセッションの開始，参照，終了時クリーンアップを管理する
  */
 import { config } from "@server/config";
+import { config as sharedConfig } from "@repo/shared";
 import type {
   ActiveBombSnapshot,
   ActiveBombRegistration,
@@ -135,7 +136,10 @@ export class GameSessionLifecycleService {
 
   /** 指定プレイヤーのチームIDを返す，未参加時は UNKNOWN_TEAM_ID を返す */
   public getPlayerTeamId(playerId: string): number {
-    return this.sessionRef.current?.getPlayerTeamId(playerId) ?? -1;
+    return (
+      this.sessionRef.current?.getPlayerTeamId(playerId)
+      ?? sharedConfig.UNKNOWN_TEAM_ID
+    );
   }
 
   /** 設置済み爆弾をアクティブレジストリに登録する */

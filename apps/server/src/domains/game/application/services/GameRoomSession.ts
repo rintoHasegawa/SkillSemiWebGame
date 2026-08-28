@@ -9,6 +9,7 @@ import {
   logScopes,
 } from "@server/logging/index";
 import {
+  config as sharedConfig,
   domain,
   type GameResultPayload,
   type PlaceBombPayload,
@@ -298,13 +299,13 @@ export class GameRoomSession {
   /** 指定プレイヤーのチームIDを返す，存在しない場合は UNKNOWN_TEAM_ID を返す */
   public getPlayerTeamId(playerId: string): number {
     const player = this.players.get(playerId);
-    return player?.teamId ?? -1;
+    return player?.teamId ?? sharedConfig.UNKNOWN_TEAM_ID;
   }
 
   /** 設置済み爆弾をアクティブレジストリに登録する */
   public registerActiveBomb(registration: ActiveBombRegistration): void {
     const player = this.players.get(registration.ownerPlayerId);
-    const ownerTeamId = player?.teamId ?? -1;
+    const ownerTeamId = player?.teamId ?? sharedConfig.UNKNOWN_TEAM_ID;
     this.bombStateStore.activeBombRegistry.registerBomb({
       bombId: registration.bombId,
       ownerPlayerId: registration.ownerPlayerId,
