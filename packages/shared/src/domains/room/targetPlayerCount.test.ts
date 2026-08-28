@@ -3,6 +3,7 @@
  * 目標人数の判定・選択肢生成ロジックの仕様適合を検証するテスト
  * SPEC_02（4人刻み・下限4・最大100・4の倍数のみ受け入れ）を基準に，
  * 妥当性判定の境界値と非数値入力，下限切り上げ・上限切り下げ，選択肢生成を検証する
+ * 入力と期待値だけが異なる判定系の検証はケース表による it.each で表現する
  */
 import { describe, expect, it } from "vitest";
 
@@ -19,6 +20,17 @@ import {
 
 // 仕様上のルーム最大人数（SPEC_02: 目標人数の最大は100人）
 const MAX_PLAYERS = 100;
+
+/** 刻み幅判定1件分の検証ケース（説明・入力・期待値） */
+type UnitCase = [description: string, value: number, expected: boolean];
+
+/** 目標人数の妥当性判定1件分の検証ケース（説明・目標人数・ルーム上限・期待値） */
+type ValidCountCase = [
+  description: string,
+  targetPlayerCount: number,
+  maxPlayers: number,
+  expected: boolean,
+];
 
 describe("TARGET_PLAYER_COUNT_UNIT", () => {
   it("刻み幅がチーム数と同じ4であること", () => {
@@ -37,121 +49,74 @@ describe("MIN_TARGET_PLAYER_COUNT", () => {
 });
 
 describe("isTargetPlayerCountUnit", () => {
-  it("4を刻み幅の値と判定すること", () => {
-    expect(isTargetPlayerCountUnit(4)).toBe(true);
-  });
+  const cases: UnitCase[] = [
+    ["4を刻み幅の値と判定すること", 4, true],
+    ["8を刻み幅の値と判定すること", 8, true],
+    ["100を刻み幅の値と判定すること", 100, true],
+    ["上限を超える104も刻み幅の値と判定すること", 104, true],
+    ["0を刻み幅の値と判定しないこと", 0, false],
+    ["4の倍数でない3を刻み幅の値と判定しないこと", 3, false],
+    ["4の倍数でない6を刻み幅の値と判定しないこと", 6, false],
+    ["負の4の倍数を刻み幅の値と判定しないこと", -4, false],
+    ["小数を刻み幅の値と判定しないこと", 8.5, false],
+    ["NaNを刻み幅の値と判定しないこと", Number.NaN, false],
+    ["Infinityを刻み幅の値と判定しないこと", Number.POSITIVE_INFINITY, false],
+  ];
 
-  it("8を刻み幅の値と判定すること", () => {
-    expect(isTargetPlayerCountUnit(8)).toBe(true);
-  });
-
-  it("100を刻み幅の値と判定すること", () => {
-    expect(isTargetPlayerCountUnit(100)).toBe(true);
-  });
-
-  it("上限を超える104も刻み幅の値と判定すること", () => {
-    expect(isTargetPlayerCountUnit(104)).toBe(true);
-  });
-
-  it("0を刻み幅の値と判定しないこと", () => {
-    expect(isTargetPlayerCountUnit(0)).toBe(false);
-  });
-
-  it("4の倍数でない3を刻み幅の値と判定しないこと", () => {
-    expect(isTargetPlayerCountUnit(3)).toBe(false);
-  });
-
-  it("4の倍数でない6を刻み幅の値と判定しないこと", () => {
-    expect(isTargetPlayerCountUnit(6)).toBe(false);
-  });
-
-  it("負の4の倍数を刻み幅の値と判定しないこと", () => {
-    expect(isTargetPlayerCountUnit(-4)).toBe(false);
-  });
-
-  it("小数を刻み幅の値と判定しないこと", () => {
-    expect(isTargetPlayerCountUnit(8.5)).toBe(false);
-  });
-
-  it("NaNを刻み幅の値と判定しないこと", () => {
-    expect(isTargetPlayerCountUnit(Number.NaN)).toBe(false);
-  });
-
-  it("Infinityを刻み幅の値と判定しないこと", () => {
-    expect(isTargetPlayerCountUnit(Number.POSITIVE_INFINITY)).toBe(false);
+  it.each(cases)("%s", (_description, value, expected) => {
+    expect(isTargetPlayerCountUnit(value)).toBe(expected);
   });
 });
 
 describe("isValidTargetPlayerCount", () => {
-  it("下限の4を受け入れること", () => {
-    expect(isValidTargetPlayerCount(4, MAX_PLAYERS)).toBe(true);
-  });
+  const cases: ValidCountCase[] = [
+    ["下限の4を受け入れること", 4, MAX_PLAYERS, true],
+    ["刻み幅どおりの8を受け入れること", 8, MAX_PLAYERS, true],
+    ["上限と同じ100を受け入れること", 100, MAX_PLAYERS, true],
+    ["下限未満の3を受け入れないこと", 3, MAX_PLAYERS, false],
+    ["0を受け入れないこと", 0, MAX_PLAYERS, false],
+    ["負の値を受け入れないこと", -4, MAX_PLAYERS, false],
+    ["4の倍数でない5を受け入れないこと", 5, MAX_PLAYERS, false],
+    ["4の倍数でない6を受け入れないこと", 6, MAX_PLAYERS, false],
+    ["4の倍数でない10を受け入れないこと", 10, MAX_PLAYERS, false],
+    ["小数の8.5を受け入れないこと", 8.5, MAX_PLAYERS, false],
+    ["NaNを受け入れないこと", Number.NaN, MAX_PLAYERS, false],
+    ["Infinityを受け入れないこと", Number.POSITIVE_INFINITY, MAX_PLAYERS, false],
+    [
+      "-Infinityを受け入れないこと",
+      Number.NEGATIVE_INFINITY,
+      MAX_PLAYERS,
+      false,
+    ],
+    ["上限を超える104を受け入れないこと", 104, MAX_PLAYERS, false],
+    [
+      "ルーム上限が4の倍数でない場合は上限以下の4の倍数を受け入れること",
+      8,
+      10,
+      true,
+    ],
+    [
+      "ルーム上限が4の倍数でない場合でも上限自体は4の倍数でなければ受け入れないこと",
+      10,
+      10,
+      false,
+    ],
+    [
+      "ルーム上限が4の倍数でない場合に上限を超える4の倍数を受け入れないこと",
+      12,
+      10,
+      false,
+    ],
+  ];
 
-  it("刻み幅どおりの8を受け入れること", () => {
-    expect(isValidTargetPlayerCount(8, MAX_PLAYERS)).toBe(true);
-  });
-
-  it("上限と同じ100を受け入れること", () => {
-    expect(isValidTargetPlayerCount(100, MAX_PLAYERS)).toBe(true);
-  });
-
-  it("下限未満の3を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(3, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("0を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(0, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("負の値を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(-4, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("4の倍数でない5を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(5, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("4の倍数でない6を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(6, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("4の倍数でない10を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(10, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("小数の8.5を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(8.5, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("NaNを受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(Number.NaN, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("Infinityを受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(Number.POSITIVE_INFINITY, MAX_PLAYERS))
-      .toBe(false);
-  });
-
-  it("-Infinityを受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(Number.NEGATIVE_INFINITY, MAX_PLAYERS))
-      .toBe(false);
-  });
-
-  it("上限を超える104を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(104, MAX_PLAYERS)).toBe(false);
-  });
-
-  it("ルーム上限が4の倍数でない場合は上限以下の4の倍数を受け入れること", () => {
-    expect(isValidTargetPlayerCount(8, 10)).toBe(true);
-  });
-
-  it("ルーム上限が4の倍数でない場合でも上限自体は4の倍数でなければ受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(10, 10)).toBe(false);
-  });
-
-  it("ルーム上限が4の倍数でない場合に上限を超える4の倍数を受け入れないこと", () => {
-    expect(isValidTargetPlayerCount(12, 10)).toBe(false);
-  });
+  it.each(cases)(
+    "%s",
+    (_description, targetPlayerCount, maxPlayers, expected) => {
+      expect(isValidTargetPlayerCount(targetPlayerCount, maxPlayers)).toBe(
+        expected,
+      );
+    },
+  );
 });
 
 describe("resolveMinTargetPlayerCount", () => {
