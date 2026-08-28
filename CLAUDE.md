@@ -20,6 +20,7 @@
     - `/auto-refactor`（リファクタ／ドキュメント整理ループ）→ `refactor/` 専用ブランチ
     - `/auto-audit`（バグ／脆弱性の巡回監査ループ）→ `fix/` 専用ブランチ
   - **例外（`main` へのマージ）**: `/deps-update` は，Dependabot が作成した依存更新 PR に限り，ゲート（メジャー更新でない・競合なし・CI 緑またはローカル検証緑）を満たすものを `gh pr merge` で `main` に取り込む（ユーザーが明示的に起動した時のみ．メジャー更新・CI 赤・PR が付かない alert は報告して人間が判断する）
+  - **例外（Render へのデプロイ）**: `/deploy` は，Render 上で live なコミットと `HEAD` の差分から再デプロイが必要なサービス（client / server）を判定し，必要なものだけをデプロイする（**ユーザーが明示的に起動した時のみ**．`disable-model-invocation` によりユーザー起動限定として強制されている．Claude が自発的に呼んではならない）
 
 ### テンプレート同期
 
@@ -53,6 +54,7 @@
   - 例外: `gh` CLI で操作できる GitHub リポジトリ設定（Dependabot alerts / security updates の有効化）は Claude が `gh api` で行う（手順は `.claude/skills/setup/reference.md`，背景は GUIDE_01「環境構築」）
 - 実機・ブラウザでの動作確認（特にスマホ実機・PWA 動作）
 - デプロイ作業（Render・研究室サーバ）
+  - 例外: Render へのデプロイは `/deploy`（ユーザー起動限定）で Claude が実行できる（差分判定・`trigger_deploy`・完了監視まで）．ただしデプロイ後の**動作確認は人間が行う**．研究室サーバへのデプロイは従来どおり人間の作業
 
 ## ドキュメント
 

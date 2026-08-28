@@ -159,6 +159,21 @@ pnpm --filter @repo/shared lint:fix
 
 shared の ESLint を自動修正付きで実行する．
 
+## デプロイ (Deploy)
+
+Render へのデプロイは Claude Code のスキル `/deploy` で行う（シェルコマンドではない）．Render 上で現在 live なコミットと `origin/main` の差分から，再デプロイが必要なサービスだけを判定してデプロイする．
+
+| コマンド | 内容 |
+| --- | --- |
+| `/deploy` | 判定して必要なサービス（client / server）だけをデプロイする |
+| `/deploy check` | 判定のみ行う（dry-run．デプロイはしない） |
+| `/deploy server` | server（SkillSemiWebGame）だけをデプロイする（判定を飛ばす） |
+| `/deploy client` | client（pixel-paint-war-client）だけをデプロイする（判定を飛ばす） |
+
+※ デプロイは `main` ブランチかつ作業ツリーがクリーンで，`HEAD` が `origin/main` と一致している場合のみ実行できる（`/deploy check` は読み取りのみのため作業ブランチからでも実行できる）
+※ **ユーザーが明示的に起動した時のみ**動く（Claude は自発的に実行しない）．デプロイ後の動作確認は人間が行う
+※ 判定の対象パス・所要時間・トラブルシューティングは [ENV_10_Renderデプロイ手順](ENV_10_Renderデプロイ手順.md) を参照
+
 ## その他 (Miscellaneous)
 
 ルートの `/workspace/package.json` に定義されたコマンド．
