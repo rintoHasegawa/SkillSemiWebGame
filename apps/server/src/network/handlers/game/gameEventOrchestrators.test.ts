@@ -18,6 +18,7 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
+import { createRoomScopedGamePortStub } from "@server/testing/gamePortFixtures";
 import {
   createRoom as createRoomFixture,
   createRoomMember,
@@ -53,7 +54,7 @@ type GameManagerStubParams = {
   signedElapsedMs?: number;
 };
 
-/** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
+/** 爆弾判定と経過msの既定値を差し替えたゲーム管理ポートスタブを生成する */
 const createGameManagerStub = ({
   shouldBroadcastBombPlaced = true,
   shouldBroadcastBombHitReport = true,
@@ -61,33 +62,17 @@ const createGameManagerStub = ({
   bombHitReportOrigin = { status: "valid" },
   signedElapsedMs,
 }: GameManagerStubParams = {}) => {
-  return {
-    startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
+  return createRoomScopedGamePortStub({
     getRoomSignedElapsedMs: vi.fn<
       RoomScopedGamePort["getRoomSignedElapsedMs"]
     >(() => signedElapsedMs),
-    getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
-      () => undefined,
-    ),
-    getRoomPlayers: vi.fn<RoomScopedGamePort["getRoomPlayers"]>(() => []),
-    movePlayer: vi.fn<RoomScopedGamePort["movePlayer"]>(),
     shouldBroadcastBombPlaced: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombPlaced"]
     >(() => shouldBroadcastBombPlaced),
-    shouldAcceptBombPlacement: vi.fn<
-      RoomScopedGamePort["shouldAcceptBombPlacement"]
-    >(() => true),
-    issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
-      () => "bomb-1",
-    ),
     resolveBombExplodeAtElapsedMs: vi.fn<
       RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
     >(() => SERVER_EXPLODE_AT_ELAPSED_MS),
-    registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
     getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 2),
-    getActiveBombSnapshots: vi.fn<
-      RoomScopedGamePort["getActiveBombSnapshots"]
-    >(() => []),
     shouldBroadcastBombHitReport: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombHitReport"]
     >(() => shouldBroadcastBombHitReport),
@@ -97,18 +82,7 @@ const createGameManagerStub = ({
     checkBombHitReportOrigin: vi.fn<
       RoomScopedGamePort["checkBombHitReportOrigin"]
     >(() => bombHitReportOrigin),
-    recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
-    removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
-    replaceDisconnectedPlayerWithBot: vi.fn<
-      RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
-    >(() => false),
-    demotePlayerFromBotControl: vi.fn<
-      RoomScopedGamePort["demotePlayerFromBotControl"]
-    >(() => true),
-    getMapGridColorsView: vi.fn<
-      RoomScopedGamePort["getMapGridColorsView"]
-    >(() => []),
-  } satisfies RoomScopedGamePort;
+  });
 };
 
 /** 送信内容を記録するゲーム出力アダプタースタブを生成する */

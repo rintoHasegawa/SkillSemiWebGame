@@ -5,15 +5,20 @@
  * 検証対象のメソッドだけを上書きできるようにする
  * ※ テスト専用のため本番コードから import してはならない（ビルド対象外）
  */
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 
 import type { RoomScopedGamePort } from "@server/domains/room/application/ports/roomUseCasePorts";
 
+/** ルーム単位ゲーム管理ポートの全メソッドをモック化したスタブ型 */
+export type RoomScopedGamePortStub = {
+  [K in keyof RoomScopedGamePort]: Mock<RoomScopedGamePort[K]>;
+};
+
 /** ルーム単位ゲーム管理ポートを満たすスタブを生成する（既定値は部分上書きできる） */
 export const createRoomScopedGamePortStub = (
-  overrides: Partial<RoomScopedGamePort> = {},
-): RoomScopedGamePort => {
-  const base = {
+  overrides: Partial<RoomScopedGamePortStub> = {},
+): RoomScopedGamePortStub => {
+  const base: RoomScopedGamePortStub = {
     startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
     getRoomSignedElapsedMs: vi.fn<
       RoomScopedGamePort["getRoomSignedElapsedMs"]
@@ -60,7 +65,7 @@ export const createRoomScopedGamePortStub = (
     demotePlayerFromBotControl: vi.fn<
       RoomScopedGamePort["demotePlayerFromBotControl"]
     >(() => true),
-  } satisfies RoomScopedGamePort;
+  };
 
   return { ...base, ...overrides };
 };
