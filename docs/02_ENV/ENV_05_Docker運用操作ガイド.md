@@ -41,6 +41,8 @@ GitHub CLI と Claude Code の認証情報・CLI 本体は Docker の名前付�
   - `.devcontainer/.auth-seed/` に退避された認証情報があれば，ボリュームが空のときのみ復元
   - `claude` コマンドが見つからない場合は公式インストールスクリプトで自動インストール
   - `gh` 認証済みの場合は `gh auth setup-git` を実行（git push/pull で gh の認証を使用）
+  - `pnpm -v` が `package.json` の `packageManager` の版と異なる場合は `npm i -g pnpm@<版>` で強制的に揃える
+  - `pnpm install` と `pnpm --filter @repo/shared build` を実行し，依存の導入と shared のビルドまで済ませる
 - `.devcontainer/.auth-seed/` は gitignore 済みの一時退避場所である．ボリュームへの復元が済んだら削除してよい．
 
 #### 注意点 (Cautions)
