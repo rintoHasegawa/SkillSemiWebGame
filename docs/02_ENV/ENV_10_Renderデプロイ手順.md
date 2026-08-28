@@ -80,10 +80,13 @@ server はリポジトリルートの `Dockerfile` を使った Docker デプロ
 1. Render ダッシュボードで「New +」→「Static Site」を選択する
 2. リポジトリを接続する
 3. 以下の設定を行う
-   - Build Command: `pnpm install && pnpm --filter client build`
+   - Build Command: `pnpm install && pnpm --filter @repo/shared build && pnpm --filter client build`
    - Publish Directory: `apps/client/dist`
 4. 「環境変数の設定」の手順で環境変数 VITE_PROD_SERVER_URL を設定する
 5. 「Create Static Site」で作成する
+
+※ `packages/shared/dist` はリポジトリに含まれないため，client のビルドの前に必ず shared をビルドすること（省くと `TS2307` でビルドが失敗する）
+※ Render API（`get_service` / MCP）が返す `buildCommand` は実際に走るコマンドと食い違うことがある．実態はビルドログ（`list_logs` の `type: build`）で確認する
 
 ### 動作確認 (Verification)
 
@@ -99,7 +102,36 @@ server はリポジトリルートの `Dockerfile` を使った Docker デプロ
 
 **両サービスとも Auto-Deploy は無効**にしているため，main へマージしただけではデプロイされない．デプロイするには各サービスの「Manual Deploy」ボタンを手動で押すこと．
 
-※ Claude Code に Render MCP サーバを導入している場合は，デプロイのトリガー・デプロイ状況・ログの確認を MCP ツール経由で行うこともできる．
+### Claude Code の `/deploy` を使う場合 (Using the /deploy Skill)
+
+Render MCP サーバを導入している環境では，Claude Code のスキル `/deploy` で選択的なデプロイを行える（定義は `.claude/skills/deploy/`）．
+
+| 引数 | 動作 |
+| --- | --- |
+| `/deploy` | 判定して必要なサービスだけをデプロイする |
+| `/deploy check` | 判定のみ行う（dry-run．デプロイはしない） |
+| `/deploy server` / `/deploy client` | 判定を飛ばして指定サービスだけをデプロイする |
+
+動作の要点は以下のとおり．
+
+- **判定の起点は Render 上で現在 live なコミット**である．`list_deploys` で得た live コミットと `origin/main` の `git diff --name-only` を取り，変更が及ぶサービスだけをデプロイする
+  - server の対象パス: `apps/server/`，`packages/shared/`，`Dockerfile`，`pnpm-lock.yaml`，`pnpm-workspace.yaml`，ルート `package.json`
+  - client の対象パス: `apps/client/`，`packages/shared/`，`pnpm-lock.yaml`，`pnpm-workspace.yaml`，ルート `package.json`
+  - `docs/`・`test/`・`.claude/`・`.github/` 等だけの変更ならどちらもデプロイしない
+  - 最新デプロイが `live` でない（`build_failed` 等）サービスは，差分に関わらずデプロイ対象になる
+- 両方必要なときは **server → live 確認 → client** の順に流す（プロトコル不一致の窓を短くするため）
+- **ユーザーが明示的に起動した時のみ**動く（Claude が自発的に実行することはない）．ブランチが `main` でない・作業ツリーが汚れている・`HEAD` が `origin/main` と一致しない場合は停止する（`check` は読み取りのみのため警告のみで続行する）
+- 環境変数は変更しない（環境変数の更新は自動で最新 main のデプロイを起動してしまうため，本スキルの責務外）
+- デプロイ後の**動作確認は人間が行う**（「動作確認」の手順を参照）
+
+※ 所要時間の実測値は server 約 60 秒・client 約 35 秒である．
+
+### Build Filters ではなく差分判定を採る理由 (Why Not Build Filters)
+
+Render には push 時に変更パスを見て自動デプロイの要否を決める Build Filters があるが，本プロジェクトでは採用せず，`/deploy` 側の差分判定を採る．
+
+- Build Filters は **push 単位でしか変更を見ない**ため，「前回デプロイから複数のマージが溜まった」状態を正しく扱えない（デプロイ済みコミットからの累積差分ではなく，直近 push の差分だけで判断される）
+- Build Filters は Auto-Deploy を有効にして初めて機能するが，Auto-Deploy を有効にすると**デプロイのタイミングを制御できず**，「発表・デモの最中はデプロイしない」（後述「アプリを開いている最中のデプロイ」）が守れない
 
 ### 環境変数変更時 (On Environment Variable Changes)
 
