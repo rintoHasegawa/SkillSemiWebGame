@@ -17,6 +17,8 @@ pnpm --filter client dev
 
 クライアントの開発サーバ（Vite，`--host` 付き）を起動する．
 
+※ 開発モード（`mode` が `production` 以外）の Vite dev サーバは，`/socket.io`（shared の `NETWORK_CONFIG.SOCKET_IO_PATH`）宛のリクエストを `http://localhost:3000`（サーバの開発ポート）へ WebSocket 込み（`ws: true`）でプロキシする（`apps/client/vite.config.ts`）．本番ビルドではこのプロキシは設定されない．
+
 ```bash
 pnpm --filter server dev
 ```
