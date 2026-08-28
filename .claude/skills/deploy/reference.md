@@ -143,7 +143,9 @@ git diff <live コミットの SHA>..origin/main -- packages/shared | grep -n "P
 
 ### ビルドログの取得
 
-`mcp__render__list_logs`:
+ビルドログは**段階的に取得する**．1 行ごとに `resource` / `level` / `type` のラベル JSON が付く冗長な形式のため，100 行も引くと数万トークンに達する．失敗箇所は末尾側にあることが多いので，まず末尾を少量だけ引いて特定を試みる．
+
+**第 1 段階（既定）**: 末尾から 20〜30 行．
 
 ```json
 {
@@ -151,14 +153,19 @@ git diff <live コミットの SHA>..origin/main -- packages/shared | grep -n "P
   "resource": ["srv-d6bsjdftn9qs73dj81ig"],
   "type": ["build"],
   "startTime": "<デプロイの createdAt>",
-  "limit": 100
+  "direction": "backward",
+  "limit": 30
 }
 ```
+
+**第 2 段階（第 1 段階で特定できない場合のみ）**: `limit` を 60〜100 に広げる．失敗が `pnpm install` 段階など**ログ前半**にある場合は `direction: "forward"` で先頭側から引く．
 
 - `resource` は**配列**でサービス ID を渡す
 - `type: ["build"]` でビルドログに絞る（実行時ログは `["app"]`）
 - `startTime` にデプロイの `createdAt` を渡すと，そのデプロイ以降のログだけが得られる
-- 失敗箇所は末尾側にあることが多い．エラー行（`error TS...`，`ERROR:`，`Command failed` 等）を引用して報告する
+- `direction: "backward"`（既定）は新しい順，`"forward"` は古い順に返る
+- **最初から `limit: 100` を引かない**．エラー行（`error TS...`，`ERROR:`，`Command failed` 等）が第 1 段階で見つかればそれで足りる
+- 特定できたら，該当行だけを引用して報告する（ログ全体を貼らない）
 
 ## トラブルシューティング (Troubleshooting)
 
