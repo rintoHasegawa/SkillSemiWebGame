@@ -126,6 +126,31 @@ const subscriptionCases: SubscriptionCase[] = [
   },
 ];
 
+/** [テスト名, 渡す x, 渡す y, 送信されるべき座標] */
+type SendMoveCase = [
+  name: string,
+  x: number,
+  y: number,
+  expected: { x: number; y: number },
+];
+
+// 座標値がそのまま move のペイロードへ載ることをリテラルで固定する
+const sendMoveCases: SendMoveCase[] = [
+  [
+    "sendMove が move イベントへ座標オブジェクトを送信すること",
+    12,
+    34,
+    { x: 12, y: 34 },
+  ],
+  ["sendMove が座標0でもそのまま送信すること", 0, 0, { x: 0, y: 0 }],
+  [
+    "sendMove が負値座標もそのまま送信すること",
+    -1.5,
+    -2.5,
+    { x: -1.5, y: -2.5 },
+  ],
+];
+
 describe("createGameHandler", () => {
   it("生成時点ではソケット操作を行わないこと", () => {
     const { socket, onCalls, onceCalls, offCalls, emitCalls } =
@@ -219,33 +244,13 @@ describe("createGameHandler", () => {
     expect(offCalls).toEqual([{ event: "game-start", callback }]);
   });
 
-  it("sendMove が move イベントへ座標オブジェクトを送信すること", () => {
+  it.each(sendMoveCases)("%s", (_name, x, y, expected) => {
     const { socket, emitCalls } = createSocketStub();
     const handler = createGameHandler(socket);
 
-    handler.sendMove(12, 34);
+    handler.sendMove(x, y);
 
-    expect(emitCalls).toEqual([{ event: "move", args: [{ x: 12, y: 34 }] }]);
-  });
-
-  it("sendMove が座標0でもそのまま送信すること", () => {
-    const { socket, emitCalls } = createSocketStub();
-    const handler = createGameHandler(socket);
-
-    handler.sendMove(0, 0);
-
-    expect(emitCalls).toEqual([{ event: "move", args: [{ x: 0, y: 0 }] }]);
-  });
-
-  it("sendMove が負値座標もそのまま送信すること", () => {
-    const { socket, emitCalls } = createSocketStub();
-    const handler = createGameHandler(socket);
-
-    handler.sendMove(-1.5, -2.5);
-
-    expect(emitCalls).toEqual([
-      { event: "move", args: [{ x: -1.5, y: -2.5 }] },
-    ]);
+    expect(emitCalls).toEqual([{ event: "move", args: [expected] }]);
   });
 
   it("sendPlaceBomb が place-bomb イベントへ送信すること", () => {
