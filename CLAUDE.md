@@ -21,6 +21,7 @@
     - `/auto-audit`（バグ／脆弱性の巡回監査ループ）→ `fix/` 専用ブランチ
   - **例外（`main` へのマージ）**: `/deps-update` は，Dependabot が作成した依存更新 PR に限り，ゲート（メジャー更新でない・競合なし・CI 緑またはローカル検証緑）を満たすものを `gh pr merge` で `main` に取り込む（ユーザーが明示的に起動した時のみ．メジャー更新・CI 赤・PR が付かない alert は報告して人間が判断する）
   - **例外（Render へのデプロイ）**: `/deploy` は，Render 上で live なコミットと `HEAD` の差分から再デプロイが必要なサービス（client / server）を判定し，必要なものだけをデプロイする（**ユーザーが明示的に起動した時のみ**．`disable-model-invocation` によりユーザー起動限定として強制されている．Claude が自発的に呼んではならない）
+- **ops-runner によるマージは承認済みの定常操作**: `/commit merge` および `/deps-update` では，ユーザーが明示的に起動したことを受けて，ops-runner サブエージェント（軽量モデル）が手順書に従い `git push` → `gh pr create` → `gh pr merge --merge --delete-branch` で自リポジトリの PR を `main` にマージする．force push・`--admin`・`main` への直接 push は行わない（権限設定は `docs/01_GUIDE/GUIDE_01` の「Claude Code の権限設定」）
 
 ### テンプレート同期
 
