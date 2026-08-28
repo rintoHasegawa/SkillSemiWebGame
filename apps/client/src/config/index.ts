@@ -43,11 +43,6 @@ export const applyRuntimeMapSizeFromGameStart = (
   setRuntimeMapSizeByPreset(payload.fieldSizePreset);
 };
 
-/** クライアント実行中マップサイズを既定値へ戻す */
-export const resetRuntimeMapSizeToDefault = (): void => {
-  setRuntimeMapSizeByPreset(sharedConfig.GAME_CONFIG.DEFAULT_FIELD_PRESET);
-};
-
 const sharedBombRenderScale =
   (sharedConfig.GAME_CONFIG as { BOMB_RENDER_SCALE?: number })
     .BOMB_RENDER_SCALE ?? 1;

@@ -17,10 +17,6 @@ export const GameSceneInitResultStatus = {
   ABORTED: "aborted",
 } as const;
 
-/** 初期化実行結果のステータス型 */
-export type GameSceneInitResultStatusType =
-  (typeof GameSceneInitResultStatus)[keyof typeof GameSceneInitResultStatus];
-
 /** 初期化実行の入力型 */
 export type RunGameSceneInitParams = {
   init: () => Promise<void>;
