@@ -25,10 +25,6 @@ import {
 import { createSocketRegistrationContext } from "@server/network/handlers/registration";
 import type { GameOutputAdapter } from "./createGameOutputAdapter";
 import {
-  type BombHitReportEventPayload,
-  type MoveEventPayload,
-  type PingEventPayload,
-  type PlaceBombEventPayload,
   handleBombHitReportEvent,
   type GameEventOrchestratorDeps,
   handleMoveEvent,
@@ -47,14 +43,6 @@ import {
   type UnguardedEventDefinition,
 } from "@server/network/handlers/eventDefinitionRegistrar";
 
-type PingEventDefinition = GuardedEventDefinition<typeof protocol.SocketEvents.PING, PingEventPayload>;
-
-type MoveEventDefinition = GuardedEventDefinition<typeof protocol.SocketEvents.MOVE, MoveEventPayload>;
-
-type PlaceBombEventDefinition = GuardedEventDefinition<typeof protocol.SocketEvents.PLACE_BOMB, PlaceBombEventPayload>;
-
-type BombHitReportEventDefinition = GuardedEventDefinition<typeof protocol.SocketEvents.BOMB_HIT_REPORT, BombHitReportEventPayload>;
-
 type StartGameEventDefinition = SelfValidatedEventDefinition<typeof protocol.SocketEvents.START_GAME, StartGamePayload>;
 
 type ReadyForGameEventDefinition = UnguardedEventDefinition<
@@ -68,6 +56,66 @@ const gamePayloadValidators = {
   [protocol.SocketEvents.PLACE_BOMB]: isPlaceBombPayload,
   [protocol.SocketEvents.BOMB_HIT_REPORT]: isBombHitReportPayload,
 } as const;
+
+/** 検証付きで登録するゲーム受信イベント名 */
+type GuardedGameEventName = keyof typeof gamePayloadValidators;
+
+/** 受信イベント登録で共有するコンテキスト */
+type SocketRegistrationContext = ReturnType<
+  typeof createSocketRegistrationContext
+>;
+
+/** 検証付きゲームイベント1件を購読へ結び付ける処理 */
+type GuardedGameEventRegistrar = (
+  context: SocketRegistrationContext,
+  deps: GameEventOrchestratorDeps,
+) => void;
+
+/**
+ * 検証付きゲームイベントの登録処理を生成する
+ * 4イベントで差分となるイベント名・入力検証・委譲先ハンドラのみを受け取る
+ */
+const defineGuardedGameEvent = <TEvent extends GuardedGameEventName, TPayload>(
+  event: TEvent,
+  validator: (value: unknown) => value is TPayload,
+  handle: (deps: GameEventOrchestratorDeps, payload: TPayload) => void,
+): GuardedGameEventRegistrar => {
+  return ({ onEvent, guardOnEvent }, deps) => {
+    const definition: GuardedEventDefinition<TEvent, TPayload> = {
+      event,
+      validator,
+      orchestrate: (payload) => {
+        handle(deps, payload);
+      },
+    };
+
+    registerGuardedEvent(onEvent, guardOnEvent, definition);
+  };
+};
+
+/** 検証付きゲームイベントの登録処理テーブル（イベント名と検証・委譲先の対応） */
+const guardedGameEventRegistrars: readonly GuardedGameEventRegistrar[] = [
+  defineGuardedGameEvent(
+    protocol.SocketEvents.PING,
+    gamePayloadValidators[protocol.SocketEvents.PING],
+    handlePingEvent,
+  ),
+  defineGuardedGameEvent(
+    protocol.SocketEvents.MOVE,
+    gamePayloadValidators[protocol.SocketEvents.MOVE],
+    handleMoveEvent,
+  ),
+  defineGuardedGameEvent(
+    protocol.SocketEvents.PLACE_BOMB,
+    gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB],
+    handlePlaceBombEvent,
+  ),
+  defineGuardedGameEvent(
+    protocol.SocketEvents.BOMB_HIT_REPORT,
+    gamePayloadValidators[protocol.SocketEvents.BOMB_HIT_REPORT],
+    handleBombHitReportEvent,
+  ),
+];
 
 /** ゲームイベントハンドラ登録で受け取る入力パラメータ */
 export type RegisterGameHandlersParams = {
@@ -99,58 +147,6 @@ const createGameOrchestratorDeps = (
     output: gameOutputAdapter,
     roomOutput: roomOutputAdapter,
     sessionReservations: params.sessionReservations,
-  };
-};
-
-/** PINGイベント定義を生成する */
-const createPingEventDefinition = (
-  deps: GameEventOrchestratorDeps,
-): PingEventDefinition => {
-  return {
-    event: protocol.SocketEvents.PING,
-    validator: gamePayloadValidators[protocol.SocketEvents.PING],
-    orchestrate: (payload) => {
-      handlePingEvent(deps, payload);
-    },
-  };
-};
-
-/** MOVEイベント定義を生成する */
-const createMoveEventDefinition = (
-  deps: GameEventOrchestratorDeps,
-): MoveEventDefinition => {
-  return {
-    event: protocol.SocketEvents.MOVE,
-    validator: gamePayloadValidators[protocol.SocketEvents.MOVE],
-    orchestrate: (payload) => {
-      handleMoveEvent(deps, payload);
-    },
-  };
-};
-
-/** PLACE_BOMBイベント定義を生成する */
-const createPlaceBombEventDefinition = (
-  deps: GameEventOrchestratorDeps,
-): PlaceBombEventDefinition => {
-  return {
-    event: protocol.SocketEvents.PLACE_BOMB,
-    validator: gamePayloadValidators[protocol.SocketEvents.PLACE_BOMB],
-    orchestrate: (payload) => {
-      handlePlaceBombEvent(deps, payload);
-    },
-  };
-};
-
-/** BOMB_HIT_REPORTイベント定義を生成する */
-const createBombHitReportEventDefinition = (
-  deps: GameEventOrchestratorDeps,
-): BombHitReportEventDefinition => {
-  return {
-    event: protocol.SocketEvents.BOMB_HIT_REPORT,
-    validator: gamePayloadValidators[protocol.SocketEvents.BOMB_HIT_REPORT],
-    orchestrate: (payload) => {
-      handleBombHitReportEvent(deps, payload);
-    },
   };
 };
 
@@ -187,21 +183,16 @@ export const registerGameHandlers = (params: RegisterGameHandlersParams) => {
     params.socket,
   );
   const orchestratorDeps = createGameOrchestratorDeps(params, resolvePlayerId);
-  const { onEvent, guardOnEvent } = createSocketRegistrationContext(
+  const registrationContext = createSocketRegistrationContext(
     params.socket,
     resolvePlayerId,
   );
+  const { onEvent } = registrationContext;
 
-  // 検証が必要なイベントを宣言的に登録する
-  const pingEventDefinition = createPingEventDefinition(orchestratorDeps);
-  const moveEventDefinition = createMoveEventDefinition(orchestratorDeps);
-  const placeBombEventDefinition = createPlaceBombEventDefinition(orchestratorDeps);
-  const bombHitReportEventDefinition = createBombHitReportEventDefinition(orchestratorDeps);
-
-  registerGuardedEvent(onEvent, guardOnEvent, pingEventDefinition);
-  registerGuardedEvent(onEvent, guardOnEvent, moveEventDefinition);
-  registerGuardedEvent(onEvent, guardOnEvent, placeBombEventDefinition);
-  registerGuardedEvent(onEvent, guardOnEvent, bombHitReportEventDefinition);
+  // 検証が必要なイベントはテーブルの対応に従って一括登録する
+  for (const registerGuardedGameEvent of guardedGameEventRegistrars) {
+    registerGuardedGameEvent(registrationContext, orchestratorDeps);
+  }
 
   // payloadGuard対象外だが検証が必要なイベントを宣言的に登録する
   const startGameEventDefinition = createStartGameEventDefinition(orchestratorDeps);
