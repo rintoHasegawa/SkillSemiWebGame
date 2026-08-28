@@ -9,8 +9,6 @@ import type {
   BombHitReportPayload,
   BombPlacedAckPayload,
   BombPlacedPayload,
-  ClientToServerEventPayloadMap,
-  ServerToClientEventPayloadMap,
   CurrentPlayersPayload,
   CurrentHurricanesPayload,
   GameResultPayload,
@@ -82,39 +80,14 @@ export type GameHandler = {
 
 /** ソケットインスタンスからゲーム向けハンドラを生成する */
 export const createGameHandler = (socket: Socket): GameHandler => {
-  const { onEvent, onceEvent, offEvent, emitEvent } =
-    createClientSocketEventBridge(socket);
-  type ReceiveEventName = Extract<keyof ServerToClientEventPayloadMap, string>;
-  type SendEventName = Extract<keyof ClientToServerEventPayloadMap, string>;
-
-  const createSubscriptionPair = <TEvent extends ReceiveEventName>(
-    event: TEvent,
-  ) => {
-    return {
-      on: (
-        callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void,
-      ) => {
-        onEvent(event, callback);
-      },
-      off: (
-        callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void,
-      ) => {
-        offEvent(event, callback);
-      },
-    };
-  };
-
-  const createPayloadSender = <TEvent extends SendEventName>(event: TEvent) => {
-    return (payload: ClientToServerEventPayloadMap[TEvent]) => {
-      emitEvent(event, payload);
-    };
-  };
-
-  const createVoidSender = <TEvent extends SendEventName>(event: TEvent) => {
-    return () => {
-      emitEvent(event);
-    };
-  };
+  const {
+    onEvent,
+    onceEvent,
+    offEvent,
+    createSubscriptionPair,
+    createPayloadSender,
+    createVoidSender,
+  } = createClientSocketEventBridge(socket);
 
   const currentPlayersSubscription = createSubscriptionPair(
     protocol.SocketEvents.CURRENT_PLAYERS,
