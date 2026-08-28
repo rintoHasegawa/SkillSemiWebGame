@@ -32,6 +32,7 @@ root/
 │   └── devcontainer.json                               # 開発コンテナ設定
 ├── apps/
 │   ├── client/                                         # 【演出】フロントエンド (Browser)
+│   │   ├── eslint.config.mjs                           # ESLint設定
 │   │   ├── index.html                                  # HTMLエントリ
 │   │   ├── package.json                                # 依存・スクリプト
 │   │   ├── public/                                     # 公開アセット (SVG・PNG等)
@@ -39,20 +40,26 @@ root/
 │   │   ├── tsconfig.json                               # TS設定
 │   │   └── vite.config.ts                              # Vite設定
 │   └── server/                                         # 【権限】バックエンド (Node.js)
+│       ├── eslint.config.mjs                           # ESLint設定
 │       ├── package.json                                # 依存・スクリプト
 │       ├── tsconfig.json                               # TS設定
 │       └── src/                                        # ソースコード
 ├── packages/
 │   └── shared/                                         # 【最重要】「真実」の定義場所（型，定数，純粋ロジック）
+│       ├── eslint.config.mjs                           # ESLint設定
 │       ├── package.json                                # 依存・公開設定
+│       ├── ts-prune-allowlist.json                     # ts-prune除外リスト
 │       ├── tsconfig.json                               # TS設定
 │       └── src/                                        # ソースコード
+├── scripts/                                             # 補助スクリプト
+│   └── ts-prune-filter.mjs                              # ts-prune結果のフィルタ
 ├── test/                                                # 負荷テスト用スクリプト群
 │   ├── load-bot.ts                                      # 負荷テスト実行
 │   ├── load-bot.constants.ts                            # 負荷テスト定数
 │   ├── package.json                                     # テスト依存・スクリプト
 │   └── tsconfig.json                                    # テストTS設定
 ├── docs/                                                # プロジェクトドキュメント
+├── .github/                                             # GitHub設定 (Dependabot等)
 ├── .gitignore                                           # Git除外設定
 ├── .npmrc                                               # pnpm設定
 ├── docker-compose.yml                                   # 開発Compose定義
@@ -61,6 +68,7 @@ root/
 ├── package.json                                         # ワークスペース定義
 ├── pnpm-lock.yaml                                       # lockファイル
 ├── pnpm-workspace.yaml                                  # workspace設定
+├── LICENSE                                              # ライセンス
 ├── CLAUDE.md                                            # Claude Code設定
 └── README.md                                            # プロジェクト概要
 ```
