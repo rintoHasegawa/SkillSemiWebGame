@@ -229,4 +229,4 @@ pnpm --filter @repo/shared build
 
 具体的なコマンド（起動・ログ確認・停止）とトラブルシューティングは [ENV_05_Docker運用操作ガイド](ENV_05_Docker運用操作ガイド.md) の「本番環境」を参照すること．
 
-※ Dev Container内からはDockerコマンドが使用できない場合があるため，Dev Containerを閉じてホストOSのターミナルで実行する．
+※ 本プロジェクトの Dev Container は `docker-outside-of-docker` feature とホストの `/var/run/docker.sock` マウントを設定しているため，Dev Container 内のターミナルからそのまま実行できる．

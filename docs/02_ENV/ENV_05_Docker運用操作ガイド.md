@@ -102,11 +102,13 @@ docker compose -f docker-compose.prod.yml up -d --force-recreate
 
 ### モジュールが見つからない (MODULE_NOT_FOUND)
 
-本番起動時に `ws` 等が見つからないエラーが出る場合，`Dockerfile` の COPY記述を確認する．pnpm のシンボリックリンク構造に対応するため，以下が記述されている必要がある．
+本番起動時に `ws` 等が見つからないエラーが出る場合，`Dockerfile` の COPY記述を確認する．本プロジェクトはルートの `.npmrc` で `shamefully-hoist=true` を指定しており，依存がルートの `node_modules` にホイストされるため，以下のルート `node_modules` のコピーだけで解決している．
 
 ```dockerfile
-COPY --from=builder /app/apps/server/node_modules ./apps/server/node_modules
+COPY --from=builder /app/node_modules ./node_modules
 ```
+
+※ `shamefully-hoist=true` を外すと依存が各パッケージ配下に配置され，本エラーが再発しうる．その場合は `apps/server/node_modules` のコピー追加を検討する．
 
 ### 再起動ループ (Restarting)
 
