@@ -120,36 +120,19 @@ describe("isValidTargetPlayerCount", () => {
 });
 
 describe("resolveMinTargetPlayerCount", () => {
-  it("参加人数0でも下限4を返すこと", () => {
-    expect(resolveMinTargetPlayerCount(0)).toBe(4);
-  });
+  const cases: [string, number, number][] = [
+    ["参加人数0でも下限4を返すこと", 0, 4],
+    ["参加人数1で下限4を返すこと", 1, 4],
+    ["参加人数4で4を返すこと", 4, 4],
+    ["参加人数5を4の倍数へ切り上げて8を返すこと", 5, 8],
+    ["参加人数8で8を返すこと", 8, 8],
+    ["参加人数9を4の倍数へ切り上げて12を返すこと", 9, 12],
+    ["参加人数100で100を返すこと", 100, 100],
+    ["負の参加人数でも下限4を返すこと", -4, 4],
+  ];
 
-  it("参加人数1で下限4を返すこと", () => {
-    expect(resolveMinTargetPlayerCount(1)).toBe(4);
-  });
-
-  it("参加人数4で4を返すこと", () => {
-    expect(resolveMinTargetPlayerCount(4)).toBe(4);
-  });
-
-  it("参加人数5を4の倍数へ切り上げて8を返すこと", () => {
-    expect(resolveMinTargetPlayerCount(5)).toBe(8);
-  });
-
-  it("参加人数8で8を返すこと", () => {
-    expect(resolveMinTargetPlayerCount(8)).toBe(8);
-  });
-
-  it("参加人数9を4の倍数へ切り上げて12を返すこと", () => {
-    expect(resolveMinTargetPlayerCount(9)).toBe(12);
-  });
-
-  it("参加人数100で100を返すこと", () => {
-    expect(resolveMinTargetPlayerCount(100)).toBe(100);
-  });
-
-  it("負の参加人数でも下限4を返すこと", () => {
-    expect(resolveMinTargetPlayerCount(-4)).toBe(4);
+  it.each(cases)("%s", (_description, playerCount, expected) => {
+    expect(resolveMinTargetPlayerCount(playerCount)).toBe(expected);
   });
 
   it("常に4の倍数を返すこと", () => {
@@ -162,30 +145,19 @@ describe("resolveMinTargetPlayerCount", () => {
 });
 
 describe("resolveMaxTargetPlayerCount", () => {
-  it("ルーム上限100でそのまま100を返すこと", () => {
-    expect(resolveMaxTargetPlayerCount(0, MAX_PLAYERS)).toBe(100);
-  });
+  const cases: [string, number, number, number][] = [
+    ["ルーム上限100でそのまま100を返すこと", 0, MAX_PLAYERS, 100],
+    ["ルーム上限が4の倍数でない10を4の倍数へ切り下げて8を返すこと", 0, 10, 8],
+    ["ルーム上限4で4を返すこと", 0, 4, 4],
+    ["ルーム上限が下限未満でも下限4を返すこと", 0, 3, 4],
+    ["参加人数が上限近くでも上限100を返すこと", 97, MAX_PLAYERS, 100],
+    // ルーム上限が4の倍数でなく参加人数が切り下げ値を超える異常時は下限を優先する
+    // ※ 返り値がルーム上限(10)を超えるため，サーバ検証では拒否される値になる
+    ["切り下げた上限より下限が大きい場合は下限を返すこと", 10, 10, 12],
+  ];
 
-  it("ルーム上限が4の倍数でない10を4の倍数へ切り下げて8を返すこと", () => {
-    expect(resolveMaxTargetPlayerCount(0, 10)).toBe(8);
-  });
-
-  it("ルーム上限4で4を返すこと", () => {
-    expect(resolveMaxTargetPlayerCount(0, 4)).toBe(4);
-  });
-
-  it("ルーム上限が下限未満でも下限4を返すこと", () => {
-    expect(resolveMaxTargetPlayerCount(0, 3)).toBe(4);
-  });
-
-  it("参加人数が上限近くでも上限100を返すこと", () => {
-    expect(resolveMaxTargetPlayerCount(97, MAX_PLAYERS)).toBe(100);
-  });
-
-  // ルーム上限が4の倍数でなく参加人数が切り下げ値を超える異常時は下限を優先する
-  // ※ 返り値がルーム上限(10)を超えるため，サーバ検証では拒否される値になる
-  it("切り下げた上限より下限が大きい場合は下限を返すこと", () => {
-    expect(resolveMaxTargetPlayerCount(10, 10)).toBe(12);
+  it.each(cases)("%s", (_description, playerCount, maxPlayers, expected) => {
+    expect(resolveMaxTargetPlayerCount(playerCount, maxPlayers)).toBe(expected);
   });
 
   it("下限を下回らないこと", () => {
@@ -204,11 +176,35 @@ describe("resolveMaxTargetPlayerCount", () => {
 });
 
 describe("createTargetPlayerCountOptions", () => {
-  it("参加人数0・上限100で4から100までの4刻みの選択肢を返すこと", () => {
-    expect(createTargetPlayerCountOptions(0, MAX_PLAYERS)).toEqual([
-      4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76,
-      80, 84, 88, 92, 96, 100,
-    ]);
+  const cases: [string, number, number, number[]][] = [
+    [
+      "参加人数0・上限100で4から100までの4刻みの選択肢を返すこと",
+      0,
+      MAX_PLAYERS,
+      [
+        4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72,
+        76, 80, 84, 88, 92, 96, 100,
+      ],
+    ],
+    [
+      "参加人数を4の倍数へ切り上げた値から選択肢を開始すること",
+      9,
+      20,
+      [12, 16, 20],
+    ],
+    [
+      "ルーム上限が4の倍数でない場合は切り下げた値までを返すこと",
+      0,
+      10,
+      [4, 8],
+    ],
+    ["下限と上限が同じ場合は1件だけ返すこと", 0, 4, [4]],
+  ];
+
+  it.each(cases)("%s", (_description, playerCount, maxPlayers, expected) => {
+    expect(createTargetPlayerCountOptions(playerCount, maxPlayers)).toEqual(
+      expected,
+    );
   });
 
   it("先頭が下限と一致すること", () => {
@@ -232,18 +228,6 @@ describe("createTargetPlayerCountOptions", () => {
     });
 
     expect(diffs.every((diff) => diff === TARGET_PLAYER_COUNT_UNIT)).toBe(true);
-  });
-
-  it("参加人数を4の倍数へ切り上げた値から選択肢を開始すること", () => {
-    expect(createTargetPlayerCountOptions(9, 20)).toEqual([12, 16, 20]);
-  });
-
-  it("ルーム上限が4の倍数でない場合は切り下げた値までを返すこと", () => {
-    expect(createTargetPlayerCountOptions(0, 10)).toEqual([4, 8]);
-  });
-
-  it("下限と上限が同じ場合は1件だけ返すこと", () => {
-    expect(createTargetPlayerCountOptions(0, 4)).toEqual([4]);
   });
 
   it("すべての選択肢がサーバの受け入れ条件を満たすこと", () => {
