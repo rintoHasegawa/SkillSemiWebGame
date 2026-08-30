@@ -22,6 +22,7 @@ import {
 } from "@server/logging/index";
 import { config } from "@server/config";
 import { RoomManager } from "@server/domains/room/RoomManager";
+import { createRoomScopedGamePortStub } from "@server/testing/gamePortFixtures";
 import {
   createRoom as createRoomFixture,
   createRoomMember,
@@ -60,56 +61,13 @@ const createRoom = ({
   });
 };
 
-/** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
+/** 進行中セッションの経過msだけを差し替えたゲーム管理ポートスタブを生成する */
 const createGameManagerStub = (signedElapsedMs?: number) => {
-  return {
-    startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
+  return createRoomScopedGamePortStub({
     getRoomSignedElapsedMs: vi.fn<
       RoomScopedGamePort["getRoomSignedElapsedMs"]
     >(() => signedElapsedMs),
-    getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
-      () => undefined,
-    ),
-    getRoomPlayers: vi.fn<RoomScopedGamePort["getRoomPlayers"]>(() => []),
-    movePlayer: vi.fn<RoomScopedGamePort["movePlayer"]>(),
-    shouldBroadcastBombPlaced: vi.fn<
-      RoomScopedGamePort["shouldBroadcastBombPlaced"]
-    >(() => true),
-    shouldAcceptBombPlacement: vi.fn<
-      RoomScopedGamePort["shouldAcceptBombPlacement"]
-    >(() => true),
-    issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
-      () => "bomb-1",
-    ),
-    resolveBombExplodeAtElapsedMs: vi.fn<
-      RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
-    >(() => 1_000),
-    registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
-    getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 0),
-    getActiveBombSnapshots: vi.fn<
-      RoomScopedGamePort["getActiveBombSnapshots"]
-    >(() => []),
-    shouldBroadcastBombHitReport: vi.fn<
-      RoomScopedGamePort["shouldBroadcastBombHitReport"]
-    >(() => true),
-    isSameTeamBombHitReport: vi.fn<
-      RoomScopedGamePort["isSameTeamBombHitReport"]
-    >(() => false),
-    checkBombHitReportOrigin: vi.fn<
-      RoomScopedGamePort["checkBombHitReportOrigin"]
-    >(() => ({ status: "valid" })),
-    recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
-    removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
-    replaceDisconnectedPlayerWithBot: vi.fn<
-      RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
-    >(() => false),
-    demotePlayerFromBotControl: vi.fn<
-      RoomScopedGamePort["demotePlayerFromBotControl"]
-    >(() => true),
-    getMapGridColorsView: vi.fn<
-      RoomScopedGamePort["getMapGridColorsView"]
-    >(() => []),
-  } satisfies RoomScopedGamePort;
+  });
 };
 
 type DepsParams = {

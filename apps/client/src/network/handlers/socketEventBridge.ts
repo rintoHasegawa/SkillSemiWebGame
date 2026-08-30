@@ -2,6 +2,7 @@
  * socketEventBridge
  * クライアント向けソケットイベント bridge を生成する
  * 受信イベントと送信イベントの型境界を統一する
+ * 購読ペア・送信関数の生成ヘルパーもここに集約する
  */
 import type { Socket } from "socket.io-client";
 import {
@@ -43,10 +44,48 @@ export const createClientSocketEventBridge = (socket: Socket) => {
     ClientToServerEventPayloadMap
   >(bridgeTarget);
 
+  type ReceiveEventName = Extract<keyof ServerToClientEventPayloadMap, string>;
+  type SendEventName = Extract<keyof ClientToServerEventPayloadMap, string>;
+
+  /** 受信イベントの購読・購読解除をひとまとめにしたペアを生成する */
+  const createSubscriptionPair = <TEvent extends ReceiveEventName>(
+    event: TEvent,
+  ) => {
+    return {
+      on: (
+        callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void,
+      ) => {
+        onEvent(event, callback);
+      },
+      off: (
+        callback: (payload: ServerToClientEventPayloadMap[TEvent]) => void,
+      ) => {
+        offEvent(event, callback);
+      },
+    };
+  };
+
+  /** ペイロードを伴う送信関数を生成する */
+  const createPayloadSender = <TEvent extends SendEventName>(event: TEvent) => {
+    return (payload: ClientToServerEventPayloadMap[TEvent]) => {
+      emitEvent(event, payload);
+    };
+  };
+
+  /** ペイロードを伴わない送信関数を生成する */
+  const createVoidSender = <TEvent extends SendEventName>(event: TEvent) => {
+    return () => {
+      emitEvent(event);
+    };
+  };
+
   return {
     onEvent,
     onceEvent,
     offEvent,
     emitEvent,
+    createSubscriptionPair,
+    createPayloadSender,
+    createVoidSender,
   };
 };

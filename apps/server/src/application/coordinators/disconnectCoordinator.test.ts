@@ -15,59 +15,17 @@ import {
   logResults,
   logScopes,
 } from "@server/logging/index";
+import { createRoomScopedGamePortStub } from "@server/testing/gamePortFixtures";
 import { createRoom } from "@server/testing/roomFixtures";
 import { disconnectCoordinator } from "./disconnectCoordinator";
 
-/** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
+/** Bot置換の可否だけを差し替えたゲーム管理ポートスタブを生成する */
 const createGameManagerStub = (replacedWithBot: boolean) => {
-  return {
-    startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
-    getRoomSignedElapsedMs: vi.fn<
-      RoomScopedGamePort["getRoomSignedElapsedMs"]
-    >(() => undefined),
-    getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
-      () => undefined,
-    ),
-    getRoomPlayers: vi.fn<RoomScopedGamePort["getRoomPlayers"]>(() => []),
-    movePlayer: vi.fn<RoomScopedGamePort["movePlayer"]>(),
-    shouldBroadcastBombPlaced: vi.fn<
-      RoomScopedGamePort["shouldBroadcastBombPlaced"]
-    >(() => true),
-    shouldAcceptBombPlacement: vi.fn<
-      RoomScopedGamePort["shouldAcceptBombPlacement"]
-    >(() => true),
-    issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
-      () => "bomb-1",
-    ),
-    resolveBombExplodeAtElapsedMs: vi.fn<
-      RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
-    >(() => 1_000),
-    registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
-    getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 0),
-    getActiveBombSnapshots: vi.fn<
-      RoomScopedGamePort["getActiveBombSnapshots"]
-    >(() => []),
-    shouldBroadcastBombHitReport: vi.fn<
-      RoomScopedGamePort["shouldBroadcastBombHitReport"]
-    >(() => true),
-    isSameTeamBombHitReport: vi.fn<
-      RoomScopedGamePort["isSameTeamBombHitReport"]
-    >(() => false),
-    checkBombHitReportOrigin: vi.fn<
-      RoomScopedGamePort["checkBombHitReportOrigin"]
-    >(() => ({ status: "valid" })),
-    recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
-    removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
+  return createRoomScopedGamePortStub({
     replaceDisconnectedPlayerWithBot: vi.fn<
       RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
     >(() => replacedWithBot),
-    demotePlayerFromBotControl: vi.fn<
-      RoomScopedGamePort["demotePlayerFromBotControl"]
-    >(() => true),
-    getMapGridColorsView: vi.fn<
-      RoomScopedGamePort["getMapGridColorsView"]
-    >(() => []),
-  } satisfies RoomScopedGamePort;
+  });
 };
 
 type DisconnectDepsParams = {

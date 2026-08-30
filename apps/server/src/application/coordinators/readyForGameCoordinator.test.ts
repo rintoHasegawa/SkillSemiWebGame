@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { GameFieldConfig } from "@server/domains/game/application/ports/gameUseCasePorts";
 import type { RoomScopedGamePort } from "@server/domains/room/application/ports/roomUseCasePorts";
+import { createRoomScopedGamePortStub } from "@server/testing/gamePortFixtures";
 import { createRoom } from "@server/testing/roomFixtures";
 import { createPlayerData } from "@server/testing/playerFixtures";
 import { readyForGameCoordinator } from "./readyForGameCoordinator";
@@ -21,14 +22,13 @@ type GameManagerStubParams = {
   fieldConfig?: GameFieldConfig;
 };
 
-/** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
+/** ルーム参照系の戻り値だけを差し替えたゲーム管理ポートスタブを生成する */
 const createGameManagerStub = ({
   roomPlayers = [],
   signedElapsedMs,
   fieldConfig,
 }: GameManagerStubParams) => {
-  return {
-    startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
+  return createRoomScopedGamePortStub({
     getRoomSignedElapsedMs: vi.fn<
       RoomScopedGamePort["getRoomSignedElapsedMs"]
     >(() => signedElapsedMs),
@@ -38,45 +38,7 @@ const createGameManagerStub = ({
     getRoomPlayers: vi.fn<RoomScopedGamePort["getRoomPlayers"]>(
       () => roomPlayers,
     ),
-    movePlayer: vi.fn<RoomScopedGamePort["movePlayer"]>(),
-    shouldBroadcastBombPlaced: vi.fn<
-      RoomScopedGamePort["shouldBroadcastBombPlaced"]
-    >(() => true),
-    shouldAcceptBombPlacement: vi.fn<
-      RoomScopedGamePort["shouldAcceptBombPlacement"]
-    >(() => true),
-    issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
-      () => "bomb-1",
-    ),
-    resolveBombExplodeAtElapsedMs: vi.fn<
-      RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
-    >(() => 1_000),
-    registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
-    getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 0),
-    getActiveBombSnapshots: vi.fn<
-      RoomScopedGamePort["getActiveBombSnapshots"]
-    >(() => []),
-    shouldBroadcastBombHitReport: vi.fn<
-      RoomScopedGamePort["shouldBroadcastBombHitReport"]
-    >(() => true),
-    isSameTeamBombHitReport: vi.fn<
-      RoomScopedGamePort["isSameTeamBombHitReport"]
-    >(() => false),
-    checkBombHitReportOrigin: vi.fn<
-      RoomScopedGamePort["checkBombHitReportOrigin"]
-    >(() => ({ status: "valid" })),
-    recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
-    removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
-    replaceDisconnectedPlayerWithBot: vi.fn<
-      RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
-    >(() => false),
-    demotePlayerFromBotControl: vi.fn<
-      RoomScopedGamePort["demotePlayerFromBotControl"]
-    >(() => true),
-    getMapGridColorsView: vi.fn<
-      RoomScopedGamePort["getMapGridColorsView"]
-    >(() => []),
-  } satisfies RoomScopedGamePort;
+  });
 };
 
 type GameManagerStub = ReturnType<typeof createGameManagerStub>;

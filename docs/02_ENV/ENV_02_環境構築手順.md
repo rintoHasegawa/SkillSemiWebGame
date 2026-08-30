@@ -168,7 +168,7 @@ gh auth login
 
 - Claude Code
   - コンテナ内のターミナルで `claude` コマンドを実行し，初回のみログイン（認証）を行う．
-  - 認証情報・設定は Docker ボリューム（`claude-config`）に永続化されるため，コンテナを Rebuild しても再ログインは不要である（詳細は [ENV_05_Docker運用操作ガイド.md](ENV_05_Docker運用操作ガイド.md) の「認証情報の永続化」を参照）．
+  - 認証情報・設定は Docker ボリューム（`claude-config`）に永続化されるため，コンテナを Rebuild しても再ログインは不要である（詳細は [ENV_05_Docker運用操作ガイド](ENV_05_Docker運用操作ガイド.md) の「認証情報の永続化」を参照）．
   - 運用ルールは `docs/01_GUIDE/GUIDE_02_エージェント運用ルール.md` を参照する．
 - GitHub Copilot
   - devcontainer に拡張機能が含まれるが，使用は任意である．
@@ -178,7 +178,7 @@ gh auth login
 ### ディレクトリ構成 (Directory Layout)
 
 コンテナ内で `apps/client`・`apps/server`・`packages/shared` を含む Monorepo 構成が見えていることを確認する．
-ルート構成の全体像は [ENV_01_技術スタック.md](ENV_01_技術スタック.md) を参照する．
+ルート構成の全体像は [ENV_01_技術スタック](ENV_01_技術スタック.md) を参照する．
 
 ## 動作確認 (Verification)
 
@@ -206,8 +206,7 @@ pnpm --filter @repo/shared build
      pnpm --filter client dev
      ```
 
-   - ブラウザでの確認: ターミナルに「➜  Local:   http://localhost:5173/」と表示されたら，Google Chrome等のブラウザを開き，アドレスバーに上記URLを貼り付けて実行する．
-   - 正常動作の判断基準: ゲームのタイトル画面が表示されれば，フロントエンドの環境構築は成功である．
+   - ブラウザでの確認方法・正常動作の判断基準は，前述の「起動確認 (Verify Startup)」の手順 3 と同じである（起動時のエラーへの対応も同じ箇所に記載している）．
 
 2. Server (バックエンド) の動作確認
 
@@ -217,7 +216,7 @@ pnpm --filter @repo/shared build
      pnpm --filter server dev
      ```
 
-   - 正常動作の判断基準: ターミナルにサーバの起動ログ（リッスン開始のメッセージ）が出力され，エラーで停止しなければ構築成功である．
+   - 正常動作の判断基準: ターミナルにサーバーの起動ログ（リッスン開始のメッセージ）が出力され，エラーで停止しなければ構築成功である．
 
 3. 終了方法 (重要)
 
@@ -228,6 +227,6 @@ pnpm --filter @repo/shared build
 本番環境と同様のDockerイメージを作成し，正しくビルド・起動できるかを確認する．
 「機能開発が終わった後」や「プルリクエストを出す前」に実施することを推奨する．
 
-具体的なコマンド（起動・ログ確認・停止）とトラブルシューティングは [ENV_05_Docker運用操作ガイド.md](ENV_05_Docker運用操作ガイド.md) の「本番環境」を参照すること．
+具体的なコマンド（起動・ログ確認・停止）とトラブルシューティングは [ENV_05_Docker運用操作ガイド](ENV_05_Docker運用操作ガイド.md) の「本番環境」を参照すること．
 
 ※ Dev Container内からはDockerコマンドが使用できない場合があるため，Dev Containerを閉じてホストOSのターミナルで実行する．

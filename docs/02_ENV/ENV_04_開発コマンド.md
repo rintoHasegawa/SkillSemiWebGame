@@ -9,19 +9,21 @@
 
 開発環境は VS Code の Dev Containers で起動する（「Reopen in Container」を実行）．操作の詳細は [ENV_05_Docker運用操作ガイド](ENV_05_Docker運用操作ガイド.md) を参照．
 
-コンテナ内での開発サーバ起動は以下を使用する．
+コンテナ内での開発サーバー起動は以下を使用する．
 
 ```bash
 pnpm --filter client dev
 ```
 
-クライアントの開発サーバ（Vite，`--host` 付き）を起動する．
+クライアントの開発サーバー（Vite，`--host` 付き）を起動する．
+
+※ 開発モード（`mode` が `production` 以外）の Vite dev サーバーは，`/socket.io`（shared の `NETWORK_CONFIG.SOCKET_IO_PATH`）宛のリクエストを `http://localhost:3000`（サーバーの開発ポート）へ WebSocket 込み（`ws: true`）でプロキシする（`apps/client/vite.config.ts`）．本番ビルドではこのプロキシは設定されない．
 
 ```bash
 pnpm --filter server dev
 ```
 
-サーバを watch モード（tsx watch）で起動する．
+サーバーを watch モード（tsx watch）で起動する．
 
 ### 本番環境 (Docker Compose)
 
@@ -43,7 +45,7 @@ shared パッケージをビルドする（tsup で cjs/esm を出力し，続�
 pnpm --filter server build
 ```
 
-サーバをビルドする（tsc＋tsc-alias）．
+サーバーをビルドする（tsc＋tsc-alias）．
 
 ```bash
 pnpm --filter client build
@@ -57,7 +59,7 @@ pnpm --filter client build
 pnpm --filter server start
 ```
 
-ビルド済みサーバ（`dist/index.js`）を起動する．
+ビルド済みサーバー（`dist/index.js`）を起動する．
 
 ```bash
 pnpm --filter client preview
@@ -105,7 +107,7 @@ shared のユニットテストを実行する（`vitest run`）．
 pnpm --filter server test
 ```
 
-サーバのユニットテストを実行する（`vitest run`）．
+サーバーのユニットテストを実行する（`vitest run`）．
 
 ```bash
 pnpm --filter client test
@@ -145,7 +147,7 @@ pnpm --filter client lint
 pnpm --filter server lint
 ```
 
-サーバの ESLint を実行する（`src` 配下の `.ts`）．
+サーバーの ESLint を実行する（`src` 配下の `.ts`）．
 
 ```bash
 pnpm --filter @repo/shared lint

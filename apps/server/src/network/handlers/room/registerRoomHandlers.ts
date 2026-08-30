@@ -120,20 +120,38 @@ const createJoinRoomOrchestratorDeps = (
   };
 };
 
-/** ロビー設定更新イベント調停で利用する依存束を生成する */
-const createLobbySettingsUpdateOrchestratorDeps = (
-  params: RegisterRoomHandlersParams,
-  resolvePlayerId: CurrentPlayerIdResolver,
-): LobbySettingsUpdateOrchestratorDeps => {
-  const { roomManager, roomOutputAdapter } = params;
+// ルーム操作と出力のみを参照する調停の依存束は形が共通なので，
+// ポート型だけを差し替えられる共通ビルダとして切り出す
+type RoomManagerScopedDeps<TRoomUseCasePort> = {
+  socketId: string;
+  roomManager: TRoomUseCasePort;
+  output: RoomOutputAdapter;
+};
 
+const createRoomManagerScopedDeps = <TRoomUseCasePort>(
+  roomManager: TRoomUseCasePort,
+  output: RoomOutputAdapter,
+  resolvePlayerId: CurrentPlayerIdResolver,
+): RoomManagerScopedDeps<TRoomUseCasePort> => {
   return {
     get socketId() {
       return resolvePlayerId();
     },
     roomManager,
-    output: roomOutputAdapter,
+    output,
   };
+};
+
+/** ロビー設定更新イベント調停で利用する依存束を生成する */
+const createLobbySettingsUpdateOrchestratorDeps = (
+  params: RegisterRoomHandlersParams,
+  resolvePlayerId: CurrentPlayerIdResolver,
+): LobbySettingsUpdateOrchestratorDeps => {
+  return createRoomManagerScopedDeps(
+    params.roomManager,
+    params.roomOutputAdapter,
+    resolvePlayerId,
+  );
 };
 
 /** チーム選択イベント調停で利用する依存束を生成する */
@@ -141,15 +159,11 @@ const createSelectTeamOrchestratorDeps = (
   params: RegisterRoomHandlersParams,
   resolvePlayerId: CurrentPlayerIdResolver,
 ): SelectTeamOrchestratorDeps => {
-  const { roomManager, roomOutputAdapter } = params;
-
-  return {
-    get socketId() {
-      return resolvePlayerId();
-    },
-    roomManager,
-    output: roomOutputAdapter,
-  };
+  return createRoomManagerScopedDeps(
+    params.roomManager,
+    params.roomOutputAdapter,
+    resolvePlayerId,
+  );
 };
 
 /** 試合復帰イベント調停で利用する依存束を生成する */

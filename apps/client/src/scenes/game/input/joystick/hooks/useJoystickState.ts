@@ -14,7 +14,7 @@ import type {
   UseJoystickStateReturn,
 } from "../common";
 
-const getClientPoint = (e: JoystickPointerEvent): Point | null => {
+const getClientPoint = (e: JoystickPointerEvent): Point => {
   return { x: e.clientX, y: e.clientY };
 };
 
@@ -84,11 +84,7 @@ export const useJoystickState = ({
   );
 
   const schedulePointerEnd = useCallback(
-    (
-      pointerId: number,
-      _source: string,
-      confirmDelayMs: number = POINTER_END_CONFIRM_MS,
-    ) => {
+    (pointerId: number, confirmDelayMs: number = POINTER_END_CONFIRM_MS) => {
       if (confirmDelayMs <= 0) {
         clearPendingEnd();
         confirmPointerEnd(pointerId);
@@ -136,9 +132,6 @@ export const useJoystickState = ({
     }
 
     const point = getClientPoint(e);
-    if (!point) {
-      return;
-    }
     if (point.x > window.innerWidth / 2) {
       return;
     }
@@ -165,9 +158,6 @@ export const useJoystickState = ({
       }
 
       const point = getClientPoint(e);
-      if (!point) {
-        return null;
-      }
 
       const computed = computeJoystick(center, point, radius);
       const allowPendingEndCancellation =
@@ -256,11 +246,7 @@ export const useJoystickState = ({
       }
 
       if (e.type === "pointercancel" || e.type === "lostpointercapture") {
-        schedulePointerEnd(
-          e.pointerId,
-          `element-${e.type}`,
-          DIRECT_END_CONFIRM_MS,
-        );
+        schedulePointerEnd(e.pointerId, DIRECT_END_CONFIRM_MS);
         return;
       }
 
@@ -268,7 +254,7 @@ export const useJoystickState = ({
         return;
       }
 
-      schedulePointerEnd(e.pointerId, "element-pointerup", DIRECT_END_CONFIRM_MS);
+      schedulePointerEnd(e.pointerId, DIRECT_END_CONFIRM_MS);
     },
     [schedulePointerEnd],
   );
@@ -280,11 +266,7 @@ export const useJoystickState = ({
       }
 
       if (event.type === "pointercancel") {
-        schedulePointerEnd(
-          event.pointerId,
-          "window-pointercancel",
-          DIRECT_END_CONFIRM_MS,
-        );
+        schedulePointerEnd(event.pointerId, DIRECT_END_CONFIRM_MS);
         return;
       }
 
@@ -292,11 +274,7 @@ export const useJoystickState = ({
         return;
       }
 
-      schedulePointerEnd(
-        event.pointerId,
-        "window-pointerup",
-        DIRECT_END_CONFIRM_MS,
-      );
+      schedulePointerEnd(event.pointerId, DIRECT_END_CONFIRM_MS);
     },
     [schedulePointerEnd],
   );
@@ -311,7 +289,7 @@ export const useJoystickState = ({
       return;
     }
 
-    schedulePointerEnd(activePointerId, "window-mouseup", DIRECT_END_CONFIRM_MS);
+    schedulePointerEnd(activePointerId, DIRECT_END_CONFIRM_MS);
   }, [schedulePointerEnd]);
 
   const handleDocumentMouseUp = useCallback(() => {
@@ -324,11 +302,7 @@ export const useJoystickState = ({
       return;
     }
 
-    schedulePointerEnd(
-      activePointerId,
-      "document-mouseup",
-      DIRECT_END_CONFIRM_MS,
-    );
+    schedulePointerEnd(activePointerId, DIRECT_END_CONFIRM_MS);
   }, [schedulePointerEnd]);
 
   useEffect(() => {
@@ -343,7 +317,7 @@ export const useJoystickState = ({
       }
 
       // blur で pointerup を取り逃した場合に備えて，短い遅延で終了を予約する
-      schedulePointerEnd(activePointerId, "window-blur", POINTER_END_CONFIRM_MS);
+      schedulePointerEnd(activePointerId, POINTER_END_CONFIRM_MS);
     };
 
     const handleVisibilityChange = () => {

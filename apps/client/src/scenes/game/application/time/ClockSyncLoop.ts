@@ -3,7 +3,7 @@
  * 時刻同期PING送信の定期実行を管理する
  * 可変間隔スケジュールと停止処理を一元化する
  */
-import { SYSTEM_TIME_PROVIDER } from "@client/scenes/game/application/time/TimeProvider";
+import { SYSTEM_TIME_PROVIDER } from "./TimeProvider";
 
 /** 時刻同期ループ初期化入力型 */
 export type ClockSyncLoopOptions = {

@@ -11,11 +11,15 @@ import type {
 } from "@repo/shared";
 import type { RealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
 import type { ReliableEmitters } from "../../CommonHandler";
-import { isTargetInAoiWindow, resolveViewerAoiWindow, type AoiWindow } from "../aoi/aoiVisibility";
+import { isTargetInAoiWindow } from "../aoi/aoiVisibility";
 import {
   type RuntimeResolverDeps,
 } from "../runtime/gameRuntimeResolvers";
-import { forEachRoomViewer } from "./roomViewerSyncContext";
+import {
+  forEachRoomViewer,
+  refreshViewerAoiWindow,
+  type UpdateViewerAoiCellCache,
+} from "./roomViewerSyncContext";
 
 type RoomId = domain.room.Room["roomId"];
 type SocketId = string;
@@ -47,11 +51,7 @@ export type CreateHurricaneSyncServiceDeps = {
   reliable: ReliableEmitters;
   runtimeDeps: RuntimeResolverDeps;
   realtimeRoomSyncState: RealtimeRoomSyncStateStore;
-  updateViewerAoiCellCache: (
-    roomId: RoomId,
-    viewerId: SocketId,
-    viewer: domain.game.player.PlayerData,
-  ) => void;
+  updateViewerAoiCellCache: UpdateViewerAoiCellCache;
 };
 
 /** ハリケーンAOI同期サービスを生成する */
@@ -59,13 +59,6 @@ export const createHurricaneSyncService = (
   deps: CreateHurricaneSyncServiceDeps,
 ): HurricaneSyncService => {
   const hurricaneSnapshotByRoomId = new Map<RoomId, RoomHurricaneSnapshot>();
-
-  const isInViewerAoi = (
-    target: { x: number; y: number },
-    aoiWindow: AoiWindow,
-  ): boolean => {
-    return isTargetInAoiWindow(target, aoiWindow);
-  };
 
   const replaceRoomHurricaneSnapshot = (
     roomId: RoomId,
@@ -130,12 +123,16 @@ export const createHurricaneSyncService = (
     viewer: domain.game.player.PlayerData,
     hurricanes: Iterable<HurricaneStatePayload>,
   ): HurricaneStatePayload[] => {
-    deps.updateViewerAoiCellCache(roomId, viewerId, viewer);
-    const aoiWindow = resolveViewerAoiWindow(viewer);
+    const aoiWindow = refreshViewerAoiWindow({
+      updateViewerAoiCellCache: deps.updateViewerAoiCellCache,
+      roomId,
+      viewerId,
+      viewer,
+    });
     const visibleHurricanes: HurricaneStatePayload[] = [];
 
     for (const hurricane of hurricanes) {
-      if (isInViewerAoi(hurricane, aoiWindow)) {
+      if (isTargetInAoiWindow(hurricane, aoiWindow)) {
         visibleHurricanes.push(hurricane);
       }
     }
@@ -182,19 +179,19 @@ export const createHurricaneSyncService = (
         runtimeDeps: deps.runtimeDeps,
         roomId,
         run: ({ viewerId, viewer }) => {
-        const visibleHurricanes = collectVisibleHurricanesByViewer(
-          roomId,
-          viewerId,
-          viewer,
-          hurricanes,
-        );
-        syncVisibleHurricaneIdsByViewer(roomId, viewerId, visibleHurricanes);
+          const visibleHurricanes = collectVisibleHurricanesByViewer(
+            roomId,
+            viewerId,
+            viewer,
+            hurricanes,
+          );
+          syncVisibleHurricaneIdsByViewer(roomId, viewerId, visibleHurricanes);
 
-        deps.reliable.emitToSocketById(
-          viewerId,
-          protocol.SocketEvents.CURRENT_HURRICANES,
-          visibleHurricanes,
-        );
+          deps.reliable.emitToSocketById(
+            viewerId,
+            protocol.SocketEvents.CURRENT_HURRICANES,
+            visibleHurricanes,
+          );
         },
       });
     },
@@ -211,44 +208,44 @@ export const createHurricaneSyncService = (
         runtimeDeps: deps.runtimeDeps,
         roomId,
         run: ({ viewerId, viewer }) => {
-        const nextVisibleHurricanes = collectVisibleHurricanesByViewer(
-          roomId,
-          viewerId,
-          viewer,
-          roomSnapshot?.values() ?? [],
-        );
-        const previousVisibleIds = new Set(
-          deps.realtimeRoomSyncState.getVisibleHurricaneIdsSnapshot(roomId, viewerId),
-        );
-        const hasMembershipChanged = hasChangedVisibleHurricaneIds(
-          previousVisibleIds,
-          nextVisibleHurricanes,
-        );
-
-        if (hasMembershipChanged) {
-          deps.reliable.emitToSocketById(
+          const nextVisibleHurricanes = collectVisibleHurricanesByViewer(
+            roomId,
             viewerId,
-            protocol.SocketEvents.CURRENT_HURRICANES,
+            viewer,
+            roomSnapshot?.values() ?? [],
+          );
+          const previousVisibleIds = new Set(
+            deps.realtimeRoomSyncState.getVisibleHurricaneIdsSnapshot(roomId, viewerId),
+          );
+          const hasMembershipChanged = hasChangedVisibleHurricaneIds(
+            previousVisibleIds,
             nextVisibleHurricanes,
           );
+
+          if (hasMembershipChanged) {
+            deps.reliable.emitToSocketById(
+              viewerId,
+              protocol.SocketEvents.CURRENT_HURRICANES,
+              nextVisibleHurricanes,
+            );
+            syncVisibleHurricaneIdsByViewer(roomId, viewerId, nextVisibleHurricanes);
+            return;
+          }
+
+          const nextVisibleIdSet = new Set(nextVisibleHurricanes.map((hurricane) => hurricane.id));
+          const visibleUpdateHurricanes = hurricanes.filter((hurricane) => {
+            return nextVisibleIdSet.has(hurricane.id);
+          });
+          if (visibleUpdateHurricanes.length === 0) {
+            return;
+          }
+
+          deps.reliable.emitToSocketById(
+            viewerId,
+            protocol.SocketEvents.UPDATE_HURRICANES,
+            visibleUpdateHurricanes,
+          );
           syncVisibleHurricaneIdsByViewer(roomId, viewerId, nextVisibleHurricanes);
-          return;
-        }
-
-        const nextVisibleIdSet = new Set(nextVisibleHurricanes.map((hurricane) => hurricane.id));
-        const visibleUpdateHurricanes = hurricanes.filter((hurricane) => {
-          return nextVisibleIdSet.has(hurricane.id);
-        });
-        if (visibleUpdateHurricanes.length === 0) {
-          return;
-        }
-
-        deps.reliable.emitToSocketById(
-          viewerId,
-          protocol.SocketEvents.UPDATE_HURRICANES,
-          visibleUpdateHurricanes,
-        );
-        syncVisibleHurricaneIdsByViewer(roomId, viewerId, nextVisibleHurricanes);
         },
       });
     },

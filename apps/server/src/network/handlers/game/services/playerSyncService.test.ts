@@ -8,88 +8,27 @@ import type { UpdatePlayersPayload } from "@repo/shared";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ActiveBombSnapshot } from "@server/domains/game/application/ports/gameUseCasePorts";
-import type { RoomScopedGamePort } from "@server/domains/room/application/ports/roomUseCasePorts";
-import { createRealtimeRoomSyncStateStore } from "@server/network/adapters/realtimeRoomSyncState";
-import type { ReliableEmitters } from "../../CommonHandler";
-import type { RuntimeResolverDeps } from "../runtime/gameRuntimeResolvers";
 import { createPlayerData } from "@server/testing/playerFixtures";
+import {
+  createSyncServiceEnv,
+  type EmitCall,
+  type SyncServiceEnvParams,
+} from "@server/testing/syncServiceFixtures";
 import { createPlayerSyncService } from "./playerSyncService";
 
-type EmitCall = {
-  socketId: string;
-  event: string;
-  payload: unknown;
-};
-
-/** 送信内容を記録するエミッタスタブを生成する */
-const createReliableStub = () => {
-  const calls: EmitCall[] = [];
-  const noop = () => {};
-  const reliable = {
-    emitToAll: noop,
-    emitToRoom: noop,
-    emitToRoomExceptSocket: noop,
-    emitToSocket: noop,
-    emitToSocketById: (socketId: string, event: string, payload: unknown) => {
-      calls.push({ socketId, event, payload });
-    },
-  } as unknown as ReliableEmitters;
-
-  return { reliable, calls };
-};
-
-/** ルーム参加者とランタイムプレイヤーを固定した依存スタブを生成する */
-const createRuntimeDeps = (
-  memberIds: string[],
-  players: domain.game.player.PlayerData[],
-  bombs: ActiveBombSnapshot[],
-): RuntimeResolverDeps => {
-  const gameManager = {
-    getRoomPlayers: () => players,
-    getActiveBombSnapshots: () => bombs,
-  } as unknown as RoomScopedGamePort;
-
-  return {
-    roomManager: {
-      getRoomById: () => ({
-        roomId: "room-1",
-        ownerId: memberIds[0] ?? "socket-1",
-        players: memberIds.map((id) => ({
-          id,
-          name: `name-${id}`,
-          isOwner: false,
-          isReady: false,
-          preferredTeamId: null,
-        })),
-        status: "playing" as const,
-        maxPlayers: 8,
-        fieldSizePreset: "MEDIUM" as const,
-        teamAssignmentMode: "random" as const,
-      }),
-    },
-    runtimeRegistry: {
-      getGameManagerByRoomId: () => gameManager,
-    },
-  };
-};
-
 /** テスト対象サービスと周辺スタブをまとめて生成する */
-const setupService = (params: {
-  memberIds?: string[];
-  players?: domain.game.player.PlayerData[];
-  bombs?: ActiveBombSnapshot[];
-} = {}) => {
-  const { reliable, calls } = createReliableStub();
-  const realtimeRoomSyncState = createRealtimeRoomSyncStateStore();
-  const updateViewerAoiCellCache = vi.fn();
+const setupService = (params: SyncServiceEnvParams = {}) => {
+  const {
+    reliable,
+    calls,
+    realtimeRoomSyncState,
+    updateViewerAoiCellCache,
+    runtimeDeps,
+  } = createSyncServiceEnv(params);
   const syncVisibleBombsByViewer = vi.fn();
   const service = createPlayerSyncService({
     reliable,
-    runtimeDeps: createRuntimeDeps(
-      params.memberIds ?? ["socket-1"],
-      params.players ?? [createPlayerData("socket-1")],
-      params.bombs ?? [],
-    ),
+    runtimeDeps,
     realtimeRoomSyncState,
     bombSyncService: { syncVisibleBombsByViewer },
     updateViewerAoiCellCache,

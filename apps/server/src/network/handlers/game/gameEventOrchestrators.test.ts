@@ -19,10 +19,14 @@ import {
   logScopes,
 } from "@server/logging/index";
 import {
+  createGameOutputAdapterStub,
+  type GameOutputAdapterStub,
+} from "@server/testing/gameOutputFixtures";
+import { createRoomScopedGamePortStub } from "@server/testing/gamePortFixtures";
+import {
   createRoom as createRoomFixture,
   createRoomMember,
 } from "@server/testing/roomFixtures";
-import type { GameOutputAdapter } from "./createGameOutputAdapter";
 import {
   handleBombHitReportEvent,
   handleMoveEvent,
@@ -53,7 +57,7 @@ type GameManagerStubParams = {
   signedElapsedMs?: number;
 };
 
-/** ルーム単位ゲーム管理ポートを満たすスタブを生成する */
+/** 爆弾判定と経過msの既定値を差し替えたゲーム管理ポートスタブを生成する */
 const createGameManagerStub = ({
   shouldBroadcastBombPlaced = true,
   shouldBroadcastBombHitReport = true,
@@ -61,33 +65,17 @@ const createGameManagerStub = ({
   bombHitReportOrigin = { status: "valid" },
   signedElapsedMs,
 }: GameManagerStubParams = {}) => {
-  return {
-    startRoomSession: vi.fn<RoomScopedGamePort["startRoomSession"]>(),
+  return createRoomScopedGamePortStub({
     getRoomSignedElapsedMs: vi.fn<
       RoomScopedGamePort["getRoomSignedElapsedMs"]
     >(() => signedElapsedMs),
-    getRoomFieldConfig: vi.fn<RoomScopedGamePort["getRoomFieldConfig"]>(
-      () => undefined,
-    ),
-    getRoomPlayers: vi.fn<RoomScopedGamePort["getRoomPlayers"]>(() => []),
-    movePlayer: vi.fn<RoomScopedGamePort["movePlayer"]>(),
     shouldBroadcastBombPlaced: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombPlaced"]
     >(() => shouldBroadcastBombPlaced),
-    shouldAcceptBombPlacement: vi.fn<
-      RoomScopedGamePort["shouldAcceptBombPlacement"]
-    >(() => true),
-    issueServerBombId: vi.fn<RoomScopedGamePort["issueServerBombId"]>(
-      () => "bomb-1",
-    ),
     resolveBombExplodeAtElapsedMs: vi.fn<
       RoomScopedGamePort["resolveBombExplodeAtElapsedMs"]
     >(() => SERVER_EXPLODE_AT_ELAPSED_MS),
-    registerActiveBomb: vi.fn<RoomScopedGamePort["registerActiveBomb"]>(),
     getPlayerTeamId: vi.fn<RoomScopedGamePort["getPlayerTeamId"]>(() => 2),
-    getActiveBombSnapshots: vi.fn<
-      RoomScopedGamePort["getActiveBombSnapshots"]
-    >(() => []),
     shouldBroadcastBombHitReport: vi.fn<
       RoomScopedGamePort["shouldBroadcastBombHitReport"]
     >(() => shouldBroadcastBombHitReport),
@@ -97,64 +85,7 @@ const createGameManagerStub = ({
     checkBombHitReportOrigin: vi.fn<
       RoomScopedGamePort["checkBombHitReportOrigin"]
     >(() => bombHitReportOrigin),
-    recordBombHitForOwner: vi.fn<RoomScopedGamePort["recordBombHitForOwner"]>(),
-    removePlayer: vi.fn<RoomScopedGamePort["removePlayer"]>(),
-    replaceDisconnectedPlayerWithBot: vi.fn<
-      RoomScopedGamePort["replaceDisconnectedPlayerWithBot"]
-    >(() => false),
-    demotePlayerFromBotControl: vi.fn<
-      RoomScopedGamePort["demotePlayerFromBotControl"]
-    >(() => true),
-    getMapGridColorsView: vi.fn<
-      RoomScopedGamePort["getMapGridColorsView"]
-    >(() => []),
-  } satisfies RoomScopedGamePort;
-};
-
-/** 送信内容を記録するゲーム出力アダプタースタブを生成する */
-const createOutputStub = () => {
-  return {
-    publishPongToSocket: vi.fn<GameOutputAdapter["publishPongToSocket"]>(),
-    publishUpdatePlayersToRoom: vi.fn<
-      GameOutputAdapter["publishUpdatePlayersToRoom"]
-    >(),
-    publishMapCellUpdatesToRoom: vi.fn<
-      GameOutputAdapter["publishMapCellUpdatesToRoom"]
-    >(),
-    publishCurrentHurricanesToRoom: vi.fn<
-      GameOutputAdapter["publishCurrentHurricanesToRoom"]
-    >(),
-    publishUpdateHurricanesToRoom: vi.fn<
-      GameOutputAdapter["publishUpdateHurricanesToRoom"]
-    >(),
-    publishGameEndToRoom: vi.fn<GameOutputAdapter["publishGameEndToRoom"]>(),
-    publishGameResultToRoom: vi.fn<
-      GameOutputAdapter["publishGameResultToRoom"]
-    >(),
-    publishGameStartToRoom: vi.fn<GameOutputAdapter["publishGameStartToRoom"]>(),
-    publishCurrentPlayersToSocket: vi.fn<
-      GameOutputAdapter["publishCurrentPlayersToSocket"]
-    >(),
-    publishMapCellsToSocket: vi.fn<
-      GameOutputAdapter["publishMapCellsToSocket"]
-    >(),
-    publishGameStartToSocket: vi.fn<
-      GameOutputAdapter["publishGameStartToSocket"]
-    >(),
-    publishBombPlacedToOthersInRoom: vi.fn<
-      GameOutputAdapter["publishBombPlacedToOthersInRoom"]
-    >(),
-    publishBombPlacedAckToSocket: vi.fn<
-      GameOutputAdapter["publishBombPlacedAckToSocket"]
-    >(),
-    publishPlayerHitToOthersInRoom: vi.fn<
-      GameOutputAdapter["publishPlayerHitToOthersInRoom"]
-    >(),
-    publishPlayerHitToRoom: vi.fn<GameOutputAdapter["publishPlayerHitToRoom"]>(),
-    publishHurricaneHitToRoom: vi.fn<
-      GameOutputAdapter["publishHurricaneHitToRoom"]
-    >(),
-  } satisfies GameOutputAdapter;
+  });
 };
 
 /** ルーム状態配信を記録する出力スタブを生成する */
@@ -177,7 +108,7 @@ const createDeps = ({
   room,
   gameManager,
 }: DepsParams): GameEventOrchestratorDeps & {
-  output: ReturnType<typeof createOutputStub>;
+  output: GameOutputAdapterStub;
   roomOutput: ReturnType<typeof createRoomOutputStub>;
 } => {
   const transition: RoomPhaseTransitionResult = room
@@ -223,7 +154,7 @@ const createDeps = ({
       >(() => gameManager),
       cleanupGameManagerForRoom: vi.fn<(roomId: string) => void>(),
     },
-    output: createOutputStub(),
+    output: createGameOutputAdapterStub(),
     roomOutput: createRoomOutputStub(),
     sessionReservations: {
       releaseByRoomId: vi.fn<(roomId: string) => void>(),

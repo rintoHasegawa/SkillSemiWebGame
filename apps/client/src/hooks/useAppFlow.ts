@@ -84,6 +84,42 @@ const getConnectionNoticeMessage = (
   return null;
 };
 
+// 参加要求が失敗した理由に応じたエラー文言を返す
+const getJoinErrorMessage = (
+  joinFailure: JoinFailure | null,
+): string | null => {
+  if (!joinFailure) {
+    return null;
+  }
+
+  if (joinFailure.reason === "full") {
+    return `ルーム ${joinFailure.roomId ?? ""} は満員です`;
+  }
+
+  if (joinFailure.reason === "playing") {
+    return `ルーム ${joinFailure.roomId ?? ""} はゲーム中のため参加できません`;
+  }
+
+  if (joinFailure.reason === "duplicate") {
+    return `ルーム ${joinFailure.roomId ?? ""} への参加要求が重複しました`;
+  }
+
+  if (joinFailure.reason === "invalid") {
+    // サーバが入力そのものを受け付けなかった場合は再入力条件を案内する
+    return (
+      `プレイヤー名は${domain.room.PLAYER_NAME_MAX_LENGTH}文字以内，`
+      + `ルームIDは${domain.room.ROOM_ID_MAX_LENGTH}文字以内で，`
+      + "改行や特殊文字を含まずに入力してください"
+    );
+  }
+
+  if (joinFailure.reason === "timeout") {
+    return "参加要求がタイムアウトしました，もう一度お試しください";
+  }
+
+  return null;
+};
+
 const initialJoinState: JoinState = {
   isJoining: false,
   joinFailure: null,
@@ -155,42 +191,6 @@ export const useAppFlow = (): AppFlowState => {
       dispatchJoin({ type: "complete", joinFailure });
     },
     [clearJoinRejectedHandler, clearJoinTimeout],
-  );
-
-  const getJoinErrorMessage = useCallback(
-    (joinFailure: JoinFailure | null): string | null => {
-      if (!joinFailure) {
-        return null;
-      }
-
-      if (joinFailure.reason === "full") {
-        return `ルーム ${joinFailure.roomId ?? ""} は満員です`;
-      }
-
-      if (joinFailure.reason === "playing") {
-        return `ルーム ${joinFailure.roomId ?? ""} はゲーム中のため参加できません`;
-      }
-
-      if (joinFailure.reason === "duplicate") {
-        return `ルーム ${joinFailure.roomId ?? ""} への参加要求が重複しました`;
-      }
-
-      if (joinFailure.reason === "invalid") {
-        // サーバが入力そのものを受け付けなかった場合は再入力条件を案内する
-        return (
-          `プレイヤー名は${domain.room.PLAYER_NAME_MAX_LENGTH}文字以内，`
-          + `ルームIDは${domain.room.ROOM_ID_MAX_LENGTH}文字以内で，`
-          + "改行や特殊文字を含まずに入力してください"
-        );
-      }
-
-      if (joinFailure.reason === "timeout") {
-        return "参加要求がタイムアウトしました，もう一度お試しください";
-      }
-
-      return null;
-    },
-    [],
   );
 
   const requestJoin = useCallback(

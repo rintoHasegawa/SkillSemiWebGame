@@ -4,7 +4,7 @@
 
 本ドキュメントは，Pixel Paint War を1台の研究室サーバ上に本番デプロイする手順をまとめたものである．
 Nginx をリバースプロキシとして使用し，外部公開ポートは 8803 のみとする．
-フロントエンド（静的ファイル）とバックエンド（Socket.IO）は同一サーバ内でポートを分けて動作させ，外部デバイスは Nginx 経由でのみ通信する．
+フロントエンド（静的ファイル）とバックエンド（Socket.IO）は同一サーバー内でポートを分けて動作させ，外部デバイスは Nginx 経由でのみ通信する．
 
 ### 構成図 (Architecture Diagram)
 
@@ -21,7 +21,7 @@ Nginx をリバースプロキシとして使用し，外部公開ポートは 8
 
 ## 前提条件 (Prerequisites)
 
-### サーバ環境 (Server Environment)
+### サーバー環境 (Server Environment)
 
 - OS: Linux（Ubuntu 20.04 以上推奨）
 - Docker / Docker Compose がインストール済みであること
@@ -42,7 +42,7 @@ git --version
 
 ### リポジトリの取得 (Clone Repository)
 
-1. サーバ上で任意のディレクトリにクローンする
+1. サーバー上で任意のディレクトリにクローンする
 
    ```bash
    git clone <リポジトリURL> /opt/pixel-paint-war
@@ -107,7 +107,7 @@ docker run --rm -v $(pwd):/app -w /app node:26-slim \
 
    ※ `CORS_ORIGIN` には**ブラウザがアクセスする URL（Nginx の公開オリジン）**を指定する．本構成ではフロントエンドと Socket.IO を同一の 8803 番ポートで公開しているため，値は `VITE_PROD_SERVER_URL` と同じになる．`<サーバIP>` は実際の IP またはドメインに置き換えること
 
-   ※ **`CORS_ORIGIN` が未設定のままだとサーバは起動時にエラーで停止する**（設定漏れを検知するための意図的な挙動である）．書式の詳細は [ENV_09_環境変数設定](ENV_09_環境変数設定.md) を参照
+   ※ **`CORS_ORIGIN` が未設定のままだとサーバーは起動時にエラーで停止する**（設定漏れを検知するための意図的な挙動である）．書式の詳細は [ENV_09_環境変数設定](ENV_09_環境変数設定.md) を参照
 
    ※ HTTPS 化した場合は `https://yourdomain.example.com:8803` のように，実際にブラウザからアクセスするスキーム・ホスト・ポートに合わせて更新すること
 

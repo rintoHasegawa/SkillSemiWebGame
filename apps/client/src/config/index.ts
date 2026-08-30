@@ -43,36 +43,16 @@ export const applyRuntimeMapSizeFromGameStart = (
   setRuntimeMapSizeByPreset(payload.fieldSizePreset);
 };
 
-/** クライアント実行中マップサイズを既定値へ戻す */
-export const resetRuntimeMapSizeToDefault = (): void => {
-  setRuntimeMapSizeByPreset(sharedConfig.GAME_CONFIG.DEFAULT_FIELD_PRESET);
-};
-
-const sharedBombRenderScale =
-  (sharedConfig.GAME_CONFIG as { BOMB_RENDER_SCALE?: number })
-    .BOMB_RENDER_SCALE ?? 1;
-
-const sharedRespawnHitCount =
-  (sharedConfig.GAME_CONFIG as { PLAYER_RESPAWN_HIT_COUNT?: number })
-    .PLAYER_RESPAWN_HIT_COUNT ?? 5;
-
-const sharedRespawnStunMs =
-  (sharedConfig.GAME_CONFIG as { PLAYER_RESPAWN_STUN_MS?: number })
-    .PLAYER_RESPAWN_STUN_MS ?? sharedConfig.GAME_CONFIG.PLAYER_HIT_STUN_MS;
-
-const sharedRespawnEffectScale =
-  (sharedConfig.GAME_CONFIG as { PLAYER_RESPAWN_EFFECT_SCALE?: number })
-    .PLAYER_RESPAWN_EFFECT_SCALE ?? 2.4;
-
 const CLIENT_GAME_CONFIG = {
   TIMER_DISPLAY_UPDATE_MS: 250,
   JOIN_REQUEST_TIMEOUT_MS: 8000,
 
   FRAME_DELTA_MAX_MS: 50,
 
-  PLAYER_RESPAWN_HIT_COUNT: sharedRespawnHitCount,
-  PLAYER_RESPAWN_STUN_MS: sharedRespawnStunMs,
-  PLAYER_RESPAWN_EFFECT_SCALE: sharedRespawnEffectScale,
+  PLAYER_RESPAWN_HIT_COUNT: sharedConfig.GAME_CONFIG.PLAYER_RESPAWN_HIT_COUNT,
+  PLAYER_RESPAWN_STUN_MS: sharedConfig.GAME_CONFIG.PLAYER_RESPAWN_STUN_MS,
+  PLAYER_RESPAWN_EFFECT_SCALE:
+    sharedConfig.GAME_CONFIG.PLAYER_RESPAWN_EFFECT_SCALE,
 
   PLAYER_LERP_SMOOTHNESS: 18,
   PLAYER_LERP_SNAP_THRESHOLD: 0.005,
@@ -140,7 +120,9 @@ const GAME_CONFIG = {
     return this.PLAYER_RADIUS * this.GRID_CELL_SIZE;
   },
   get BOMB_RENDER_RADIUS_PX(): number {
-    return this.GRID_CELL_SIZE * 0.2 * sharedBombRenderScale;
+    return (
+      this.GRID_CELL_SIZE * 0.2 * sharedConfig.GAME_CONFIG.BOMB_RENDER_SCALE
+    );
   },
   get BOMB_FUSE_GAUGE_RADIUS_PX(): number {
     return this.BOMB_RENDER_RADIUS_PX + this.BOMB_FUSE_GAUGE.RADIUS_MARGIN_PX;

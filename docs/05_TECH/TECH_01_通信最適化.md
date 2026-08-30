@@ -126,7 +126,7 @@
 ### ハリケーン同期の生存集合 (Hurricane Active-Set Sync)
 
 - tick データの`HurricaneSyncData.activeHurricaneIds`で生存ハリケーンIDを毎ティック送信層へ渡す
-- サーバのルームスナップショットは「生存集合に無いものを削除 → 差分を反映」でサーバ現存集合のミラーを維持する（消滅したハリケーンが全量同期`CURRENT_HURRICANES`に混入しない）
+- サーバーのルームスナップショットは「生存集合に無いものを削除 → 差分を反映」でサーバー現存集合のミラーを維持する（消滅したハリケーンが全量同期`CURRENT_HURRICANES`に混入しない）
 - 差分空・生存 0・スナップショット空のティックは受信者走査ごとスキップする（ハリケーン未出現中のコストをゼロに保つ）
 - 可視 0 件でも全量側は空配列の`CURRENT_HURRICANES`を送る（「何も見えない」ことの状態確定．差分側の「変化がなければ送らない」とは意図的な非対称）
 - スナップショット破棄（`clearRoomSnapshot`）は`realtimeRoomSyncState.resetRoom`と必ず対で呼ぶ（ゲーム開始・終了時）
@@ -162,7 +162,7 @@
 
 ### 集約と検証 (Aggregation & Validation)
 
-- `groupCellUpdates`は同一セルの重複更新をセル単位の後勝ちで集約する（各セルが 1 回しか現れないため，受信側の適用順に依存せず最終状態がサーバと一致する）
+- `groupCellUpdates`は同一セルの重複更新をセル単位の後勝ちで集約する（各セルが 1 回しか現れないため，受信側の適用順に依存せず最終状態がサーバーと一致する）
 - `ungroupCellUpdates`は teamId キーを値域（未塗装 -1 とチーム 0〜3）で検証し，範囲外のエントリを読み飛ばす
 
 ## クライアント側の送信最適化 (Client-Side Send Optimization)
@@ -194,3 +194,66 @@
 
 - 1秒ごとにログ出力し，ボトルネックの検知に利用する
 - ティック処理が50msを超えた場合はキャッチアップ機構が作動する
+
+## プロトコルイベント一覧 (Protocol Event Reference)
+
+Socket.IO で送受信するイベント名とペイロード型の一覧．イベント名は `packages/shared/src/protocol/socketEvents.ts` の `SocketEvents`，方向とペイロード型は `packages/shared/src/protocol/maps/` 配下の方向別マップに定義されている．イベントの追加・変更手順は `.claude/rules/protocol-changes.md` に従う．
+
+- 「方向」は方向別マップ上の登録に基づく（C→S: クライアント送信，S→C: サーバー送信）
+- ペイロード型は `packages/shared/src/protocol/payloads/` 配下で定義される．`undefined` はペイロードを持たないイベントを表す
+
+### 接続ライフサイクル (Connection Lifecycle)
+
+`maps/commonEventPayloadMap.ts` に定義される．
+
+| 定数名 | イベント名 | 方向 | ペイロード型 |
+| --- | --- | --- | --- |
+| `CONNECT` | `connect` | - | `undefined` |
+| `DISCONNECT` | `disconnect` | - | `undefined` |
+
+### ロビー・ルーム (Lobby & Room)
+
+`maps/lobbyEventPayloadMap.ts` に定義される．
+
+| 定数名 | イベント名 | 方向 | ペイロード型 |
+| --- | --- | --- | --- |
+| `JOIN_ROOM` | `join-room` | C→S | `JoinRoomPayload` |
+| `LOBBY_SETTINGS_UPDATE` | `lobby-settings-update` | C→S | `LobbySettingsUpdatePayload` |
+| `SELECT_TEAM` | `select-team` | C→S | `SelectTeamPayload` |
+| `LEAVE_ROOM` | `leave-room` | C→S | `undefined` |
+| `RESUME_SESSION` | `resume-session` | C→S | `undefined` |
+| `ROOM_JOIN_REJECTED` | `room-join-rejected` | S→C | `RoomJoinRejectedPayload` |
+| `ROOM_UPDATE` | `room-update` | S→C | `RoomUpdatePayload` |
+| `SELECT_TEAM_REJECTED` | `select-team-rejected` | S→C | `SelectTeamRejectedPayload` |
+| `SESSION_RESUMED` | `session-resumed` | S→C | `SessionResumedPayload` |
+| `RESUME_SESSION_REJECTED` | `resume-session-rejected` | S→C | `ResumeSessionRejectedPayload` |
+
+### ゲームプレイ (Gameplay)
+
+`maps/gameEventPayloadMap.ts` に定義される．
+
+| 定数名 | イベント名 | 方向 | ペイロード型 |
+| --- | --- | --- | --- |
+| `START_GAME` | `start-game` | C→S | `StartGameRequestPayload` |
+| `READY_FOR_GAME` | `ready-for-game` | C→S | `undefined` |
+| `MOVE` | `move` | C→S | `MovePayload` |
+| `PLACE_BOMB` | `place-bomb` | C→S | `PlaceBombPayload` |
+| `BOMB_HIT_REPORT` | `bomb-hit-report` | C→S | `BombHitReportPayload` |
+| `PING` | `ping` | C→S | `PingPayload` |
+| `GAME_START` | `game-start` | S→C | `GameStartPayload` |
+| `CURRENT_PLAYERS` | `current-players` | S→C | `CurrentPlayersPayload` |
+| `NEW_PLAYER` | `new-player` | S→C | `NewPlayerPayload` |
+| `UPDATE_PLAYERS` | `update-players` | S→C | `UpdatePlayersPayload` |
+| `REMOVE_PLAYER` | `remove-player` | S→C | `RemovePlayerPayload` |
+| `UPDATE_MAP_CELLS` | `update-map-cells` | S→C | `UpdateMapCellsPayload` |
+| `CURRENT_HURRICANES` | `current-hurricanes` | S→C | `CurrentHurricanesPayload` |
+| `UPDATE_HURRICANES` | `update-hurricanes` | S→C | `UpdateHurricanesPayload` |
+| `BOMB_PLACED` | `bomb-placed` | S→C | `BombPlacedPayload` |
+| `BOMB_PLACED_ACK` | `bomb-placed-ack` | S→C | `BombPlacedAckPayload` |
+| `PLAYER_HIT` | `player-hit` | S→C | `PlayerHitPayload` |
+| `HURRICANE_HIT` | `hurricane-hit` | S→C | `HurricaneHitPayload` |
+| `PONG` | `pong` | S→C | `PongPayload` |
+| `GAME_END` | `game-end` | S→C | `undefined` |
+| `GAME_RESULT` | `game-result` | S→C | `GameResultPayload` |
+
+※ `PingPayload` / `PongPayload` のみ `payloads/commonPayloads.ts` に定義され，他のゲームイベントのペイロード型は `payloads/gamePayloads.ts` に定義される．

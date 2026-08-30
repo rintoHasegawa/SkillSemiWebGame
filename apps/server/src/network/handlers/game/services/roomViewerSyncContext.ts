@@ -5,6 +5,10 @@
  */
 import type { domain } from "@repo/shared";
 import {
+  resolveViewerAoiWindow,
+  type AoiWindow,
+} from "../aoi/aoiVisibility";
+import {
   getConnectedSocketIdsInRoom,
   getRoomPlayers,
   type RuntimeResolverDeps,
@@ -13,6 +17,32 @@ import {
 type RoomId = domain.room.Room["roomId"];
 
 type ViewerId = string;
+
+/** 受信者の可視セルキャッシュを更新する処理 */
+export type UpdateViewerAoiCellCache = (
+  roomId: RoomId,
+  viewerId: ViewerId,
+  viewer: domain.game.player.PlayerData,
+) => void;
+
+/** 受信者のAOI窓再解決の実行入力 */
+export type RefreshViewerAoiWindowParams = {
+  updateViewerAoiCellCache: UpdateViewerAoiCellCache;
+  roomId: RoomId;
+  viewerId: ViewerId;
+  viewer: domain.game.player.PlayerData;
+};
+
+/** 受信者の可視セルキャッシュを更新し，最新のAOI窓を解決する */
+export const refreshViewerAoiWindow = ({
+  updateViewerAoiCellCache,
+  roomId,
+  viewerId,
+  viewer,
+}: RefreshViewerAoiWindowParams): AoiWindow => {
+  updateViewerAoiCellCache(roomId, viewerId, viewer);
+  return resolveViewerAoiWindow(viewer);
+};
 
 /** ルーム受信者走査の実行入力 */
 export type ForEachRoomViewerParams = {

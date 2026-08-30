@@ -5,7 +5,41 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { createRealtimeRoomSyncStateStore } from "./realtimeRoomSyncState";
+import {
+  createRealtimeRoomSyncStateStore,
+  type RealtimeRoomSyncStateStore,
+} from "./realtimeRoomSyncState";
+
+/** resetRoom・releaseSocket 後に各状態が初期化済みであることを検証する */
+const expectPositionCacheCleared = (store: RealtimeRoomSyncStateStore) => {
+  expect(store.getPlayerPositionCache("room-1", "socket-1").size).toBe(0);
+};
+
+const expectLastAoiCellCleared = (store: RealtimeRoomSyncStateStore) => {
+  expect(store.getLastAoiCell("room-1", "socket-1")).toBeUndefined();
+};
+
+const expectVisiblePlayerIdsCleared = (store: RealtimeRoomSyncStateStore) => {
+  expect(store.getVisiblePlayerIdsSnapshot("room-1", "socket-1").size).toBe(0);
+};
+
+const expectVisibleBombIdsCleared = (store: RealtimeRoomSyncStateStore) => {
+  expect(store.getVisibleBombIdsSnapshot("room-1", "socket-1").size).toBe(0);
+};
+
+const expectVisibleHurricaneIdsCleared = (
+  store: RealtimeRoomSyncStateStore,
+) => {
+  expect(store.getVisibleHurricaneIdsSnapshot("room-1", "socket-1").size).toBe(
+    0,
+  );
+};
+
+/** [状態の名称, 破棄済みであることを検証する関数] */
+type ClearedStateCase = [
+  label: string,
+  expectCleared: (store: RealtimeRoomSyncStateStore) => void,
+];
 
 describe("createRealtimeRoomSyncStateStore.getPlayerPositionCache", () => {
   it("初回参照時は空のMapを返すこと", () => {
@@ -343,14 +377,61 @@ describe("createRealtimeRoomSyncStateStore.replaceVisibleHurricaneIds", () => {
 });
 
 describe("createRealtimeRoomSyncStateStore.resetRoom", () => {
-  it("対象ルームの座標キャッシュを破棄すること", () => {
-    const store = createRealtimeRoomSyncStateStore();
-    store.getPlayerPositionCache("room-1", "socket-1").set("p1", { x: 1, y: 1 });
+  // ルーム破棄の対象となる5種の状態（種別ごとに値を投入して破棄を確認する）
+  const roomStateCases: [
+    ...ClearedStateCase,
+    seed: (store: RealtimeRoomSyncStateStore) => void,
+  ][] = [
+    [
+      "座標キャッシュ",
+      expectPositionCacheCleared,
+      (store) => {
+        store
+          .getPlayerPositionCache("room-1", "socket-1")
+          .set("p1", { x: 1, y: 1 });
+      },
+    ],
+    [
+      "AOIセル",
+      expectLastAoiCellCleared,
+      (store) => {
+        store.setLastAoiCell("room-1", "socket-1", { col: 1, row: 1 });
+      },
+    ],
+    [
+      "可視プレイヤーID",
+      expectVisiblePlayerIdsCleared,
+      (store) => {
+        store.replaceVisiblePlayerIds("room-1", "socket-1", ["p1"]);
+      },
+    ],
+    [
+      "可視爆弾ID",
+      expectVisibleBombIdsCleared,
+      (store) => {
+        store.replaceVisibleBombIds("room-1", "socket-1", ["bomb-1"]);
+      },
+    ],
+    [
+      "可視ハリケーンID",
+      expectVisibleHurricaneIdsCleared,
+      (store) => {
+        store.replaceVisibleHurricaneIds("room-1", "socket-1", ["h1"]);
+      },
+    ],
+  ];
 
-    store.resetRoom("room-1");
+  it.each(roomStateCases)(
+    "対象ルームの%sを破棄すること",
+    (_label, expectCleared, seed) => {
+      const store = createRealtimeRoomSyncStateStore();
+      seed(store);
 
-    expect(store.getPlayerPositionCache("room-1", "socket-1").size).toBe(0);
-  });
+      store.resetRoom("room-1");
+
+      expectCleared(store);
+    },
+  );
 
   it("破棄後は新しいMapインスタンスを返すこと", () => {
     const store = createRealtimeRoomSyncStateStore();
@@ -359,46 +440,6 @@ describe("createRealtimeRoomSyncStateStore.resetRoom", () => {
     store.resetRoom("room-1");
 
     expect(store.getPlayerPositionCache("room-1", "socket-1")).not.toBe(before);
-  });
-
-  it("対象ルームのAOIセルを破棄すること", () => {
-    const store = createRealtimeRoomSyncStateStore();
-    store.setLastAoiCell("room-1", "socket-1", { col: 1, row: 1 });
-
-    store.resetRoom("room-1");
-
-    expect(store.getLastAoiCell("room-1", "socket-1")).toBeUndefined();
-  });
-
-  it("対象ルームの可視プレイヤーIDを破棄すること", () => {
-    const store = createRealtimeRoomSyncStateStore();
-    store.replaceVisiblePlayerIds("room-1", "socket-1", ["p1"]);
-
-    store.resetRoom("room-1");
-
-    expect(store.getVisiblePlayerIdsSnapshot("room-1", "socket-1").size).toBe(
-      0,
-    );
-  });
-
-  it("対象ルームの可視爆弾IDを破棄すること", () => {
-    const store = createRealtimeRoomSyncStateStore();
-    store.replaceVisibleBombIds("room-1", "socket-1", ["bomb-1"]);
-
-    store.resetRoom("room-1");
-
-    expect(store.getVisibleBombIdsSnapshot("room-1", "socket-1").size).toBe(0);
-  });
-
-  it("対象ルームの可視ハリケーンIDを破棄すること", () => {
-    const store = createRealtimeRoomSyncStateStore();
-    store.replaceVisibleHurricaneIds("room-1", "socket-1", ["h1"]);
-
-    store.resetRoom("room-1");
-
-    expect(
-      store.getVisibleHurricaneIdsSnapshot("room-1", "socket-1").size,
-    ).toBe(0);
   });
 
   it("他ルームの状態は破棄しないこと", () => {
@@ -432,49 +473,25 @@ describe("createRealtimeRoomSyncStateStore.releaseSocket", () => {
     return store;
   };
 
-  it("対象ソケットの座標キャッシュを解放すること", () => {
-    const store = createStoreWithCaches();
+  // 5種すべてを投入した状態から，種別ごとに解放を確認する
+  const socketStateCases: ClearedStateCase[] = [
+    ["座標キャッシュ", expectPositionCacheCleared],
+    ["AOI中心セル", expectLastAoiCellCleared],
+    ["可視プレイヤーID", expectVisiblePlayerIdsCleared],
+    ["可視爆弾ID", expectVisibleBombIdsCleared],
+    ["可視ハリケーンID", expectVisibleHurricaneIdsCleared],
+  ];
 
-    store.releaseSocket("socket-1");
+  it.each(socketStateCases)(
+    "対象ソケットの%sを解放すること",
+    (_label, expectCleared) => {
+      const store = createStoreWithCaches();
 
-    expect(store.getPlayerPositionCache("room-1", "socket-1").size).toBe(0);
-  });
+      store.releaseSocket("socket-1");
 
-  it("対象ソケットのAOI中心セルを解放すること", () => {
-    const store = createStoreWithCaches();
-
-    store.releaseSocket("socket-1");
-
-    expect(store.getLastAoiCell("room-1", "socket-1")).toBeUndefined();
-  });
-
-  it("対象ソケットの可視プレイヤーIDを解放すること", () => {
-    const store = createStoreWithCaches();
-
-    store.releaseSocket("socket-1");
-
-    expect(store.getVisiblePlayerIdsSnapshot("room-1", "socket-1").size).toBe(
-      0,
-    );
-  });
-
-  it("対象ソケットの可視爆弾IDを解放すること", () => {
-    const store = createStoreWithCaches();
-
-    store.releaseSocket("socket-1");
-
-    expect(store.getVisibleBombIdsSnapshot("room-1", "socket-1").size).toBe(0);
-  });
-
-  it("対象ソケットの可視ハリケーンIDを解放すること", () => {
-    const store = createStoreWithCaches();
-
-    store.releaseSocket("socket-1");
-
-    expect(
-      store.getVisibleHurricaneIdsSnapshot("room-1", "socket-1").size,
-    ).toBe(0);
-  });
+      expectCleared(store);
+    },
+  );
 
   it("解放後は新しいMapインスタンスを返すこと", () => {
     const store = createStoreWithCaches();

@@ -36,7 +36,7 @@
 #### CORS の扱い (CORS Handling)
 
 負荷テスト Bot は Node.js から接続するため Origin ヘッダを送信しない．
-サーバは Origin ヘッダを持たない接続を非ブラウザクライアントとみなして本番環境でも許可するため，
+サーバーは Origin ヘッダを持たない接続を非ブラウザクライアントとみなして本番環境でも許可するため，
 `CORS_ORIGIN` の設定内容にかかわらず負荷テストは実行できる（[ENV_09_環境変数設定](ENV_09_環境変数設定.md) 参照）．
 
 ## 実行手順 (Execution Steps)
@@ -55,11 +55,15 @@
    pnpm install
    ```
 
+   ※ `test/package.json` の `postinstall` により，`.env.local` が無い場合のみ `.env.local.example` がコピーされて `.env.local` が生成される．既存の `.env.local` は上書きされない（`.env.local` は gitignore 済み）．
+
 ### 実行
 
 ```bash
 pnpm start
 ```
+
+※ `pnpm start` は `node --env-file=.env.local --loader ts-node/esm load-bot.ts` を実行する．`.env.local` が存在しないと Node の起動時点で失敗するため，初回準備の `pnpm install` を先に済ませておくこと．
 
 開発環境に接続する場合:
 
@@ -77,8 +81,8 @@ pnpm start -- --dev
 
 #### 接続設定
 
-- `URL`: 本番サーバURL（環境変数 `LOAD_TEST_SERVER_URL` で上書き可能，既定: `http://localhost:3000`）
-- `DEV_URL`: 開発サーバURL（環境変数 `LOAD_TEST_DEV_SERVER_URL` で上書き可能，既定: `http://localhost:3000`）
+- `URL`: 本番サーバーURL（環境変数 `LOAD_TEST_SERVER_URL` で上書き可能，既定: `http://localhost:3000`）
+- `DEV_URL`: 開発サーバーURL（環境変数 `LOAD_TEST_DEV_SERVER_URL` で上書き可能，既定: `http://localhost:3000`）
 - `SOCKET_PATH`: Socket.IOのパス（shared の NETWORK_CONFIG から取得）
 - `SOCKET_TRANSPORTS`: Socket.IOのトランスポート（`["websocket", "polling"]`）
 
@@ -127,7 +131,7 @@ pnpm typecheck
 
 ## 注意事項 (Notes)
 
-### 本番サーバへの負荷
+### 本番サーバーへの負荷
 
 - 負荷テストは低負荷から段階的に実施すること
 - 必要に応じて管理者へ事前連絡を行うこと

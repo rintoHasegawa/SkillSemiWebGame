@@ -73,21 +73,21 @@ export class ClockSyncService {
   private readonly intervalPolicy: SyncIntervalPolicy;
 
   constructor(
-    config: PartialClockSyncConfig = {},
+    overrides: PartialClockSyncConfig = {},
     nowProvider: TimeProvider["now"] = SYSTEM_TIME_PROVIDER.now,
   ) {
     const mergedConfig: ClockSyncConfig = {
       estimator: {
         ...DEFAULT_CLOCK_SYNC_CONFIG.estimator,
-        ...config.estimator,
+        ...overrides.estimator,
       },
       offsetTracker: {
         ...DEFAULT_CLOCK_SYNC_CONFIG.offsetTracker,
-        ...config.offsetTracker,
+        ...overrides.offsetTracker,
       },
       intervalPolicy: {
         ...DEFAULT_CLOCK_SYNC_CONFIG.intervalPolicy,
-        ...config.intervalPolicy,
+        ...overrides.intervalPolicy,
       },
     };
     this.nowProvider = nowProvider;

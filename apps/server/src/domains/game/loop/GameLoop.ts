@@ -67,6 +67,17 @@ type PerfAccumulator = {
   totalPayloadBytes: number;
 };
 
+/** パフォーマンス統計バッファを初期状態で生成する */
+const createPerfAccumulator = (
+  windowStartRawElapsedMs: number,
+): PerfAccumulator => ({
+  windowStartRawElapsedMs,
+  tickCount: 0,
+  totalTickMs: 0,
+  maxTickMs: 0,
+  totalPayloadBytes: 0,
+});
+
 /** ルーム内ゲーム進行を定周期で実行するループ管理クラス */
 export class GameLoop {
   private loopId: NodeJS.Timeout | null = null;
@@ -83,13 +94,7 @@ export class GameLoop {
   private botTurnOrchestrator: BotTurnOrchestrator;
   private readonly botReceivedHitCountById = new Map<string, number>();
   private readonly hurricaneSystem: HurricaneSystem;
-  private perfAccumulator: PerfAccumulator = {
-    windowStartRawElapsedMs: 0,
-    tickCount: 0,
-    totalTickMs: 0,
-    maxTickMs: 0,
-    totalPayloadBytes: 0,
-  };
+  private perfAccumulator: PerfAccumulator = createPerfAccumulator(0);
 
   private readonly roomId: string;
   private readonly tickRate: number;
@@ -125,10 +130,7 @@ export class GameLoop {
     let botIndex = 0;
 
     this.players.forEach((player) => {
-      if (
-        !isBotPlayerId(player.id) &&
-        !this.disconnectedBotControlledPlayerIds.has(player.id)
-      ) {
+      if (!this.isBotControlled(player.id)) {
         return;
       }
 
@@ -183,13 +185,9 @@ export class GameLoop {
       startDelayMs + config.GAME_CONFIG.GAME_DURATION_SEC * 1000;
     this.nextTickAtRawElapsedMs = startDelayMs + this.tickRate;
     this.lastSentPlayers.clear();
-    this.perfAccumulator = {
-      windowStartRawElapsedMs: this.gameClock.getRawElapsedMs(),
-      tickCount: 0,
-      totalTickMs: 0,
-      maxTickMs: 0,
-      totalPayloadBytes: 0,
-    };
+    this.perfAccumulator = createPerfAccumulator(
+      this.gameClock.getRawElapsedMs(),
+    );
     this.isRunning = true;
     this.scheduleNextTick();
 
@@ -313,13 +311,9 @@ export class GameLoop {
     });
 
     // ウィンドウをリセット
-    this.perfAccumulator = {
-      windowStartRawElapsedMs: this.gameClock.getRawElapsedMs(),
-      tickCount: 0,
-      totalTickMs: 0,
-      maxTickMs: 0,
-      totalPayloadBytes: 0,
-    };
+    this.perfAccumulator = createPerfAccumulator(
+      this.gameClock.getRawElapsedMs(),
+    );
   }
 
   private updateBotPlayers(
@@ -327,10 +321,7 @@ export class GameLoop {
     gridColorsView: readonly number[],
   ): void {
     this.players.forEach((player) => {
-      if (
-        isBotPlayerId(player.id) ||
-        this.disconnectedBotControlledPlayerIds.has(player.id)
-      ) {
+      if (this.isBotControlled(player.id)) {
         const decision = this.botTurnOrchestrator.decide(
           player.id as BotPlayerId,
           player,
@@ -361,10 +352,7 @@ export class GameLoop {
     if (!onBotBombHit || explodedBombs.length === 0) return;
 
     this.players.forEach((player) => {
-      const isBotControlled =
-        isBotPlayerId(player.id) ||
-        this.disconnectedBotControlledPlayerIds.has(player.id);
-      if (!isBotControlled) return;
+      if (!this.isBotControlled(player.id)) return;
 
       for (const bomb of explodedBombs) {
         const result = checkBombHit({
@@ -407,6 +395,14 @@ export class GameLoop {
     this.disconnectedBotControlledPlayerIds.delete(playerId);
   }
 
+  /** Botまたは切断によりBot制御へ昇格したプレイヤーかを判定する */
+  private isBotControlled(playerId: string): boolean {
+    return (
+      isBotPlayerId(playerId) ||
+      this.disconnectedBotControlledPlayerIds.has(playerId)
+    );
+  }
+
   private buildTickData(elapsedMs: number): domain.game.tick.TickData {
     const activePlayerIds = new Set<string>();
     const playerUpdates = this.collectChangedPlayerUpdates(activePlayerIds);
@@ -435,10 +431,7 @@ export class GameLoop {
     );
 
     hitPlayerIds.forEach((playerId) => {
-      if (
-        isBotPlayerId(playerId) ||
-        this.disconnectedBotControlledPlayerIds.has(playerId)
-      ) {
+      if (this.isBotControlled(playerId)) {
         this.applyBotDamage(playerId, elapsedMs);
       }
 
