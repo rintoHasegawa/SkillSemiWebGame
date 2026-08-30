@@ -15,7 +15,7 @@ export const GameSceneInitResultStatus = {
   INITIALIZED: "initialized",
   FAILED: "failed",
   ABORTED: "aborted",
-} as const;
+} as const satisfies Record<string, GameSceneInitResult["status"]>;
 
 /** 初期化実行の入力型 */
 export type RunGameSceneInitParams = {

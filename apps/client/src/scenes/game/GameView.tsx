@@ -104,7 +104,7 @@ export const GameView = ({
       />
 
       {shouldShowFeverBanner({ isFeverTime, remainingSeconds }) && (
-        <div style={GAME_VIEW_FEVER_TEXT_STYLE}>！Fever Tieme！</div>
+        <div style={GAME_VIEW_FEVER_TEXT_STYLE}>！Fever Time！</div>
       )}
 
       {config.GAME_CONFIG.HURRICANE_ENABLED &&
