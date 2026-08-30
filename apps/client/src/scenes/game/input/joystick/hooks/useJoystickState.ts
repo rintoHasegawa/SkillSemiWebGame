@@ -84,7 +84,7 @@ export const useJoystickState = ({
   );
 
   const schedulePointerEnd = useCallback(
-    (pointerId: number, confirmDelayMs: number = POINTER_END_CONFIRM_MS) => {
+    (pointerId: number, confirmDelayMs: number) => {
       if (confirmDelayMs <= 0) {
         clearPendingEnd();
         confirmPointerEnd(pointerId);

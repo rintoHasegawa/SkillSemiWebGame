@@ -169,179 +169,203 @@ describe("GameSessionLifecycleService", () => {
     expect(invoke(service)).toEqual(expected);
   });
 
-  it("セッション開始済みの符号付き経過msはセッション値を返すこと", () => {
-    const { service } = createContext(true);
+  describe("getRoomSignedElapsedMs", () => {
+    it("セッション開始済みの符号付き経過msはセッション値を返すこと", () => {
+      const { service } = createContext(true);
 
-    expect(service.getRoomSignedElapsedMs()).toBe(1_234);
-  });
-
-  it("カウントダウン中の負の経過msもそのまま返すこと", () => {
-    const { service, session } = createContext(true);
-    session.getSignedElapsedMs.mockReturnValue(-4_000);
-
-    expect(service.getRoomSignedElapsedMs()).toBe(-4_000);
-  });
-
-  it("セッション開始済みのフィールド設定を返すこと", () => {
-    const { service } = createContext(true);
-
-    expect(service.getRoomFieldConfig()).toEqual(fieldConfig);
-  });
-
-  it("セッション開始済みのマップ塗り状態をそのまま返すこと", () => {
-    const { service } = createContext(true);
-
-    expect(service.getMapGridColorsView()).toEqual([0, -1]);
-  });
-
-  it("セッション開始後の爆弾設置受理判定はセッションへ委譲すること", () => {
-    const { service, session } = createContext(true);
-
-    expect(service.shouldAcceptBombPlacement("socket-1")).toBe(true);
-    expect(session.shouldAcceptBombPlacement).toHaveBeenCalledWith("socket-1");
-  });
-
-  it("セッション開始済みの同チーム被弾報告判定をセッションへ委譲すること", () => {
-    const { session, service } = createContext(true);
-
-    expect(service.isSameTeamBombHitReport("socket-1", "bomb-1")).toBe(true);
-    expect(session.isSameTeamBombHitReport).toHaveBeenCalledWith(
-      "socket-1",
-      "bomb-1",
-    );
-  });
-
-  it("セッション未開始の爆弾ID採番は例外を投げないこと", () => {
-    const { service } = createContext(false);
-
-    expect(() => service.issueServerBombId()).not.toThrow();
-  });
-
-  it("セッション開始済みの爆弾ID採番はセッション値を返すこと", () => {
-    const { service } = createContext(true);
-
-    expect(service.issueServerBombId()).toBe("bomb-1");
-  });
-
-  it("セッション開始済みの爆発予定時刻解決はセッション値を返すこと", () => {
-    const { service, session } = createContext(true);
-
-    expect(service.resolveBombExplodeAtElapsedMs()).toBe(6_000);
-    expect(session.resolveBombExplodeAtElapsedMs).toHaveBeenCalledWith();
-  });
-
-  it("セッション開始済みのチームIDを返すこと", () => {
-    const { service } = createContext(true);
-
-    expect(service.getPlayerTeamId("socket-1")).toBe(3);
-  });
-
-  it("セッション未開始の爆弾登録は何もしないこと", () => {
-    const { session, service } = createContext(false);
-
-    service.registerActiveBomb({
-      bombId: "bomb-1",
-      ownerPlayerId: "socket-1",
-      x: 1,
-      y: 1,
-      explodeAtElapsedMs: 100,
+      expect(service.getRoomSignedElapsedMs()).toBe(1_234);
     });
 
-    expect(session.registerActiveBomb).not.toHaveBeenCalled();
+    it("カウントダウン中の負の経過msもそのまま返すこと", () => {
+      const { service, session } = createContext(true);
+      session.getSignedElapsedMs.mockReturnValue(-4_000);
+
+      expect(service.getRoomSignedElapsedMs()).toBe(-4_000);
+    });
   });
 
-  it("セッション未開始の被弾スタッツ更新は何もしないこと", () => {
-    const { session, service } = createContext(false);
+  describe("getRoomFieldConfig", () => {
+    it("セッション開始済みのフィールド設定を返すこと", () => {
+      const { service } = createContext(true);
 
-    service.recordBombHitForOwner("bomb-1");
-
-    expect(session.recordBombHitForOwner).not.toHaveBeenCalled();
+      expect(service.getRoomFieldConfig()).toEqual(fieldConfig);
+    });
   });
 
-  it("セッション開始済みの場合は多重開始を無視すること", () => {
-    const { sessionRef, service } = createContext(true);
-    const before = sessionRef.current;
+  describe("getMapGridColorsView", () => {
+    it("セッション開始済みのマップ塗り状態をそのまま返すこと", () => {
+      const { service } = createContext(true);
 
-    service.startRoomSession(
-      ["socket-2"],
-      {},
-      fieldConfig,
-      createCallbacksStub(),
-    );
-
-    expect(sessionRef.current).toBe(before);
+      expect(service.getMapGridColorsView()).toEqual([0, -1]);
+    });
   });
 
-  it("多重開始時は参加者一覧を書き換えないこと", () => {
-    const { activePlayerIds, service } = createContext(true);
+  describe("shouldAcceptBombPlacement", () => {
+    it("セッション開始後の爆弾設置受理判定はセッションへ委譲すること", () => {
+      const { service, session } = createContext(true);
 
-    service.startRoomSession(
-      ["socket-2"],
-      {},
-      fieldConfig,
-      createCallbacksStub(),
-    );
-
-    expect(Array.from(activePlayerIds)).toEqual(["socket-1"]);
+      expect(service.shouldAcceptBombPlacement("socket-1")).toBe(true);
+      expect(session.shouldAcceptBombPlacement).toHaveBeenCalledWith("socket-1");
+    });
   });
 
-  it("セッション未開始の場合は新規セッションを生成すること", () => {
-    const { sessionRef, service } = createContext(false);
+  describe("isSameTeamBombHitReport", () => {
+    it("セッション開始済みの同チーム被弾報告判定をセッションへ委譲すること", () => {
+      const { session, service } = createContext(true);
 
-    service.startRoomSession(
-      ["socket-1"],
-      { "socket-1": "太郎" },
-      fieldConfig,
-      createCallbacksStub(),
-    );
-
-    expect(sessionRef.current).not.toBeNull();
-    service.dispose();
+      expect(service.isSameTeamBombHitReport("socket-1", "bomb-1")).toBe(true);
+      expect(session.isSameTeamBombHitReport).toHaveBeenCalledWith(
+        "socket-1",
+        "bomb-1",
+      );
+    });
   });
 
-  it("セッション開始時は参加者一覧を渡されたIDで再構築すること", () => {
-    const { activePlayerIds, service } = createContext(false);
-    activePlayerIds.add("socket-old");
+  describe("issueServerBombId", () => {
+    it("セッション未開始の爆弾ID採番は例外を投げないこと", () => {
+      const { service } = createContext(false);
 
-    service.startRoomSession(
-      ["socket-1", "socket-2"],
-      {},
-      fieldConfig,
-      createCallbacksStub(),
-    );
+      expect(() => service.issueServerBombId()).not.toThrow();
+    });
 
-    expect(Array.from(activePlayerIds)).toEqual(["socket-1", "socket-2"]);
-    service.dispose();
+    it("セッション開始済みの爆弾ID採番はセッション値を返すこと", () => {
+      const { service } = createContext(true);
+
+      expect(service.issueServerBombId()).toBe("bomb-1");
+    });
   });
 
-  it("破棄時はセッションのdisposeを呼ぶこと", () => {
-    const { session, service } = createContext(true);
+  describe("resolveBombExplodeAtElapsedMs", () => {
+    it("セッション開始済みの爆発予定時刻解決はセッション値を返すこと", () => {
+      const { service, session } = createContext(true);
 
-    service.dispose();
-
-    expect(session.dispose).toHaveBeenCalledTimes(1);
+      expect(service.resolveBombExplodeAtElapsedMs()).toBe(6_000);
+      expect(session.resolveBombExplodeAtElapsedMs).toHaveBeenCalledWith();
+    });
   });
 
-  it("破棄時はセッション参照をnullにすること", () => {
-    const { sessionRef, service } = createContext(true);
+  describe("getPlayerTeamId", () => {
+    it("セッション開始済みのチームIDを返すこと", () => {
+      const { service } = createContext(true);
 
-    service.dispose();
-
-    expect(sessionRef.current).toBeNull();
+      expect(service.getPlayerTeamId("socket-1")).toBe(3);
+    });
   });
 
-  it("破棄時は参加者一覧を空にすること", () => {
-    const { activePlayerIds, service } = createContext(true);
+  describe("registerActiveBomb", () => {
+    it("セッション未開始の爆弾登録は何もしないこと", () => {
+      const { session, service } = createContext(false);
 
-    service.dispose();
+      service.registerActiveBomb({
+        bombId: "bomb-1",
+        ownerPlayerId: "socket-1",
+        x: 1,
+        y: 1,
+        explodeAtElapsedMs: 100,
+      });
 
-    expect(activePlayerIds.size).toBe(0);
+      expect(session.registerActiveBomb).not.toHaveBeenCalled();
+    });
   });
 
-  it("セッション未開始の破棄でも例外を投げないこと", () => {
-    const { service } = createContext(false);
+  describe("recordBombHitForOwner", () => {
+    it("セッション未開始の被弾スタッツ更新は何もしないこと", () => {
+      const { session, service } = createContext(false);
 
-    expect(() => service.dispose()).not.toThrow();
+      service.recordBombHitForOwner("bomb-1");
+
+      expect(session.recordBombHitForOwner).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("startRoomSession", () => {
+    it("セッション開始済みの場合は多重開始を無視すること", () => {
+      const { sessionRef, service } = createContext(true);
+      const before = sessionRef.current;
+
+      service.startRoomSession(
+        ["socket-2"],
+        {},
+        fieldConfig,
+        createCallbacksStub(),
+      );
+
+      expect(sessionRef.current).toBe(before);
+    });
+
+    it("多重開始時は参加者一覧を書き換えないこと", () => {
+      const { activePlayerIds, service } = createContext(true);
+
+      service.startRoomSession(
+        ["socket-2"],
+        {},
+        fieldConfig,
+        createCallbacksStub(),
+      );
+
+      expect(Array.from(activePlayerIds)).toEqual(["socket-1"]);
+    });
+
+    it("セッション未開始の場合は新規セッションを生成すること", () => {
+      const { sessionRef, service } = createContext(false);
+
+      service.startRoomSession(
+        ["socket-1"],
+        { "socket-1": "太郎" },
+        fieldConfig,
+        createCallbacksStub(),
+      );
+
+      expect(sessionRef.current).not.toBeNull();
+      service.dispose();
+    });
+
+    it("セッション開始時は参加者一覧を渡されたIDで再構築すること", () => {
+      const { activePlayerIds, service } = createContext(false);
+      activePlayerIds.add("socket-old");
+
+      service.startRoomSession(
+        ["socket-1", "socket-2"],
+        {},
+        fieldConfig,
+        createCallbacksStub(),
+      );
+
+      expect(Array.from(activePlayerIds)).toEqual(["socket-1", "socket-2"]);
+      service.dispose();
+    });
+  });
+
+  describe("dispose", () => {
+    it("破棄時はセッションのdisposeを呼ぶこと", () => {
+      const { session, service } = createContext(true);
+
+      service.dispose();
+
+      expect(session.dispose).toHaveBeenCalledTimes(1);
+    });
+
+    it("破棄時はセッション参照をnullにすること", () => {
+      const { sessionRef, service } = createContext(true);
+
+      service.dispose();
+
+      expect(sessionRef.current).toBeNull();
+    });
+
+    it("破棄時は参加者一覧を空にすること", () => {
+      const { activePlayerIds, service } = createContext(true);
+
+      service.dispose();
+
+      expect(activePlayerIds.size).toBe(0);
+    });
+
+    it("セッション未開始の破棄でも例外を投げないこと", () => {
+      const { service } = createContext(false);
+
+      expect(() => service.dispose()).not.toThrow();
+    });
   });
 });
 
