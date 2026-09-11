@@ -300,6 +300,8 @@ GitHub リポジトリを作成しリモートを設定した直後に，**Depen
 
 ※ `.github/dependabot.yml` は依存バージョンの定期更新 PR の設定であり，上記の脆弱性検出とは別物．
 
+※ pnpm 10 系では，`pnpm-workspace.yaml` の `minimumReleaseAgeExclude: ["*"]` を削除しないこと．Dependabot は version updates の際に pnpm へ `--config.minimumReleaseAge=4320`（公開 3 日未満の版を拒否）を強制するため，この除外設定が無いと，公開直後の推移的依存が 1 つあるだけで更新ジョブ全体が `ERR_PNPM_NO_MATURE_MATCHING_VERSION` で失敗し，定期更新 PR が作られなくなる．経緯と理由は同ファイルのコメントを参照する．
+
 ## Docker環境定義ファイルの作成 (Configuration)
 
 ### Dockerfile の作成 (Create Dockerfile)
