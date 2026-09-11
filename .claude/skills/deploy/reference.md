@@ -82,6 +82,7 @@ git diff --name-only <live コミットの SHA>..origin/main
 - `pnpm-lock.yaml`・`pnpm-workspace.yaml`・ルート `package.json` も **両サービスの対象**である（依存解決とワークスペース構成が変わるため）
 - `apps/client/` 配下でも `apps/client/src/**/*.test.ts` のようなテストファイルはビルド成果物に影響しないが，**例外は設けない**（対象パス配下なら対象とする．判定を単純に保つ方が事故が少ない）
 - `Dockerfile` は server のみの対象である（client は Static Site でありビルドコマンドで配信物を作る）
+- `.node-version` は client のみの対象である（Render の Static Site がビルドに使う Node の版を決める．server の Node の版は `Dockerfile` の `FROM` で決まるため対象外）
 - `.dockerignore`・`docker-compose*.yml` はローカル用途であり Render のビルドには影響しないが，`Dockerfile` と同時に変わることが多いので，迷ったら server 対象に倒す
 
 判定結果は次の形で必ず表に出す．

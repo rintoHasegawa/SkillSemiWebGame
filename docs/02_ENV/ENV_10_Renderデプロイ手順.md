@@ -87,6 +87,7 @@ server はリポジトリルートの `Dockerfile` を使った Docker デプロ
 
 ※ `packages/shared/dist` はリポジトリに含まれないため，client のビルドの前に必ず shared をビルドすること（省くと `TS2307` でビルドが失敗する）
 ※ Render API（`get_service` / MCP）が返す `buildCommand` は実際に走るコマンドと食い違うことがある．実態はビルドログ（`list_logs` の `type: build`）で確認する
+※ ビルドに使う Node の版は，リポジトリ直下の `.node-version`（内容 `26`＝26 系の最新に解決される）で固定している．指定が無いと Render はサービス作成日時点の既定版を使い，開発環境とずれるためである．Render は `NODE_VERSION` 環境変数 → `.node-version` → `.nvmrc` → `package.json` の `engines` の順に参照するので，client サービスに環境変数 `NODE_VERSION` を設定しないこと（設定すると `.node-version` より優先される）．Dev Container（`devcontainer.json` の node feature の `version`）・server の `Dockerfile`（`FROM node:26-slim`）と同じメジャーにそろえており，版を上げるときは 3 箇所を同時に更新する（参考: <https://render.com/docs/node-version>）
 
 ### 動作確認 (Verification)
 
@@ -116,7 +117,7 @@ Render MCP サーバーを導入している環境では，Claude Code のスキ
 
 - **判定の起点は Render 上で現在 live なコミット**である．`list_deploys` で得た live コミットと `origin/main` の `git diff --name-only` を取り，変更が及ぶサービスだけをデプロイする
   - server の対象パス: `apps/server/`，`packages/shared/`，`Dockerfile`，`pnpm-lock.yaml`，`pnpm-workspace.yaml`，ルート `package.json`
-  - client の対象パス: `apps/client/`，`packages/shared/`，`pnpm-lock.yaml`，`pnpm-workspace.yaml`，ルート `package.json`
+  - client の対象パス: `apps/client/`，`packages/shared/`，`pnpm-lock.yaml`，`pnpm-workspace.yaml`，ルート `package.json`，`.node-version`
   - `docs/`・`test/`・`.claude/`・`.github/` 等だけの変更ならどちらもデプロイしない
   - 最新デプロイが `live` でない（`build_failed` 等）サービスは，差分に関わらずデプロイ対象になる
 - 両方必要なときは **server → live 確認 → client** の順に流す（プロトコル不一致の窓を短くするため）

@@ -72,7 +72,7 @@ git rev-parse --short origin/main
 | サービス | 対象パス |
 | --- | --- |
 | server | `apps/server/`，`packages/shared/`，`Dockerfile`，`pnpm-lock.yaml`，`pnpm-workspace.yaml`，ルート `package.json` |
-| client | `apps/client/`，`packages/shared/`，`pnpm-lock.yaml`，`pnpm-workspace.yaml`，ルート `package.json` |
+| client | `apps/client/`，`packages/shared/`，`pnpm-lock.yaml`，`pnpm-workspace.yaml`，ルート `package.json`，`.node-version` |
 
 - どちらの対象パスにも当たらない変更（`docs/`，`test/`，`.claude/`，`.github/`，`scripts/`，`README.md`，`LICENSE` 等）**だけ**の場合は，そのサービスはデプロイ不要とする
 - 最新デプロイの `status` が `live` 以外（`build_failed` / `update_failed` / `canceled` 等）の場合は，**差分に関わらずそのサービスを対象とする**（現在稼働しているコードが古い・壊れている可能性があるため）
