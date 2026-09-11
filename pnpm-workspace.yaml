@@ -5,3 +5,14 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+
+# Dependabot version updates 対策（2026-09）:
+# Dependabot は 2026-07 以降，version updates の既定 cooldown（3 日）を pnpm の
+# --config.minimumReleaseAge=4320 として推移的依存にも強制する（dependabot-core#15485）．
+# pnpm 10.x には非厳格モード（minimumReleaseAgeStrict）が無く，公開 3 日以内の依存が
+# 1 つでもあると ERR_PNPM_NO_MATURE_MATCHING_VERSION で更新ジョブ全体が失敗する（dependabot-core#16091）．
+# 全パッケージを除外して 2026-08-22 以前と同じ挙動に戻す．直接依存の 3 日 cooldown は
+# Dependabot 側の候補版選別で引き続き効く．ローカルの pnpm 10.x は minimumReleaseAge 既定 0 なので無害．
+# pnpm 11 へ上げるときは本設定を削除する（pnpm 11 の既定 1 日ゲートを潰さないため）．
+minimumReleaseAgeExclude:
+  - "*"
