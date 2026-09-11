@@ -28,8 +28,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.2",
   "devDependencies": {
-    "@typescript-eslint/parser": "^8.67.0",
-    "eslint": "^10.8.1",
+    "@typescript-eslint/parser": "^8.70.0",
+    "eslint": "^10.10.0",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
