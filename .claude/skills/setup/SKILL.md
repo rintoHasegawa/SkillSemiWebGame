@@ -125,7 +125,7 @@ Dependabot alerts（"Vulnerabilities"）と Dependabot security updates はリ�
 5. **team モードの場合**は，AI に実施できない「管理者の初期設定」（GUIDE_03「管理者の初期設定」）をユーザーに案内する:
    - GitHub リポジトリ作成・メンバー招待
    - Issue テンプレートの用意
-   - CI 構築（未構築の間は GUIDE_03「CI 構築までの暫定ゲート」を適用）
+   - CI 構築（全テストを実行し，緑をマージ条件にできる状態にする．GUIDE_03「管理者の初期設定」）
    - ※ 脆弱性検出（Dependabot alerts / security updates）は上記 4 で AI が有効化済み，依存バージョン更新（`.github/dependabot.yml`）はフェーズ 3 で生成済みのため，ここでは案内しない．CI を `github-actions` で組んだら `dependabot.yml` に `github-actions` エコシステムが含まれていることを確認する（`reference.md`「依存バージョン更新の設定」）
 
 「**全フェーズが完了しました．**

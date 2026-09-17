@@ -95,14 +95,6 @@ Dependabot が作成する依存更新 PR（security updates / version updates�
 - 依存更新 PR は共有設定（`CLAUDE.md`・`.claude/`）を変更しないため，他メンバーの Approve は不要．`main` にブランチ保護（必須レビュー）を設定している場合は `/deps-update` はマージできないので，マージ可と判定した一覧を提示するにとどまり，人間がマージする．
 - `/deps-update` を実行するのは原則 1 名（管理者またはその週の担当）とし，マージ後はチームに周知して全員が `git pull` する（直列運用のため，他メンバーの作業ブランチは次の rebase で追従する）．
 
-### CI 構築までの暫定ゲート (Interim Gate)
-
-CI が未構築の間は「CI 緑」を以下で代替する．CI 構築後はこの節を削除する．
-
-- `/implement` を完走している．
-- ローカルで全テストが緑である．
-- 作者自身が Phase 1 の動作確認を済ませている．
-
 ## 共有設定の扱い (Shared Configuration)
 
 `CLAUDE.md` と `.claude/`（agents・skills・rules・hooks・settings.json・template-overrides.md）は全員の Claude の挙動を決める共有インフラである．
@@ -147,6 +139,5 @@ CI が未構築の間は「CI 緑」を以下で代替する．CI 構築後は�
 - （既定では未使用）マージ連動の自動化設定（PR マージ時に Issue クローズ・カードを `Done` へ移動）．
 - Issue テンプレートの用意（「やること」「完了条件」欄）．
 - 共有設定変更 PR に他メンバー Approve を求める運用の周知（必要なら `main` のブランチ保護設定）．
-- CI の構築（全テストを実行し，緑をマージ条件にできる状態にする）．
 
-※ 完了するまでは本ガイドの「CI 構築までの暫定ゲート」を適用する．
+※ CI は構築済みである（`.github/workflows/ci.yml`）．PR と `main` への push で型チェック・ユニットテスト・lint・ビルドを実行するため，「レビューとマージ」の「CI で全テストが緑である」は PR のチェック結果で確認できる．
