@@ -1,0 +1,62 @@
+# CI（型チェック・ユニットテスト・lint・ビルド）
+# 実行コマンドの定義は docs/02_ENV/ENV_04_開発コマンド.md に従う．
+# public リポジトリのため，標準ランナー（ubuntu-latest）の実行時間は無料・無制限である．
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# 同一ブランチで新しい push があれば，進行中の実行を打ち切る（PR 更新時の無駄を省く）
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 既定の GITHUB_TOKEN は読み取りのみにする（本 CI は書き込みを行わない）
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 検証 (typecheck・test・lint・build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v7
+
+      - name: pnpm のセットアップ
+        # 版は package.json の packageManager（pnpm@10.28.2）から解決される
+        uses: pnpm/action-setup@v6
+
+      - name: Node.js のセットアップ
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: 依存のインストール
+        run: pnpm install --frozen-lockfile
+
+      - name: 型チェックとユニットテスト
+        # pnpm verify = pnpm typecheck（shared をビルドしてから -r typecheck）→ pnpm -r test
+        # ※ pnpm -r typecheck を直接呼ばないこと（shared の .d.ts 未生成で TS2307 が多発する）
+        run: pnpm verify
+
+      - name: lint (shared)
+        run: pnpm --filter @repo/shared lint
+
+      - name: lint (server)
+        run: pnpm --filter server lint
+
+      - name: lint (client)
+        run: pnpm --filter client lint
+
+      - name: ビルド (server)
+        # Render のビルド失敗を CI で先に検出するため
+        run: pnpm --filter server build
+
+      - name: ビルド (client)
+        run: pnpm --filter client build
