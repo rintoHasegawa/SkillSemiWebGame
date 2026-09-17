@@ -11,7 +11,40 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/restrict_repo_access.py"
+            "command": "bash .claude/hooks/run_python.sh --fail-closed .claude/hooks/restrict_repo_access.py"
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/run_python.sh .claude/hooks/notify.py",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|elicitation_dialog|elicitation_url_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/run_python.sh .claude/hooks/notify.py",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/run_python.sh .claude/hooks/notify.py",
+            "async": true
           }
         ]
       }
