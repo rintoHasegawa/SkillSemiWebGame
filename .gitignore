@@ -29,6 +29,9 @@ Thumbs.db
 # Testing
 coverage/
 
+# Python キャッシュ (.claude/hooks/ のフックとテストの実行で生成される)
+__pycache__/
+
 # Devcontainer: 退避した認証情報 (絶対にコミットしない)
 .devcontainer/.auth-seed/
 
