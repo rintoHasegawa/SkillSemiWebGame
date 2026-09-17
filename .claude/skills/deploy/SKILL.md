@@ -26,7 +26,7 @@ disable-model-invocation: true
 2. **`main` 以外のブランチでは原則デプロイしない**: Render のデプロイ対象ブランチは `main` である．現在のブランチが `main` でなければ停止してユーザーに確認する
 3. **環境変数は触らない**: `mcp__render__update_environment_variables` は呼ばない．環境変数の更新は**自動で最新 `main` のデプロイを起動してしまう**ため，本スキルの責務外とする（環境変数の変更は ENV_10「環境変数の設定」に従い人間が行う）
 4. **判定の起点は必ず「Render 上で現在 live なコミット」**: ローカルに前回デプロイの記録を持たない（記録は必ず実態とずれる）
-5. **すべての MCP 呼び出しに `workspaceId` を渡す**（reference.md「ID 一覧」）
+5. **すべての MCP 呼び出しに `workspaceId` を渡す**（reference.md「ID の解決」）．ワークスペース ID・サービス ID は手順書に直書きせず，**実行のたびに Render MCP から解決する**（本リポジトリは公開しているため）
 6. **差分の比較対象は `origin/main` である**: Render がデプロイするのは対象ブランチ（`main`）の先端であり，ローカルの `HEAD` ではない．`git diff` の相手は必ず `origin/main` を使う
 
 ## 引数 (Arguments)
@@ -63,7 +63,9 @@ git rev-parse --short origin/main
 
 ## ステップ 2: 判定 (Decide)
 
-各サービスについて以下を行う（`server` / `client` を明示指定された場合は本ステップを飛ばす）．
+**先に reference.md「ID の解決」の手順で `workspaceId` と各サービスの `serviceId` を解決しておく**（`server` / `client` を明示指定されて本ステップを飛ばす場合も，ステップ 4 で ID が要るため解決は必要である）．
+
+そのうえで，各サービスについて以下を行う（`server` / `client` を明示指定された場合は本ステップを飛ばす）．
 
 1. `mcp__render__list_deploys`（`limit: 5`）でデプロイ履歴を取得し，**最新の `status: "live"`** のデプロイからその `commit.id` を得る
 2. そのコミットがローカルに無い場合は `git fetch origin main` してから再確認する．それでも無ければ停止して報告する（reference.md「トラブルシューティング」）

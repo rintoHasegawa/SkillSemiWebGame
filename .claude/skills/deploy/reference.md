@@ -1,17 +1,24 @@
 # deploy リファレンス (deploy Reference)
 
-`/deploy`（`SKILL.md`）から参照される，Render の ID 一覧・各ステップの詳細手順・MCP ツールの呼び出し例と返り値の読み方・トラブルシューティング．
+`/deploy`（`SKILL.md`）から参照される，Render の ID の解決方法・各ステップの詳細手順・MCP ツールの呼び出し例と返り値の読み方・トラブルシューティング．
 デプロイ対象の構成・環境変数・動作確認の手順は [ENV_10_Renderデプロイ手順](../../../docs/02_ENV/ENV_10_Renderデプロイ手順.md) を参照する．
 
-## ID 一覧 (Identifiers)
+## ID の解決 (Identifiers)
 
 **すべての MCP 呼び出しに `workspaceId` を渡すこと**（渡さないとワークスペース未選択エラーになる）．
 
-| 項目 | ID |
+ワークスペース ID（`tea-...`）とサービス ID（`srv-...`）は**本手順書に直書きせず，実行のたびに Render MCP から解決する**．本リポジトリは公開しており，ID 自体は認証情報ではない（操作には別途 API キーが要る）ものの，公開する必然性が無いためである．サービスを作り直しても手順書の更新が要らないという利点もある．
+
+1. `mcp__render__list_workspaces` でワークスペースの一覧を取得し，`My Workspace` の `id`（`tea-...`）を得る
+2. `mcp__render__list_services`（`workspaceId` に 1 の値を渡す）でサービスの一覧を取得し，`name` から各サービスの `id`（`srv-...`）を引く
+
+| 項目 | 解決のしかた |
 | --- | --- |
-| workspaceId（My Workspace） | `tea-d6bsesbh46gs73f56jrg` |
-| client（pixel-paint-war-client，Static Site） | `srv-d6dcuarh46gs73cvs69g` |
-| server（SkillSemiWebGame，Web Service / Docker） | `srv-d6bsjdftn9qs73dj81ig` |
+| workspaceId | `list_workspaces` の `My Workspace` の `id` |
+| client の serviceId | `list_services` で `name` が `pixel-paint-war-client`（Static Site）のものの `id` |
+| server の serviceId | `list_services` で `name` が `SkillSemiWebGame`（Web Service / Docker）のものの `id` |
+
+解決した ID は**そのセッション中だけ保持する**（ファイルに書き戻さない）．以降の JSON 例では `<workspaceId>`・`<server の serviceId>` と表記するので，実際の呼び出しでは解決した値に置き換えること．
 
 ## ステップ 1: 前提確認の詳細 (Prerequisites)
 
@@ -42,8 +49,8 @@ git rev-parse --short origin/main
 
 ```json
 {
-  "workspaceId": "tea-d6bsesbh46gs73f56jrg",
-  "serviceId": "srv-d6bsjdftn9qs73dj81ig",
+  "workspaceId": "<workspaceId>",
+  "serviceId": "<server の serviceId>",
   "limit": 5
 }
 ```
@@ -114,8 +121,8 @@ git diff <live コミットの SHA>..origin/main -- packages/shared | grep -n "P
 
 ```json
 {
-  "workspaceId": "tea-d6bsesbh46gs73f56jrg",
-  "serviceId": "srv-d6bsjdftn9qs73dj81ig"
+  "workspaceId": "<workspaceId>",
+  "serviceId": "<server の serviceId>"
 }
 ```
 
@@ -131,8 +138,8 @@ git diff <live コミットの SHA>..origin/main -- packages/shared | grep -n "P
 
 ```json
 {
-  "workspaceId": "tea-d6bsesbh46gs73f56jrg",
-  "serviceId": "srv-d6bsjdftn9qs73dj81ig",
+  "workspaceId": "<workspaceId>",
+  "serviceId": "<server の serviceId>",
   "deployId": "dep-..."
 }
 ```
@@ -150,8 +157,8 @@ git diff <live コミットの SHA>..origin/main -- packages/shared | grep -n "P
 
 ```json
 {
-  "workspaceId": "tea-d6bsesbh46gs73f56jrg",
-  "resource": ["srv-d6bsjdftn9qs73dj81ig"],
+  "workspaceId": "<workspaceId>",
+  "resource": ["<server の serviceId>"],
   "type": ["build"],
   "startTime": "<デプロイの createdAt>",
   "direction": "backward",
@@ -169,6 +176,13 @@ git diff <live コミットの SHA>..origin/main -- packages/shared | grep -n "P
 - 特定できたら，該当行だけを引用して報告する（ログ全体を貼らない）
 
 ## トラブルシューティング (Troubleshooting)
+
+### ID が解決できない
+
+| 状況 | 対処 |
+| --- | --- |
+| `list_workspaces` がワークスペース未選択エラーになる | `mcp__render__get_selected_workspace` で現在選択中のワークスペースを取得する．それも失敗する場合は `mcp__render__select_workspace` での選択をユーザーに依頼する |
+| `list_services` に該当名のサービスが無い | サービス名が変わった可能性がある．一覧に出たサービス名を提示し，どれが client / server かをユーザーに確認する．推測でデプロイしない |
 
 ### live なデプロイ／live コミットが見つからない
 
