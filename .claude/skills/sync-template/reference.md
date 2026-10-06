@@ -15,7 +15,7 @@
 
 ```bash
 MERGE_FILES=(".gitignore" "CLAUDE.md" "docs/PROGRESS.md" ".gitattributes" ".claude/settings.json" ".claude/template-overrides.md")
-SKIP_FILES=("README.md")
+SKIP_FILES=("README.md" ".claude/tests/" ".github/workflows/hooks-ci.yml")   # 末尾 / はディレクトリ配下すべてを対象にする
 TEAM_LAYER_FILES=(
   "docs/01_GUIDE/GUIDE_03_チーム開発ルール.md"
   ".claude/hooks/check_sync.sh"
@@ -45,7 +45,10 @@ is_merge_file() {
 is_skip_file() {
   local t="$1"
   for f in "${SKIP_FILES[@]}"; do
-    [ "$f" = "$t" ] && return 0
+    case "$f" in
+      */) [[ "$t" == "$f"* ]] && return 0 ;;   # ディレクトリ指定（末尾 /）は前方一致
+      *)  [ "$f" = "$t" ] && return 0 ;;
+    esac
   done
   return 1
 }
@@ -335,6 +338,7 @@ done
    - 既存に無いイベント／hook はテンプレート版から追加する
    - プロジェクト固有の hook（team の SessionStart `check_sync.sh` 等）は残す
    - 同一 hook の command 変更（例: `restrict_repo_access.py` の起動方法変更）はテンプレート版に合わせる．旧形式の `python .claude/hooks/<名前>.py` は `bash .claude/hooks/run_python.sh [--fail-closed] .claude/hooks/<名前>.py` に置き換える（`--fail-closed` はテンプレート版と同じく `restrict_repo_access.py` にのみ付ける）．`run_python.sh` が同期で配置済みであることも確認する
+   - 同一 hook の matcher 変更（例: `restrict_repo_access.py` の対象ツールに `NotebookEdit`・`PowerShell` を追加）もテンプレート版に合わせる．プロジェクトが独自に足したツール名があれば残す
    - solo モードで SessionStart(check_sync) が無い場合は，team 専用の配線を勝手に追加しない
 4. `hooks` 以外のキーも同じ方針でマージする．特に `permissions.allow` は，テンプレート側に追加されたルール（`Bash(gh pr merge:*)` 等．auto mode で ops-runner にマージを実行させるために必要）を既存へ追加し，プロジェクトが独自に足したルールは残す（削除しない）
 5. `git diff .claude/settings.json` で結果を表示しユーザーに確認する．**permissions の変更はセッション再起動後に反映される**ため，追加があった場合は再起動が必要な旨をユーザーに伝える
