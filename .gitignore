@@ -51,6 +51,7 @@ __pycache__/
 .claude/deps-update-merged.md
 .claude/deps-update-report.md
 .claude/deps-update-skip.md
+.claude/hooks/tests/_restrict_sandbox_*/
 
 # TypeScript incremental build info
 *.tsbuildinfo
