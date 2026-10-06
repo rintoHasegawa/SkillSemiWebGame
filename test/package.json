@@ -9,10 +9,10 @@
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
-    "@types/node": "^26.5.0",
+    "@types/node": "^26.6.4",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }
