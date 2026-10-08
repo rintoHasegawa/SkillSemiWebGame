@@ -49,6 +49,11 @@ export const roomDomainLogEvents = {
   LOBBY_SETTINGS_UPDATE: protocol.SocketEvents.LOBBY_SETTINGS_UPDATE,
 } as const;
 
+/** サーバー起動時の設定解決ログで利用するイベント名定数 */
+export const serverConfigLogEvents = {
+  GAME_DURATION_OVERRIDE: "GAME_DURATION_OVERRIDE",
+} as const;
+
 /** Networkスコープ固有ログで利用するイベント名定数 */
 export const networkLogEvents = {
   CORS_ORIGIN_CHECK: "CORS_ORIGIN_CHECK",

@@ -275,6 +275,7 @@ export class GameRoomSession {
     // フィーバー境界付近でクライアントが先に短縮判定しても弾かないよう許容誤差ぶん先読みする
     const cooldownMs = domain.game.bomb.resolveBombCooldownMs(
       elapsedMs + BOMB_COOLDOWN_TOLERANCE_MS,
+      config.GAME_CONFIG.GAME_DURATION_SEC,
     );
     return this.bombStateStore.shouldAcceptBombPlacement(
       playerId,

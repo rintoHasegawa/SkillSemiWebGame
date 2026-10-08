@@ -137,6 +137,11 @@ export type GameStartPayload = {
   gridCols: number;
   /** 今回のゲームで採用するマップ縦幅（グリッド単位） */
   gridRows: number;
+  /**
+   * 開発モードで試合時間を上書きしている場合のみ付く試合時間（秒）
+   * 本番では付かず，未指定なら既定の GAME_DURATION_SEC を用いる
+   */
+  gameDurationSec?: number;
 };
 
 /** start-game イベントで受信するゲーム開始要求 */

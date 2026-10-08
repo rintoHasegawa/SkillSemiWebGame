@@ -5,7 +5,7 @@
  */
 import type { ReadyForGamePort } from "../ports/gameUseCasePorts";
 import type { GameOutputPort } from "../ports/gameUseCasePorts";
-import { config } from "@server/config";
+import { buildGameDurationPayloadField, config } from "@server/config";
 import { logEvent } from "@server/logging/logger";
 import { config as sharedConfig } from "@repo/shared";
 import { gameUseCaseLogEvents, logResults, logScopes } from "@server/logging/index";
@@ -76,6 +76,7 @@ export const readyForGameUseCase = ({
       ?? sharedConfig.resolveFieldGridSize(
         config.GAME_CONFIG.DEFAULT_FIELD_PRESET,
       ).rows,
+    ...buildGameDurationPayloadField(),
   });
   logEvent(logScopes.GAME_USE_CASE, {
     event: gameUseCaseLogEvents.GAME_START,

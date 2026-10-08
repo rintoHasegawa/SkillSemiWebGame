@@ -3,7 +3,7 @@
  * スコープごとのログペイロード型契約を提供する
  */
 import { contracts as protocol, type FieldSizePreset } from "@repo/shared";
-import { gameDomainLogEvents, gameUseCaseLogEvents, networkLogEvents, roomDomainLogEvents, roomUseCaseLogEvents } from "../constants/eventNames";
+import { gameDomainLogEvents, gameUseCaseLogEvents, networkLogEvents, roomDomainLogEvents, roomUseCaseLogEvents, serverConfigLogEvents } from "../constants/eventNames";
 import { logResults } from "../constants/results";
 import { logScopes } from "../constants/scopes";
 
@@ -453,6 +453,19 @@ type RoomExitServiceLogPayload =
   | RoomExitServiceRoomDeleteLogPayload
   | RoomExitServiceOwnerTransferLogPayload;
 
+/** 開発モードの試合時間上書きの解決ログ契約 */
+type ServerConfigGameDurationOverrideLogPayload = {
+  event: typeof serverConfigLogEvents.GAME_DURATION_OVERRIDE;
+  result:
+    | typeof logResults.APPLIED
+    | typeof logResults.IGNORED_PRODUCTION
+    | typeof logResults.IGNORED_INVALID_VALUE;
+  /** 実際に採用した試合時間（秒） */
+  gameDurationSec: number;
+  /** 環境変数に設定されていた値（無視した場合のみ） */
+  rawValue?: string;
+};
+
 /** スコープごとの event/result と必須項目の型契約 */
 export type LogPayloadByScope = {
   [logScopes.NETWORK]: NetworkLogPayload;
@@ -465,4 +478,5 @@ export type LogPayloadByScope = {
   [logScopes.ROOM_JOIN_SERVICE]: RoomJoinServiceLogPayload;
   [logScopes.ROOM_EXIT_SERVICE]: RoomExitServiceLogPayload;
   [logScopes.ROOM_SETTINGS_SERVICE]: RoomSettingsServiceLobbySettingsUpdateLogPayload;
+  [logScopes.SERVER_CONFIG]: ServerConfigGameDurationOverrideLogPayload;
 };

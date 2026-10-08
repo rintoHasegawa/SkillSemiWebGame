@@ -3,9 +3,9 @@
  * 符号付きゲーム経過msから残り時間とカウントダウンを算出する仕様を検証する
  * 開始前・開始直後・終了後の境界と時計未同期時の扱いを検証する
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
-import { config } from "@client/config";
+import { applyRuntimeGameDurationFromGameStart, config } from "@client/config";
 import { GameTimer } from "./GameTimer";
 
 const GAME_DURATION_SEC = config.GAME_CONFIG.GAME_DURATION_SEC;
@@ -154,5 +154,34 @@ describe("GameTimer", () => {
     const timer = new GameTimer();
 
     expect(timer.getRemainingTime()).toBe(GAME_DURATION_SEC);
+  });
+});
+
+// SPEC_04「残り時間表示」注記: 開発モードで上書きした場合はサーバーから配られた試合時間を基準に表示する
+describe("GameTimer（試合時間の上書き）", () => {
+  afterEach(() => {
+    applyRuntimeGameDurationFromGameStart({});
+  });
+
+  it("30秒の試合では開始直後の残り時間が30秒であること", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+    const { timer } = createTimer(0);
+
+    expect(timer.getRemainingTime()).toBe(30);
+  });
+
+  it("30秒の試合では経過30秒で残り時間が0秒になること", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+    const { timer } = createTimer(30_000);
+
+    expect(timer.getRemainingTime()).toBe(0);
+  });
+
+  it("上書きが無い開始通知を受けると残り時間の基準が既定の180秒へ戻ること", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+    applyRuntimeGameDurationFromGameStart({});
+    const { timer } = createTimer(0);
+
+    expect(timer.getRemainingTime()).toBe(180);
   });
 });

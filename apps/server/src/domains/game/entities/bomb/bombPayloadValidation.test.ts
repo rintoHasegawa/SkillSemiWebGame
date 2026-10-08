@@ -4,7 +4,7 @@
  * 各フィールドの必須条件と，座標・爆発予定時刻の範囲境界を検証する
  * 基準値は SPEC_03（最大フィールド 54×54，制限時間180秒，信管1000ms）とする
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { isPlaceBombPayload } from "./bombPayloadValidation";
 
@@ -235,5 +235,58 @@ describe("isPlaceBombPayload", () => {
     expect(
       isPlaceBombPayload(createPayload({ x: 1e12, y: -1e12 })),
     ).toBe(false);
+  });
+});
+
+// SPEC_03「試合時間の開発モード限定の上書き」: 爆発予定時刻の上限にも上書き後の試合時間を用いる
+describe("isPlaceBombPayload（試合時間の上書き）", () => {
+  // 30 秒に上書きした場合の上限（30000ms + 信管1000ms）
+  const OVERRIDDEN_MAX_EXPLODE_AT_ELAPSED_MS = 31_000;
+
+  /** 環境変数を差し替えて設定ごと型ガードを読み込み直す */
+  const loadGuardWithEnv = async (
+    overrideValue: string | undefined,
+    nodeEnv = "development",
+  ) => {
+    vi.resetModules();
+    vi.stubEnv("DEV_GAME_DURATION_SEC", overrideValue);
+    vi.stubEnv("NODE_ENV", nodeEnv);
+    const { isPlaceBombPayload: reloaded } = await import(
+      "./bombPayloadValidation.js"
+    );
+    return reloaded;
+  };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("30秒に上書きした場合は上限31000msちょうどを受け付けること", async () => {
+    const guard = await loadGuardWithEnv("30");
+
+    expect(
+      guard(createPayload({ explodeAtElapsedMs: OVERRIDDEN_MAX_EXPLODE_AT_ELAPSED_MS })),
+    ).toBe(true);
+  });
+
+  it("30秒に上書きした場合は上限超過の31001msを拒否すること", async () => {
+    const guard = await loadGuardWithEnv("30");
+
+    expect(
+      guard(
+        createPayload({
+          explodeAtElapsedMs: OVERRIDDEN_MAX_EXPLODE_AT_ELAPSED_MS + 1,
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("本番では上書きを無視して上限181000msを受け付けること", async () => {
+    const guard = await loadGuardWithEnv("30", "production");
+
+    expect(
+      guard(createPayload({ explodeAtElapsedMs: MAX_EXPLODE_AT_ELAPSED_MS })),
+    ).toBe(true);
   });
 });

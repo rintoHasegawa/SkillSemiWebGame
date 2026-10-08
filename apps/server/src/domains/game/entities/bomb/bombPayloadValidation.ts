@@ -4,6 +4,7 @@
  * 座標はマップ範囲，爆発予定時刻はゲーム進行時間の範囲に収まることを検証する
  */
 import { config as sharedConfig, type PlaceBombPayload } from "@repo/shared";
+import { config } from "@server/config";
 
 const MS_PER_SEC = 1000;
 
@@ -12,8 +13,9 @@ const MAX_BOMB_X = sharedConfig.MAX_FIELD_GRID_SIZE.cols;
 const MAX_BOMB_Y = sharedConfig.MAX_FIELD_GRID_SIZE.rows;
 
 // 爆発予定時刻の上限は制限時間 + 導火線時間とする（遠未来の居座りを防ぐ）
+// 制限時間は開発モードの上書きを反映した server の設定値を使う
 const MAX_EXPLODE_AT_ELAPSED_MS =
-  sharedConfig.GAME_CONFIG.GAME_DURATION_SEC * MS_PER_SEC
+  config.GAME_CONFIG.GAME_DURATION_SEC * MS_PER_SEC
   + sharedConfig.GAME_CONFIG.BOMB_FUSE_MS;
 
 // 配列や null を除外し，フィールド参照可能なオブジェクトのみを通す

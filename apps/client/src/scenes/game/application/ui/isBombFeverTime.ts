@@ -9,7 +9,10 @@ import { config } from "@client/config";
 /** 経過時間がフィーバータイムに入っているかを返す */
 export const isBombFeverTime = (elapsedMs: number): boolean => {
   return (
-    domain.game.bomb.resolveBombCooldownMs(elapsedMs)
+    domain.game.bomb.resolveBombCooldownMs(
+      elapsedMs,
+      config.GAME_CONFIG.GAME_DURATION_SEC,
+    )
       === config.GAME_CONFIG.BOMB_FEVER_COOLDOWN_MS
   );
 };

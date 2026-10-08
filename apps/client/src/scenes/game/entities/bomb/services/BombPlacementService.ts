@@ -62,7 +62,10 @@ export class BombPlacementService {
     const { BOMB_FUSE_MS } = config.GAME_CONFIG;
 
     // Botと同じ共有ロジックでクールダウンを解決する
-    const cooldownMs = domain.game.bomb.resolveBombCooldownMs(elapsedMs);
+    const cooldownMs = domain.game.bomb.resolveBombCooldownMs(
+      elapsedMs,
+      config.GAME_CONFIG.GAME_DURATION_SEC,
+    );
 
     if (elapsedMs - this.lastBombPlacedElapsedMs < cooldownMs) {
       return null;
