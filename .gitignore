@@ -55,3 +55,6 @@ __pycache__/
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# 自動動作確認（/verify）のシナリオと実行結果（スクリーンショット・ログ・result.json）
+.verify/

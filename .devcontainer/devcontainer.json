@@ -34,7 +34,7 @@
   },
 
   // セットアップ処理は postcreate.sh に集約
-  // (所有権修正・認証情報の復元・gh 連携・pnpm install・shared ビルド)
+  // (所有権修正・認証情報の復元・gh 連携・pnpm install・shared ビルド・Playwright Chromium 導入)
   "postCreateCommand": "bash .devcontainer/postcreate.sh",
 
   "remoteUser": "node"
