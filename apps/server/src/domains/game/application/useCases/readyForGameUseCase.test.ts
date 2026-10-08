@@ -346,3 +346,58 @@ describe("readyForGameUseCase", () => {
     ).toBeLessThan(output.publishMapCellsToSocket.mock.invocationCallOrder[0]);
   });
 });
+
+// SPEC_03「試合時間の開発モード限定の上書き」: 途中合流時の game-start も上書き時だけ gameDurationSec を載せる
+describe("readyForGameUseCase（試合時間の上書き）", () => {
+  /** 環境変数を差し替えて設定ごとユースケースを読み込み直し，ゲーム開始通知を返す */
+  const publishGameStartWithEnv = async (
+    overrideValue: string | undefined,
+    nodeEnv = "development",
+  ) => {
+    vi.resetModules();
+    vi.stubEnv("DEV_GAME_DURATION_SEC", overrideValue);
+    vi.stubEnv("NODE_ENV", nodeEnv);
+    const { readyForGameUseCase: reloadedReadyForGameUseCase } = await import(
+      "./readyForGameUseCase.js"
+    );
+    const output = createOutputStub();
+    reloadedReadyForGameUseCase({
+      socketId: "socket-1",
+      roomId: "room-1",
+      gameManager: createGameManagerStub({
+        roomPlayers: [createPlayerData("socket-1", { x: 1, y: 1 })],
+        signedElapsedMs: 1_234,
+      }),
+      output,
+    });
+    return output.publishGameStartToSocket.mock.calls[0]?.[0];
+  };
+
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+    vi.restoreAllMocks();
+  });
+
+  it("開発モードで上書きした場合はゲーム開始通知にgameDurationSecを載せること", async () => {
+    const payload = await publishGameStartWithEnv("45");
+
+    expect(payload?.gameDurationSec).toBe(45);
+  });
+
+  it("上書き未設定の場合はゲーム開始通知にgameDurationSecを載せないこと", async () => {
+    const payload = await publishGameStartWithEnv(undefined);
+
+    expect(payload).not.toHaveProperty("gameDurationSec");
+  });
+
+  it("本番では上書きが設定されていてもgameDurationSecを載せないこと", async () => {
+    const payload = await publishGameStartWithEnv("45", "production");
+
+    expect(payload).not.toHaveProperty("gameDurationSec");
+  });
+});

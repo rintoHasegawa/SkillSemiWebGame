@@ -6,6 +6,7 @@
 /** ログ出力で利用する結果値の共通定数 */
 export const logResults = {
   ACCEPTED: "accepted",
+  APPLIED: "applied",
   CONNECTED: "connected",
   CREATED: "created",
   DELETED: "deleted",
@@ -16,6 +17,7 @@ export const logResults = {
   IGNORED_DUPLICATE: "ignored_duplicate",
   IGNORED_EXPIRED_BOMB: "ignored_expired_bomb",
   IGNORED_INVALID_PAYLOAD: "ignored_invalid_payload",
+  IGNORED_INVALID_VALUE: "ignored_invalid_value",
   IGNORED_MISSING_ROOM: "ignored_missing_room",
   IGNORED_MISSING_RUNTIME: "ignored_missing_runtime",
   IGNORED_NO_CHANGE: "ignored_no_change",
@@ -23,6 +25,7 @@ export const logResults = {
   IGNORED_OUT_OF_RANGE: "ignored_out_of_range",
   IGNORED_PLAYER_NOT_FOUND: "ignored_player_not_found",
   IGNORED_PLAYER_NOT_IN_SESSION: "ignored_player_not_in_session",
+  IGNORED_PRODUCTION: "ignored_production",
   IGNORED_ROOM_FULL: "ignored_room_full",
   IGNORED_ROOM_NOT_FOUND: "ignored_room_not_found",
   IGNORED_SAME_TEAM: "ignored_same_team",

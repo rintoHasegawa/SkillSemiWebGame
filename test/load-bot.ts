@@ -164,6 +164,9 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   // 被弾カウント（5回でリスポーン）
   let hitCount = 0;
 
+  // 試合時間（開発モードで server が上書きした場合は game-start で受け取る）
+  let gameDurationSec: number = GAME_CONFIG.GAME_DURATION_SEC;
+
   // クライアント単調時計からサーバーのゲーム経過msへの変換差分，未同期時は null
   let clockOffsetMs: number | null = null;
 
@@ -282,8 +285,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
   const isInFever = (): boolean => {
     const elapsedMs = getElapsedMs();
     if (elapsedMs === null) return false;
-    const remainingSec =
-      GAME_CONFIG.GAME_DURATION_SEC - elapsedMs / 1000;
+    const remainingSec = gameDurationSec - elapsedMs / 1000;
     return remainingSec <= GAME_CONFIG.BOMB_FEVER_START_REMAINING_SEC;
   };
 
@@ -426,6 +428,7 @@ function createBot(index: number, counters: Stats, url: string): Bot {
     counters.gameStarts += 1;
 
     if (payload) {
+      gameDurationSec = payload.gameDurationSec ?? GAME_CONFIG.GAME_DURATION_SEC;
       // PONG未着でもカウントダウンを開始できるよう暫定offsetを置く（片道遅延ぶん過小）
       if (
         typeof payload.serverElapsedMs === "number" &&

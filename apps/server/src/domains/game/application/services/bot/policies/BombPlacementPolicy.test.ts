@@ -182,3 +182,41 @@ describe("decideBombPlacement", () => {
     expect(result.placeBombPayload).not.toBeNull();
   });
 });
+
+// SPEC_03「試合時間の開発モード限定の上書き」: 60 秒以下の試合では開始直後からフィーバータイム
+describe("decideBombPlacement（試合時間の上書き）", () => {
+  /** 環境変数を差し替えて設定ごと判定関数を読み込み直す */
+  const loadPolicyWithEnv = async (overrideValue: string | undefined) => {
+    vi.resetModules();
+    vi.stubEnv("DEV_GAME_DURATION_SEC", overrideValue);
+    vi.stubEnv("NODE_ENV", "development");
+    const { decideBombPlacement: reloaded } = await import(
+      "./BombPlacementPolicy.js"
+    );
+    return reloaded;
+  };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+    vi.restoreAllMocks();
+  });
+
+  it("30秒の試合では開始直後からフィーバー時の2000msで再設置できること", async () => {
+    const decide = await loadPolicyWithEnv("30");
+    mockRandom(0);
+
+    const result = decide(botPlayerId, 2_000, 0, 0, 1, 2);
+
+    expect(result.placeBombPayload).not.toBeNull();
+  });
+
+  it("上書き未設定では開始直後は通常の4000ms未満で再設置しないこと", async () => {
+    const decide = await loadPolicyWithEnv(undefined);
+    mockRandom(0);
+
+    const result = decide(botPlayerId, 2_000, 0, 0, 1, 2);
+
+    expect(result.placeBombPayload).toBeNull();
+  });
+});

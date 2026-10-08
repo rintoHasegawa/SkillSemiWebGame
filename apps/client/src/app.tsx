@@ -9,6 +9,7 @@ import { socketManager } from "./network/SocketManager";
 import { useAppFlow } from "./hooks/useAppFlow";
 import { useAppUpdateGate } from "./hooks/useAppUpdateGate";
 import { useChunkLoadRecovery } from "./hooks/useChunkLoadRecovery";
+import { registerDebugAppSource } from "./devtools/devDebugHook";
 
 // 画面遷移先シーンコンポーネント群
 import { TitleScene } from "./scenes/title/TitleScene";
@@ -49,6 +50,53 @@ export default function App() {
 
     setIsTitleFormOpen(false);
   }, [scenePhase]);
+
+  // 開発モード限定で自動動作確認向けにアプリフローの状態を公開する
+  // 本番ビルド（mode=production）では分岐ごと除去される．NODE_ENV=development のコンテナ内でも
+  // vite build の mode は production になるため，DEV ではなく MODE で判定する
+  useEffect(() => {
+    if (import.meta.env.MODE === "production") {
+      return;
+    }
+
+    return registerDebugAppSource(() => ({
+      scenePhase,
+      myId,
+      playerName,
+      isJoining,
+      isReconnecting,
+      joinErrorMessage,
+      connectionNoticeMessage,
+      room: room
+        ? {
+            roomId: room.roomId,
+            ownerId: room.ownerId,
+            status: room.status,
+            maxPlayers: room.maxPlayers,
+            targetPlayerCount: room.targetPlayerCount ?? null,
+            fieldSizePreset: room.fieldSizePreset,
+            teamAssignmentMode: room.teamAssignmentMode,
+            players: room.players.map((player) => ({
+              id: player.id,
+              name: player.name,
+              isOwner: player.isOwner,
+              preferredTeamId: player.preferredTeamId,
+            })),
+          }
+        : null,
+      gameResult,
+    }));
+  }, [
+    scenePhase,
+    myId,
+    playerName,
+    isJoining,
+    isReconnecting,
+    joinErrorMessage,
+    connectionNoticeMessage,
+    room,
+    gameResult,
+  ]);
 
   // 再デプロイでチャンクが 404 になったページを自動復旧する（更新ゲートとは独立）
   useChunkLoadRecovery();

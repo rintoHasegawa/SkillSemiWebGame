@@ -8,6 +8,7 @@
 import { useEffect, type RefObject } from "react";
 import { socketManager } from "@client/network/SocketManager";
 import {
+  applyRuntimeGameDurationFromGameStart,
   applyRuntimeMapSizeFromGameStart,
   setRuntimeMapSizeByPreset,
 } from "@client/config";
@@ -218,6 +219,7 @@ export const useSocketSubscriptions = ({
         }
 
         applyRuntimeMapSizeFromGameStart(payload);
+        applyRuntimeGameDurationFromGameStart(payload);
         dispatchAppFlow({ type: "setPlaying" });
       },
 

@@ -8,7 +8,7 @@ import type {
   StartGameOutputPort,
   StartGamePort,
 } from "../ports/gameUseCasePorts";
-import { config } from "@server/config";
+import { buildGameDurationPayloadField, config } from "@server/config";
 import { logEvent } from "@server/logging/logger";
 import {
   gameUseCaseLogEvents,
@@ -171,5 +171,6 @@ export const startGameUseCase = ({
     fieldSizePreset: sessionFieldConfig.fieldSizePreset,
     gridCols: sessionFieldConfig.gridCols,
     gridRows: sessionFieldConfig.gridRows,
+    ...buildGameDurationPayloadField(),
   });
 };

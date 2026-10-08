@@ -82,3 +82,16 @@ VITE_PROD_SERVER_URL=http://localhost:3000
   - 指定するのは**クライアントを配信しているオリジン**であり，サーバー自身の URL ではない．VITE_PROD_SERVER_URL と取り違えないこと
   - Origin ヘッダを持たない接続（負荷テスト Bot・curl 等の非ブラウザクライアント）は本番でも許可する．ブラウザは必ず Origin を送るため，第三者ページからの接続がこの許可を悪用することはできない
   - 許可外のオリジンからの接続は拒否され，サーバーログに `[Network]` スコープの `rejected_origin` として記録される．接続できない場合はまずこのログを確認する
+
+#### DEV_GAME_DURATION_SEC
+
+- 用途: **開発モード限定**で試合時間（秒）を上書きする．自動動作確認（`pnpm verify:e2e --game-duration-sec`）で確かめたい項目に応じて試合を短縮するために使う
+- 参照箇所: apps/server/src/config/gameDurationOverride.ts で解決し，同 config/index.ts の `GAME_CONFIG.GAME_DURATION_SEC` に反映する
+- 設定箇所: 通常は自動動作確認のランナーが，自分で起動する server にだけ渡す．手動で使う場合は `DEV_GAME_DURATION_SEC=30 pnpm --filter server dev` のように起動時に指定する．Render・研究室サーバ・`docker-compose.prod.yml` には**設定しない**
+- 書式: 10 以上 180 以下の十進の整数（例: `30`）
+- 未設定時の挙動: 既定の 180 秒（`GAME_CONFIG.GAME_DURATION_SEC`）
+- 注意事項:
+  - `NODE_ENV=production` のときは値があっても無視して 180 秒になる（`Dockerfile` が `NODE_ENV=production` を焼き込んでいるため，本番イメージでは常に無効）
+  - 範囲外・非整数・前後の空白を含む値（例: `" 45 "`・`3e1`）は不正として無視し 180 秒になる．空白のみの値は未設定と同じ扱い
+  - 起動時にサーバーログの `ServerConfig` スコープへ `GAME_DURATION_OVERRIDE`（`applied` / `ignored_production` / `ignored_invalid_value`）が記録される
+  - 上書きした場合のみ GAME_START に `gameDurationSec` が載り，クライアントの残り時間表示・フィーバー判定が追従する．挙動の詳細は [SPEC_03_ゲームプレイ仕様](../04_SPEC/SPEC_03_ゲームプレイ仕様.md)「試合時間の開発モード限定の上書き」を参照

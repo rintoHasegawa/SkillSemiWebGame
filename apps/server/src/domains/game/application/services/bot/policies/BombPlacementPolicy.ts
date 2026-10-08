@@ -26,7 +26,10 @@ export const decideBombPlacement = (
   const { BOMB_FUSE_MS } = config.GAME_CONFIG;
 
   // 人間プレイヤーと同じ共有ロジックでクールダウンを解決する
-  const cooldownMs = domain.game.bomb.resolveBombCooldownMs(elapsedMs);
+  const cooldownMs = domain.game.bomb.resolveBombCooldownMs(
+    elapsedMs,
+    config.GAME_CONFIG.GAME_DURATION_SEC,
+  );
   const canPlaceBomb = elapsedMs - lastBombPlacedAtElapsedMs >= cooldownMs;
 
   if (

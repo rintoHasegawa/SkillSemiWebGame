@@ -31,6 +31,8 @@
 - `GAME_CONFIG.TEAM_COUNT`: チーム総数
 - `MAX_FIELD_GRID_SIZE`: 全フィールドサイズ種別中で最大のグリッドサイズ（受信座標の範囲検証に利用）
 - `isFieldSizePreset`: 値が定義済みのフィールドサイズ種別かを判定する関数
+- `MIN_GAME_DURATION_OVERRIDE_SEC`: 開発モードの試合時間上書きで受け付ける最短の試合時間（秒）
+- `isValidGameDurationOverrideSec`: 試合時間の上書き値として受け付けられるか（`MIN_GAME_DURATION_OVERRIDE_SEC` 以上 `GAME_DURATION_SEC` 以下の整数）を判定する関数
 - `resolveFieldGridSize`: フィールドサイズ種別から実グリッドサイズを解決する関数（未定義の種別は既定プリセットへフォールバック）
 - `TEAM_NAMES`: `teamId` 順の表示名配列
 - `validateTeamConfig`: チーム関連設定（件数整合性）を検証する関数
@@ -41,6 +43,7 @@
 
 対象: [apps/client/src/config/index.ts](apps/client/src/config/index.ts)
 
+- `GAME_CONFIG.GAME_DURATION_SEC` (getter): 実行中の試合時間（`game-start` の `gameDurationSec` があればその値，無ければ shared の既定値）
 - `GAME_CONFIG.TIMER_DISPLAY_UPDATE_MS`: 画面の残り時間表示を更新する間隔（ms）
 - `GAME_CONFIG.JOIN_REQUEST_TIMEOUT_MS`: ルーム参加要求のタイムアウト時間（ms）
 - `GAME_CONFIG.PLAYER_LERP_SMOOTHNESS`: リモートプレイヤー補間の追従係数（大きいほど追従が速い）
@@ -73,6 +76,7 @@
 対象: [apps/server/src/config/index.ts](apps/server/src/config/index.ts)
 
 - `GAME_CONFIG.MAX_PLAYERS_PER_ROOM`: 1ルームに参加できる最大人数
+- `GAME_CONFIG.GAME_DURATION_SEC`: 試合時間（開発モード限定で環境変数 `DEV_GAME_DURATION_SEC` の上書きを反映．本番では常に shared の既定値．[apps/server/src/config/gameDurationOverride.ts](../../../../apps/server/src/config/gameDurationOverride.ts)）
 - `NETWORK_CONFIG.DEV_SERVER_PORT`: サーバー起動時の待受ポート（環境変数未指定時）
 - `NETWORK_CONFIG.CORS_METHODS`: CORS で許可するHTTPメソッド
 - CORS の許可オリジンは config 定数ではなく環境変数 `CORS_ORIGIN` から解決する（[apps/server/src/network/bootstrap/corsPolicy.ts](../../../../apps/server/src/network/bootstrap/corsPolicy.ts)）。詳細は [ENV_09_環境変数設定](../../../../docs/02_ENV/ENV_09_環境変数設定.md) を参照

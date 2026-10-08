@@ -145,6 +145,25 @@ export const GAME_CONFIG = {
   TEAM_COUNT: 4,
 } as const;
 
+/** 開発モードの試合時間上書きで受け付ける最短の試合時間（秒） */
+export const MIN_GAME_DURATION_OVERRIDE_SEC = 10;
+
+/**
+ * 開発モードの試合時間上書き値として受け付けられるかを判定する
+ * 整数かつ MIN_GAME_DURATION_OVERRIDE_SEC 以上，既定の GAME_DURATION_SEC 以下とする
+ * 本番で上書きを無効にする判定は利用側（server の設定解決）が担う
+ */
+export const isValidGameDurationOverrideSec = (
+  value: unknown,
+): value is number => {
+  return (
+    typeof value === "number"
+    && Number.isInteger(value)
+    && value >= MIN_GAME_DURATION_OVERRIDE_SEC
+    && value <= GAME_CONFIG.GAME_DURATION_SEC
+  );
+};
+
 /** teamId インデックス順のチーム名配列 */
 export const TEAM_NAMES = [
   "赤チーム",

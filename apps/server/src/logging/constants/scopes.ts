@@ -15,6 +15,7 @@ export const logScopes = {
   ROOM_JOIN_SERVICE: "RoomJoinService",
   ROOM_EXIT_SERVICE: "RoomExitService",
   ROOM_SETTINGS_SERVICE: "RoomSettingsService",
+  SERVER_CONFIG: "ServerConfig",
 } as const;
 
 /** ログ出力で利用するスコープ名型 */

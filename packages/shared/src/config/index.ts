@@ -10,6 +10,11 @@ export { GAME_CONFIG } from "./gameConfig";
 export { resolveFieldGridSize } from "./gameConfig";
 /** フィールドサイズ種別の判定関数を再公開する */
 export { isFieldSizePreset } from "./gameConfig";
+/** 開発モードの試合時間上書きの下限と判定関数を再公開する */
+export {
+	MIN_GAME_DURATION_OVERRIDE_SEC,
+	isValidGameDurationOverrideSec,
+} from "./gameConfig";
 /** 全フィールドサイズ種別中で最大のグリッドサイズを再公開する */
 export { MAX_FIELD_GRID_SIZE } from "./gameConfig";
 /** フィールドサイズ種別のキー型を再公開する */

@@ -8,12 +8,12 @@ CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 GH_DIR="$HOME/.config/gh"
 SEED_DIR="/workspace/.devcontainer/.auth-seed"
 
-echo "▶ 1/6: 永続化ボリュームと node_modules の所有権を修正"
+echo "▶ 1/7: 永続化ボリュームと node_modules の所有権を修正"
 # 名前付きボリュームは初回マウント時に root 所有で作られることがあるため node に直す
 sudo mkdir -p "$CLAUDE_DIR" "$GH_DIR" "$HOME/.local/bin"
 sudo chown -R node:node "$CLAUDE_DIR" "$HOME/.config" "$HOME/.local" /workspace/node_modules
 
-echo "▶ 2/6: 退避済み認証情報の復元 (ボリュームが空のときのみ)"
+echo "▶ 2/7: 退避済み認証情報の復元 (ボリュームが空のときのみ)"
 # ボリューム導入前に .devcontainer/.auth-seed へ退避した認証情報を初回だけ流し込む．
 # 2 回目以降はボリュームに認証が残っているため何もしない．
 if [ -d "$SEED_DIR" ]; then
@@ -27,7 +27,7 @@ if [ -d "$SEED_DIR" ]; then
   fi
 fi
 
-echo "▶ 3/6: Claude Code CLI の確認 (無ければインストール)"
+echo "▶ 3/7: Claude Code CLI の確認 (無ければインストール)"
 # CLI 本体 (~/.local/bin と ~/.local/share/claude) は claude-local ボリュームで
 # 永続化されるが，ボリュームが新規作成された場合はここで自動インストールする
 export PATH="$HOME/.local/bin:$PATH"
@@ -38,7 +38,7 @@ else
   echo "  ✓ Claude Code CLI をインストールしました"
 fi
 
-echo "▶ 4/6: git と GitHub CLI の連携設定"
+echo "▶ 4/7: git と GitHub CLI の連携設定"
 # gh が認証済みなら git の credential helper として gh を使う (push/pull が通る)
 if gh auth status >/dev/null 2>&1; then
   gh auth setup-git
@@ -47,7 +47,7 @@ else
   echo "  ✗ gh 未認証です．'gh auth login' を一度実行してください (以後は永続化されます)"
 fi
 
-echo "▶ 5/6: pnpm 版の整合確認 (package.json の packageManager に揃える)"
+echo "▶ 5/7: pnpm 版の整合確認 (package.json の packageManager に揃える)"
 # node feature の pnpmVersion で版を固定しているが，feature 側の仕様変更や
 # 手動インストールで版がズレると想定外の pnpm が起動しうる．
 # 保険として packageManager の版に強制的に揃える（Node 25 以降は corepack 同梱なし）
@@ -60,8 +60,18 @@ else
   echo "  ✓ pnpm $CURRENT_PNPM"
 fi
 
-echo "▶ 6/6: 依存関係のインストールと shared ビルド"
+echo "▶ 6/7: 依存関係のインストールと shared ビルド"
 pnpm install
 pnpm --filter @repo/shared build
+
+echo "▶ 7/7: 自動動作確認 (/verify) 用の Playwright Chromium とシステム依存の導入"
+# scripts/verify のランナーがヘッドレス Chromium でゲームを操作する．ブラウザ本体は
+# ~/.cache/ms-playwright に，システム依存 (共有ライブラリ) は apt (sudo) で導入される．
+# 失敗してもコンテナ自体は使えるため，警告だけ出して続行する (再実行は同じコマンド)
+if pnpm --filter verify-e2e exec playwright install --with-deps chromium; then
+  echo "  ✓ Playwright Chromium を導入しました"
+else
+  echo "  ✗ Playwright Chromium の導入に失敗しました．'pnpm --filter verify-e2e exec playwright install --with-deps chromium' を再実行してください"
+fi
 
 echo "✓ セットアップ完了"

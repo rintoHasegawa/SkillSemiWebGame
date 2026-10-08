@@ -2,10 +2,12 @@
  * isBombFeverTime.test
  * HUD向けフィーバー判定が実ゲートと同じ経過時間基準で解決されることを検証する
  * 秒表示の切り捨てで先行してフィーバー扱いになる区間を回帰防止する
+ * 試合時間を上書きした場合も実行中の試合時間（GAME_START で配られた値）に追従すること
+ * （SPEC_03「試合時間の開発モード限定の上書き」）を検証する
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { domain } from "@repo/shared";
-import { config } from "@client/config";
+import { applyRuntimeGameDurationFromGameStart, config } from "@client/config";
 import { GameTimer } from "@client/scenes/game/application/GameTimer";
 import { isBombFeverTime } from "./isBombFeverTime";
 
@@ -81,5 +83,37 @@ describe("isBombFeverTime", () => {
 
       expect(isBombFeverTime(elapsedMs)).toBe(isFeverCooldown);
     });
+  });
+});
+
+// SPEC_03「試合時間の開発モード限定の上書き」: しきい値は残り時間基準のまま，60 秒以下では開始直後からフィーバー
+describe("isBombFeverTime（試合時間の上書き）", () => {
+  afterEach(() => {
+    applyRuntimeGameDurationFromGameStart({});
+  });
+
+  it("30秒の試合では開始直後からフィーバーとみなすこと", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+
+    expect(isBombFeverTime(0)).toBe(true);
+  });
+
+  it("90秒の試合では残り60秒ちょうど（経過30秒）でフィーバーとみなすこと", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 90 });
+
+    expect(isBombFeverTime(30_000)).toBe(true);
+  });
+
+  it("90秒の試合ではフィーバー開始の1ms手前はフィーバーとみなさないこと", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 90 });
+
+    expect(isBombFeverTime(29_999)).toBe(false);
+  });
+
+  it("上書きが無い開始通知を受けると既定の180秒基準へ戻り開始直後はフィーバーとみなさないこと", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+    applyRuntimeGameDurationFromGameStart({});
+
+    expect(isBombFeverTime(0)).toBe(false);
   });
 });

@@ -116,10 +116,41 @@ pnpm --filter client test
 クライアントのユニットテストを実行する（`vitest run`）．
 
 ```bash
+pnpm --filter verify-e2e test
+```
+
+自動動作確認ランナー（`scripts/verify`）のユニットテストを実行する（`vitest run`．接続先ガード・引数検証・出力先の採番等）．`run.test.mjs` は shared のビルド成果物（`packages/shared/dist`）を読み込むため，先に `pnpm shared:build` が必要である（`pnpm verify` は shared をビルドしてから実行するので不要）．
+
+```bash
 pnpm -r test
 ```
 
-全パッケージのユニットテストをまとめて実行する．
+全パッケージ（shared・server・client・verify-e2e）のユニットテストをまとめて実行する．
+
+### 自動動作確認 (Verify E2E)
+
+Claude による自動動作確認（`/verify`・`/implement` の Phase 1b）が使う実行基盤．Playwright（Chromium）のブラウザ 1 人＋Socket.IO Bot でローカルの client（5173）・server（3000）を操作する．シナリオの書き方・規約は `.claude/verify-profile.md` を参照．
+
+```bash
+pnpm verify:e2e <シナリオ.mjs> [--game-duration-sec <秒>] [--timeout-sec <秒>] [--dry-run]
+```
+
+シナリオを実行する（例: `pnpm verify:e2e scripts/verify/scenarios/sample-match.mjs`）．server・client が起動済みならそれを使い（停止しない），無ければランナーが起動して終了時に停止する．結果は `.verify/` 配下の `run-<日時>/`（`result.json`・スクリーンショット・ログ）に出力される．終了コードは 0 = PASS，1 = FAIL / ERROR，2 = 前提未充足・引数不正．
+
+- `--game-duration-sec <秒>`: 試合時間を 10〜180 の整数秒で指定する（シナリオの `options.gameDurationSec` より優先）．ランナーが起動する server に開発モード限定の環境変数 `DEV_GAME_DURATION_SEC` を渡す（[ENV_09_環境変数設定](ENV_09_環境変数設定.md)）．起動済みの server を使う場合は適用できない旨を警告し，実際の試合時間で続行する
+- `--dry-run`: 引数・試合時間を検証し，出力先を表示して終了する（サービスやブラウザは起動しない）
+
+```bash
+pnpm --filter client build && pnpm verify:no-debug-hook
+```
+
+クライアントの本番ビルドに開発モード限定のデバッグフック（`window.__PIXEL_PAINT_WAR_DEBUG__`）が含まれていないことを確認する．
+
+```bash
+pnpm --filter verify-e2e exec playwright install --with-deps chromium
+```
+
+Playwright の Chromium とシステム依存（共有ライブラリ．apt で sudo を使う）を導入する．Dev Container の作成時に `postcreate.sh` が自動実行するため，通常は不要（失敗した場合の再実行用）．
 
 ### 負荷テスト (Load Test)
 

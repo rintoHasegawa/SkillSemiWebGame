@@ -3,13 +3,16 @@
  * フィールドサイズ解決関数と設定値の関係性を検証するテスト
  * 定数の実値ではなく，プリセットとの導出関係・後方互換エイリアスの一致を検証する
  * 未定義プリセットのフォールバックと最大グリッドサイズは SPEC_03 の表を基準とする
+ * 試合時間の上書き値の判定は SPEC_03「試合時間の開発モード限定の上書き」（10〜180 の整数秒）を基準とする
  */
 import { describe, expect, it } from "vitest";
 
 import {
   GAME_CONFIG,
   MAX_FIELD_GRID_SIZE,
+  MIN_GAME_DURATION_OVERRIDE_SEC,
   isFieldSizePreset,
+  isValidGameDurationOverrideSec,
   resolveFieldGridSize,
   type FieldSizePreset,
 } from "./gameConfig";
@@ -225,4 +228,73 @@ describe("GAME_CONFIG", () => {
       );
     },
   );
+});
+
+// SPEC_03「試合時間の開発モード限定の上書き」: 10 以上 180 以下の整数秒のみ受け付ける
+describe("MIN_GAME_DURATION_OVERRIDE_SEC", () => {
+  it("上書きで受け付ける最短の試合時間が10秒であること", () => {
+    expect(MIN_GAME_DURATION_OVERRIDE_SEC).toBe(10);
+  });
+});
+
+describe("isValidGameDurationOverrideSec", () => {
+  it("下限10秒ちょうどを受け付けること", () => {
+    expect(isValidGameDurationOverrideSec(10)).toBe(true);
+  });
+
+  it("下限未満の9秒を拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(9)).toBe(false);
+  });
+
+  it("上限180秒ちょうどを受け付けること", () => {
+    expect(isValidGameDurationOverrideSec(180)).toBe(true);
+  });
+
+  it("上限超過の181秒を拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(181)).toBe(false);
+  });
+
+  it("上限が既定の試合時間と一致すること", () => {
+    expect(isValidGameDurationOverrideSec(GAME_CONFIG.GAME_DURATION_SEC)).toBe(
+      true,
+    );
+  });
+
+  it("範囲内の整数30秒を受け付けること", () => {
+    expect(isValidGameDurationOverrideSec(30)).toBe(true);
+  });
+
+  it("範囲内の小数を拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(30.5)).toBe(false);
+  });
+
+  it("NaNを拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(Number.NaN)).toBe(false);
+  });
+
+  it("正の無限大を拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(Number.POSITIVE_INFINITY)).toBe(
+      false,
+    );
+  });
+
+  it("0を拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(0)).toBe(false);
+  });
+
+  it("負の値を拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(-30)).toBe(false);
+  });
+
+  it("数値表記の文字列を拒否すること", () => {
+    expect(isValidGameDurationOverrideSec("30")).toBe(false);
+  });
+
+  it("undefinedを拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(undefined)).toBe(false);
+  });
+
+  it("nullを拒否すること", () => {
+    expect(isValidGameDurationOverrideSec(null)).toBe(false);
+  });
 });

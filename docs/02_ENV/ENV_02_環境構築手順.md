@@ -108,6 +108,7 @@ Monorepo構成とDocker(Dev Containers)を使用し，迅速に開発を開始�
 
 1. 初回起動時は Dockerイメージのビルドと npmパッケージのインストールが行われる．(数分〜十数分かかる場合がある)
 2. 右下に "Starting Dev Container" 等の通知が表示されている間は待機する．
+3. コンテナ作成時の `postcreate.sh` は，自動動作確認（`/verify`）用に Playwright の Chromium とシステム依存（共有ライブラリ）も導入する（手順 7/7．apt で sudo を使う）．失敗しても警告だけで続行するので，その場合は `pnpm --filter verify-e2e exec playwright install --with-deps chromium` を再実行する（[ENV_04_開発コマンド](ENV_04_開発コマンド.md)「自動動作確認」）．
 
 ### 起動確認 (Verify Startup)
 

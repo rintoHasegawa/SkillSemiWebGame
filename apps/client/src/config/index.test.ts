@@ -2,12 +2,15 @@
  * index.test
  * クライアント実行中マップサイズ更新の検証挙動を固定するテスト
  * GAME_START ペイロードのグリッドサイズ検証と既定値フォールバックを検証する
+ * 試合時間は SPEC_03「試合時間の開発モード限定の上書き」を基準に，gameDurationSec が無ければ既定の 180 秒，
+ * 10〜180 の整数ならその値，範囲外なら既定値へ戻ることを検証する
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { config as sharedConfig } from "@repo/shared";
 
 import {
+  applyRuntimeGameDurationFromGameStart,
   applyRuntimeMapSizeFromGameStart,
   config,
   setRuntimeMapSizeByPreset,
@@ -24,6 +27,7 @@ beforeEach(() => {
 
 afterEach(() => {
   setRuntimeMapSizeByPreset(DEFAULT_PRESET);
+  applyRuntimeGameDurationFromGameStart({});
   vi.restoreAllMocks();
 });
 
@@ -127,5 +131,88 @@ describe("GAME_CONFIG.BOMB_FUSE_GAUGE_RADIUS_PX", () => {
       + BOMB_FUSE_GAUGE.OUTLINE_WIDTH_PX;
 
     expect(outerEdgePx).toBeLessThanOrEqual(GRID_CELL_SIZE / 2);
+  });
+});
+
+// SPEC_03: 仕様上の試合時間（既定値）
+const DEFAULT_GAME_DURATION_SEC = 180;
+
+describe("applyRuntimeGameDurationFromGameStart", () => {
+  it("初期状態の試合時間が既定の180秒であること", () => {
+    expect(config.GAME_CONFIG.GAME_DURATION_SEC).toBe(DEFAULT_GAME_DURATION_SEC);
+  });
+
+  it("gameDurationSecが無い場合は既定の180秒を使うこと", () => {
+    applyRuntimeGameDurationFromGameStart({});
+
+    expect(config.GAME_CONFIG.GAME_DURATION_SEC).toBe(DEFAULT_GAME_DURATION_SEC);
+  });
+
+  it("上書き済みの状態でgameDurationSecが無い開始通知を受けると既定の180秒へ戻ること", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+
+    applyRuntimeGameDurationFromGameStart({});
+
+    expect(config.GAME_CONFIG.GAME_DURATION_SEC).toBe(DEFAULT_GAME_DURATION_SEC);
+  });
+
+  it("正常なgameDurationSecを採用すること", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+
+    expect(config.GAME_CONFIG.GAME_DURATION_SEC).toBe(30);
+  });
+
+  it("下限10秒ちょうどを採用すること", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 10 });
+
+    expect(config.GAME_CONFIG.GAME_DURATION_SEC).toBe(10);
+  });
+
+  it("上限180秒ちょうどを採用すること", () => {
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 180 });
+
+    expect(config.GAME_CONFIG.GAME_DURATION_SEC).toBe(180);
+  });
+
+  it.each([9, 181, 30.5, 0, -30, Number.NaN])(
+    "範囲外のgameDurationSec（%s）は既定の180秒へ戻すこと",
+    (gameDurationSec) => {
+      applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+
+      applyRuntimeGameDurationFromGameStart({ gameDurationSec });
+
+      expect(config.GAME_CONFIG.GAME_DURATION_SEC).toBe(
+        DEFAULT_GAME_DURATION_SEC,
+      );
+    },
+  );
+
+  it("範囲外のgameDurationSec受信時にconsole.errorで通知すること", () => {
+    const errorSpy = vi.mocked(console.error);
+
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 181 });
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[config]"),
+      expect.objectContaining({ gameDurationSec: 181 }),
+    );
+  });
+
+  it("正常なgameDurationSecではconsole.errorを呼ばないこと", () => {
+    const errorSpy = vi.mocked(console.error);
+
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it("試合時間の更新がマップサイズに影響しないこと", () => {
+    const before = config.GAME_CONFIG.GRID_COLS;
+
+    applyRuntimeGameDurationFromGameStart({ gameDurationSec: 30 });
+
+    expect(config.GAME_CONFIG.GRID_COLS).toBe(before);
   });
 });
