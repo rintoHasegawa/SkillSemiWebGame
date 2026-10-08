@@ -4,6 +4,8 @@
  * マップ，ネットワーク同期，ゲームループを統合する
  */
 import { Application, Container, Ticker } from "pixi.js";
+import { config } from "@client/config";
+import { registerDebugGameSource } from "@client/devtools/devDebugHook";
 import { GameEventFacade } from "./application/GameEventFacade";
 import { SceneLifecycleState } from "./application/lifecycle/SceneLifecycleState";
 import { GameSessionFacade } from "./application/lifecycle/GameSessionFacade";
@@ -213,6 +215,39 @@ export class GameManager {
     this.disposableRegistry.add(() => {
       this.clockSyncService.reset();
     });
+
+    // 開発モード限定で canvas 内の状態を自動動作確認向けに公開する
+    // 本番ビルド（mode=production）では分岐ごと除去される（判定に MODE を使う理由は app.tsx を参照）
+    if (import.meta.env.MODE !== "production") {
+      this.disposableRegistry.add(
+        registerDebugGameSource(() => {
+          const hud = this.getUiStateSnapshot().hud;
+          const localPlayer = this.players[this.myId]?.getSnapshot() ?? null;
+
+          return {
+            remainingTimeSec: hud.remainingTimeSec,
+            startCountdownSec: hud.startCountdownSec,
+            isInputEnabled: hud.isInputEnabled,
+            isBombEnabled: hud.isBombEnabled,
+            isFeverTime: hud.isFeverTime,
+            teamPaintRates: hud.teamPaintRates,
+            localBombHitCount: hud.localBombHitCount,
+            localPlayer: localPlayer
+              ? {
+                  id: localPlayer.id,
+                  teamId: localPlayer.teamId,
+                  x: localPlayer.x,
+                  y: localPlayer.y,
+                }
+              : null,
+            playerCount: Object.keys(this.players).length,
+            gameDurationSec: config.GAME_CONFIG.GAME_DURATION_SEC,
+            gridCols: config.GAME_CONFIG.GRID_COLS,
+            gridRows: config.GAME_CONFIG.GRID_ROWS,
+          };
+        }),
+      );
+    }
   }
 
   /**
