@@ -1,6 +1,33 @@
 import { config as sharedConfig } from "@repo/shared";
 import type { FieldSizePreset, GameStartPayload } from "@repo/shared";
 
+// GAME_START で配られた試合時間（開発モードの上書きが無ければ既定値）
+let runtimeGameDurationSec: number = sharedConfig.GAME_CONFIG.GAME_DURATION_SEC;
+
+/**
+ * GAME_STARTペイロードからクライアント実行中の試合時間を更新する
+ * 試合時間はサーバーが開発モードで上書きした場合にのみ載るため，無ければ既定値へ戻す
+ */
+export const applyRuntimeGameDurationFromGameStart = (
+  payload: Pick<GameStartPayload, "gameDurationSec">,
+): void => {
+  if (payload.gameDurationSec === undefined) {
+    runtimeGameDurationSec = sharedConfig.GAME_CONFIG.GAME_DURATION_SEC;
+    return;
+  }
+
+  if (sharedConfig.isValidGameDurationOverrideSec(payload.gameDurationSec)) {
+    runtimeGameDurationSec = payload.gameDurationSec;
+    return;
+  }
+
+  // 想定外の試合時間は表示と判定を破綻させるため採用せず既定値へ戻す
+  console.error("[config] GAME_STARTの試合時間が許容範囲外", {
+    gameDurationSec: payload.gameDurationSec,
+  });
+  runtimeGameDurationSec = sharedConfig.GAME_CONFIG.GAME_DURATION_SEC;
+};
+
 const runtimeMapSize = {
   gridCols: sharedConfig.GAME_CONFIG.GRID_COLS,
   gridRows: sharedConfig.GAME_CONFIG.GRID_ROWS,
@@ -104,6 +131,9 @@ const CLIENT_GAME_CONFIG = {
 const GAME_CONFIG = {
   ...sharedConfig.GAME_CONFIG,
   ...CLIENT_GAME_CONFIG,
+  get GAME_DURATION_SEC(): number {
+    return runtimeGameDurationSec;
+  },
   get GRID_COLS(): number {
     return runtimeMapSize.gridCols;
   },
