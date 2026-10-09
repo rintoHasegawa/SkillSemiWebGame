@@ -117,6 +117,7 @@ root/
 ### 開発ツール (Dev Tools)
 
 - Linter: ESLint
+  - Client: `eslint-plugin-react-hooks` の `rules-of-hooks` のみ有効（`exhaustive-deps` は依存配列を意図的に絞る箇所があるため無効）
 - Formatter: Prettier
 - AI Assistant: Claude Code
 

@@ -1,4 +1,5 @@
 import tsParser from '@typescript-eslint/parser';
+import reactHooks from 'eslint-plugin-react-hooks';
 import preferRelativeForLocalClientPath from './eslint-rules/prefer-relative-for-local-client-path.js';
 
 export default [
@@ -23,9 +24,15 @@ export default [
           'prefer-relative-for-local-client-path': preferRelativeForLocalClientPath,
         },
       },
+      'react-hooks': reactHooks,
     },
     rules: {
       'local/prefer-relative-for-local-client-path': 'warn',
+      // Rules of Hooks 違反は実行時クラッシュに直結するため error にする（Issue #374）．
+      // recommended プリセットは React Compiler 系ルールも有効化するため使わず，ルールを明示指定する
+      'react-hooks/rules-of-hooks': 'error',
+      // 依存配列を意図的に絞っている箇所があり，機械的な修正を誘発するため無効化する
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
   {
